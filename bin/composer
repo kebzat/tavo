@@ -1,0 +1,2 @@
+#!/bin/sh
+PATH="/opt/homebrew/opt/php/bin:$PATH" exec /opt/homebrew/bin/composer "$@"

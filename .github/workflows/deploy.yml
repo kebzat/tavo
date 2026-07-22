@@ -1,0 +1,60 @@
+name: Deploy
+
+# Nasadí se až po zeleném CI a jen z větve main.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Nasazení na produkci
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    environment: production
+
+    steps:
+      - name: Nasadit přes SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            php artisan down --render="errors::503" --retry=15 || true
+
+            git fetch --all
+            git reset --hard origin/main
+
+            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+            npm ci
+            npm run build
+
+            php artisan migrate --force
+            php artisan storage:link || true
+
+            php artisan optimize
+            php artisan queue:restart
+
+            php artisan up
+
+      - name: Ověřit, že web běží
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_URL }})
+            if [ "$code" = "200" ]; then echo "OK ($code)"; exit 0; fi
+            echo "Pokus $i: $code"; sleep 10
+          done
+          echo "Web po nasazení neodpovídá 200."; exit 1

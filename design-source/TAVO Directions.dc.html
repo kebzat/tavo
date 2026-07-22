@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;0,6..72,600;1,6..72,400&family=Archivo:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@10..48,500;10..48,700;10..48,800&family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#e9e5dd;font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .dv-turn{padding:52px 56px 40px;scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:12px;margin:0 0 6px}
+  .dv-tid{font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#17160f;color:#fff;border-radius:5px;text-decoration:none;letter-spacing:.04em}
+  .dv-tname{font:700 14px/1.2 'Archivo',sans-serif;color:#17160f;letter-spacing:.01em}
+  .dv-sub{font:400 13px/1.5 'Archivo',sans-serif;color:rgba(23,22,15,.55);margin:0 0 30px;max-width:640px}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:12px;scroll-margin-top:16px;width:560px;max-width:100%}
+  .dv-olabel{display:flex;align-items:center;gap:10px;font:600 12px/1.3 'Archivo',sans-serif;color:rgba(23,22,15,.6);letter-spacing:.02em}
+  .dv-oid{font:700 11px ui-monospace,Menlo,monospace;padding:3px 8px;background:rgba(23,22,15,.1);color:#17160f;border-radius:6px;text-decoration:none}
+  .dv-opt:target .dv-oid{background:#c24a24;color:#fff}
+  .dv-card{width:560px;max-width:100%;border-radius:10px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.05),0 18px 50px -20px rgba(0,0,0,.28)}
+  .dv-next{margin:34px 0 0;font:13px/1.6 'Archivo',sans-serif;color:rgba(23,22,15,.6);max-width:760px}
+  .dv-next a{color:#c24a24;text-decoration:none;font-weight:600}
+  .rec{margin:8px 0 0;padding:22px 26px;background:#17160f;color:#f3efe6;border-radius:10px;max-width:820px;font:400 14px/1.65 'Archivo',sans-serif}
+  .rec b{color:#fff}
+  .rec .pill{display:inline-block;font:700 11px ui-monospace,monospace;background:#c8d14a;color:#17160f;padding:3px 8px;border-radius:5px;margin-right:6px}
+  a{color:#c24a24}a:hover{color:#a23a18}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">TAVO — tři kreativní směry</span></div>
+  <p class="dv-sub">Studio spojující marketing (Pavel) a vývoj (Tom). Tři skutečně odlišné směry — ne varianty jednoho layoutu. Každý řeší, jak vizuálně vyjádřit „dva obory, jeden výsledek". Vyberte jeden (nebo mix) a postavím kompletní homepage + design systém.</p>
+
+  <div class="dv-opts">
+
+    <!-- ============ 1a EDITORIAL ============ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Premium editorial studio — „Redakce"</div>
+      <div class="dv-card">
+        <!-- hero mock -->
+        <div style="background:#f3efe6;color:#17160f;padding:26px 30px 30px;position:relative">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.5px solid #17160f;padding-bottom:11px;margin-bottom:26px">
+            <span style="font:800 17px 'Archivo';letter-spacing:.14em">TAVO</span>
+            <span style="font:500 9.5px 'Archivo';letter-spacing:.16em;text-transform:uppercase;color:rgba(23,22,15,.55)">Weby · E-shopy · Marketing</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 122px;gap:22px;align-items:end">
+            <div>
+              <div style="font:500 9.5px 'Archivo';letter-spacing:.22em;text-transform:uppercase;color:#5c5d38;margin-bottom:14px">Č.01 — Studio</div>
+              <div style="font:600 47px/0.94 'Newsreader';letter-spacing:-.01em">Dva obory.<br><span style="font-style:italic;font-weight:400">Jeden</span> výsledek.</div>
+              <div style="width:52px;height:1.5px;background:#17160f;margin:20px 0 14px"></div>
+              <div style="font:400 12px/1.6 'Newsreader';color:rgba(23,22,15,.72);max-width:290px">Marketing a vývoj nevedeme odděleně. Píšeme je jako jeden text — jednu myšlenku, která přivede lidi a promění je v zákazníky.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="aspect-ratio:3/4;background:linear-gradient(135deg,#d9d3c4,#c3bda9);border:1px solid rgba(23,22,15,.15);display:flex;align-items:flex-end;padding:7px"><span style="font:500 7px 'Archivo';letter-spacing:.1em;text-transform:uppercase;color:rgba(23,22,15,.5)">Foto — Pavel</span></div>
+              <div style="aspect-ratio:3/4;background:linear-gradient(135deg,#c9c3b2,#b3ad98);border:1px solid rgba(23,22,15,.15);display:flex;align-items:flex-end;padding:7px"><span style="font:500 7px 'Archivo';letter-spacing:.1em;text-transform:uppercase;color:rgba(23,22,15,.5)">Foto — Tom</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- specimen -->
+        <div style="background:#eae4d7;padding:18px 30px;display:flex;gap:26px;align-items:center;border-top:1px solid rgba(23,22,15,.12)">
+          <div style="flex:1">
+            <div style="font:600 30px/1 'Newsreader';color:#17160f">Aa Čč Řř Ůů</div>
+            <div style="font:500 9px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:rgba(23,22,15,.5);margin-top:6px">Newsreader — display · Archivo — text</div>
+          </div>
+          <div style="display:flex;gap:7px">
+            <div style="width:30px;height:30px;border-radius:5px;background:#f3efe6;border:1px solid rgba(23,22,15,.15)"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#17160f"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#5c5d38"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#d9d3c4"></div>
+          </div>
+        </div>
+        <!-- notes -->
+        <div style="background:#fff;padding:20px 30px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px 26px;font-family:'Archivo'">
+          <div><div style="font:700 9px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:#c24a24;margin-bottom:4px">Koncept</div><div style="font:400 11.5px/1.5 'Archivo';color:#3a382f">Stránka čtená jako designový magazín. Dvě disciplíny = dva editoriální sloupce sdílející jednu účaří. Marketing je esej, vývoj je diagram.</div></div>
+          <div><div style="font:700 9px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:#c24a24;margin-bottom:4px">Služby</div><div style="font:400 11.5px/1.5 'Archivo';color:#3a382f">Tři čísla kapitol (01/02/03) přes celou šířku, každá s vlastní typografickou sazbou a linkami — ne karty.</div></div>
+          <div><div style="font:700 9px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:#c24a24;margin-bottom:4px">Reference</div><div style="font:400 11.5px/1.5 'Archivo';color:#3a382f">Case study jako dvoustrana: velký obraz + sloupec „Marketing" a sloupec „Vývoj", měřitelný výsledek jako výrazný lead.</div></div>
+          <div><div style="font:700 9px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:#c24a24;margin-bottom:4px">Pohyb</div><div style="font:400 11.5px/1.5 'Archivo';color:#3a382f">Řádky nadpisů odkrývané po jednom, linky se „dokreslují", jemný paralax obrazů. Klid, žádná show.</div></div>
+          <div style="grid-column:1/3;display:flex;gap:22px;padding-top:4px;border-top:1px solid rgba(23,22,15,.1)">
+            <div style="flex:1"><div style="font:700 9px 'Archivo';letter-spacing:.12em;text-transform:uppercase;color:#5c5d38;margin-bottom:3px">Silné</div><div style="font:400 11px/1.45 'Archivo';color:#3a382f">Nadčasové, prémiové, seniorní. Nevypadá jako SaaS ani agentura.</div></div>
+            <div style="flex:1"><div style="font:700 9px 'Archivo';letter-spacing:.12em;text-transform:uppercase;color:#b0662a;margin-bottom:3px">Riziko</div><div style="font:400 11px/1.45 'Archivo';color:#3a382f">Bez silné fotografie může působit jako advokátní kancelář. Méně „hravé".</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1b BOLD ============ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Bold &amp; playful digital studio — „Systém"</div>
+      <div class="dv-card">
+        <div style="background:#131110;color:#f4ede1;padding:22px 26px 26px;position:relative;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font:800 15px 'Space Grotesk';letter-spacing:-.02em">TAVO</span>
+            <span style="font:500 9px 'Space Grotesk';letter-spacing:.08em;color:rgba(244,237,225,.6)">Co umíme · Reference · Kontakt</span>
+          </div>
+          <div style="font:800 74px/0.82 'Bricolage Grotesque';letter-spacing:-.03em;margin:6px 0 2px">TA<span style="color:#db4b24">/</span>VO</div>
+          <div style="font:700 22px/1.02 'Bricolage Grotesque';letter-spacing:-.02em;max-width:400px;margin-top:12px">Přivedeme lidi. <span style="color:#db4b24">A postavíme</span> místo, které je přesvědčí.</div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:18px">
+            <div style="background:#db4b24;color:#fff;font:600 10px 'Space Grotesk';padding:8px 14px;border-radius:100px">Chci nový web →</div>
+            <div style="border:1px solid rgba(244,237,225,.35);color:#f4ede1;font:600 10px 'Space Grotesk';padding:8px 14px;border-radius:100px">Rozjet marketing</div>
+          </div>
+          <div style="position:absolute;right:-30px;bottom:-30px;width:150px;height:150px;border-radius:50%;background:#db4b24;opacity:.9;display:flex;align-items:center;justify-content:center"><span style="font:800 40px 'Bricolage Grotesque';color:#131110;transform:rotate(-12deg)">2→1</span></div>
+        </div>
+        <div style="background:#1d1a18;padding:16px 26px;display:flex;gap:24px;align-items:center;border-top:1px solid rgba(244,237,225,.1)">
+          <div style="flex:1">
+            <div style="font:800 30px/1 'Bricolage Grotesque';color:#f4ede1">Aa Čč Žž Ýý</div>
+            <div style="font:500 9px 'Space Grotesk';letter-spacing:.1em;text-transform:uppercase;color:rgba(244,237,225,.5);margin-top:6px">Bricolage Grotesque · Space Grotesk</div>
+          </div>
+          <div style="display:flex;gap:7px">
+            <div style="width:30px;height:30px;border-radius:5px;background:#f4ede1"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#131110;border:1px solid rgba(244,237,225,.2)"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#db4b24"></div>
+          </div>
+        </div>
+        <div style="background:#fff;padding:20px 26px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;font-family:'Space Grotesk'">
+          <div><div style="font:700 9px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase;color:#db4b24;margin-bottom:4px">Koncept</div><div style="font:400 11.5px/1.5 'Space Grotesk';color:#3a382f">Dva typografické systémy do sebe „zaklapnou". Přeškálovaný grotesk přes celou šířku, motiv spojky „/" a „2→1" jako podpis studia.</div></div>
+          <div><div style="font:700 9px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase;color:#db4b24;margin-bottom:4px">Služby</div><div style="font:400 11.5px/1.5 'Space Grotesk';color:#3a382f">Obří interaktivní seznam — najetím se řádek rozjede, ukáže se ukázkový obraz. Žádná mřížka karet.</div></div>
+          <div><div style="font:700 9px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase;color:#db4b24;margin-bottom:4px">Reference</div><div style="font:400 11.5px/1.5 'Space Grotesk';color:#3a382f">Celoplošné bloky s velkým číslem výsledku (+38 %) jako hrdinou, obraz projektu na celou šířku.</div></div>
+          <div><div style="font:700 9px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase;color:#db4b24;margin-bottom:4px">Pohyb</div><div style="font:400 11.5px/1.5 'Space Grotesk';color:#3a382f">Kinetický nadpis, magnetické tlačítko, decentní marquee. Vždy s respektem k reduce-motion.</div></div>
+          <div style="grid-column:1/3;display:flex;gap:22px;padding-top:4px;border-top:1px solid rgba(23,22,15,.1)">
+            <div style="flex:1"><div style="font:700 9px 'Space Grotesk';letter-spacing:.1em;text-transform:uppercase;color:#5c5d38;margin-bottom:3px">Silné</div><div style="font:400 11px/1.45 'Space Grotesk';color:#3a382f">Zapamatovatelné, sebevědomé, „není šablona". Nejblíž kuuuk energii.</div></div>
+            <div style="flex:1"><div style="font:700 9px 'Space Grotesk';letter-spacing:.1em;text-transform:uppercase;color:#b0662a;margin-bottom:3px">Riziko</div><div style="font:400 11px/1.45 'Space Grotesk';color:#3a382f">Hravost může ubrat na „seniornosti". Vyžaduje disciplínu, ať to nesklouzne k efektu.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1c HUMAN ============ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Human &amp; trustworthy partnership — „Dvojice"</div>
+      <div class="dv-card">
+        <div style="background:#ece7dd;color:#1b1a17;padding:24px 28px 0;position:relative">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+            <span style="font:800 15px 'Hanken Grotesque';letter-spacing:.02em">TAVO</span>
+            <span style="font:500 9px 'Hanken Grotesque';letter-spacing:.06em;color:rgba(27,26,23,.55)">Weby · Marketing · Spolupráce</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 168px;gap:20px;align-items:end">
+            <div style="padding-bottom:26px">
+              <div style="font:800 40px/0.98 'Hanken Grotesque';letter-spacing:-.02em">Marketing<br>a vývoj.<br><span style="position:relative">Jeden tým.<span style="position:absolute;left:0;right:0;bottom:2px;height:9px;background:#b9c948;z-index:-1;opacity:.85"></span></span></div>
+              <div style="font:400 12px/1.55 'Hanken Grotesque';color:rgba(27,26,23,.7);max-width:250px;margin-top:16px">Nemusíte řídit agenturu, kodéra a analytika zvlášť. Jsme dva senioři, se kterými mluvíte přímo.</div>
+              <div style="display:inline-flex;margin-top:16px;background:#1b1a17;color:#ece7dd;font:600 10px 'Hanken Grotesque';padding:9px 16px;border-radius:8px">Domluvit projekt</div>
+            </div>
+            <div style="aspect-ratio:3/4.4;background:linear-gradient(160deg,#cfc9bb,#b7b09d);border-radius:10px 10px 0 0;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
+              <div style="position:absolute;top:12px;left:12px;font:600 7.5px 'Hanken Grotesque';letter-spacing:.1em;text-transform:uppercase;color:rgba(27,26,23,.5)">Pavel &amp; Tom</div>
+              <div style="width:38px;height:38px;border-radius:50%;background:#b9c948;margin-bottom:-19px;border:4px solid #ece7dd"></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#1b1a17;padding:16px 28px;display:flex;gap:24px;align-items:center">
+          <div style="flex:1">
+            <div style="font:800 30px/1 'Hanken Grotesque';color:#ece7dd">Aa Čč Ěě Šš</div>
+            <div style="font:500 9px 'Hanken Grotesque';letter-spacing:.1em;text-transform:uppercase;color:rgba(236,231,221,.5);margin-top:6px">Hanken Grotesque — display &amp; text</div>
+          </div>
+          <div style="display:flex;gap:7px">
+            <div style="width:30px;height:30px;border-radius:5px;background:#ece7dd"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#1b1a17;border:1px solid rgba(236,231,221,.25)"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#b9c948"></div>
+            <div style="width:30px;height:30px;border-radius:5px;background:#cfc9bb"></div>
+          </div>
+        </div>
+        <div style="background:#fff;padding:20px 28px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;font-family:'Hanken Grotesque'">
+          <div><div style="font:700 9px 'Hanken Grotesque';letter-spacing:.12em;text-transform:uppercase;color:#7f8a1e;margin-bottom:4px">Koncept</div><div style="font:400 11.5px/1.5 'Hanken Grotesque';color:#3a382f">Fotografie zakladatelů je vizuální systém. Limetková „nit" propojuje sekce marketing → web → data → růst jako jeden příběh.</div></div>
+          <div><div style="font:700 9px 'Hanken Grotesque';letter-spacing:.12em;text-transform:uppercase;color:#7f8a1e;margin-bottom:4px">Služby</div><div style="font:400 11.5px/1.5 'Hanken Grotesque';color:#3a382f">Tři horizontální pruhy přes celou šířku, každý s fotem z práce a jasným „pro koho je to".</div></div>
+          <div><div style="font:700 9px 'Hanken Grotesque';letter-spacing:.12em;text-transform:uppercase;color:#7f8a1e;margin-bottom:4px">Reference</div><div style="font:400 11.5px/1.5 'Hanken Grotesque';color:#3a382f">Velký formát, střídání světlých a tmavých sekcí pro rytmus. Role marketingu i vývoje popsané lidsky.</div></div>
+          <div><div style="font:700 9px 'Hanken Grotesque';letter-spacing:.12em;text-transform:uppercase;color:#7f8a1e;margin-bottom:4px">Pohyb</div><div style="font:400 11.5px/1.5 'Hanken Grotesque';color:#3a382f">Měkké odkrytí obrazů, nit se „dokresluje" při scrollu. Vřelé, klidné, ne technické.</div></div>
+          <div style="grid-column:1/3;display:flex;gap:22px;padding-top:4px;border-top:1px solid rgba(23,22,15,.1)">
+            <div style="flex:1"><div style="font:700 9px 'Hanken Grotesque';letter-spacing:.1em;text-transform:uppercase;color:#5c5d38;margin-bottom:3px">Silné</div><div style="font:400 11px/1.45 'Hanken Grotesque';color:#3a382f">Důvěra, lidskost, seniornost. Využívá reálné fotky, odlišuje od anonymních agentur.</div></div>
+            <div style="flex:1"><div style="font:700 9px 'Hanken Grotesque';letter-spacing:.1em;text-transform:uppercase;color:#b0662a;margin-bottom:3px">Riziko</div><div style="font:400 11px/1.45 'Hanken Grotesque';color:#3a382f">Stojí a padá s kvalitou fotek. Typograficky méně „wow" než 1b.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rec">
+    <div style="font:700 11px 'Archivo';letter-spacing:.14em;text-transform:uppercase;color:#c8d14a;margin-bottom:8px">Moje doporučení</div>
+    Doporučuju postavit základ na <b><a href="#1c" style="color:#c8d14a">1c „Dvojice"</a></b> — nejlépe naplňuje zadání „seniorní, důvěryhodné spíš než korporátní, osobní" a využívá vaši nejsilnější kartu: <b>reálné fotky Pavla a Toma</b>. Zároveň vás odliší od každého SaaS/„AI" webu.
+    <div style="margin-top:12px">Přidám k tomu <b>editoriální mřížku a disciplínu z <a href="#1a" style="color:#c8d14a">1a</a></b> (klid, prostor, velká typografie) a <b>jeden odvážný typografický tah z <a href="#1b" style="color:#c8d14a">1b</a></b> — motiv spojení dvou oborů v hero. Tím získáte důvěru i sebevědomí, aniž by to sklouzlo k hravosti.
+    <div style="margin-top:12px"><span class="pill">TL;DR</span>Základ = 1c, kostra = 1a, jiskra = 1b. Ale rozhodnutí je na vás.</div>
+  </div>
+
+  <p class="dv-next">Napište např.: „jdeme do <a href="#1c">1c</a> podle tvého doporučení" · „chci <a href="#1b">1b</a>, ale s tlumenější limetkou místo cihlové" · „zkombinuj <a href="#1a">1a</a> a <a href="#1c">1c</a>" · „ukaž ještě jeden směr, tmavší a přísnější"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

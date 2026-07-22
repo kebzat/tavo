@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:#f4ede1;color:#131110;font-family:'Montserrat',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:#db4b24;text-decoration:none}
+  a:hover{color:#b83c19}
+  [data-reveal]{opacity:1;transform:none;transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+  [data-reveal].pre{opacity:0;transform:translateY(26px)}
+  @media (prefers-reduced-motion: reduce){[data-reveal],[data-reveal].pre{opacity:1!important;transform:none!important}html{scroll-behavior:auto}}
+</style>
+</helmet>
+
+<div style="position:relative">
+
+<!-- NAV -->
+<nav style="position:fixed;top:0;left:0;right:0;z-index:50;padding:18px 6vw;display:flex;align-items:center;justify-content:space-between" data-nav>
+  <a href="TAVO Homepage.dc.html" style="display:flex;align-items:center"><img src="tavo-logo-dark.svg" alt="TAVO" style="height:26px;width:auto;display:block"></a>
+  <div style="display:flex;align-items:center;gap:34px" data-desknav>
+    <a href="TAVO Sluzba Weby.dc.html" style="font-weight:600;font-size:14px;color:#131110">Co umíme</a>
+    <a href="TAVO Reference.dc.html" style="font-weight:600;font-size:14px;color:#131110">Reference</a>
+    <a href="TAVO Homepage.dc.html#lide" style="font-weight:600;font-size:14px;color:#131110">Lidé</a>
+    <a href="TAVO Homepage.dc.html#kontakt" style="font-weight:700;font-size:14px;color:#f4ede1;background:#131110;padding:11px 20px;border-radius:100px;transition:background .3s,transform .3s" style-hover="background:#db4b24;transform:translateY(-2px)">Poptat projekt</a>
+  </div>
+  <button onClick="{{ toggleMenu }}" aria-label="Menu" style="display:none;background:#131110;border:none;color:#f4ede1;width:46px;height:46px;border-radius:12px;cursor:pointer;flex-direction:column;gap:4px;align-items:center;justify-content:center" data-burger>
+    <span style="width:18px;height:2px;background:#f4ede1;display:block"></span><span style="width:18px;height:2px;background:#f4ede1;display:block"></span>
+  </button>
+</nav>
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:49;background:#131110;color:#f4ede1;padding:96px 8vw 40px;display:flex;flex-direction:column;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <a onClick="{{ closeMenu }}" href="TAVO Sluzba Weby.dc.html" style="font-weight:800;font-size:34px;color:#f4ede1;padding:10px 0;border-bottom:1px solid rgba(244,237,225,.15)">Co umíme</a>
+      <a onClick="{{ closeMenu }}" href="TAVO Reference.dc.html" style="font-weight:800;font-size:34px;color:#f4ede1;padding:10px 0;border-bottom:1px solid rgba(244,237,225,.15)">Reference</a>
+      <a onClick="{{ closeMenu }}" href="TAVO Homepage.dc.html#lide" style="font-weight:800;font-size:34px;color:#f4ede1;padding:10px 0;border-bottom:1px solid rgba(244,237,225,.15)">Lidé</a>
+    </div>
+    <a onClick="{{ closeMenu }}" href="TAVO Homepage.dc.html#kontakt" style="font-weight:700;font-size:17px;color:#131110;background:#db4b24;padding:18px;border-radius:14px;text-align:center">Poptat projekt →</a>
+  </div>
+</sc-if>
+
+<!-- HERO -->
+<header style="padding:140px 6vw 0">
+  <div style="max-width:1500px;margin:0 auto">
+    <a href="TAVO Reference.dc.html" data-reveal style="display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#6b6459;margin-bottom:30px">← Všechny reference</a>
+    <div data-reveal style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+      <span style="font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:#131110;color:#f4ede1;padding:7px 14px;border-radius:100px">E-commerce</span>
+      <span style="font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:rgba(19,17,16,.06);color:#131110;padding:7px 14px;border-radius:100px">Redesign + kampaně</span>
+    </div>
+    <h1 data-reveal style="font-weight:800;font-size:clamp(38px,6.2vw,96px);line-height:0.96;letter-spacing:-.03em;margin:0;max-width:15ch">Rodinný e-shop, který <span style="color:#db4b24;font-style:italic">přestal růst.</span></h1>
+    <p data-reveal style="font-size:clamp(16px,1.7vw,21px);line-height:1.5;max-width:56ch;color:#3a362e;margin:30px 0 50px">Zastaralý Shoptet a drahá reklama bez měření. Přestavěli jsme klíčové šablony, propojili data a přenastavili kampaně na produkty, které skutečně vydělávají.</p>
+  </div>
+</header>
+
+<!-- BIG IMAGE -->
+<section style="padding:0 6vw">
+  <div style="max-width:1500px;margin:0 auto">
+    <div data-reveal style="aspect-ratio:16/8;border-radius:22px;overflow:hidden;background:linear-gradient(135deg,#e4dccb,#cdc4b0);position:relative">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(219,75,36,.08) 0 26px,transparent 26px 52px);display:flex;align-items:center;justify-content:center"><span style="font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgba(19,17,16,.4)">Hlavní vizuál projektu — screenshot e-shopu</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- META BAR -->
+<section style="padding:clamp(50px,6vw,80px) 6vw">
+  <div style="max-width:1500px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:34px 0;border-top:1px solid rgba(19,17,16,.14);border-bottom:1px solid rgba(19,17,16,.14)" data-meta>
+    <div data-reveal><div style="font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b6459;margin-bottom:10px">Klient</div><div style="font-weight:700;font-size:17px">Rodinný e-shop *</div></div>
+    <div data-reveal><div style="font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b6459;margin-bottom:10px">Obor</div><div style="font-weight:700;font-size:17px">Domácnost &amp; bydlení</div></div>
+    <div data-reveal><div style="font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b6459;margin-bottom:10px">Rozsah</div><div style="font-weight:700;font-size:17px">Redesign · Měření · Kampaně</div></div>
+    <div data-reveal><div style="font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b6459;margin-bottom:10px">Doba</div><div style="font-weight:700;font-size:17px">10 týdnů + retainer</div></div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section style="padding:0 6vw clamp(50px,6vw,80px)">
+  <div style="max-width:1500px;margin:0 auto;display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:clamp(30px,5vw,90px);align-items:start" data-cols>
+    <h2 data-reveal style="font-weight:800;font-size:clamp(26px,3.4vw,46px);line-height:1.03;letter-spacing:-.02em;margin:0">Výchozí stav</h2>
+    <div data-reveal>
+      <p style="font-size:clamp(16px,1.6vw,20px);line-height:1.6;color:#3a362e;margin:0 0 20px">Tržby stagnovaly, přestože do reklamy tekly peníze. E-shop běžel na starém Shoptetu, byl pomalý na mobilu a nikdo nedokázal říct, které kampaně jsou ziskové a které jen spalují rozpočet.</p>
+      <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px">
+        <li style="display:flex;gap:12px;font-size:16px;line-height:1.45;color:#3a362e"><span style="color:#db4b24;font-weight:700">—</span>Pomalé načítání a zastaralé šablony produktů.</li>
+        <li style="display:flex;gap:12px;font-size:16px;line-height:1.45;color:#3a362e"><span style="color:#db4b24;font-weight:700">—</span>Chybějící měření, žádná návaznost reklamy na tržby.</li>
+        <li style="display:flex;gap:12px;font-size:16px;line-height:1.45;color:#3a362e"><span style="color:#db4b24;font-weight:700">—</span>Reklama vedla na produkty s nízkou marží.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ROLE MARKETING / VYVOJ -->
+<section style="background:#131110;color:#f4ede1;padding:clamp(70px,9vw,120px) 6vw">
+  <div style="max-width:1500px;margin:0 auto">
+    <h2 data-reveal style="font-weight:800;font-size:clamp(28px,4vw,58px);line-height:1;letter-spacing:-.02em;margin:0 0 12px">Jak jsme to táhli spolu</h2>
+    <p data-reveal style="font-size:clamp(15px,1.5vw,19px);color:rgba(244,237,225,.65);max-width:48ch;margin:0 0 50px">Marketing a vývoj neběžely po sobě, ale vedle sebe — jedno rozhodnutí ovlivnilo druhé.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:rgba(244,237,225,.15);border-radius:18px;overflow:hidden" data-roles>
+      <div data-reveal style="background:#131110;padding:clamp(30px,3vw,46px) clamp(26px,2.6vw,40px)">
+        <div style="font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#db4b24;margin-bottom:20px">Role marketingu — Pavel</div>
+        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:16px">
+          <li style="font-size:16px;line-height:1.5;color:rgba(244,237,225,.82)">Analýza ziskovosti podle produktů a přesun rozpočtu na to, co vydělává.</li>
+          <li style="font-size:16px;line-height:1.5;color:rgba(244,237,225,.82)">Přestavba kampaní a práce se sdělením podle sezóny.</li>
+          <li style="font-size:16px;line-height:1.5;color:rgba(244,237,225,.82)">Průběžné vyhodnocování a doporučení k nabídce.</li>
+        </ul>
+      </div>
+      <div data-reveal style="background:#131110;padding:clamp(30px,3vw,46px) clamp(26px,2.6vw,40px)">
+        <div style="font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#db4b24;margin-bottom:20px">Role vývoje — Tom</div>
+        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:16px">
+          <li style="font-size:16px;line-height:1.5;color:rgba(244,237,225,.82)">Přestavba klíčových šablon a zrychlení e-shopu na mobilu.</li>
+          <li style="font-size:16px;line-height:1.5;color:rgba(244,237,225,.82)">Nastavení měření a propojení dat z reklamy s objednávkami.</li>
+          <li style="font-size:16px;line-height:1.5;color:rgba(244,237,225,.82)">Automatizace opakovaných úprav feedu a reportů.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section style="background:#db4b24;color:#131110;padding:clamp(70px,9vw,120px) 6vw">
+  <div style="max-width:1500px;margin:0 auto">
+    <div data-reveal style="font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:40px">Výsledek</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px" data-results>
+      <div data-reveal style="border-top:2px solid #131110;padding-top:22px"><div style="font-weight:800;font-size:clamp(44px,6vw,84px);letter-spacing:-.04em;line-height:0.9">+41 %</div><div style="font-size:16px;margin-top:12px;color:rgba(19,17,16,.8)">tržby z online za 4 měsíce</div></div>
+      <div data-reveal style="border-top:2px solid #131110;padding-top:22px"><div style="font-weight:800;font-size:clamp(44px,6vw,84px);letter-spacing:-.04em;line-height:0.9">−28 %</div><div style="font-size:16px;margin-top:12px;color:rgba(19,17,16,.8)">cena za objednávku</div></div>
+      <div data-reveal style="border-top:2px solid #131110;padding-top:22px"><div style="font-weight:800;font-size:clamp(44px,6vw,84px);letter-spacing:-.04em;line-height:0.9">1,9×</div><div style="font-size:16px;margin-top:12px;color:rgba(19,17,16,.8)">rychlejší načtení na mobilu</div></div>
+    </div>
+    <p data-reveal style="font-size:13px;color:rgba(19,17,16,.6);margin:40px 0 0">* Konkrétní jméno klienta a reálná čísla doplníme po jeho souhlasu. Rozložení a struktura zůstávají stejné.</p>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<section style="background:#f4ede1;padding:clamp(70px,9vw,120px) 6vw">
+  <div style="max-width:1100px;margin:0 auto;text-align:center">
+    <blockquote data-reveal style="font-weight:600;font-size:clamp(22px,3.2vw,42px);line-height:1.2;letter-spacing:-.02em;margin:0;color:#131110">„Poprvé jsme věděli, které kampaně nám skutečně vydělávají — a web konečně nebrzdil.”</blockquote>
+    <div data-reveal style="margin-top:28px;font-weight:700;font-size:15px;color:#6b6459">Majitel e-shopu *</div>
+  </div>
+</section>
+
+<!-- NEXT + CTA -->
+<section style="background:#131110;color:#f4ede1;padding:clamp(70px,9vw,120px) 6vw">
+  <div style="max-width:1500px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:36px">
+      <h2 data-reveal style="font-weight:800;font-size:clamp(26px,3.4vw,48px);line-height:1;letter-spacing:-.02em;margin:0">Další projekt</h2>
+      <a data-reveal href="TAVO Reference.dc.html" style="font-weight:700;font-size:15px;color:#f4ede1;border-bottom:2px solid #db4b24;padding-bottom:3px">Všechny reference →</a>
+    </div>
+    <a href="TAVO Reference Detail.dc.html" data-reveal data-next style="display:grid;grid-template-columns:1fr 1.3fr;gap:clamp(24px,3vw,50px);align-items:center;background:#1d1a18;border-radius:22px;overflow:hidden;transition:transform .5s cubic-bezier(.2,.7,.2,1)" data-nextcard>
+      <div style="aspect-ratio:4/3;background:linear-gradient(135deg,#2a2622,#131110);position:relative"><div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(219,75,36,.16) 0 22px,transparent 22px 44px);display:flex;align-items:center;justify-content:center"><span style="font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,237,225,.42)">Foto — web</span></div></div>
+      <div style="padding:0 clamp(26px,3vw,44px)"><div style="font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#db4b24;margin-bottom:14px">Služby · Nový web</div><h3 style="font-weight:800;font-size:clamp(22px,2.6vw,38px);line-height:1.04;letter-spacing:-.02em;margin:0 0 12px">Web, který začal sám generovat poptávky</h3><span style="font-weight:700;font-size:15px;color:#f4ede1">Otevřít projekt →</span></div>
+    </a>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="background:#f4ede1;padding:clamp(70px,10vw,140px) 6vw">
+  <div style="max-width:1200px;margin:0 auto;text-align:center">
+    <h2 data-reveal style="font-weight:800;font-size:clamp(30px,5.4vw,80px);line-height:0.98;letter-spacing:-.03em;margin:0 auto;max-width:16ch">Máte podobný projekt?</h2>
+    <div data-reveal style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:36px">
+      <a href="mailto:ahoj@tavo.cz" style="font-weight:700;font-size:17px;color:#f4ede1;background:#131110;padding:19px 36px;border-radius:100px;transition:transform .3s,box-shadow .3s" style-hover="transform:translateY(-3px);box-shadow:0 16px 34px -12px rgba(19,17,16,.55)">ahoj@tavo.cz</a>
+      <a href="TAVO Sluzba Weby.dc.html" style="font-weight:700;font-size:17px;color:#131110;border:1.5px solid rgba(19,17,16,.4);padding:18px 34px;border-radius:100px;transition:background .3s,color .3s,transform .3s" style-hover="background:#131110;color:#f4ede1;transform:translateY(-3px)">Co umíme</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="background:#131110;color:#f4ede1;padding:clamp(50px,6vw,80px) 6vw 40px">
+  <div style="max-width:1500px;margin:0 auto">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;gap:40px 30px;padding-bottom:50px;border-bottom:1px solid rgba(244,237,225,.15)" data-footcols>
+      <div><img src="tavo-logo-cream.svg" alt="TAVO" style="height:34px;width:auto;display:block;margin-bottom:18px"><p style="font-size:15px;line-height:1.6;color:rgba(244,237,225,.6);max-width:34ch;margin:0">Weby, e-shopy a marketing, které spolu táhnou. Malý seniorní tým — Pavel &amp; Tom.</p></div>
+      <div><div style="font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,237,225,.45);margin-bottom:18px">Web</div><div style="display:flex;flex-direction:column;gap:12px"><a href="TAVO Sluzba Weby.dc.html" style="color:#f4ede1;font-size:15px">Co umíme</a><a href="TAVO Reference.dc.html" style="color:#f4ede1;font-size:15px">Reference</a><a href="TAVO Homepage.dc.html#lide" style="color:#f4ede1;font-size:15px">Lidé</a></div></div>
+      <div><div style="font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,237,225,.45);margin-bottom:18px">Kontakt</div><div style="display:flex;flex-direction:column;gap:12px"><a href="mailto:ahoj@tavo.cz" style="color:#f4ede1;font-size:15px">ahoj@tavo.cz</a><a href="TAVO Homepage.dc.html#kontakt" style="color:#f4ede1;font-size:15px">Poptat projekt</a></div></div>
+      <div><div style="font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,237,225,.45);margin-bottom:18px">Zakladatelé samostatně</div><div style="display:flex;flex-direction:column;gap:12px"><a href="https://pavelvcelis.cz/" target="_blank" rel="noopener" style="color:#f4ede1;font-size:15px">pavelvcelis.cz →</a><a href="https://juliatom.cz/" target="_blank" rel="noopener" style="color:#f4ede1;font-size:15px">juliatom.cz →</a></div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:26px;font-size:13px;color:rgba(244,237,225,.45)"><span>© 2026 TAVO</span><span>Vytvořeno se strategií i kódem.</span></div>
+  </div>
+</footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { menuOpen: false };
+  renderVals() {
+    return {
+      menuOpen: this.state.menuOpen,
+      toggleMenu: () => this.setState(s => ({ menuOpen: !s.menuOpen })),
+      closeMenu: () => this.setState({ menuOpen: false }),
+    };
+  }
+  q(sel){ return Array.from(document.querySelectorAll(sel)); }
+  getScroll(){ return Math.max(document.documentElement.scrollTop||0, document.body.scrollTop||0, window.scrollY||0); }
+  componentDidMount(){
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this._responsive();
+    this._onResize = () => { this._responsive(); if(this._onScroll) this._onScroll(); };
+    window.addEventListener('resize', this._onResize);
+    this.setupMotion();
+    const nc = document.querySelector('[data-nextcard]');
+    if(nc){ nc.addEventListener('mouseenter',()=>nc.style.transform='translateY(-6px)'); nc.addEventListener('mouseleave',()=>nc.style.transform='translateY(0)'); }
+  }
+  componentWillUnmount(){
+    window.removeEventListener('resize', this._onResize);
+    if(this._onScroll){ window.removeEventListener('scroll', this._onScroll, true); document.removeEventListener('scroll', this._onScroll, true); }
+  }
+  _responsive(){
+    const mobile = window.innerWidth <= 860;
+    const desk = document.querySelector('[data-desknav]'); const burger = document.querySelector('[data-burger]');
+    if(desk) desk.style.display = mobile ? 'none' : 'flex';
+    if(burger) burger.style.display = mobile ? 'flex' : 'none';
+    this.q('[data-cols]').forEach(el=> el.style.gridTemplateColumns = mobile ? '1fr' : 'minmax(0,0.85fr) minmax(0,1.15fr)');
+    this.q('[data-meta]').forEach(el=> el.style.gridTemplateColumns = mobile ? '1fr 1fr' : 'repeat(4,1fr)');
+    this.q('[data-roles]').forEach(el=> el.style.gridTemplateColumns = mobile ? '1fr' : '1fr 1fr');
+    this.q('[data-results]').forEach(el=> el.style.gridTemplateColumns = mobile ? '1fr' : 'repeat(3,1fr)');
+    this.q('[data-next]').forEach(el=> el.style.gridTemplateColumns = mobile ? '1fr' : '1fr 1.3fr');
+    this.q('[data-footcols]').forEach(el=> el.style.gridTemplateColumns = mobile ? '1fr 1fr' : '2fr 1fr 1fr 1.4fr');
+    this.q('[data-next]').forEach(el=>{ const pad=el.querySelector('[style*="padding:0 clamp"]'); if(pad&&mobile) pad.style.padding='0 26px 30px'; else if(pad) pad.style.padding='0 clamp(26px,3vw,44px)'; });
+  }
+  setupMotion(){
+    const nav = document.querySelector('[data-nav]');
+    const onNav = () => { const y=this.getScroll(); if(nav){ if(y>40){nav.style.background='rgba(244,237,225,.9)';nav.style.backdropFilter='blur(12px)';nav.style.boxShadow='0 1px 0 rgba(19,17,16,.08)';}else{nav.style.background='transparent';nav.style.backdropFilter='none';nav.style.boxShadow='none';} } };
+    if(this.reduced){ this._onScroll=onNav; onNav(); window.addEventListener('scroll',onNav,{passive:true,capture:true}); document.addEventListener('scroll',onNav,{passive:true,capture:true}); return; }
+    this.q('[data-reveal]').forEach(el=>el.classList.add('pre'));
+    const revealInView = () => { const vh=window.innerHeight; this.q('[data-reveal].pre').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.top<vh*0.92 && r.bottom>0) el.classList.remove('pre'); }); };
+    const onScroll = () => { onNav(); revealInView(); };
+    this._onScroll=onScroll; window.addEventListener('scroll',onScroll,{passive:true,capture:true}); document.addEventListener('scroll',onScroll,{passive:true,capture:true});
+    onScroll(); setTimeout(onScroll,250); setTimeout(onScroll,900);
+  }
+}
+</script>
+</body>
+</html>
