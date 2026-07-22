@@ -24,6 +24,7 @@ class FounderForm
 
                 Repeater::make('tags')
                     ->label('Štítky')
+                    ->addActionLabel('Přidat štítek')
                     ->simple(TextInput::make('text')->required())
                     ->columnSpanFull()
                     ->defaultItems(0),

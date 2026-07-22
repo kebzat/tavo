@@ -41,7 +41,7 @@
                         @if ($case->tags)
                             <div class="mt-[26px] flex flex-wrap gap-2.5">
                                 @foreach ($case->tags as $tag)
-                                    <x-tag>{{ $tag['text'] }}</x-tag>
+                                    <x-tag>{{ $tag }}</x-tag>
                                 @endforeach
                             </div>
                         @endif

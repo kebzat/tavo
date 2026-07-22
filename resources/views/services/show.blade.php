@@ -13,12 +13,19 @@
                 <x-eyebrow data-reveal :rule="true" class="mb-6">{{ $service->hero_eyebrow }}</x-eyebrow>
             @endif
 
+            {{-- Když nadpis detailu není vyplněný, použije se název služby. --}}
             <h1 data-reveal class="text-page-title m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
-                {{ $service->hero_headline }}
-                <span class="text-brick italic">{{ $service->hero_headline_accent }}</span>
+                {{ $service->hero_headline ?: $service->title }}
+                @if ($service->hero_headline_accent)
+                    <span class="text-brick italic">{{ $service->hero_headline_accent }}</span>
+                @endif
             </h1>
 
-            <p data-reveal class="text-perex mt-[34px] mb-0 max-w-[52ch] text-body">{{ $service->hero_perex }}</p>
+            @if ($service->hero_perex ?: $service->excerpt)
+                <p data-reveal class="text-perex mt-[34px] mb-0 max-w-[52ch] text-body">
+                    {{ $service->hero_perex ?: $service->excerpt }}
+                </p>
+            @endif
         </div>
     </header>
 
@@ -33,7 +40,7 @@
                 <ul data-reveal class="m-0 flex list-none flex-col p-0">
                     @foreach ($service->target_groups as $group)
                         <li class="flex gap-[18px] border-t border-cream/15 py-4 text-base leading-[1.45] text-cream/82">
-                            <span class="font-bold text-brick">—</span>{{ $group['text'] }}
+                            <span class="font-bold text-brick">—</span>{{ $group }}
                         </li>
                     @endforeach
                 </ul>

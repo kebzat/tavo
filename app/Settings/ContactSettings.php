@@ -15,13 +15,13 @@ class ContactSettings extends Settings
 
     public string $phone;
 
-    public string $company_name;
+    public ?string $company_name;
 
-    public string $ico;
+    public ?string $ico;
 
-    public string $dic;
+    public ?string $dic;
 
-    public string $address;
+    public ?string $address;
 
     public array $socials;
 
@@ -42,8 +42,7 @@ class ContactSettings extends Settings
     public function recipientEmails(): array
     {
         return collect($this->lead_recipients)
-            ->pluck('email')
-            ->filter()
+            ->filter(fn ($email) => is_string($email) && $email !== '')
             ->values()
             ->all();
     }

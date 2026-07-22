@@ -71,6 +71,7 @@ class ManageHome extends SettingsPage
                         Textarea::make('problem_perex')->label('Perex')->rows(4)->columnSpanFull(),
                         Repeater::make('problem_points')
                             ->label('Očíslované body')
+                            ->addActionLabel('Přidat bod')
                             ->simple(TextInput::make('text')->required())
                             ->columnSpanFull(),
                     ]),
@@ -80,6 +81,7 @@ class ManageHome extends SettingsPage
                     TextInput::make('situations_title')->label('Nadpis sekce'),
                     Repeater::make('situations')
                         ->label('Karty')
+                        ->addActionLabel('Přidat kartu')
                         ->schema([
                             TextInput::make('eyebrow')->label('Popisek nahoře')->required(),
                             Select::make('variant')
@@ -121,6 +123,7 @@ class ManageHome extends SettingsPage
                         Textarea::make('loop_perex')->label('Perex')->rows(2),
                         Repeater::make('loop_items')
                             ->label('Čtyři sloupce')
+                            ->addActionLabel('Přidat sloupec')
                             ->schema([
                                 TextInput::make('label')->label('Popisek')->required()->helperText('Např. „Přivede"'),
                                 TextInput::make('title')->label('Nadpis')->required(),

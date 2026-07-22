@@ -44,7 +44,7 @@
                             @if ($founder->tags)
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ($founder->tags as $tag)
-                                        <x-tag>{{ $tag['text'] }}</x-tag>
+                                        <x-tag>{{ $tag }}</x-tag>
                                     @endforeach
                                 </div>
                             @endif

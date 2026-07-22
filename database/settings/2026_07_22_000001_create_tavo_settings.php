@@ -65,7 +65,7 @@ return new class extends SettingsMigration
         $this->migrator->add('contact.address', '');
         $this->migrator->add('contact.socials', []);
         $this->migrator->add('contact.lead_recipients', [
-            ['email' => 'ahoj@tavo.cz'],
+            'ahoj@tavo.cz',
         ]);
 
         /*
@@ -88,9 +88,9 @@ return new class extends SettingsMigration
         $this->migrator->add('home.problem_title', "Každý si odvede svůj kus.\nZa výsledek neručí nikdo.");
         $this->migrator->add('home.problem_perex', 'Web dělá jedna firma, reklamu druhá, analytiku třetí. Každý dodavatel splní své zadání — ale nikdo se nedívá na celou cestu od prvního kliknutí po objednávku. A tam se ztrácí peníze.');
         $this->migrator->add('home.problem_points', [
-            ['text' => 'Hezký web, na který ale nechodí správní lidé.'],
-            ['text' => 'Zaplacené reklamy, které vedou na web, co neumí přesvědčit.'],
-            ['text' => 'Data, kterým nikdo nerozumí a podle kterých se nic nemění.'],
+            'Hezký web, na který ale nechodí správní lidé.',
+            'Zaplacené reklamy, které vedou na web, co neumí přesvědčit.',
+            'Data, kterým nikdo nerozumí a podle kterých se nic nemění.',
         ]);
 
         $this->migrator->add('home.situations_title', 'Ať jste kdekoliv, začneme tam, kde jste teď.');

@@ -17,7 +17,7 @@
                     @foreach ($home->problem_points as $i => $point)
                         <div class="flex items-baseline gap-[18px] border-t border-cream/15 py-4">
                             <span class="text-sm font-bold text-brick">{{ str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) }}</span>
-                            <span class="text-base leading-[1.4]">{{ $point['text'] }}</span>
+                            <span class="text-base leading-[1.4]">{{ $point }}</span>
                         </div>
                     @endforeach
                 </div>

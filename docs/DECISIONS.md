@@ -55,6 +55,31 @@ i bez JS a nebliká při načtení.
   ale **měl by je před spuštěním projít někdo, kdo za ně ponese odpovědnost**.
 - **Odkazy na právní stránky v patičce.**
 
+## Chyby nalezené při auditu v prohlížeči (a opravené)
+
+Tohle by typová kontrola ani testy neodhalily — vyplavalo to až při proklikání
+administrace v Playwrightu.
+
+**`[object Object]` v jednoduchých seznamech.** Filamentí „simple" repeater pracuje
+s plochým polem řetězců (`["Štítek"]`), ale seed ukládal pole objektů (`[{"text": "Štítek"}]`).
+V administraci se tak místo textu zobrazovalo `[object Object]` a nešlo to uložit.
+Narovnáno migrací `2026_07_23_010000_flatten_simple_list_fields` (má i `down()`),
+šablony teď vypisují prvek přímo. Týkalo se štítků, odrážek a bodů rolí.
+
+**Prázdné pole shodilo ukládání nastavení.** Vyprázdněný input přijde z Filamentu jako
+`null`, ale vlastnosti settings tříd byly typované `string` → `Cannot assign null to property`.
+Všechna nepovinná pole jsou teď `?string`. Povinná zůstala: `brand_name`, `nav_cta_label`,
+`nav_cta_url`, `copyright`, `email`, `phone`, `default_title`.
+Hlídá to test `test_volitelna_nastaveni_snesou_prazdnou_hodnotu`.
+
+**Prázdný `<h1>` na nové referenci.** Nově založená reference má vyplněný jen název,
+ne „Nadpis detailu" — detail se tedy vykreslil s prázdným H1. Doplněn fallback na název
+záznamu (u služeb stejně).
+
+**Cookie lišta překrývala CTA v mobilním menu.** Vyřešeno sdíleným Alpine store `nav` —
+lišta se při otevřeném menu schová. Logo se zároveň přepne na krémovou variantu,
+jinak by na tmavém překryvu zmizelo.
+
 ## Drobnosti k dořešení
 
 - `contact.phone` je zatím `+420 000 000 000` z designu — doplnit reálné číslo

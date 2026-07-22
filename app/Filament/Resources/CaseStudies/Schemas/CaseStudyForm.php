@@ -83,6 +83,7 @@ class CaseStudyForm
 
                         Repeater::make('tags')
                             ->label('Štítky')
+                            ->addActionLabel('Přidat štítek')
                             ->simple(TextInput::make('text')->required())
                             ->columnSpanFull()
                             ->defaultItems(0),
@@ -130,6 +131,7 @@ class CaseStudyForm
                         Textarea::make('problem_text')->label('Text')->rows(4),
                         Repeater::make('problem_points')
                             ->label('Odrážky')
+                            ->addActionLabel('Přidat odrážku')
                             ->simple(TextInput::make('text')->required())
                             ->defaultItems(0),
                     ]),
@@ -141,12 +143,14 @@ class CaseStudyForm
                         TextInput::make('marketing_title')->label('Nadpis levého sloupce')->default('Role marketingu — Pavel'),
                         Repeater::make('marketing_items')
                             ->label('Body marketingu')
+                            ->addActionLabel('Přidat bod')
                             ->simple(TextInput::make('text')->required())
                             ->defaultItems(0),
 
                         TextInput::make('dev_title')->label('Nadpis pravého sloupce')->default('Role vývoje — Tom'),
                         Repeater::make('dev_items')
                             ->label('Body vývoje')
+                            ->addActionLabel('Přidat bod')
                             ->simple(TextInput::make('text')->required())
                             ->defaultItems(0),
                     ]),
@@ -156,6 +160,7 @@ class CaseStudyForm
                     Section::make('Čísla')->schema([
                         Repeater::make('results')
                             ->label('Metriky')
+                            ->addActionLabel('Přidat metriku')
                             ->schema([
                                 TextInput::make('value')->label('Hodnota')->required()->helperText('Např. „+41 %"'),
                                 TextInput::make('label')->label('Popisek')->required()->helperText('Např. „tržby z online za 4 měsíce"'),

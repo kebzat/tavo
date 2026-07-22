@@ -12,7 +12,7 @@ class SiteSettings extends Settings
 {
     public string $brand_name;
 
-    public string $brand_claim;
+    public ?string $brand_claim;
 
     public array $nav_links;
 
@@ -22,7 +22,7 @@ class SiteSettings extends Settings
 
     public array $footer_columns;
 
-    public string $footer_note;
+    public ?string $footer_note;
 
     public string $copyright;
 

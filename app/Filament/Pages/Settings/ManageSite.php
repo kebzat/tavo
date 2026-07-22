@@ -42,6 +42,7 @@ class ManageSite extends SettingsPage
             Section::make('Navigace')->columns(2)->schema([
                 Repeater::make('nav_links')
                     ->label('Odkazy v menu')
+                    ->addActionLabel('Přidat odkaz')
                     ->schema([
                         TextInput::make('label')->label('Text')->required(),
                         TextInput::make('url')->label('Odkaz')->required()->helperText('Např. /reference nebo /#sluzby'),
@@ -56,10 +57,12 @@ class ManageSite extends SettingsPage
             Section::make('Patička')->schema([
                 Repeater::make('footer_columns')
                     ->label('Sloupce')
+                    ->addActionLabel('Přidat sloupec')
                     ->schema([
                         TextInput::make('title')->label('Nadpis sloupce')->required(),
                         Repeater::make('links')
                             ->label('Odkazy')
+                            ->addActionLabel('Přidat odkaz')
                             ->schema([
                                 TextInput::make('label')->label('Text')->required(),
                                 TextInput::make('url')->label('Odkaz')->required(),

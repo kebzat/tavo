@@ -44,6 +44,7 @@ class ManageContact extends SettingsPage
             Section::make('Sociální sítě')->schema([
                 Repeater::make('socials')
                     ->label('Profily')
+                    ->addActionLabel('Přidat profil')
                     ->schema([
                         TextInput::make('label')->label('Název')->required(),
                         TextInput::make('url')->label('Odkaz')->url()->required(),
@@ -57,6 +58,7 @@ class ManageContact extends SettingsPage
                 ->schema([
                     Repeater::make('lead_recipients')
                         ->label('Příjemci notifikací')
+                        ->addActionLabel('Přidat příjemce')
                         ->simple(TextInput::make('email')->email()->required())
                         ->defaultItems(1),
                 ]),

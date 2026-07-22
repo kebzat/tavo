@@ -18,12 +18,19 @@
                 @endif
             </div>
 
+            {{-- Když nadpis detailu není vyplněný, použije se název reference. --}}
             <h1 data-reveal class="text-case-title m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
-                {{ $case->hero_headline }}
-                <span class="text-brick italic">{{ $case->hero_headline_accent }}</span>
+                {{ $case->hero_headline ?: $case->title }}
+                @if ($case->hero_headline_accent)
+                    <span class="text-brick italic">{{ $case->hero_headline_accent }}</span>
+                @endif
             </h1>
 
-            <p data-reveal class="text-lead mt-[30px] mb-[50px] max-w-[56ch] text-body">{{ $case->hero_perex }}</p>
+            @if ($case->hero_perex ?: $case->excerpt)
+                <p data-reveal class="text-lead mt-[30px] mb-[50px] max-w-[56ch] text-body">
+                    {{ $case->hero_perex ?: $case->excerpt }}
+                </p>
+            @endif
         </div>
     </header>
 
@@ -68,7 +75,7 @@
                         <ul class="m-0 flex list-none flex-col gap-3 p-0">
                             @foreach ($case->problem_points as $point)
                                 <li class="flex gap-3 text-base leading-[1.45] text-body">
-                                    <span class="font-bold text-brick">—</span>{{ $point['text'] }}
+                                    <span class="font-bold text-brick">—</span>{{ $point }}
                                 </li>
                             @endforeach
                         </ul>
@@ -94,7 +101,7 @@
                                 <div class="mb-5 text-[13px] font-bold tracking-[.12em] text-brick uppercase">{{ $role['title'] }}</div>
                                 <ul class="m-0 flex list-none flex-col gap-4 p-0">
                                     @foreach ($role['items'] as $item)
-                                        <li class="text-base leading-[1.5] text-cream/82">{{ $item['text'] }}</li>
+                                        <li class="text-base leading-[1.5] text-cream/82">{{ $item }}</li>
                                     @endforeach
                                 </ul>
                             </div>

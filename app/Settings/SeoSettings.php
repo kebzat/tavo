@@ -12,9 +12,9 @@ class SeoSettings extends Settings
 {
     public string $default_title;
 
-    public string $title_suffix;
+    public ?string $title_suffix;
 
-    public string $default_description;
+    public ?string $default_description;
 
     public ?string $og_image;
 

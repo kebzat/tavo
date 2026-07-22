@@ -76,6 +76,7 @@ class ServiceForm
                             TextInput::make('target_group_title')->label('Nadpis sekce'),
                             Repeater::make('target_groups')
                                 ->label('Odrážky')
+                                ->addActionLabel('Přidat odrážku')
                                 ->simple(TextInput::make('text')->required())
                                 ->defaultItems(0),
                         ]),
@@ -84,6 +85,7 @@ class ServiceForm
                             TextInput::make('offerings_title')->label('Nadpis sekce'),
                             Repeater::make('offerings')
                                 ->label('Boxy')
+                                ->addActionLabel('Přidat box')
                                 ->schema([
                                     TextInput::make('title')->label('Nadpis')->required(),
                                     Textarea::make('text')->label('Text')->rows(2)->required(),
@@ -95,6 +97,7 @@ class ServiceForm
                             TextInput::make('process_title')->label('Nadpis sekce'),
                             Repeater::make('process_steps')
                                 ->label('Kroky')
+                                ->addActionLabel('Přidat krok')
                                 ->schema([
                                     TextInput::make('number')->label('Číslo')->required(),
                                     TextInput::make('title')->label('Název')->required(),
