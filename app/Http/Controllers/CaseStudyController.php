@@ -36,6 +36,7 @@ class CaseStudyController extends Controller
 
         return view('case-studies.show', [
             'case' => $case,
+            'gallery' => $case->galleryImages(),
             'next' => $case->next(),
             'schema' => [
                 StructuredData::breadcrumbs([

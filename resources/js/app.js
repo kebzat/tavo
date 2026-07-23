@@ -17,6 +17,43 @@ Alpine.store('nav', {
     },
 });
 
+/**
+ * Galerie na detailu reference — kliknutím se obrázek zvětší přes celou stránku.
+ * Ovládání klávesnicí (Esc, šipky) řeší komponenta v gallery.blade.php.
+ */
+Alpine.data('tavoLightbox', (images) => ({
+    images,
+    index: 0,
+    isOpen: false,
+
+    get current() {
+        return this.images[this.index] ?? { url: '', alt: '' };
+    },
+
+    open(index) {
+        this.index = index;
+        this.isOpen = true;
+        document.body.style.overflow = 'hidden';
+        this.$nextTick(() => this.$refs.closeButton?.focus());
+    },
+
+    close() {
+        if (! this.isOpen) return;
+        this.isOpen = false;
+        document.body.style.overflow = '';
+    },
+
+    prev() {
+        if (! this.isOpen) return;
+        this.index = (this.index - 1 + this.images.length) % this.images.length;
+    },
+
+    next() {
+        if (! this.isOpen) return;
+        this.index = (this.index + 1) % this.images.length;
+    },
+}));
+
 window.Alpine = Alpine;
 Alpine.start();
 

@@ -35,19 +35,14 @@
         </div>
     </header>
 
-    <section class="section-x">
-        <div class="container-tavo">
-            {{-- fit="natural": hlavní vizuál je snímek webu, ořez na 16:8 by mu uřízl obsah.
-                 Poměr 16:8 zůstává jen pro zástupný šrafovaný vizuál. --}}
-            <x-media data-reveal
-                     :url="$case->heroUrl()"
-                     :alt="$case->imageAlt(App\Models\CaseStudy::MEDIA_HERO)"
-                     :label="'Hlavní vizuál projektu: '.$case->title"
-                     ratio="aspect-[16/8]"
-                     radius="rounded-card"
-                     fit="natural" />
-        </div>
-    </section>
+    {{-- Galerie je nepovinná: bez obrázků se sekce vůbec nevykreslí. --}}
+    @if ($gallery->isNotEmpty())
+        <section class="section-x">
+            <div class="container-tavo">
+                <x-gallery :images="$gallery" />
+            </div>
+        </section>
+    @endif
 
     <section class="section-x py-[clamp(50px,6vw,80px)]">
         <div class="container-tavo grid grid-cols-2 gap-6 border-y border-ink/14 py-[34px] menu:grid-cols-4">

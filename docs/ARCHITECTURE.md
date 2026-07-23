@@ -76,6 +76,7 @@ Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 | `<x-eyebrow>` | malý verzálkový popisek nad nadpisem |
 | `<x-tag>` | pilulkový štítek |
 | `<x-media>` | obrázek nebo šrafovaný zástupný vizuál, volitelně s parallaxem — viz `fit` níže |
+| `<x-gallery>` | galerie obrázků na detailu reference s lightboxem (Alpine `tavoLightbox`) |
 | `<x-cta-band>` | cihlový pruh s výzvou; s `:form="true"` obsahuje i formulář |
 | `<x-lead-form>` | poptávkový formulář |
 | `<x-cookie-bar>` | cookie lišta, spouští měření až po souhlasu |
@@ -87,9 +88,22 @@ Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 | `fit` | Chování | Kde se používá |
 |---|---|---|
 | `cover` (výchozí) | obrázek se ořízne na poměr z `ratio` | náhledy ve výpisech a na homepage — mřížka musí být zarovnaná |
-| `natural` | obrázek si drží vlastní poměr, `ratio` platí jen pro zástupný vizuál | hlavní vizuál na detailu reference — je to snímek webu, ořez by mu uřízl obsah |
+| `natural` | obrázek si drží vlastní poměr, `ratio` platí jen pro zástupný vizuál | dřívější hlavní vizuál reference (dnes ho nahradila galerie) |
 
 Zaoblení drží rámeček (`overflow-hidden` + `rounded-*`), takže funguje v obou režimech.
+
+### Galerie reference — `<x-gallery>`
+
+Detail reference má galerii (kolekce médií `gallery` na `CaseStudy`), ne jeden pevný vizuál:
+
+- **0 obrázků** → sekce se vůbec nevykreslí (`@if ($gallery->isNotEmpty())` v `case-studies/show`).
+- **1 obrázek** → užší sloupec, ať nepůsobí jako bannerová hlavička.
+- **2+ obrázků** → CSS `columns-2`, každý obrázek si drží vlastní poměr (nic se neořezává).
+
+Rozměry čte `CaseStudy::galleryImages()` ze souboru a cachuje je (`Cache::rememberForever`
+podle id + `updated_at` média), aby šel obrázku rezervovat `width`/`height` a stránka
+při načítání neposkakovala. Kliknutí otevře lightbox — Alpine komponenta `tavoLightbox`
+v `resources/js/app.js`, ovládání Esc / šipky / klik mimo.
 
 ## Konvence
 

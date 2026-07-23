@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -15,7 +17,8 @@ class CaseStudy extends Model implements HasMedia
 
     public const MEDIA_THUMB = 'thumb';
 
-    public const MEDIA_HERO = 'hero';
+    /** Galerie na detailu — libovolný počet obrázků včetně žádného. */
+    public const MEDIA_GALLERY = 'gallery';
 
     protected $guarded = [];
 
@@ -49,7 +52,7 @@ class CaseStudy extends Model implements HasMedia
         // useDisk('public') — bez něj by se obrázky uložily podle výchozího disku
         // aplikace (`local`), odkud je web nedosáhne.
         $this->addMediaCollection(self::MEDIA_THUMB)->singleFile()->useDisk('public');
-        $this->addMediaCollection(self::MEDIA_HERO)->singleFile()->useDisk('public');
+        $this->addMediaCollection(self::MEDIA_GALLERY)->useDisk('public');
     }
 
     public function registerMediaConversions(?Media $media = null): void
@@ -66,14 +69,52 @@ class CaseStudy extends Model implements HasMedia
         return $this->getFirstMediaUrl(self::MEDIA_THUMB) ?: null;
     }
 
-    public function heroUrl(): ?string
-    {
-        return $this->getFirstMediaUrl(self::MEDIA_HERO) ?: $this->thumbUrl();
-    }
-
     public function imageAlt(string $collection = self::MEDIA_THUMB): string
     {
         return $this->getFirstMedia($collection)?->getCustomProperty('alt') ?: $this->title;
+    }
+
+    /**
+     * Galerie pro detail reference. Rozměry se čtou ze souboru, aby šlo obrázku
+     * dopředu rezervovat místo a stránka při načítání neposkakovala; výsledek
+     * se cachuje, takže se soubor sahá jen jednou.
+     *
+     * @return Collection<int, array{url: string, alt: string, width: ?int, height: ?int}>
+     */
+    public function galleryImages(): Collection
+    {
+        return $this->getMedia(self::MEDIA_GALLERY)
+            ->values()
+            ->map(function (Media $media, int $index) {
+                [$width, $height] = $this->imageDimensions($media);
+
+                return [
+                    'url' => $media->getUrl(),
+                    'alt' => $media->getCustomProperty('alt')
+                        ?: $this->title.' — ukázka '.($index + 1),
+                    'width' => $width,
+                    'height' => $height,
+                ];
+            });
+    }
+
+    /** @return array{0: ?int, 1: ?int} */
+    private function imageDimensions(Media $media): array
+    {
+        return Cache::rememberForever(
+            "media-dimensions-{$media->id}-{$media->updated_at?->timestamp}",
+            function () use ($media) {
+                $path = $media->getPath();
+
+                if (! is_file($path)) {
+                    return [null, null];
+                }
+
+                $size = @getimagesize($path);
+
+                return $size ? [$size[0], $size[1]] : [null, null];
+            },
+        );
     }
 
     /** Má reference vyplněnou marketingovou i vývojářskou roli? */

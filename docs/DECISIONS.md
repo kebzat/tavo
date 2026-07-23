@@ -106,6 +106,23 @@ když se kterákoliv z vrstev vrátí zpět.
 řídí `FILAMENT_FILESYSTEM_DISK`, který musí zůstat `public`. A na serveru je nutný
 `php artisan storage:link`, jinak nebude fungovat ani správný disk.
 
+## Hlavní vizuál → galerie (23. 7. 2026)
+
+Původně měl detail reference jeden pevný vizuál (kolekce `hero`). Klient chtěl místo
+toho **galerii** s libovolným počtem obrázků — 0, 1 nebo víc.
+
+- Kolekce `hero` (singleFile) nahrazena kolekcí `gallery` (multiple). Migrace
+  `2026_07_23_190000_move_case_study_hero_to_gallery` přesune stávající vizuál
+  do galerie jako první položku, takže se nic neztratí.
+- Komponenta `<x-gallery>` řeší rozvržení podle počtu (1 = užší sloupec, 2+ = `columns-2`)
+  a lightbox. Obrázky se neořezávají — každý si drží vlastní poměr.
+- `CaseStudy::galleryImages()` čte rozměry ze souboru a cachuje je, aby šlo rezervovat
+  `width`/`height` a stránka při načítání neposkakovala.
+- Prázdná galerie → celá sekce se přeskočí. Pokryto `CaseStudyGalleryTest`.
+
+Poznámka: `<x-media>` s `fit="natural"` v projektu zůstává (komponenta i test), i když
+ho teď nikdo nevolá — je to připravená varianta pro obrázek, který se nemá ořezávat.
+
 ## Drobnosti k dořešení
 
 - `contact.phone` je zatím `+420 000 000 000` z designu — doplnit reálné číslo

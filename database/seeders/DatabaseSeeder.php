@@ -49,12 +49,13 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Náhledy referencí jsou snímky obrazovky webů, o kterých reference mluví.
-     * Soubor -43 má poměr 4:3 do výpisu, -168 poměr 16:8 na detail, takže se
-     * v šabloně nic neořízne. Klient je ve Filamentu může kdykoliv přepsat.
+     * Soubor -43 (poměr 4:3) jde do výpisu, -168 do galerie na detailu.
+     * Galerie snese libovolný počet obrázků — klient si je ve Filamentu doplní.
      */
     private function attachCaseStudyImages(): void
     {
         $images = [
+            'vcely-uhersko' => ['vcely', 'Web a vizuální styl značky Včely Uhersko'],
             'chrudimlab' => ['chrudimlab', 'Úvodní stránka webu zubní laboratoře ChrudimLab'],
             'hopnjoy' => ['hopnjoy', "Úvodní stránka webu půjčovny skákacích hradů Hop'n'Joy"],
             'ales-malinsky' => ['malinsky', 'Úvodní stránka webu realitního makléře Aleše Malinského'],
@@ -68,22 +69,39 @@ class DatabaseSeeder extends Seeder
                 continue;
             }
 
-            $collections = [
-                CaseStudy::MEDIA_THUMB => database_path("seeders/assets/reference/{$file}-43.jpg"),
-                CaseStudy::MEDIA_HERO => database_path("seeders/assets/reference/{$file}-168.jpg"),
-            ];
+            $this->attachMedia(
+                $case,
+                CaseStudy::MEDIA_THUMB,
+                database_path("seeders/assets/reference/{$file}-43.jpg"),
+                $alt,
+            );
 
-            foreach ($collections as $collection => $path) {
-                if (! is_file($path) || $case->getFirstMedia($collection)) {
-                    continue;
-                }
-
-                $case
-                    ->addMedia($path)
-                    ->preservingOriginal()
-                    ->withCustomProperties(['alt' => $alt])
-                    ->toMediaCollection($collection);
+            // Galerie se needituje přepsáním — doplníme ji jen tehdy, když je prázdná.
+            if ($case->getMedia(CaseStudy::MEDIA_GALLERY)->isEmpty()) {
+                $this->attachMedia(
+                    $case,
+                    CaseStudy::MEDIA_GALLERY,
+                    database_path("seeders/assets/reference/{$file}-168.jpg"),
+                    $alt,
+                );
             }
         }
+    }
+
+    private function attachMedia(CaseStudy $case, string $collection, string $path, string $alt): void
+    {
+        if (! is_file($path)) {
+            return;
+        }
+
+        if ($collection !== CaseStudy::MEDIA_GALLERY && $case->getFirstMedia($collection)) {
+            return;
+        }
+
+        $case
+            ->addMedia($path)
+            ->preservingOriginal()
+            ->withCustomProperties(['alt' => $alt])
+            ->toMediaCollection($collection);
     }
 }

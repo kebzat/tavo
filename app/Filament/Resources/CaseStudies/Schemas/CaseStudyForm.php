@@ -89,20 +89,24 @@ class CaseStudyForm
                             ->defaultItems(0),
                     ]),
 
-                    Section::make('Obrázky')->columns(2)->schema([
+                    Section::make('Obrázky')->schema([
                         SpatieMediaLibraryFileUpload::make('thumb')
                             ->label('Náhled ve výpisu')
                             ->collection(CaseStudy::MEDIA_THUMB)
                             ->image()
                             ->imageEditor()
-                            ->helperText('Doporučený poměr 4:3, min. 1200 px na šířku.'),
+                            ->helperText('Zobrazí se na homepage a ve výpisu referencí. Doporučený poměr 4:3, min. 1200 px na šířku.'),
 
-                        SpatieMediaLibraryFileUpload::make('hero')
-                            ->label('Hlavní vizuál na detailu')
-                            ->collection(CaseStudy::MEDIA_HERO)
+                        SpatieMediaLibraryFileUpload::make('gallery')
+                            ->label('Galerie na detailu')
+                            ->collection(CaseStudy::MEDIA_GALLERY)
                             ->image()
-                            ->imageEditor()
-                            ->helperText('Doporučený poměr 16:8, min. 2000 px na šířku.'),
+                            ->multiple()
+                            ->reorderable()
+                            ->appendFiles()
+                            ->openable()
+                            ->panelLayout('grid')
+                            ->helperText('Libovolný počet obrázků — pořadí změníte přetažením. Obrázky se nikde neořezávají, zobrazí se v poměru, v jakém je nahrajete. Když galerii necháte prázdnou, sekce se na webu vůbec neobjeví.'),
                     ]),
                 ]),
 

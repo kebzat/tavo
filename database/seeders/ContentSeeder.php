@@ -240,8 +240,47 @@ class ContentSeeder extends Seeder
 
         $solo = 'Projekt vznikl pod značkou Juli & Tom, tedy před vznikem TAVO. Čísla o návštěvnosti a poptávkách tu neuvádíme, protože je nemáme od klienta ověřená.';
 
-        CaseStudy::updateOrCreate(['slug' => 'chrudimlab'], [
+        CaseStudy::updateOrCreate(['slug' => 'vcely-uhersko'], [
             'order_column' => 1,
+            'case_study_category_id' => $weby,
+            'title' => 'Včely Uhersko',
+            'is_featured' => true,
+            'published' => true,
+            'eyebrow' => 'Včelařství · Značka a web',
+            'thumb_label' => 'Web Včely Uhersko',
+            'excerpt' => 'Rodinný chov včel v třešňovém sadu. Vizuální styl, etiketa na med a web, který kromě medu zve i na přespání karavanem přímo v sadu.',
+            'tags' => [
+                'Vizuální styl',
+                'Web na míru',
+            ],
+            'hero_headline' => 'Značka a web pro',
+            'hero_headline_accent' => 'Včely Uhersko.',
+            'hero_perex' => 'Rodina, která chová včely v třešňovém sadu a rozhodla se ten sad otevřít lidem. Potřebovala značku, která unese med i to místo.',
+            'client' => 'Včely Uhersko',
+            'industry' => 'Včelařství a agroturistika',
+            'scope' => 'Vizuální styl · Etiketa · Nový web',
+            'problem_title' => 'Zadání',
+            'problem_text' => 'Med se prodává i příběhem, jenže ten se dá zkazit lacinou grafikou. Včely Uhersko navíc nejsou jen med. V sadu se dá přespat karavanem a chystá se apidomek přímo u úlů. Značka tedy musela unést dvě věci naráz: sklenici na pultu a místo, kam člověk přijede na noc.',
+            'problem_points' => [
+                'Značka neexistovala, chyběl vizuál i etiketa na sklenici.',
+                'Med a přespání v sadu jsou dvě nabídky pro dvě různá publika.',
+                'Apidomek se teprve staví, takže web musel počítat s tím, že nabídka poroste.',
+            ],
+            'roles_title' => 'Co jsme na projektu dělali',
+            'roles_perex' => 'Značka i web vznikly pod hlavičkou Juli & Tom, tedy před vznikem TAVO.',
+            'dev_title' => 'Juli a Tom: značka a web',
+            'dev_items' => [
+                'Vizuální styl značky od loga po barvy a typografii.',
+                'Návrh etikety na med, ať sklenice a web mluví stejným jazykem.',
+                'Klidný web, kde fotky sadu nesou víc než text.',
+                'Sekce pro přespání v sadu s odkazem na rezervaci přes Bezkempu.',
+                'Galerie sadu a připravené místo pro apidomek, který se teprve staví.',
+            ],
+            'disclaimer' => $solo,
+        ]);
+
+        CaseStudy::updateOrCreate(['slug' => 'chrudimlab'], [
+            'order_column' => 2,
             'case_study_category_id' => $weby,
             'title' => 'ChrudimLab',
             'is_featured' => true,
@@ -280,7 +319,7 @@ class ContentSeeder extends Seeder
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'hopnjoy'], [
-            'order_column' => 2,
+            'order_column' => 3,
             'case_study_category_id' => $weby,
             'title' => "Hop'n'Joy",
             'is_featured' => true,
@@ -319,7 +358,7 @@ class ContentSeeder extends Seeder
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'ales-malinsky'], [
-            'order_column' => 3,
+            'order_column' => 4,
             'case_study_category_id' => $weby,
             'title' => 'Aleš Malinský',
             'is_featured' => false,
@@ -358,7 +397,7 @@ class ContentSeeder extends Seeder
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'spravovane-eshopy'], [
-            'order_column' => 4,
+            'order_column' => 5,
             'case_study_category_id' => $eshopy,
             'title' => 'E-shopy, kterým točíme reklamu',
             'is_featured' => false,

@@ -53,9 +53,15 @@ Nejbohatší část administrace, rozdělená do záložek:
 
 Pořadí ve výpisu se mění tažením řádků v seznamu.
 
-**Obrázky:** „Náhled ve výpisu" (4:3) se používá na homepage i ve výpisu referencí,
-„Hlavní vizuál" (16:8) na detailu. Dokud obrázek nenahrajete, zobrazí se šrafované
-pole s textem z pole „Popisek zástupného vizuálu".
+**Obrázky:**
+- **Náhled ve výpisu** (doporučeně 4:3) — jeden obrázek, zobrazí se na homepage
+  i ve výpisu referencí. Dokud ho nenahrajete, je tam šrafované pole s textem
+  z pole „Popisek zástupného vizuálu".
+- **Galerie na detailu** — libovolný počet obrázků. Pořadí měníte přetažením,
+  obrázky se **neořezávají** (zobrazí se v poměru, v jakém je nahrajete), jeden
+  obrázek dostane užší sloupec, dva a víc se skládají do dvou sloupců. Návštěvník
+  si obrázek zvětší kliknutím. **Prázdná galerie = sekce na detailu se vůbec
+  nezobrazí** — reference tedy klidně může být bez obrázků.
 
 ## Obsah → Služby
 
