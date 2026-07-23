@@ -73,7 +73,7 @@ class PublicPagesTest extends TestCase
     {
         $this->get('/reference/chrudimlab')
             ->assertOk()
-            ->assertSee('před vznikem TAVO', false);
+            ->assertSee('nemáme je pro web ověřená', false);
     }
 
     public function test_neverejna_reference_vrati_404(): void

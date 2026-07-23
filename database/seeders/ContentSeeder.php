@@ -14,8 +14,8 @@ use Illuminate\Database\Seeder;
  * Startovní obsah webu. Idempotentní (updateOrCreate podle slugu), takže se dá
  * spustit opakovaně a přepíše texty na aktuální znění.
  *
- * Reference popisují projekty, které Pavel a Tom dělali samostatně před vznikem
- * TAVO. Neuvádíme u nich čísla, protože je nemáme ověřená; dokud nebudou,
+ * Reference jsou weby, e-shopy a reklamní účty, které Pavel a Tom mají za sebou.
+ * Neuvádíme u nich čísla, protože je nemáme od klientů ověřená; dokud nebudou,
  * radši tam nebudou žádná.
  *
  * Pravidla pro psaní textů: .claude/skills/tavo-copy/SKILL.md
@@ -238,7 +238,7 @@ class ContentSeeder extends Seeder
         $weby = CaseStudyCategory::where('slug', 'weby')->value('id');
         $eshopy = CaseStudyCategory::where('slug', 'eshopy')->value('id');
 
-        $solo = 'Projekt vznikl pod značkou Juli & Tom, tedy před vznikem TAVO. Čísla o návštěvnosti a poptávkách tu neuvádíme, protože je nemáme od klienta ověřená.';
+        $solo = 'U tohoto projektu neuvádíme čísla o návštěvnosti a poptávkách. Patří klientovi a nemáme je pro web ověřená.';
 
         CaseStudy::updateOrCreate(['slug' => 'vcely-uhersko'], [
             'order_column' => 1,
@@ -267,8 +267,8 @@ class ContentSeeder extends Seeder
                 'Apidomek se teprve staví, takže web musel počítat s tím, že nabídka poroste.',
             ],
             'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Značka i web vznikly pod hlavičkou Juli & Tom, tedy před vznikem TAVO.',
-            'dev_title' => 'Juli a Tom: značka a web',
+            'roles_perex' => 'Vizuální styl, etiketu i web jsme dělali od nuly.',
+            'dev_title' => 'Značka a web',
             'dev_items' => [
                 'Vizuální styl značky od loga po barvy a typografii.',
                 'Návrh etikety na med, ať sklenice a web mluví stejným jazykem.',
@@ -306,7 +306,7 @@ class ContentSeeder extends Seeder
                 'Ordinace potřebovaly místo, kam se přihlásí a vyřídí věci bez telefonátu.',
             ],
             'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Web postavil Tom, tehdy ještě pod značkou Juli & Tom.',
+            'roles_perex' => 'Web i obsah má na starosti Tom.',
             'dev_title' => 'Tom: vývoj a obsah',
             'dev_items' => [
                 'Prezentace frézovacího centra a technologií, kterými se laboratoř liší.',
@@ -345,7 +345,7 @@ class ContentSeeder extends Seeder
                 'Rodič potřebuje vidět rozměry a fotky, ne obecný popis.',
             ],
             'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Web postavil Tom, tehdy ještě pod značkou Juli & Tom.',
+            'roles_perex' => 'Web i obsah má na starosti Tom.',
             'dev_title' => 'Tom: vývoj a obsah',
             'dev_items' => [
                 'Logo, které sedí k dětským oslavám a dá se použít i na plachtu na hrad.',
@@ -384,7 +384,7 @@ class ContentSeeder extends Seeder
                 'Nabídku nemovitostí bylo potřeba mít i na vlastní adrese.',
             ],
             'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Web postavil Tom, tehdy ještě pod značkou Juli & Tom.',
+            'roles_perex' => 'Web i obsah má na starosti Tom.',
             'dev_title' => 'Tom: vývoj a obsah',
             'dev_items' => [
                 'Nové logo a vizuální styl, který drží od vizitky po web.',
@@ -437,7 +437,7 @@ class ContentSeeder extends Seeder
                 'Úpravy webu a e-shopu tam, kde kampaň naráží.',
                 'Produktové feedy a jejich průběžné opravy.',
             ],
-            'disclaimer' => 'Jmenované značky jsou klienti Pavla Včeliše z jeho samostatné praxe, ne společné zakázky TAVO. Konkrétní čísla nezveřejňujeme, protože patří klientům.',
+            'disclaimer' => 'Jmenované značky jsou klienti Pavlových reklamních účtů. Konkrétní čísla nezveřejňujeme, protože patří klientům.',
         ]);
     }
 

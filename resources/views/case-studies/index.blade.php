@@ -1,6 +1,6 @@
 <x-layout.app
     title="Reference"
-    description="Weby, e-shopy a reklamní účty, na kterých jsme pracovali. Většina z nich vznikla ještě předtím, než jsme dali dohromady TAVO.">
+    description="Weby, e-shopy a reklamní účty, které máme za sebou. Weby a značky staví Tom, reklamu vede Pavel.">
 
     <header class="section-x pt-[150px] pb-[50px]">
         <div class="container-tavo">
@@ -12,8 +12,8 @@
                 Na čem jsme <span class="text-brick italic">dělali.</span>
             </h1>
             <p data-reveal class="text-perex mt-[34px] mb-0 max-w-[52ch] text-body">
-                Většina těchhle projektů vznikla dřív, než jsme dali dohromady TAVO. Pavel je má
-                z reklamy, Tom z webů. Neuvádíme u nich čísla, protože je nemáme od klientů ověřená.
+                Výběr toho, co máme za sebou. Weby a značky staví Tom, reklamní účty vede Pavel.
+                Čísla u nich neuvádíme, protože je nemáme od klientů ověřená.
             </p>
         </div>
     </header>
