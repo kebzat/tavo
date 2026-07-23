@@ -3,46 +3,51 @@
     :description="$case->seo_description ?: $case->excerpt"
     :schema="$schema">
 
-    <header class="section-x pt-[140px]">
+    @php($hasGallery = $gallery->isNotEmpty())
+
+    <header class="section-x pt-[140px] pb-[clamp(20px,4vw,50px)]">
         <div class="container-tavo">
             <a href="{{ route('cases.index') }}" data-reveal
                class="mb-[30px] inline-flex items-center gap-2 text-[13px] font-semibold tracking-[.12em] text-muted uppercase">
                 ← Všechny reference
             </a>
 
-            <div data-reveal class="mb-6 flex flex-wrap gap-2.5">
-                @if ($case->category)
-                    <x-tag tone="dark" size="xs">{{ $case->category->name }}</x-tag>
-                @endif
-                @if ($case->eyebrow)
-                    <x-tag size="xs">{{ $case->eyebrow }}</x-tag>
+            {{-- S galerií je hero dvousloupcový (text + slider), bez ní jen text. --}}
+            <div class="grid grid-cols-1 items-center gap-[clamp(36px,5vw,72px)] {{ $hasGallery ? 'menu:grid-cols-[1.05fr_0.95fr]' : '' }}">
+                <div>
+                    <div data-reveal class="mb-6 flex flex-wrap gap-2.5">
+                        @if ($case->category)
+                            <x-tag tone="dark" size="xs">{{ $case->category->name }}</x-tag>
+                        @endif
+                        @if ($case->eyebrow)
+                            <x-tag size="xs">{{ $case->eyebrow }}</x-tag>
+                        @endif
+                    </div>
+
+                    {{-- Vedle galerie musí být nadpis menší, ať se do sloupce vejde. --}}
+                    <h1 data-reveal
+                        class="{{ $hasGallery ? 'text-[clamp(32px,4.4vw,68px)] leading-[1.02]' : 'text-case-title' }} m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
+                        {{ $case->hero_headline ?: $case->title }}
+                        @if ($case->hero_headline_accent)
+                            <span class="text-brick italic">{{ $case->hero_headline_accent }}</span>
+                        @endif
+                    </h1>
+
+                    @if ($case->hero_perex ?: $case->excerpt)
+                        <p data-reveal class="text-lead mt-[30px] mb-0 max-w-[52ch] text-body">
+                            {{ $case->hero_perex ?: $case->excerpt }}
+                        </p>
+                    @endif
+                </div>
+
+                @if ($hasGallery)
+                    <div data-reveal>
+                        <x-gallery :images="$gallery" />
+                    </div>
                 @endif
             </div>
-
-            {{-- Když nadpis detailu není vyplněný, použije se název reference. --}}
-            <h1 data-reveal class="text-case-title m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
-                {{ $case->hero_headline ?: $case->title }}
-                @if ($case->hero_headline_accent)
-                    <span class="text-brick italic">{{ $case->hero_headline_accent }}</span>
-                @endif
-            </h1>
-
-            @if ($case->hero_perex ?: $case->excerpt)
-                <p data-reveal class="text-lead mt-[30px] mb-[50px] max-w-[56ch] text-body">
-                    {{ $case->hero_perex ?: $case->excerpt }}
-                </p>
-            @endif
         </div>
     </header>
-
-    {{-- Galerie je nepovinná: bez obrázků se sekce vůbec nevykreslí. --}}
-    @if ($gallery->isNotEmpty())
-        <section class="section-x">
-            <div class="container-tavo">
-                <x-gallery :images="$gallery" />
-            </div>
-        </section>
-    @endif
 
     <section class="section-x py-[clamp(50px,6vw,80px)]">
         <div class="container-tavo grid grid-cols-2 gap-6 border-y border-ink/14 py-[34px] menu:grid-cols-4">

@@ -94,16 +94,24 @@ Zaoblení drží rámeček (`overflow-hidden` + `rounded-*`), takže funguje v o
 
 ### Galerie reference — `<x-gallery>`
 
-Detail reference má galerii (kolekce médií `gallery` na `CaseStudy`), ne jeden pevný vizuál:
+Detail reference má v heru **slider** vedle nadpisu a textu (kolekce médií `gallery`
+na `CaseStudy`), ne jeden pevný vizuál:
 
-- **0 obrázků** → sekce se vůbec nevykreslí (`@if ($gallery->isNotEmpty())` v `case-studies/show`).
-- **1 obrázek** → užší sloupec, ať nepůsobí jako bannerová hlavička.
-- **2+ obrázků** → CSS `columns-2`, každý obrázek si drží vlastní poměr (nic se neořezává).
+- **0 obrázků** → slider se nevykreslí a hero je jednosloupcový, jen text
+  (`@php($hasGallery = …)` v `case-studies/show`).
+- **1 obrázek** → slider bez teček a šipek.
+- **2+ obrázků** → tečky pod slidem (aktivní se protáhne do cihlové čárky) + šipky
+  na hoveru rámu. Obrázky se v rámu ořezávají na 4:3 kvůli konzistentní výšce;
+  plný obrázek bez ořezu ukáže lightbox po kliknutí.
 
 Rozměry čte `CaseStudy::galleryImages()` ze souboru a cachuje je (`Cache::rememberForever`
-podle id + `updated_at` média), aby šel obrázku rezervovat `width`/`height` a stránka
-při načítání neposkakovala. Kliknutí otevře lightbox — Alpine komponenta `tavoLightbox`
-v `resources/js/app.js`, ovládání Esc / šipky / klik mimo.
+podle id + `updated_at` média), aby šel obrázku rezervovat `width`/`height`. Slider
+i lightbox řídí Alpine komponenta `tavoGallery` v `resources/js/app.js` — tečky/šipky
+mění `index`, ovládání klávesnicí Esc / šipky, klik na obrázek otevře lightbox.
+
+Slider je **klientský** (Alpine `x-for`), takže alt texty ani URL nejsou v serverovém
+HTML — jsou v `x-data` payloadu. Feature testy proto ověřují přítomnost komponenty
+a dat, ne vykreslený `<img>`.
 
 ## Konvence
 

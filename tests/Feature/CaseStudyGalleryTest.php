@@ -36,9 +36,11 @@ class CaseStudyGalleryTest extends TestCase
     {
         $this->case();
 
+        // Slider vykresluje obrázky přes Alpine, ale komponenta se do stránky
+        // vloží jen když galerie není prázdná.
         $this->get('/reference/testovaci-reference')
             ->assertOk()
-            ->assertDontSee('aria-label="Zvětšit', false);
+            ->assertDontSee('tavoGallery', false);
     }
 
     public function test_jeden_obrazek_se_zobrazi(): void
@@ -47,10 +49,11 @@ class CaseStudyGalleryTest extends TestCase
         $case = $this->case();
         $this->addGalleryImage($case, 'ukazka.jpg', 'Náhled webu');
 
+        // Data slideru (včetně alt textu) jsou v x-data komponenty.
         $this->get('/reference/testovaci-reference')
             ->assertOk()
-            ->assertSee('Náhled webu', false)
-            ->assertSee('Zvětšit obrázek: Náhled webu', false);
+            ->assertSee('tavoGallery', false)
+            ->assertSee('Náhled webu', false);
     }
 
     public function test_vice_obrazku_zachova_poradi(): void

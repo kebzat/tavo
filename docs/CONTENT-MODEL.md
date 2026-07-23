@@ -57,11 +57,12 @@ Pořadí ve výpisu se mění tažením řádků v seznamu.
 - **Náhled ve výpisu** (doporučeně 4:3) — jeden obrázek, zobrazí se na homepage
   i ve výpisu referencí. Dokud ho nenahrajete, je tam šrafované pole s textem
   z pole „Popisek zástupného vizuálu".
-- **Galerie na detailu** — libovolný počet obrázků. Pořadí měníte přetažením,
-  obrázky se **neořezávají** (zobrazí se v poměru, v jakém je nahrajete), jeden
-  obrázek dostane užší sloupec, dva a víc se skládají do dvou sloupců. Návštěvník
-  si obrázek zvětší kliknutím. **Prázdná galerie = sekce na detailu se vůbec
-  nezobrazí** — reference tedy klidně může být bez obrázků.
+- **Galerie na detailu** — libovolný počet obrázků, zobrazí se jako **slider vedle
+  nadpisu** v úvodu detailu. Pořadí měníte přetažením. Při více obrázcích jsou pod
+  slidem tečky (aktivní se protáhne do cihlové čárky) a šipky. Náhled ve slideru
+  má jednotný poměr; návštěvník si obrázek **zvětší kliknutím** (v lightboxu je bez
+  ořezu). **Prázdná galerie = úvod detailu je jen text, bez obrázku** — reference
+  tedy klidně může být bez obrázků.
 
 ## Obsah → Služby
 
