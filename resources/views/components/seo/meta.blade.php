@@ -2,6 +2,7 @@
     'title' => null,
     'description' => null,
     'ogImage' => null,
+    'schema' => [],
 ])
 
 @php
@@ -10,6 +11,7 @@
     $pageDescription = $description ?: $seo->default_description;
     $image = $ogImage ?: $seo->og_image;
     $imageUrl = $image ? (str_starts_with($image, 'http') ? $image : url($image)) : null;
+    $documents = array_merge([App\Support\StructuredData::professionalService()], $schema);
 @endphp
 
 <title>{{ $pageTitle }}</title>
@@ -34,21 +36,11 @@
 <meta name="twitter:title" content="{{ $pageTitle }}">
 <meta name="twitter:description" content="{{ $pageDescription }}">
 
-@php
-    $organizationLd = [
-        '@context' => 'https://schema.org',
-        '@type' => 'Organization',
-        'name' => config('app.name'),
-        'url' => url('/'),
-        'logo' => url('/images/tavo-logo-dark.svg'),
-        'email' => app(App\Settings\ContactSettings::class)->email,
-        'description' => $seo->default_description,
-    ];
-@endphp
-
-<script type="application/ld+json">
-    {!! json_encode($organizationLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-</script>
+@foreach ($documents as $document)
+    <script type="application/ld+json">
+        {!! json_encode($document, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
+@endforeach
 
 @if ($seo->gtm_id)
     <script>

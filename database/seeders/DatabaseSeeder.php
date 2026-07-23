@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\CaseStudy;
 use App\Models\Founder;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -23,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ContentSeeder::class);
 
         $this->attachFounderPhoto();
+        $this->attachCaseStudyImages();
     }
 
     /**
@@ -43,5 +45,45 @@ class DatabaseSeeder extends Seeder
             ->preservingOriginal()
             ->withCustomProperties(['alt' => 'Pavel a Tom, zakladatelé TAVO'])
             ->toMediaCollection(Founder::MEDIA_PHOTO);
+    }
+
+    /**
+     * Náhledy referencí jsou snímky obrazovky webů, o kterých reference mluví.
+     * Soubor -43 má poměr 4:3 do výpisu, -168 poměr 16:8 na detail, takže se
+     * v šabloně nic neořízne. Klient je ve Filamentu může kdykoliv přepsat.
+     */
+    private function attachCaseStudyImages(): void
+    {
+        $images = [
+            'chrudimlab' => ['chrudimlab', 'Úvodní stránka webu zubní laboratoře ChrudimLab'],
+            'hopnjoy' => ['hopnjoy', "Úvodní stránka webu půjčovny skákacích hradů Hop'n'Joy"],
+            'ales-malinsky' => ['malinsky', 'Úvodní stránka webu realitního makléře Aleše Malinského'],
+            'spravovane-eshopy' => ['cejlon', 'E-shop Svět cejlonu, jeden z účtů, kterým Pavel spravuje reklamu'],
+        ];
+
+        foreach ($images as $slug => [$file, $alt]) {
+            $case = CaseStudy::query()->where('slug', $slug)->first();
+
+            if (! $case) {
+                continue;
+            }
+
+            $collections = [
+                CaseStudy::MEDIA_THUMB => database_path("seeders/assets/reference/{$file}-43.jpg"),
+                CaseStudy::MEDIA_HERO => database_path("seeders/assets/reference/{$file}-168.jpg"),
+            ];
+
+            foreach ($collections as $collection => $path) {
+                if (! is_file($path) || $case->getFirstMedia($collection)) {
+                    continue;
+                }
+
+                $case
+                    ->addMedia($path)
+                    ->preservingOriginal()
+                    ->withCustomProperties(['alt' => $alt])
+                    ->toMediaCollection($collection);
+            }
+        }
     }
 }

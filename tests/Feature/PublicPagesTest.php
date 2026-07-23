@@ -23,49 +23,77 @@ class PublicPagesTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Weby, e-shopy', false)
-            ->assertSee('Co umíme', false)
-            ->assertSee('Rodinný e-shop, který přestal růst', false)
-            ->assertSee('Jak spolu pracujeme', false);
+            ->assertSee('Postavíme web', false)
+            ->assertSee('Co děláme', false)
+            ->assertSee('ChrudimLab', false)
+            ->assertSee('Jak to probíhá', false);
+    }
+
+    public function test_homepage_uvadi_lokalitu_kvuli_lokalnimu_seo(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Hradec Králové', false)
+            ->assertSee('"@type":"ProfessionalService"', false)
+            ->assertSee('Královéhradecký kraj', false);
     }
 
     public function test_vypis_referenci_a_filtr_podle_kategorie(): void
     {
         $this->get('/reference')
             ->assertOk()
-            ->assertSee('Rodinný e-shop, který přestal růst', false)
-            ->assertSee('Landing page pro sezónní kampaň', false);
+            ->assertSee('ChrudimLab', false)
+            ->assertSee('E-shopy, kterým točíme reklamu', false);
 
-        $this->get('/reference?kategorie=e-commerce')
+        $this->get('/reference?kategorie=weby')
             ->assertOk()
-            ->assertSee('Rodinný e-shop, který přestal růst', false)
-            ->assertDontSee('Landing page pro sezónní kampaň', false);
+            ->assertSee('ChrudimLab', false)
+            ->assertDontSee('E-shopy, kterým točíme reklamu', false);
+    }
+
+    public function test_vypis_referenci_nenabizi_prazdne_kategorie(): void
+    {
+        CaseStudy::query()->update(['published' => false]);
+
+        $this->get('/reference')
+            ->assertOk()
+            ->assertDontSee('kategorie=weby', false);
     }
 
     public function test_detail_reference(): void
     {
-        $this->get('/reference/rodinny-eshop')
+        $this->get('/reference/chrudimlab')
             ->assertOk()
-            ->assertSee('Výchozí stav', false)
-            ->assertSee('+41 %', false);
+            ->assertSee('Zadání', false)
+            ->assertSee('Co jsme na projektu dělali', false)
+            ->assertSee('"@type":"BreadcrumbList"', false);
+    }
+
+    public function test_detail_reference_bez_metrik_ukaze_poznamku(): void
+    {
+        $this->get('/reference/chrudimlab')
+            ->assertOk()
+            ->assertSee('před vznikem TAVO', false);
     }
 
     public function test_neverejna_reference_vrati_404(): void
     {
-        CaseStudy::where('slug', 'rodinny-eshop')->update(['published' => false]);
+        CaseStudy::where('slug', 'chrudimlab')->update(['published' => false]);
 
-        $this->get('/reference/rodinny-eshop')->assertNotFound();
+        $this->get('/reference/chrudimlab')->assertNotFound();
     }
 
     public function test_detail_sluzby(): void
     {
-        $this->get('/sluzby/weby-a-eshopy')
+        $this->get('/sluzby/tvorba-eshopu')
             ->assertOk()
-            ->assertSee('Co konkrétně stavíme', false);
+            ->assertSee('Na čem e-shop postavíme', false)
+            ->assertSee('"@type":"Service"', false);
     }
 
-    public function test_sluzba_bez_detailni_stranky_vrati_404(): void
+    public function test_puvodni_sluzby_z_designu_uz_nejsou_verejne(): void
     {
+        $this->get('/sluzby/weby-a-eshopy')->assertNotFound();
         $this->get('/sluzby/marketing')->assertNotFound();
     }
 
@@ -85,8 +113,8 @@ class PublicPagesTest extends TestCase
     {
         $response = $this->get('/sitemap.xml')->assertOk();
 
-        $response->assertSee('/reference/rodinny-eshop', false);
-        $response->assertSee('/sluzby/weby-a-eshopy', false);
+        $response->assertSee('/reference/chrudimlab', false);
+        $response->assertSee('/sluzby/tvorba-eshopu', false);
 
         foreach (Page::published()->pluck('slug') as $slug) {
             $response->assertSee('/'.$slug, false);
@@ -103,10 +131,10 @@ class PublicPagesTest extends TestCase
 
     public function test_nezverejnena_sluzba_neni_v_sitemap(): void
     {
-        Service::where('slug', 'weby-a-eshopy')->update(['published' => false]);
+        Service::where('slug', 'tvorba-eshopu')->update(['published' => false]);
 
         $this->get('/sitemap.xml')
             ->assertOk()
-            ->assertDontSee('/sluzby/weby-a-eshopy', false);
+            ->assertDontSee('/sluzby/tvorba-eshopu', false);
     }
 }

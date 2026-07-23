@@ -1,6 +1,6 @@
 @props([
     'eyebrow' => null,
-    'title' => 'Váš projekt může být další.',
+    'title' => 'Řekněte nám, co potřebujete.',
     'perex' => null,
     'form' => false,
     'secondaryLabel' => null,

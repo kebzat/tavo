@@ -2,6 +2,10 @@
 
 Mapa pro správce webu: kde v administraci najdu který kus stránky.
 
+> Než začnete psát nový text, mrkněte na [.claude/skills/tavo-copy/SKILL.md](../.claude/skills/tavo-copy/SKILL.md).
+> Jsou tam pravidla hlasu, seznam obratů, kterým se vyhýbáme, a co kam patří kvůli SEO.
+> Dvě věci hlavně: žádné pomlčky v běžném textu a žádná čísla, která nemáme ověřená od klienta.
+
 ## Nastavení → Homepage
 
 Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
@@ -55,13 +59,19 @@ pole s textem z pole „Popisek zástupného vizuálu".
 
 ## Obsah → Služby
 
-Seznam v sekci „Co umíme". Služba s přepínačem **„Má vlastní stránku"** dostane navíc
+Seznam v sekci „Co děláme". Služba s přepínačem **„Má vlastní stránku"** dostane navíc
 detail na `/sluzby/<url>` a v seznamu se u ní objeví odkaz „Zjistit více".
 Záložky Detailní stránka a SEO se zobrazí jen u takové služby.
 
+Čtyři služby mají vlastní stránku schválně: každá cílí na jiný dotaz ve vyhledávání
+(tvorba webových stránek, tvorba e-shopu, správa reklamy, správa webu). Když budete
+zakládat pátou, dejte jí vlastní dotaz, ne variaci na existující. Dvě stránky o tom samém
+si berou pozice navzájem.
+
 ## Obsah → Kategorie referencí
 
-Filtry nad výpisem `/reference`. Slug se používá v adrese: `/reference?kategorie=e-commerce`.
+Filtry nad výpisem `/reference`. Slug se používá v adrese: `/reference?kategorie=weby`.
+Kategorie bez jediné zveřejněné reference se ve filtru vůbec nenabídne.
 
 ## Obsah → Postup spolupráce
 

@@ -1,6 +1,7 @@
 <x-layout.app
     :title="$service->seo_title ?: $service->title"
-    :description="$service->seo_description ?: $service->excerpt">
+    :description="$service->seo_description ?: $service->excerpt"
+    :schema="$schema">
 
     <header class="section-x pt-[150px] pb-[50px]">
         <div class="container-tavo">

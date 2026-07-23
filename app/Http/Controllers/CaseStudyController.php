@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CaseStudy;
 use App\Models\CaseStudyCategory;
+use App\Support\StructuredData;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -21,7 +22,10 @@ class CaseStudyController extends Controller
 
         return view('case-studies.index', [
             'cases' => $cases,
-            'categories' => CaseStudyCategory::ordered()->get(),
+            // Kategorie bez zveřejněné reference nezobrazujeme, ať filtr nevede na prázdno.
+            'categories' => CaseStudyCategory::ordered()
+                ->whereHas('caseStudies', fn ($q) => $q->published())
+                ->get(),
             'activeSlug' => $activeSlug,
         ]);
     }
@@ -33,6 +37,13 @@ class CaseStudyController extends Controller
         return view('case-studies.show', [
             'case' => $case,
             'next' => $case->next(),
+            'schema' => [
+                StructuredData::breadcrumbs([
+                    'Úvod' => route('home'),
+                    'Reference' => route('cases.index'),
+                    $case->title => route('cases.show', $case->slug),
+                ]),
+            ],
         ]);
     }
 }

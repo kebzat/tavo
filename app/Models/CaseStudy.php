@@ -46,8 +46,10 @@ class CaseStudy extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection(self::MEDIA_THUMB)->singleFile();
-        $this->addMediaCollection(self::MEDIA_HERO)->singleFile();
+        // useDisk('public') — bez něj by se obrázky uložily podle výchozího disku
+        // aplikace (`local`), odkud je web nedosáhne.
+        $this->addMediaCollection(self::MEDIA_THUMB)->singleFile()->useDisk('public');
+        $this->addMediaCollection(self::MEDIA_HERO)->singleFile()->useDisk('public');
     }
 
     public function registerMediaConversions(?Media $media = null): void
@@ -72,6 +74,35 @@ class CaseStudy extends Model implements HasMedia
     public function imageAlt(string $collection = self::MEDIA_THUMB): string
     {
         return $this->getFirstMedia($collection)?->getCustomProperty('alt') ?: $this->title;
+    }
+
+    /** Má reference vyplněnou marketingovou i vývojářskou roli? */
+    public function hasBothRoles(): bool
+    {
+        return ! empty($this->marketing_items) && ! empty($this->dev_items);
+    }
+
+    /**
+     * Kam na stránce patří poznámka pod čarou. Původně visela jen pod metrikami,
+     * takže u referencí bez čísel zmizela úplně — a právě ty ji potřebují nejvíc.
+     *
+     * @return 'none'|'results'|'roles'|'standalone'
+     */
+    public function disclaimerPlacement(): string
+    {
+        if (! $this->disclaimer) {
+            return 'none';
+        }
+
+        if ($this->results) {
+            return 'results';
+        }
+
+        if ($this->marketing_items || $this->dev_items) {
+            return 'roles';
+        }
+
+        return 'standalone';
     }
 
     /** Následující reference v pořadí (pro blok „Další projekt"). */

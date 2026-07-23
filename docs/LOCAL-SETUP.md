@@ -75,6 +75,7 @@ Fonty (Montserrat) se stahují při buildu a hostují se lokálně — web nikdy
 | Změna v administraci se neprojeví | `php artisan optimize:clear` |
 | `Class … not found` po přidání souboru | `composer dump-autoload` |
 | Obrázky se nezobrazují | chybí `php artisan storage:link` |
+| Nahraný obrázek je v administraci vidět, ale na webu ne | soubor skončil na špatném disku — ověř `SELECT disk FROM media`, musí být `public`; viz [DECISIONS.md](DECISIONS.md) |
 
 ## Kontrola v prohlížeči
 

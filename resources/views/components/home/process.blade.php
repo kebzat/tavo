@@ -1,6 +1,6 @@
 @props(['home', 'steps'])
 
-<section class="section-x bg-cream pb-[clamp(80px,11vw,150px)]">
+<section id="proces" class="section-x bg-cream pb-[clamp(80px,11vw,150px)]">
     <div class="container-tavo border-t border-ink/14 pt-[clamp(50px,6vw,80px)]">
         <h2 data-reveal class="text-h2 mt-0 mb-[46px] font-extrabold tracking-[-.02em]">{{ $home->process_title }}</h2>
 

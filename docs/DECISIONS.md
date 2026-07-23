@@ -80,6 +80,32 @@ záznamu (u služeb stejně).
 lišta se při otevřeném menu schová. Logo se zároveň přepne na krémovou variantu,
 jinak by na tmavém překryvu zmizelo.
 
+## Nahrané obrázky mizely z webu (23. 7. 2026)
+
+**Příznak:** obrázek nahraný v administraci se v Filamentu tvářil v pořádku, ale na webu
+se nezobrazil (rozbitý `<img>`). Poprvé u reference ChrudimLab.
+
+**Příčina:** `vendor/filament/support/config/filament.php` má
+`'default_filesystem_disk' => env('FILESYSTEM_DISK', 'local')` a v `.env` je
+`FILESYSTEM_DISK=local`. Filament tenhle disk předává MediaLibrary při nahrávání,
+takže soubory skončily v `storage/app/private/`, kam se z webu nedá dostat.
+Obrázky ze seederu problém neměly — ty používaly výchozí disk MediaLibrary (`public`).
+
+**Oprava, tři vrstvy:**
+1. `config/filament.php` publikován, `default_filesystem_disk` je natvrdo `public`
+   (přes `FILAMENT_FILESYSTEM_DISK`, aby to nekolidovalo s výchozím diskem aplikace).
+2. `useDisk('public')` na media kolekcích v `CaseStudy` a `Founder` — pojistka pro
+   případ, že disk přidá někdo programově (seeder, import).
+3. Migrace `2026_07_23_170000_move_media_to_public_disk` přesune soubory,
+   které se stihly nahrát špatně, a přepíše jim `disk` v databázi.
+
+**Hlídá to** `tests/Feature/MediaUploadTest.php` — ověřeno, že test opravdu selže,
+když se kterákoliv z vrstev vrátí zpět.
+
+**Pozor při nasazení:** `FILESYSTEM_DISK` v `.env` nechte být; disk pro Filament
+řídí `FILAMENT_FILESYSTEM_DISK`, který musí zůstat `public`. A na serveru je nutný
+`php artisan storage:link`, jinak nebude fungovat ani správný disk.
+
 ## Drobnosti k dořešení
 
 - `contact.phone` je zatím `+420 000 000 000` z designu — doplnit reálné číslo

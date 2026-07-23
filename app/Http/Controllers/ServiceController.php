@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Support\StructuredData;
 use Illuminate\Contracts\View\View;
 
 class ServiceController extends Controller
@@ -17,6 +18,13 @@ class ServiceController extends Controller
         return view('services.show', [
             'service' => $service,
             'others' => Service::published()->ordered()->whereKeyNot($service->id)->get(),
+            'schema' => [
+                StructuredData::service($service),
+                StructuredData::breadcrumbs([
+                    'Úvod' => route('home'),
+                    $service->title => route('services.show', $service->slug),
+                ]),
+            ],
         ]);
     }
 }

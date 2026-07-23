@@ -3,6 +3,7 @@
     'description' => null,
     'ogImage' => null,
     'bodyClass' => '',
+    'schema' => [],
 ])
 
 <!DOCTYPE html>
@@ -12,7 +13,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <x-seo.meta :title="$title" :description="$description" :ogImage="$ogImage" />
+    <x-seo.meta :title="$title" :description="$description" :ogImage="$ogImage" :schema="$schema" />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

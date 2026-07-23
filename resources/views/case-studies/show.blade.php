@@ -1,6 +1,7 @@
 <x-layout.app
     :title="$case->seo_title ?: $case->title"
-    :description="$case->seo_description ?: $case->excerpt">
+    :description="$case->seo_description ?: $case->excerpt"
+    :schema="$schema">
 
     <header class="section-x pt-[140px]">
         <div class="container-tavo">
@@ -39,7 +40,7 @@
             <x-media data-reveal
                      :url="$case->heroUrl()"
                      :alt="$case->imageAlt(App\Models\CaseStudy::MEDIA_HERO)"
-                     :label="'Hlavní vizuál projektu — '.$case->title"
+                     :label="'Hlavní vizuál projektu: '.$case->title"
                      ratio="aspect-[16/8]"
                      radius="rounded-card" />
         </div>
@@ -91,7 +92,8 @@
                 <h2 data-reveal class="text-h2 mt-0 mb-3 font-extrabold tracking-[-.02em]">{{ $case->roles_title }}</h2>
                 <p data-reveal class="text-perex mt-0 mb-[50px] max-w-[48ch] text-cream/65">{{ $case->roles_perex }}</p>
 
-                <div class="grid grid-cols-1 gap-0.5 overflow-hidden rounded-[18px] bg-cream/15 menu:grid-cols-2">
+                {{-- U sólo projektů je vyplněná jen jedna role, ať pak karta nevisí v půlce pruhu. --}}
+                <div class="grid grid-cols-1 gap-0.5 overflow-hidden rounded-[18px] bg-cream/15 {{ $case->hasBothRoles() ? 'menu:grid-cols-2' : 'menu:grid-cols-1' }}">
                     @foreach ([
                         ['title' => $case->marketing_title, 'items' => $case->marketing_items],
                         ['title' => $case->dev_title, 'items' => $case->dev_items],
@@ -108,6 +110,12 @@
                         @endif
                     @endforeach
                 </div>
+
+                @if ($case->disclaimerPlacement() === 'roles')
+                    <p data-reveal class="mt-9 mb-0 max-w-[80ch] text-[13px] leading-[1.6] text-cream/50">
+                        {{ $case->disclaimer }}
+                    </p>
+                @endif
             </div>
         </section>
     @endif
@@ -129,6 +137,17 @@
                 @if ($case->disclaimer)
                     <p data-reveal class="mt-10 mb-0 text-[13px] text-ink/60">{{ $case->disclaimer }}</p>
                 @endif
+            </div>
+        </section>
+    @endif
+
+    {{-- Když chybí metriky i role, nemá se poznámka kam schovat a dostane vlastní pruh. --}}
+    @if ($case->disclaimerPlacement() === 'standalone')
+        <section class="section-x bg-cream py-[clamp(40px,5vw,70px)]">
+            <div class="container-tavo">
+                <p data-reveal class="m-0 max-w-[70ch] text-[13px] leading-[1.6] text-muted">
+                    {{ $case->disclaimer }}
+                </p>
             </div>
         </section>
     @endif
@@ -173,7 +192,7 @@
     @endif
 
     <x-cta-band
-        title="Chcete podobný výsledek?"
-        secondary-label="Poptat projekt"
+        title="Chcete něco podobného?"
+        secondary-label="Napsat nám"
         :secondary-url="route('home').'#kontakt'" />
 </x-layout.app>

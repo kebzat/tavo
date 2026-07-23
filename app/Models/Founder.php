@@ -26,7 +26,8 @@ class Founder extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection(self::MEDIA_PHOTO)->singleFile();
+        // useDisk('public') — viz komentář v CaseStudy::registerMediaCollections().
+        $this->addMediaCollection(self::MEDIA_PHOTO)->singleFile()->useDisk('public');
     }
 
     public function photoUrl(): ?string

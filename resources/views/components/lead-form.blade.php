@@ -49,7 +49,7 @@
                     <label for="lead-topic" class="{{ $labelClass }}">O co jde</label>
                     <select id="lead-topic" name="topic" class="{{ $inputClass }}">
                         <option value="">Vyberte…</option>
-                        @foreach (['Nový web', 'Nový e-shop', 'Redesign stávajícího webu', 'Marketing a kampaně', 'Rozvoj a údržba', 'Něco jiného'] as $topic)
+                        @foreach (['Nový web', 'Nový e-shop', 'Předělání webu, který máme', 'Reklama a kampaně', 'Správa a rozvoj webu', 'Něco jiného'] as $topic)
                             <option value="{{ $topic }}" @selected(old('topic') === $topic)>{{ $topic }}</option>
                         @endforeach
                     </select>
@@ -58,7 +58,7 @@
                     <label for="lead-budget" class="{{ $labelClass }}">Orientační rozpočet</label>
                     <select id="lead-budget" name="budget" class="{{ $inputClass }}">
                         <option value="">Zatím nevím</option>
-                        @foreach (['do 100 tis. Kč', '100–300 tis. Kč', '300–600 tis. Kč', 'nad 600 tis. Kč', 'měsíční spolupráce'] as $budget)
+                        @foreach (['do 50 tis. Kč', '50–150 tis. Kč', '150–300 tis. Kč', 'nad 300 tis. Kč', 'měsíční spolupráce'] as $budget)
                             <option value="{{ $budget }}" @selected(old('budget') === $budget)>{{ $budget }}</option>
                         @endforeach
                     </select>

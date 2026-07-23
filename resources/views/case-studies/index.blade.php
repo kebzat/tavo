@@ -1,6 +1,6 @@
 <x-layout.app
     title="Reference"
-    description="Projekty, kde marketing a vývoj táhli spolu. U každého ukazujeme, co udělal marketing, co vývoj a co to přineslo.">
+    description="Weby, e-shopy a reklamní účty, na kterých jsme pracovali. Většina z nich vznikla ještě předtím, než jsme dali dohromady TAVO.">
 
     <header class="section-x pt-[150px] pb-[50px]">
         <div class="container-tavo">
@@ -9,11 +9,11 @@
                 ← Zpět na úvod
             </a>
             <h1 data-reveal class="text-page-title m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
-                Projekty, kde marketing a vývoj <span class="text-brick italic">táhli spolu.</span>
+                Na čem jsme <span class="text-brick italic">dělali.</span>
             </h1>
             <p data-reveal class="text-perex mt-[34px] mb-0 max-w-[52ch] text-body">
-                U každého projektu ukazujeme obojí — co udělal marketing, co vývoj a co to přineslo.
-                Bez vyplňujících čísel, jen to podstatné.
+                Většina těchhle projektů vznikla dřív, než jsme dali dohromady TAVO. Pavel je má
+                z reklamy, Tom z webů. Neuvádíme u nich čísla, protože je nemáme od klientů ověřená.
             </p>
         </div>
     </header>
@@ -75,7 +75,7 @@
     </section>
 
     <x-cta-band
-        title="Váš projekt může být další."
-        secondary-label="Co umíme"
+        title="Řekněte nám, co potřebujete."
+        secondary-label="Co děláme"
         :secondary-url="route('home').'#sluzby'" />
 </x-layout.app>
