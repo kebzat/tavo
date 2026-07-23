@@ -75,12 +75,21 @@ Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 | `<x-btn>` | tlačítko — varianty `primary`, `dark`, `ghost`, `ghost-dark` |
 | `<x-eyebrow>` | malý verzálkový popisek nad nadpisem |
 | `<x-tag>` | pilulkový štítek |
-| `<x-media>` | obrázek nebo šrafovaný zástupný vizuál, volitelně s parallaxem |
+| `<x-media>` | obrázek nebo šrafovaný zástupný vizuál, volitelně s parallaxem — viz `fit` níže |
 | `<x-cta-band>` | cihlový pruh s výzvou; s `:form="true"` obsahuje i formulář |
 | `<x-lead-form>` | poptávkový formulář |
 | `<x-cookie-bar>` | cookie lišta, spouští měření až po souhlasu |
 | `<x-home.*>` | jednotlivé sekce homepage |
 | `<x-errors.layout>` | společný layout chybových stránek |
+
+### Ořez obrázků v `<x-media>`
+
+| `fit` | Chování | Kde se používá |
+|---|---|---|
+| `cover` (výchozí) | obrázek se ořízne na poměr z `ratio` | náhledy ve výpisech a na homepage — mřížka musí být zarovnaná |
+| `natural` | obrázek si drží vlastní poměr, `ratio` platí jen pro zástupný vizuál | hlavní vizuál na detailu reference — je to snímek webu, ořez by mu uřízl obsah |
+
+Zaoblení drží rámeček (`overflow-hidden` + `rounded-*`), takže funguje v obou režimech.
 
 ## Konvence
 

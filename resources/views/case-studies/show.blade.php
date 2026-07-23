@@ -37,12 +37,15 @@
 
     <section class="section-x">
         <div class="container-tavo">
+            {{-- fit="natural": hlavní vizuál je snímek webu, ořez na 16:8 by mu uřízl obsah.
+                 Poměr 16:8 zůstává jen pro zástupný šrafovaný vizuál. --}}
             <x-media data-reveal
                      :url="$case->heroUrl()"
                      :alt="$case->imageAlt(App\Models\CaseStudy::MEDIA_HERO)"
                      :label="'Hlavní vizuál projektu: '.$case->title"
                      ratio="aspect-[16/8]"
-                     radius="rounded-card" />
+                     radius="rounded-card"
+                     fit="natural" />
         </div>
     </section>
 
