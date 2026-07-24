@@ -34,7 +34,9 @@
 
                 <div>
                     @foreach ($founders as $founder)
-                        <div class="border-t border-ink/14 py-[22px] @if ($loop->last) border-b @endif">
+                        {{-- Uzavírací linka jen od `menu:` — na mobilu je pod ní hned
+                             oddělovač sekce „Jak to probíhá“ a dělaly by dvě čáry. --}}
+                        <div class="border-t border-ink/14 py-[22px] @if ($loop->last) menu:border-b @endif">
                             <div class="mb-2.5 flex items-baseline gap-3">
                                 <span class="text-[22px] font-extrabold tracking-[-.01em]">{{ $founder->name }}</span>
                                 <span class="text-xs font-bold tracking-[.12em] text-brick uppercase">{{ $founder->role_label }}</span>

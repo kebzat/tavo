@@ -249,14 +249,123 @@
 /* Navigace — po odscrollování dostane krémové pozadí */
 [data-nav] {
     transition:
-        background 0.3s ease,
+        background-color 0.3s ease,
         box-shadow 0.3s ease;
 }
 
+/* Plná krémová je fallback: tmavé logo musí být čitelné i tam, kde prohlížeč
+   backdrop-filter neumí (starší iOS Safari, úsporný režim). */
 [data-nav].is-scrolled {
-    background: rgba(244, 237, 225, 0.9);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 1px 0 rgba(19, 17, 16, 0.08);
+    background-color: var(--color-cream);
+    box-shadow:
+        0 1px 0 rgba(19, 17, 16, 0.08),
+        0 18px 40px -30px rgba(19, 17, 16, 0.5);
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    [data-nav].is-scrolled {
+        background-color: rgba(244, 237, 225, 0.92);
+        backdrop-filter: blur(12px);
+    }
+}
+
+/* Otevřené mobilní menu je tmavé — pozadí lišty by pod ním svítilo krémovým
+   pruhem a překrylo krémové logo. */
+[data-nav].is-scrolled[data-open='true'] {
+    background-color: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+/*
+| Hamburger
+|--------------------------------------------------------------------------
+| Otevírání: proužky nejdřív sjedou k sobě, pak se překříží.
+| Zavírání: nejdřív se rozkříží, teprve pak odjedou od sebe.
+*/
+[data-burger] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Otevřený stav řeší CSS, ne utility třídy — Tailwind si pořadí bg-ink /
+   bg-brick seřadí sám a přebít utilitu utilitou by nemuselo vyjít. */
+[data-burger][aria-expanded='true'] {
+    border-radius: var(--radius-pill);
+    background-color: var(--color-brick);
+}
+
+[data-burger-bar] {
+    position: absolute;
+    display: block;
+    width: 20px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--color-cream);
+    transition:
+        translate 0.28s var(--ease-tavo) 0.16s,
+        rotate 0.28s var(--ease-tavo) 0s;
+}
+
+[data-burger-bar]:first-of-type {
+    translate: 0 -4px;
+}
+
+[data-burger-bar]:last-of-type {
+    translate: 0 4px;
+}
+
+[data-burger][aria-expanded='true'] [data-burger-bar] {
+    translate: 0 0;
+    transition:
+        translate 0.28s var(--ease-tavo) 0s,
+        rotate 0.34s var(--ease-tavo-out) 0.16s;
+}
+
+[data-burger][aria-expanded='true'] [data-burger-bar]:first-of-type {
+    rotate: 45deg;
+}
+
+[data-burger][aria-expanded='true'] [data-burger-bar]:last-of-type {
+    rotate: -45deg;
+}
+
+/*
+| Panel mobilního menu
+|--------------------------------------------------------------------------
+| Panel se odkrývá jako opona shora (clip-path), odkazy naskakují se
+| staggerem — zpoždění nastavuje nav.blade.php inline stylem.
+*/
+.nav-panel-motion {
+    transition:
+        clip-path 0.5s var(--ease-tavo-out),
+        opacity 0.3s linear;
+}
+
+.nav-panel-hidden {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+}
+
+.nav-panel-shown {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+}
+
+[data-nav-panel] [data-nav-item] {
+    animation: nav-item-in 0.6s var(--ease-tavo-out) both;
+}
+
+@keyframes nav-item-in {
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 /* Řádky služeb — hover posun + rotace plusu (jen klikatelné řádky) */
@@ -294,5 +403,13 @@
     [data-line] > span,
     [data-line].pre > span {
         transform: none !important;
+    }
+
+    [data-nav-panel] [data-nav-item] {
+        animation: none;
+    }
+
+    .nav-panel-motion {
+        transition-duration: 0.01ms;
     }
 }

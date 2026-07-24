@@ -1,5 +1,7 @@
 @props(['home'])
-<header id="top" class="section-x relative flex min-h-screen flex-col justify-center overflow-hidden pt-[150px] pb-[60px] text-center">
+{{-- Horní padding drží obsah pod fixní lištou, spodní ho vyvažuje, aby byl
+     na mobilu opticky uprostřed obrazovky. --}}
+<header id="top" class="section-x relative flex min-h-screen flex-col justify-center overflow-hidden pt-[110px] pb-[90px] text-center menu:pt-[150px] menu:pb-[60px]">
     <div class="container-tavo relative z-2 flex flex-col items-center">
         <x-eyebrow data-reveal :rule="true" class="mb-[30px]">{{ $home->hero_eyebrow }}</x-eyebrow>
 

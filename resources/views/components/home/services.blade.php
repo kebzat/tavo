@@ -8,14 +8,18 @@
         </div>
 
         <div>
+            {{-- Na mobilu je číslo s plusem v prvním řádku a text pod nimi přes celou
+                 šířku, od `menu:` se vrací původní tři sloupce vedle sebe. --}}
             @foreach ($services as $service)
                 <div data-svc @if ($service->url()) data-svc-link @endif
-                     class="relative grid grid-cols-[40px_1fr_auto] items-center gap-[26px] border-t border-cream/18 py-[clamp(28px,3.4vw,44px)] menu:grid-cols-[80px_1fr_auto] @if ($loop->last) border-b @endif">
-                    <span class="text-sm font-bold text-brick">{{ $service->number }}</span>
+                     class="relative grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 border-t border-cream/18 py-[26px] menu:grid-cols-[80px_1fr_auto] menu:gap-[26px] menu:py-[clamp(28px,3.4vw,44px)] @if ($loop->last) border-b @endif">
+                    <span class="text-sm font-bold text-brick menu:col-start-1 menu:row-start-1">{{ $service->number }}</span>
 
-                    <div>
+                    <span data-svc-plus class="justify-self-end text-[30px] leading-none font-light text-brick menu:col-start-3 menu:row-start-1 menu:text-[34px]">+</span>
+
+                    <div class="col-span-2 menu:col-span-1 menu:col-start-2 menu:row-start-1">
                         <div class="text-svc font-extrabold tracking-[-.02em]">{{ $service->title }}</div>
-                        <div class="mt-3.5 max-w-[60ch] text-[15px] leading-[1.5] text-cream/70">
+                        <div class="mt-3 max-w-[60ch] text-[15px] leading-[1.55] text-cream/70 menu:mt-3.5">
                             {{ $service->excerpt }}
                         </div>
                         @if ($service->url())
@@ -25,8 +29,6 @@
                             </span>
                         @endif
                     </div>
-
-                    <span data-svc-plus class="text-[34px] font-light text-brick">+</span>
 
                     @if ($service->url())
                         <a href="{{ $service->url() }}"
