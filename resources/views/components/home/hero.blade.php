@@ -1,5 +1,4 @@
 @props(['home'])
-<h1>Toto je test</h1>
 <header id="top" class="section-x relative flex min-h-screen flex-col justify-center overflow-hidden pt-[150px] pb-[60px] text-center">
     <div class="container-tavo relative z-2 flex flex-col items-center">
         <x-eyebrow data-reveal :rule="true" class="mb-[30px]">{{ $home->hero_eyebrow }}</x-eyebrow>
