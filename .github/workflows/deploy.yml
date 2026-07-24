@@ -27,13 +27,15 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          script_stop: true
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
             # CyberPanel/OpenLiteSpeed: PHP 8.4 je lsphp84, ne systémové php (8.3)
             PHP="${{ secrets.PHP_BIN }}"
+
+            # Pojistka: ať se web VŽDY nahodí zpět, i kdyby deploy spadl uprostřed
+            trap '$PHP artisan up || true' EXIT
 
             $PHP artisan down --render="errors::503" --retry=15 || true
 
@@ -50,8 +52,6 @@ jobs:
 
             $PHP artisan optimize
             $PHP artisan queue:restart
-
-            $PHP artisan up
 
             # lsphp běží pod uživatelem webu — vrátit vlastnictví zapisovatelných složek
             if [ -n "${{ secrets.WEB_USER }}" ]; then
