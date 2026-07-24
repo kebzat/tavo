@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Concerns\OnlyForAdmins;
 use App\Settings\SeoSettings;
 use BackedEnum;
 use Filament\Forms\Components\FileUpload;
@@ -15,6 +16,8 @@ use Filament\Support\Icons\Heroicon;
 
 class ManageSeo extends SettingsPage
 {
+    use OnlyForAdmins;
+
     protected static string $settings = SeoSettings::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMagnifyingGlass;

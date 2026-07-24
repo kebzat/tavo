@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Concerns\OnlyForAdmins;
 use App\Settings\HomeSettings;
 use BackedEnum;
 use Filament\Forms\Components\Repeater;
@@ -21,6 +22,8 @@ use Filament\Support\Icons\Heroicon;
  */
 class ManageHome extends SettingsPage
 {
+    use OnlyForAdmins;
+
     protected static string $settings = HomeSettings::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHome;

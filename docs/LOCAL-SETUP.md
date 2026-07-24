@@ -2,20 +2,43 @@
 
 ## Přihlášení do administrace
 
-| | |
-|---|---|
-| URL | <http://127.0.0.1:8000/admin> |
-| E-mail | `admin@tavo.cz` |
-| Heslo | `tavo-admin-2026` |
+Administrace běží na <http://127.0.0.1:8000/admin>.
 
-> **Heslo změňte hned po prvním přihlášení** — klikněte vpravo nahoře na avatar → Profil.
-> Toto heslo je zapsané v `database/seeders/DatabaseSeeder.php` a je určené jen pro první spuštění.
+Účet správce zakládá seeder — **heslo v repozitáři nikde není**. Buď si ho určíte
+předem v `.env`:
 
-Další účet vytvoříte příkazem:
+```env
+ADMIN_EMAIL=vas@email.cz
+ADMIN_PASSWORD=DlouheSilneHeslo123!
+```
+
+…nebo ho seeder vygeneruje náhodně a jednorázově vypíše do konzole:
+
+```
+Vytvořen správce: admin@tavo.cz
+Heslo: xY7$kQ2mNp4wLz9r
+Uložte si ho — znovu se nezobrazí.
+```
+
+> Seeder **nikdy nepřepíše heslo existujícího účtu**, takže opakované `db:seed`
+> vám nevrátí heslo zpátky.
+
+Další účty se zakládají přímo v administraci: **Nastavení → Uživatelé**
+(vidí je jen role *Správce*). Případně z příkazové řádky:
 
 ```bash
 php artisan make:filament-user
 ```
+
+## Role
+
+| Role | Co vidí |
+|---|---|
+| **Správce** | vše — obsah, nastavení webu, uživatele, údržbu |
+| **Redaktor** | jen obsah — reference, služby, stránky, poptávky |
+
+Vlastní roli si nikdo nemůže snížit a smazat sám sebe taky ne — jinak by se
+u posledního správce už nikdo k nastavení nedostal.
 
 ## PHP na macOS — důležité
 

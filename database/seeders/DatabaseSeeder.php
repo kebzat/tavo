@@ -2,29 +2,58 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\CaseStudy;
 use App\Models\Founder;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'admin@tavo.cz'],
-            [
-                'name' => 'TAVO Admin',
-                'password' => Hash::make('tavo-admin-2026'),
-                'email_verified_at' => now(),
-            ],
-        );
+        $this->createAdmin();
 
         $this->call(ContentSeeder::class);
 
         $this->attachFounderPhoto();
         $this->attachCaseStudyImages();
+    }
+
+    /**
+     * Založí správce, ale jen pokud ještě neexistuje.
+     *
+     * Dřív tu bylo updateOrCreate s heslem natvrdo — každé další spuštění
+     * seederu tím vrátilo heslo na hodnotu z repozitáře, takže změna hesla
+     * v administraci nevydržela do příštího nasazení.
+     *
+     * Heslo se bere z ADMIN_PASSWORD; když chybí, vygeneruje se náhodné
+     * a jednorázově vypíše do konzole. Do repozitáře žádné nepatří.
+     */
+    private function createAdmin(): void
+    {
+        $email = (string) env('ADMIN_EMAIL', 'admin@tavo.cz');
+
+        if (User::query()->where('email', $email)->exists()) {
+            $this->command?->info("Správce {$email} už existuje — heslo ponecháno beze změny.");
+
+            return;
+        }
+
+        $password = (string) (env('ADMIN_PASSWORD') ?: Str::password(16));
+
+        User::create([
+            'name' => (string) env('ADMIN_NAME', 'Správce'),
+            'email' => $email,
+            'password' => $password,
+            'role' => UserRole::Admin,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->command?->warn("Vytvořen správce: {$email}");
+        $this->command?->warn("Heslo: {$password}");
+        $this->command?->warn('Uložte si ho — znovu se nezobrazí.');
     }
 
     /**

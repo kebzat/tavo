@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Concerns\OnlyForAdmins;
 use App\Settings\ContactSettings;
 use BackedEnum;
 use Filament\Forms\Components\Repeater;
@@ -14,6 +15,8 @@ use Filament\Support\Icons\Heroicon;
 
 class ManageContact extends SettingsPage
 {
+    use OnlyForAdmins;
+
     protected static string $settings = ContactSettings::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhone;

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -50,9 +51,9 @@ class InstallerTest extends TestCase
         $this->get('/admin/maintenance')->assertRedirect('/admin/login');
     }
 
-    public function test_prihlaseny_uzivatel_vidi_udrzbu(): void
+    public function test_spravce_vidi_udrzbu(): void
     {
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))
             ->get('/admin/maintenance')
             ->assertOk()
             ->assertSee('Stav webu');
