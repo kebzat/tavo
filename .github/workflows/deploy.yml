@@ -32,23 +32,31 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
-            php artisan down --render="errors::503" --retry=15 || true
+            # CyberPanel/OpenLiteSpeed: PHP 8.4 je lsphp84, ne systémové php (8.3)
+            PHP="${{ secrets.PHP_BIN }}"
+
+            $PHP artisan down --render="errors::503" --retry=15 || true
 
             git fetch --all
             git reset --hard origin/main
 
-            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+            $PHP /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
             npm ci
             npm run build
 
-            php artisan migrate --force
-            php artisan storage:link || true
+            $PHP artisan migrate --force
+            $PHP artisan storage:link || true
 
-            php artisan optimize
-            php artisan queue:restart
+            $PHP artisan optimize
+            $PHP artisan queue:restart
 
-            php artisan up
+            $PHP artisan up
+
+            # lsphp běží pod uživatelem webu — vrátit vlastnictví zapisovatelných složek
+            if [ -n "${{ secrets.WEB_USER }}" ]; then
+              chown -R ${{ secrets.WEB_USER }}:${{ secrets.WEB_USER }} storage bootstrap/cache
+            fi
 
       - name: Ověřit, že web běží
         run: |

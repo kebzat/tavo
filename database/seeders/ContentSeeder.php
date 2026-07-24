@@ -227,16 +227,18 @@ class ContentSeeder extends Seeder
     private function caseStudies(): void
     {
         // Původní ukázkové reference z designu měly vymyšlená čísla i citace klientů.
-        // Necháváme je v databázi kvůli historii, ale nezveřejněné.
+        // „spravovane-eshopy" byl jen výčet účtů, které Pavel spravuje. Nahradily ho
+        // konkrétní ukázky jeho práce (grafika, reels). Vše necháváme v DB nezveřejněné.
         CaseStudy::whereIn('slug', [
             'rodinny-eshop',
             'web-generujici-poptavky',
             'b2b-vyrobce-redesign',
             'sezonni-landing-page',
+            'spravovane-eshopy',
         ])->update(['published' => false, 'is_featured' => false]);
 
         $weby = CaseStudyCategory::where('slug', 'weby')->value('id');
-        $eshopy = CaseStudyCategory::where('slug', 'eshopy')->value('id');
+        $reklama = CaseStudyCategory::where('slug', 'reklama')->value('id');
 
         $solo = 'U tohoto projektu neuvádíme čísla o návštěvnosti a poptávkách. Patří klientovi a nemáme je pro web ověřená.';
 
@@ -396,48 +398,85 @@ class ContentSeeder extends Seeder
             'disclaimer' => $solo,
         ]);
 
-        CaseStudy::updateOrCreate(['slug' => 'spravovane-eshopy'], [
+        // Reálné ukázky Pavlovy práce stažené z jeho webu. Texty jsou zatím
+        // pracovní, Pavel si je doupraví; obrázky jsou skutečné kreativy a snímky
+        // z reels pro jeho klienty.
+        $adDisclaimer = 'Ukázky jsou reálné kreativy pro klienty Pavlových reklamních účtů. Konkrétní čísla nezveřejňujeme, patří klientům.';
+
+        CaseStudy::updateOrCreate(['slug' => 'reklamni-grafika'], [
             'order_column' => 5,
-            'case_study_category_id' => $eshopy,
-            'title' => 'E-shopy, kterým točíme reklamu',
+            'case_study_category_id' => $reklama,
+            'title' => 'Reklamní grafika',
+            'is_featured' => true,
+            'published' => true,
+            'eyebrow' => 'Grafika · Reklamní kreativa',
+            'thumb_label' => 'Reklamní grafika',
+            'excerpt' => 'Bannery a příspěvky pro e-shopy i firmy. Kreativa, která ve feedu zastaví palec a řekne to podstatné za vteřinu.',
+            'tags' => [
+                'Reklamní kreativa',
+                'Sociální sítě',
+            ],
+            'hero_headline' => 'Grafika, která ve feedu',
+            'hero_headline_accent' => 'zastaví palec.',
+            'hero_perex' => 'Dobrá kreativa je dnes to hlavní cílení. Ve feedu má sekundu na to, aby člověka zastavila, a další dvě, aby mu řekla, proč zůstat. Proto se u kampaní netočí jedna grafika, ale celá série a testuje se, co zabírá.',
+            'client' => 'Realimo, Svět cejlonu a další',
+            'industry' => 'E-commerce a služby',
+            'scope' => 'Reklamní grafika · Bannery',
+            'problem_title' => 'Proč na kreativě záleží',
+            'problem_text' => 'Zaplacená reklama je jen tak dobrá jako obrázek, na kterém stojí. Ať se cílí sebelíp, palec se zastaví jen na tom, co ho zaujme. Grafika proto musí unést nabídku, cenu i důvod ke kliknutí, a to na malém formátu, který člověk vidí pár vteřin.',
+            'problem_points' => [
+                'Nabídka a cena musí být čitelné na první pohled, i na mobilu.',
+                'Každá kampaň chce vlastní vizuál, ne jednu grafiku dokola.',
+                'Bez variant se nedá poznat, které sdělení zabírá.',
+            ],
+            'roles_title' => 'Co Pavel dělá',
+            'roles_perex' => 'Grafiku i kampaně vede Pavel se svými parťáky.',
+            'marketing_title' => 'Pavel: grafika a reklama',
+            'marketing_items' => [
+                'Návrh reklamních vizuálů podle nabídky a sezóny.',
+                'Série variant pro testování, ne jeden banner.',
+                'Sladění grafiky s tím, kam reklama vede.',
+                'Vyhodnocení, co ve feedu funguje, a úprava podle toho.',
+            ],
+            'disclaimer' => $adDisclaimer,
+        ]);
+
+        CaseStudy::updateOrCreate(['slug' => 'reels-video'], [
+            'order_column' => 6,
+            'case_study_category_id' => $reklama,
+            'title' => 'Reels pro sociální sítě',
             'is_featured' => false,
             'published' => true,
-            'eyebrow' => 'E-commerce · Výkonnostní reklama',
-            'thumb_label' => 'Reklamní účty',
-            'excerpt' => 'Přehled značek, kterým Pavel spravuje reklamní účty. Potravinářské e-shopy, doplňky stravy, výroba i služby.',
+            'eyebrow' => 'Video · Reels',
+            'thumb_label' => 'Reels',
+            'excerpt' => 'Krátká svislá videa pro Instagram a Facebook. Pro značky jako Svět cejlonu, Fitmin nebo Českou louku.',
             'tags' => [
-                'Facebook a Instagram',
-                'Google Ads',
+                'Reels',
+                'Video',
             ],
-            'hero_headline' => 'Účty, které Pavel',
-            'hero_headline_accent' => 'spravuje.',
-            'hero_perex' => 'Tohle není klasická případovka. Je to seznam značek, se kterými Pavel pracoval nebo pracuje, ať víte, o jaké velikosti a oborech se bavíme.',
-            'client' => 'Různí',
-            'industry' => 'E-commerce, výroba, služby',
-            'scope' => 'Správa reklamy',
-            'problem_title' => 'O jaké firmy jde',
-            'problem_text' => 'Většinou menší a střední e-shopy a firmy, kde majitel rozhoduje o rozpočtu sám a chce vidět, co za něj dostal. Mezi značkami, jejichž účty Pavel řešil, jsou Svět cejlonu, Česká louka, AllNature, Fitmin, ATEP, WOOD.cz nebo Realimo.',
+            'hero_headline' => 'Reels, které lidi',
+            'hero_headline_accent' => 'dokoukají.',
+            'hero_perex' => 'Reels rozhodne první vteřina. Buď zaujme a člověk zůstane, nebo palcem sjede dál. Točíme krátká videa, která jdou rovnou k věci a ukážou produkt tak, jak ho zákazník potká doma.',
+            'client' => 'Svět cejlonu, Fitmin, Česká louka',
+            'industry' => 'E-commerce',
+            'scope' => 'Reels · Krátká videa',
+            'problem_title' => 'Proč reels',
+            'problem_text' => 'Dosah na sítích dnes táhne video, ne statický příspěvek. Reels ale nestačí jen natočit, musí od první vteřiny držet pozornost a končit jasnou pobídkou. Pro každou značku to znamená jiný tón: čaj se ukazuje jinak než krmivo pro psy.',
             'problem_points' => [
-                'Potravinářské e-shopy a doplňky stravy, kde rozhoduje marže a opakovaný nákup.',
-                'Výrobní firmy, které přes reklamu shánějí lidi do provozu.',
-                'Firmy ve službách, kde se místo objednávky měří poptávka.',
+                'První vteřina rozhoduje, jestli člověk zůstane, nebo odjede dál.',
+                'Produkt musí být vidět v běžné situaci, ne jen v katalogu.',
+                'Každá značka chce jiný tón i tempo střihu.',
             ],
-            'roles_title' => 'Co na těch účtech běží',
-            'roles_perex' => 'Reklamu vede Pavel, na webové a technické části se přidává Tom.',
-            'marketing_title' => 'Pavel: marketing',
+            'roles_title' => 'Co Pavel dělá',
+            'roles_perex' => 'Scénář, natáčení i střih vede Pavel se svými parťáky.',
+            'marketing_title' => 'Pavel: video a reels',
             'marketing_items' => [
-                'Kampaně na Facebooku a Instagramu, od nastavení účtu po kreativy.',
-                'Vyhledávací a nákupní kampaně v Google Ads.',
-                'Náborové kampaně pro výrobní firmy.',
-                'Průběžné vyhodnocování a přesouvání rozpočtu.',
+                'Náměty a scénáře podle produktu a značky.',
+                'Natáčení a střih do svislého formátu pro reels.',
+                'Titulky a pobídka, ať video funguje i bez zvuku.',
+                'Nasazení do kampaní a sledování, co lidi dokoukají.',
             ],
-            'dev_title' => 'Tom: web a měření',
-            'dev_items' => [
-                'Nastavení měření objednávek a poptávek.',
-                'Úpravy webu a e-shopu tam, kde kampaň naráží.',
-                'Produktové feedy a jejich průběžné opravy.',
-            ],
-            'disclaimer' => 'Jmenované značky jsou klienti Pavlových reklamních účtů. Konkrétní čísla nezveřejňujeme, protože patří klientům.',
+            'disclaimer' => $adDisclaimer,
         ]);
     }
 

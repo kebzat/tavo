@@ -90,23 +90,25 @@
     @endif
 
     @if ($case->marketing_items || $case->dev_items)
-        <section class="section-x section-y-sm bg-ink text-cream">
+        <section class="section-x bg-ink text-cream pt-[clamp(70px,9vw,120px)] pb-[clamp(30px,4vw,50px)]">
             <div class="container-tavo">
                 <h2 data-reveal class="text-h2 mt-0 mb-3 font-extrabold tracking-[-.02em]">{{ $case->roles_title }}</h2>
-                <p data-reveal class="text-perex mt-0 mb-[50px] max-w-[48ch] text-cream/65">{{ $case->roles_perex }}</p>
+                <p data-reveal class="text-perex mt-0 mb-[clamp(28px,3.4vw,44px)] max-w-[48ch] text-cream/65">{{ $case->roles_perex }}</p>
 
-                {{-- U sólo projektů je vyplněná jen jedna role, ať pak karta nevisí v půlce pruhu. --}}
-                <div class="grid grid-cols-1 gap-0.5 overflow-hidden rounded-[18px] bg-cream/15 {{ $case->hasBothRoles() ? 'menu:grid-cols-2' : 'menu:grid-cols-1' }}">
+                {{-- Label nad výčtem; při dvou rolích jsou bloky vedle sebe. --}}
+                <div data-reveal class="grid grid-cols-1 gap-x-[clamp(40px,5vw,80px)] gap-y-[clamp(30px,4vw,50px)] border-t border-cream/18 pt-[clamp(28px,3.4vw,44px)] {{ $case->hasBothRoles() ? 'menu:grid-cols-2' : '' }}">
                     @foreach ([
                         ['title' => $case->marketing_title, 'items' => $case->marketing_items],
                         ['title' => $case->dev_title, 'items' => $case->dev_items],
                     ] as $role)
                         @if ($role['items'])
-                            <div data-reveal class="bg-ink px-[clamp(26px,2.6vw,40px)] py-[clamp(30px,3vw,46px)]">
-                                <div class="mb-5 text-[13px] font-bold tracking-[.12em] text-brick uppercase">{{ $role['title'] }}</div>
-                                <ul class="m-0 flex list-none flex-col gap-4 p-0">
+                            <div>
+                                <div class="mb-4 text-[13px] font-bold tracking-[.12em] text-brick uppercase">{{ $role['title'] }}</div>
+                                <ul class="m-0 flex list-none flex-col gap-3 p-0">
                                     @foreach ($role['items'] as $item)
-                                        <li class="text-base leading-[1.5] text-cream/82">{{ $item }}</li>
+                                        <li class="flex gap-3 text-base leading-[1.5] text-cream/82">
+                                            <span class="font-bold text-brick">—</span>{{ $item }}
+                                        </li>
                                     @endforeach
                                 </ul>
                             </div>
@@ -115,7 +117,7 @@
                 </div>
 
                 @if ($case->disclaimerPlacement() === 'roles')
-                    <p data-reveal class="mt-9 mb-0 max-w-[80ch] text-[13px] leading-[1.6] text-cream/50">
+                    <p data-reveal class="mt-[clamp(28px,3.4vw,44px)] mb-0 max-w-[80ch] text-[13px] leading-[1.6] text-cream/50">
                         {{ $case->disclaimer }}
                     </p>
                 @endif
@@ -167,7 +169,7 @@
     @endif
 
     @if ($next)
-        <section class="section-x section-y-sm bg-ink text-cream">
+        <section class="section-x bg-ink text-cream pt-[clamp(50px,6vw,80px)] pb-[clamp(70px,9vw,120px)]">
             <div class="container-tavo">
                 <div class="mb-9 flex flex-wrap items-end justify-between gap-5">
                     <h2 data-reveal class="text-h2-sm m-0 font-extrabold tracking-[-.02em]">Další projekt</h2>

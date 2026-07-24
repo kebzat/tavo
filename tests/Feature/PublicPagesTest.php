@@ -23,7 +23,7 @@ class PublicPagesTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Postavíme web', false)
+            ->assertSee('Stavíme weby', false)
             ->assertSee('Co děláme', false)
             ->assertSee('ChrudimLab', false)
             ->assertSee('Jak to probíhá', false);
@@ -43,12 +43,12 @@ class PublicPagesTest extends TestCase
         $this->get('/reference')
             ->assertOk()
             ->assertSee('ChrudimLab', false)
-            ->assertSee('E-shopy, kterým točíme reklamu', false);
+            ->assertSee('Reklamní grafika', false);
 
         $this->get('/reference?kategorie=weby')
             ->assertOk()
             ->assertSee('ChrudimLab', false)
-            ->assertDontSee('E-shopy, kterým točíme reklamu', false);
+            ->assertDontSee('Reklamní grafika', false);
     }
 
     public function test_vypis_referenci_nenabizi_prazdne_kategorie(): void

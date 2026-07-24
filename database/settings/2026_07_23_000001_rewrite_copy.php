@@ -69,12 +69,11 @@ return new class extends SettingsMigration
             |------------------------------------------------------------------
             */
             'home.hero_eyebrow' => 'Hradec Králové',
-            'home.hero_line_1' => 'Postavíme web',
-            // Delší druhý řádek („a pak") nechával na mobilu osamocené slovo.
-            'home.hero_line_2' => 'nebo e-shop a',
-            'home.hero_line_3' => 'sháníme',
-            'home.hero_line_3_accent' => 'zákazníky.',
-            'home.hero_perex' => 'Jsme dva. Pavel osm let dělá reklamu a marketing, Tom weby a e-shopy. Domluvíte se přímo s námi, ne s account managerem, který to někam přepošle.',
+            'home.hero_line_1' => 'Stavíme weby',
+            'home.hero_line_2' => 'a e-shopy, které',
+            'home.hero_line_3' => '',
+            'home.hero_line_3_accent' => 'prodávají.',
+            'home.hero_perex' => 'Pavel osm let dělá reklamu a marketing, Tom weby a e-shopy. Domluvíte se přímo s námi, ne s account managerem, který to někam přepošle.',
             'home.hero_cta_primary_label' => 'Chci web nebo e-shop',
             'home.hero_cta_secondary_label' => 'Jak to děláme',
 

@@ -217,7 +217,8 @@
     transform: none;
     transition:
         opacity 0.9s var(--ease-tavo),
-        transform 0.9s var(--ease-tavo);
+        transform 0.9s var(--ease-tavo),
+        translate 0.5s var(--ease-tavo);
 }
 
 [data-reveal].pre {
@@ -228,6 +229,11 @@
 [data-line] {
     display: block;
     overflow: hidden;
+    /* Těsný line-height (0.94) + overflow:hidden by ořezával dotahy kurzívy
+       (j, y) a diakritiku. Padding masce přidá prostor, záporný margin ho
+       vykompenzuje, aby řádky zůstaly na svém místě. */
+    padding-block: 0.1em 0.22em;
+    margin-block: -0.1em -0.22em;
 }
 
 [data-line] > span {
@@ -237,7 +243,7 @@
 }
 
 [data-line].pre > span {
-    transform: translateY(105%);
+    transform: translateY(130%);
 }
 
 /* Navigace — po odscrollování dostane krémové pozadí */
@@ -253,12 +259,12 @@
     box-shadow: 0 1px 0 rgba(19, 17, 16, 0.08);
 }
 
-/* Řádky služeb — hover posun + rotace plusu */
+/* Řádky služeb — hover posun + rotace plusu (jen klikatelné řádky) */
 [data-svc] {
     transition: padding-left 0.4s var(--ease-tavo);
 }
 
-[data-svc]:hover {
+[data-svc-link]:hover {
     padding-left: 16px;
 }
 
@@ -266,8 +272,12 @@
     transition: transform 0.4s var(--ease-tavo);
 }
 
-[data-svc]:hover [data-svc-plus] {
+[data-svc-link]:hover [data-svc-plus] {
     transform: rotate(45deg);
+}
+
+[data-svc-link]:hover [data-svc-arrow] {
+    transform: translateX(4px);
 }
 
 @media (prefers-reduced-motion: reduce) {

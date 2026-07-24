@@ -48,21 +48,50 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * Náhledy referencí jsou snímky obrazovky webů, o kterých reference mluví.
-     * Soubor -43 (poměr 4:3) jde do výpisu, -168 do galerie na detailu.
-     * Galerie snese libovolný počet obrázků — klient si je ve Filamentu doplní.
+     * Obrázky referencí. Soubor „<slug>-43" (poměr 4:3) jde do výpisu jako náhled,
+     * pole „gallery" je detailová galerie (libovolný počet). U webů je v galerii
+     * jeden snímek webu, u Pavlových referencí několik reálných kreativ z jeho webu.
      */
     private function attachCaseStudyImages(): void
     {
-        $images = [
-            'vcely-uhersko' => ['vcely', 'Web a vizuální styl značky Včely Uhersko'],
-            'chrudimlab' => ['chrudimlab', 'Úvodní stránka webu zubní laboratoře ChrudimLab'],
-            'hopnjoy' => ['hopnjoy', "Úvodní stránka webu půjčovny skákacích hradů Hop'n'Joy"],
-            'ales-malinsky' => ['malinsky', 'Úvodní stránka webu realitního makléře Aleše Malinského'],
-            'spravovane-eshopy' => ['cejlon', 'E-shop Svět cejlonu, jeden z účtů, kterým Pavel spravuje reklamu'],
+        $refs = [
+            'vcely-uhersko' => [
+                'thumb' => 'vcely-43',
+                'gallery' => [['vcely-168', 'Web a vizuální styl značky Včely Uhersko']],
+            ],
+            'chrudimlab' => [
+                'thumb' => 'chrudimlab-43',
+                'gallery' => [['chrudimlab-168', 'Úvodní stránka webu zubní laboratoře ChrudimLab']],
+            ],
+            'hopnjoy' => [
+                'thumb' => 'hopnjoy-43',
+                'gallery' => [['hopnjoy-168', "Úvodní stránka webu půjčovny skákacích hradů Hop'n'Joy"]],
+            ],
+            'ales-malinsky' => [
+                'thumb' => 'malinsky-43',
+                'gallery' => [['malinsky-168', 'Úvodní stránka webu realitního makléře Aleše Malinského']],
+            ],
+            'reklamni-grafika' => [
+                'thumb' => 'grafika-43',
+                'gallery' => [
+                    ['grafika-g1', 'Reklamní grafika Realimo, rychlý výkup nemovitosti'],
+                    ['grafika-g2', 'Náborový inzerát na pozici do výzkumu a vývoje'],
+                    ['grafika-g3', 'Reklama na pohovku pro e-shop s nábytkem'],
+                    ['grafika-g4', 'Infografika Svět cejlonu, proč pít modrý čaj'],
+                ],
+            ],
+            'reels-video' => [
+                'thumb' => 'reels-43',
+                'gallery' => [
+                    ['reels-g1', 'Reels pro Svět cejlonu, modrý čaj'],
+                    ['reels-g2', 'Reels pro Fitmin, pamlsky pro psy'],
+                    ['reels-g3', 'Reels pro Fitmin, krmivo pro psy'],
+                    ['reels-g4', 'Reels pro Českou louku, čerstvé microgreens'],
+                ],
+            ],
         ];
 
-        foreach ($images as $slug => [$file, $alt]) {
+        foreach ($refs as $slug => $ref) {
             $case = CaseStudy::query()->where('slug', $slug)->first();
 
             if (! $case) {
@@ -72,18 +101,20 @@ class DatabaseSeeder extends Seeder
             $this->attachMedia(
                 $case,
                 CaseStudy::MEDIA_THUMB,
-                database_path("seeders/assets/reference/{$file}-43.jpg"),
-                $alt,
+                database_path("seeders/assets/reference/{$ref['thumb']}.jpg"),
+                $ref['gallery'][0][1],
             );
 
             // Galerie se needituje přepsáním — doplníme ji jen tehdy, když je prázdná.
             if ($case->getMedia(CaseStudy::MEDIA_GALLERY)->isEmpty()) {
-                $this->attachMedia(
-                    $case,
-                    CaseStudy::MEDIA_GALLERY,
-                    database_path("seeders/assets/reference/{$file}-168.jpg"),
-                    $alt,
-                );
+                foreach ($ref['gallery'] as [$file, $alt]) {
+                    $this->attachMedia(
+                        $case,
+                        CaseStudy::MEDIA_GALLERY,
+                        database_path("seeders/assets/reference/{$file}.jpg"),
+                        $alt,
+                    );
+                }
             }
         }
     }
