@@ -1,6 +1,43 @@
 # Nasazení
 
-Model: **push do `main` → CI → automatický deploy přes SSH na VPS.**
+Dvě cesty, podle toho, co na serveru máte:
+
+- **A) Push do `main` → CI → automatický deploy přes SSH** — dál v tomto dokumentu
+  (kapitoly 1–7). Vyžaduje SSH a git na serveru.
+- **B) Průvodce v prohlížeči** — bez jediného příkazu v terminálu. Popsáno hned níž.
+
+Obě cesty vedou ke stejnému výsledku; B se hodí na sdílené hostingy a panely
+(CyberPanel, Plesk), kde je práce v shellu nepohodlná.
+
+## 0. Cesta B — nasazení bez terminálu
+
+Předpoklad: **`vendor/` a `public/build/` sestavíte lokálně** a nahrajete s sebou.
+Na serveru pak není potřeba composer ani npm.
+
+1. **V panelu hostingu** založte web a databázi. Document root nasměrujte na
+   podsložku **`public/`** projektu (ne na jeho kořen — jinak by byl `.env`
+   stažitelný z internetu).
+2. **Nahrajte projekt** (FTP/FileZilla). Vynechte `node_modules/` a `.env`.
+3. **Otevřete `https://vase-domena/install`.** Průvodce zkontroluje verzi PHP
+   a rozšíření, vyžádá si údaje k databázi, zapíše `.env`, vygeneruje `APP_KEY`,
+   spustí migrace, volitelně naplní výchozí obsah a propojí složku se soubory.
+4. Hotovo — průvodce se **sám zamkne** a dál vrací 404.
+
+Průvodce se nedá spustit na webu, který už běží (má `APP_KEY` a proběhlé migrace),
+takže nehrozí, že by někdo cizí přepsal konfiguraci. Zámek je v
+`storage/app/installed.lock`.
+
+### Údržba z administrace
+
+Běžné provozní úkony jsou v administraci pod **Nastavení → Údržba**, opět bez terminálu:
+
+| Tlačítko | Kdy použít |
+|---|---|
+| Spustit migrace | po nasazení verze, která přidává pole nebo tabulky |
+| Obnovit cache | když se změny obsahu nebo nastavení neprojevují |
+| Propojit soubory | když se místo nahraných obrázků zobrazuje prázdné místo |
+
+Stránka zároveň ukazuje verzi PHP, prostředí, stav databáze a poslední migraci.
 
 ## 1. GitHub repozitář
 
