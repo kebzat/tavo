@@ -15,7 +15,11 @@
 
     <x-seo.meta :title="$title" :description="$description" :ogImage="$ogImage" :schema="$schema" />
 
+    {{-- Značka z loga. SVG pro současné prohlížeče, .ico pro ty, co si o něj
+         řeknou samy, PNG pro ikonu na ploše iPhonu. --}}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="{{ $bodyClass }}">
