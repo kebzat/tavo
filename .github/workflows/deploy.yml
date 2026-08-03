@@ -1,6 +1,10 @@
 name: Deploy
 
 # Nasadí se až po zeleném CI a jen z větve main.
+#
+# Projekt se sestaví tady na GitHubu (composer + vite) a na server se přes rsync
+# pošle hotový výsledek. Server tedy nepotřebuje git, composer ani node — stačí
+# SSH, rsync a PHP.
 on:
   workflow_run:
     workflows: [CI]
@@ -19,44 +23,94 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     environment: production
 
+    env:
+      SSH_PORT: ${{ secrets.SSH_PORT || 22 }}
+      REMOTE: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+
     steps:
-      - name: Nasadit přes SSH
-        uses: appleboy/ssh-action@v1
+      - uses: actions/checkout@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            set -e
-            cd ${{ secrets.DEPLOY_PATH }}
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
-            # CyberPanel/OpenLiteSpeed: PHP 8.4 je lsphp84, ne systémové php (8.3)
-            PHP="${{ secrets.PHP_BIN }}"
+      - name: PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, zip, gd, exif, pdo_mysql, bcmath
+          coverage: none
 
-            # Pojistka: ať se web VŽDY nahodí zpět, i kdyby deploy spadl uprostřed
-            trap '$PHP artisan up || true' EXIT
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-deploy-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
 
-            $PHP artisan down --render="errors::503" --retry=15 || true
+      - name: Composer install (bez dev balíčků)
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
 
-            git fetch --all
-            git reset --hard origin/main
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
 
-            $PHP /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+      - name: Sestavit assety
+        run: |
+          npm ci
+          npm run build
 
-            npm ci
-            npm run build
+      - name: Připravit SSH klíč
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-            $PHP artisan migrate --force
-            $PHP artisan storage:link || true
+      - name: Zapnout režim údržby
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$REMOTE" \
+            "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan down --render=errors::503 --retry=15 || true"
 
-            $PHP artisan optimize
-            $PHP artisan queue:restart
+      - name: Nahrát soubory
+        run: |
+          rsync -az --delete --human-readable \
+            --exclude-from=.github/deploy-exclude.txt \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
+            ./ "$REMOTE:${{ secrets.DEPLOY_PATH }}/"
 
-            # lsphp běží pod uživatelem webu — vrátit vlastnictví zapisovatelných složek
-            if [ -n "${{ secrets.WEB_USER }}" ]; then
-              chown -R ${{ secrets.WEB_USER }}:${{ secrets.WEB_USER }} storage bootstrap/cache
+      - name: Migrace, cache a nahození webu
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$REMOTE" bash -se <<'REMOTE_SCRIPT'
+            set -euo pipefail
+            cd '${{ secrets.DEPLOY_PATH }}'
+            PHP='${{ secrets.PHP_BIN }}'
+            WEB_USER='${{ secrets.WEB_USER }}'
+
+            # Pojistka: ať se web VŽDY nahodí zpět, i kdyby něco spadlo uprostřed
+            trap '"$PHP" artisan up || true' EXIT
+
+            "$PHP" artisan migrate --force
+            "$PHP" artisan storage:link || true
+
+            "$PHP" artisan optimize
+            "$PHP" artisan queue:restart
+
+            # lsphp běží pod uživatelem webu — vrátit vlastnictví nahraných souborů
+            if [ -n "$WEB_USER" ]; then
+              chown -R "$WEB_USER:$WEB_USER" . \
+                || echo "Varování: chown neprošel, zkontroluj práva ručně."
             fi
+          REMOTE_SCRIPT
+
+      - name: Nahodit web zpět, když nasazení spadlo
+        if: failure()
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$REMOTE" \
+            "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan up || true"
 
       - name: Ověřit, že web běží
         run: |

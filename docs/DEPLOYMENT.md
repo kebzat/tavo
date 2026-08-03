@@ -3,7 +3,8 @@
 Dvě cesty, podle toho, co na serveru máte:
 
 - **A) Push do `main` → CI → automatický deploy přes SSH** — dál v tomto dokumentu
-  (kapitoly 1–7). Vyžaduje SSH a git na serveru.
+  (kapitoly 1–7). Vyžaduje na serveru jen SSH, `rsync` a PHP 8.4;
+  git, composer ani node tam potřeba nejsou.
 - **B) Průvodce v prohlížeči** — bez jediného příkazu v terminálu. Popsáno hned níž.
 
 Obě cesty vedou ke stejnému výsledku; B se hodí na sdílené hostingy a panely
@@ -74,26 +75,26 @@ sudo mysql -e "CREATE USER 'taveo'@'localhost' IDENTIFIED BY 'SILNE_HESLO';"
 sudo mysql -e "GRANT ALL ON taveo.* TO 'taveo'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
-První nasazení ručně:
+Před prvním nasazením stačí připravit složku a `.env` — kód a `vendor/` doveze
+sám workflow:
 
 ```bash
 sudo mkdir -p /var/www/taveo && sudo chown -R $USER:www-data /var/www/taveo
-git clone git@github.com:<uzivatel>/taveo-web.git /var/www/taveo
 cd /var/www/taveo
 
-composer install --no-dev --optimize-autoloader
-npm ci && npm run build
+# .env si server drží sám, deploy ho nikdy nepřepisuje
+curl -o .env https://raw.githubusercontent.com/<uzivatel>/taveo-web/main/.env.example
+# nastavit: APP_ENV=production, APP_DEBUG=false, APP_URL=https://taveo.cz,
+#           APP_KEY (doplní se níž), DB_USERNAME=taveo, DB_PASSWORD=…, MAIL_* (SMTP)
+```
 
-cp .env.example .env
-php artisan key:generate
-# v .env nastavit: APP_ENV=production, APP_DEBUG=false, APP_URL=https://taveo.cz,
-#                  DB_USERNAME=taveo, DB_PASSWORD=…, MAIL_* (SMTP)
+Pak spusť **Actions → Deploy → Run workflow**. Po prvním doběhnutí ještě jednou:
 
-php artisan migrate --force --seed
-php artisan storage:link
-php artisan optimize
-
-sudo chown -R www-data:www-data storage bootstrap/cache
+```bash
+cd /var/www/taveo
+php artisan key:generate     # jen poprvé, APP_KEY zůstává v .env natrvalo
+php artisan db:seed --force  # jen poprvé, výchozí obsah a administrátor
+sudo chown -R www-data:www-data /var/www/taveo
 ```
 
 ### nginx
@@ -159,35 +160,54 @@ Ve `Settings → Secrets and variables → Actions` nastavte:
 | `SSH_USER` | uživatel, pod kterým se nasazuje |
 | `SSH_KEY` | obsah privátního klíče `~/.ssh/github_deploy` |
 | `SSH_PORT` | volitelné, výchozí 22 |
-| `DEPLOY_PATH` | `/var/www/taveo` |
+| `DEPLOY_PATH` | kořen projektu na serveru, např. `/var/www/taveo` (bez lomítka na konci) |
 | `PRODUCTION_URL` | `https://taveo.cz` |
+| `PHP_BIN` | cesta k PHP 8.4 na serveru — na CyberPanelu `/usr/local/lsws/lsphp84/bin/php`, jinak `php` |
+| `WEB_USER` | volitelné; uživatel, pod kterým běží web (nahrané soubory se mu vrátí do vlastnictví) |
 
-Server musí mít přístup ke GitHubu (deploy key repozitáře nebo veřejný repozitář).
+Server ke GitHubu přístup mít nemusí — soubory tam posílá GitHub, ne naopak.
 
 ## 4. Jak deploy probíhá
 
 `.github/workflows/ci.yml` na každý push a PR spustí Pint a testy.
-`.github/workflows/deploy.yml` se pustí **až po zeleném CI na `main`** a přes SSH provede:
+`.github/workflows/deploy.yml` se pustí **až po zeleném CI na `main`**. Projekt se
+sestaví na GitHubu a na server se pošle hotový:
 
 ```
-php artisan down → git reset --hard origin/main → composer install --no-dev
-→ npm ci && npm run build → migrate --force → optimize → queue:restart → php artisan up
+composer install --no-dev + npm run build (na GitHubu)
+→ php artisan down → rsync celého projektu na server
+→ migrate --force → storage:link → optimize → queue:restart → php artisan up
 ```
 
 Nakonec ověří, že produkce vrací HTTP 200 — pokud ne, běh skončí červeně.
+Když nasazení spadne uprostřed, web se přesto nahodí zpátky z údržby.
 
 Deploy jde spustit i ručně: **Actions → Deploy → Run workflow**.
 
+### Co se na server neposílá
+
+`rsync` běží s `--delete`, takže složka na serveru přesně odpovídá repozitáři —
+soubory smazané v gitu zmizí i z produkce. Výjimky jsou v
+[`.github/deploy-exclude.txt`](../.github/deploy-exclude.txt): `.env`, celá
+složka `storage/` (nahraná média, logy), `public/storage`, `public/.well-known/`
+a vývojové věci (`tests/`, `docs/`, `design-source/`, `node_modules/`).
+
+**Když na serveru vznikne něco ručně mimo tyto cesty, přidej to do toho souboru** —
+jinak to příští nasazení smaže.
+
 ## 5. Rollback
 
+Na serveru už git není, rollback se dělá přes repozitář — vrátí se `main`
+a nasazení se pustí znovu:
+
 ```bash
-cd /var/www/taveo
 git log --oneline -10
-git reset --hard <předchozí-commit>
-composer install --no-dev --optimize-autoloader
-npm ci && npm run build
-php artisan optimize
+git revert --no-edit <commit-který-to-rozbil>
+git push            # CI proběhne a deploy nasadí opravený stav
 ```
+
+Když je potřeba spěchat, jde nasadit i libovolný starší stav: **Actions → Deploy
+→ Run workflow** a v `Use workflow from` vybrat větev nebo tag s tím stavem.
 
 Pokud problém způsobila migrace, vraťte ji cíleně:
 

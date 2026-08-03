@@ -1,0 +1,34 @@
+# Co se NEPOSÍLÁ na server.
+#
+# Pozor: rsync běží s --delete, takže co na serveru je a v tomto seznamu ani
+# v repozitáři to není, to se při nasazení smaže. Když na serveru vznikne něco
+# ručně (nahrané soubory mimo storage, ověřovací soubor od certifikátu),
+# přidej to sem.
+
+# Konfigurace a data, která patří serveru
+/.env
+/storage/
+/public/storage
+/public/.well-known/
+
+# Vývojové věci
+/.git/
+/.github/
+/.claude/
+/.playwright-mcp/
+/node_modules/
+/tests/
+/docs/
+/design-source/
+/bin/
+/.editorconfig
+/.gitattributes
+/.gitignore
+/.mcp.json
+/.npmrc
+/.phpunit.result.cache
+/phpunit.xml
+/vite.config.js
+/package-lock.json
+/CLAUDE.md
+/*.png
