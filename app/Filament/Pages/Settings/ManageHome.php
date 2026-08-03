@@ -146,6 +146,17 @@ class ManageHome extends SettingsPage
                             Textarea::make('founders_intro')->label('Úvodní odstavec')->rows(3),
                         ]),
 
+                    Section::make('Blok „Když je potřeba někdo další"')
+                        ->description('Specialisté na volné noze kolem nás. Nechte nadpis i text prázdný a blok se nezobrazí.')
+                        ->schema([
+                            TextInput::make('founders_network_title')->label('Nadpis'),
+                            Textarea::make('founders_network_text')->label('Text')->rows(6),
+                            Repeater::make('founders_network_items')
+                                ->label('Obory (štítky)')
+                                ->addActionLabel('Přidat obor')
+                                ->simple(TextInput::make('text')->required()),
+                        ]),
+
                     Section::make('Sekce „Jak spolu pracujeme"')
                         ->description('Kroky se editují v menu Obsah → Postup spolupráce.')
                         ->schema([

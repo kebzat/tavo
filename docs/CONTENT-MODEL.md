@@ -6,6 +6,27 @@ Mapa pro správce webu: kde v administraci najdu který kus stránky.
 > Jsou tam pravidla hlasu, seznam obratů, kterým se vyhýbáme, a co kam patří kvůli SEO.
 > Dvě věci hlavně: žádné pomlčky v běžném textu a žádná čísla, která nemáme ověřená od klienta.
 
+## Kdo je vlastníkem textu: administrace, nebo repozitář?
+
+Obsah bydlí v databázi a mění se v administraci. Jenže texty se dají nasadit i z kódu
+migrací v `database/settings/`, protože jinak by se nová verze webu neměla jak dostat
+na produkci. Nasazení pak spustí `php artisan migrate` a migrace přepíše hodnotu
+v databázi — včetně toho, co si tam mezitím napsal správce.
+
+Aby se to nestalo, dědí settings migrace od
+[`App\Support\ContentSettingsMigration`](../app/Support/ContentSettingsMigration.php)
+a mají tři metody s různou mírou drzosti:
+
+| Metoda | Co udělá | Kdy ji použít |
+|---|---|---|
+| `add()` | doplní jen klíče, které v databázi ještě nejsou | **výchozí volba.** Vždy, když do settings třídy přibylo nové pole |
+| `replaceIfUntouched()` | přepíše hodnotu, jen když v ní pořád stojí to, co tam poslala minulá migrace | oprava vlastního překlepu na webu, který už žije |
+| `replace()` | přepíše natvrdo | jen před spuštěním webu, dokud obsah nikdo needituje |
+
+Pravidlo pro běžný provoz: **po spuštění se formulace ladí v administraci, ne migrací.**
+Migrace se píše, když přibývá pole. Nové pole bez migrace je jediná varianta, která
+produkci opravdu shodí — settings třída bude chtít hodnotu, kterou databáze nemá.
+
 ## Nastavení → Homepage
 
 Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
@@ -13,11 +34,11 @@ Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
 | Záložka | Ovládá na webu |
 |---|---|
 | **Úvod** | velký nadpis přes tři řádky (odkrývá se po řádcích), perex, obě tlačítka |
-| **Problém** | černá sekce „Každý si odvede svůj kus" — nadpis, perex, očíslované body |
+| **Problém** | černá sekce „Web je hotový a tím to skončí" — nadpis, perex, očíslované body |
 | **Dvě situace** | dvě velké karty („Potřebujeme nový web" / „Web máme, ale…") |
 | **Služby a reference** | jen nadpisy sekcí — obsah přichází z Obsah → Služby a Obsah → Reference |
 | **Proč my** | černá sekce se čtyřmi sloupci (Marketing → Web → Data → Rozvoj) |
-| **Lidé a proces** | nadpisy sekcí „Dva lidé" a „Jak spolu pracujeme" |
+| **Lidé a proces** | nadpisy sekcí „Kdo jsme" a „Jak spolu pracujeme", plus blok o specialistech kolem nás |
 | **Závěrečné CTA** | cihlová sekce s formulářem na konci stránky |
 
 > Které reference se objeví na homepage, řídí přepínač **„Vypíchnout na homepage"**

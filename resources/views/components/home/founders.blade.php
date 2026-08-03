@@ -55,5 +55,31 @@
                 </div>
             </div>
         </div>
+
+        @if ($home->founders_network_title || $home->founders_network_text)
+            <div data-reveal class="mt-[clamp(40px,5vw,72px)] border-t border-ink/14 pt-[clamp(28px,3.4vw,44px)]">
+                {{-- Stejné dělení sloupců jako hlavní mřížka sekce, ať nadpis sedí
+                     pod fotkou a text pod medailonky. --}}
+                <div class="grid grid-cols-1 gap-[clamp(18px,4vw,64px)] menu:grid-cols-[1.05fr_0.95fr]">
+                    @if ($home->founders_network_title)
+                        <h3 class="text-h3-sm m-0 max-w-[16ch] font-extrabold tracking-[-.01em]">{{ $home->founders_network_title }}</h3>
+                    @endif
+
+                    <div>
+                        @if ($home->founders_network_text)
+                            <p class="m-0 max-w-[62ch] text-[15px] leading-[1.6] text-muted">{{ $home->founders_network_text }}</p>
+                        @endif
+
+                        @if ($home->founders_network_items)
+                            <div class="mt-5 flex flex-wrap gap-2">
+                                @foreach ($home->founders_network_items as $item)
+                                    <x-tag>{{ $item }}</x-tag>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 </section>

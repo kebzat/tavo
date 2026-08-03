@@ -38,6 +38,12 @@ V shellu je `php` alias na PHP 8.2, projekt potřebuje 8.4. Používej wrappery:
   → settings třída v `app/Settings/` + settings stránka v `app/Filament/Pages/Settings/`.
 - **Nové pole v settings třídě vyžaduje migraci** v `database/settings/`, jinak
   aplikace spadne na chybějící hodnotě.
+- **Settings migrace dědí od `App\Support\ContentSettingsMigration`** a používají
+  `add()` (nová pole), `replaceIfUntouched()` (oprava vlastního textu) nebo
+  `replace()` (přepis natvrdo, jen do spuštění webu). Nasazení pouští `migrate`,
+  takže `replace()` na běžícím webu smaže správci jeho úpravy z administrace.
+  Po spuštění se formulace ladí v administraci, ne migrací. Viz
+  [docs/CONTENT-MODEL.md](docs/CONTENT-MODEL.md).
 - **U `array` polí v settings třídách nepiš docblock** `@var array<…>` — spatie ho parsuje
   a na složitých tvarech spadne.
 - **Obrázky přes Spatie MediaLibrary**, alt text do `custom_properties`, ne jako sloupec.

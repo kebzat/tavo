@@ -71,6 +71,13 @@ class HomeSettings extends Settings
 
     public ?string $founders_intro;
 
+    // Lidé: blok o specialistech kolem Pavla a Toma
+    public ?string $founders_network_title;
+
+    public ?string $founders_network_text;
+
+    public array $founders_network_items;
+
     // Proces
     public ?string $process_title;
 
