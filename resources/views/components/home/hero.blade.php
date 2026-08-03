@@ -3,10 +3,6 @@
      na mobilu opticky uprostřed obrazovky. --}}
 <header id="top" class="section-x relative flex min-h-screen flex-col justify-center overflow-hidden pt-[110px] pb-[90px] text-center menu:pt-[150px] menu:pb-[60px]">
     <div class="container-tavo relative z-2 flex flex-col items-center">
-        {{-- DOČASNÉ: kontrola nasazení. Až deploy projde, tenhle blok smaž. --}}
-        <div class="mb-6 rounded-lg bg-brick px-5 py-3 font-mono text-sm text-white">
-            DEPLOY TEST — {{ config('app.env') }} — {{ now()->format('j. n. Y H:i') }}
-        </div>
 
         <x-eyebrow data-reveal :rule="true" class="mb-[30px]">{{ $home->hero_eyebrow }}</x-eyebrow>
 
