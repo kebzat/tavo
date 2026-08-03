@@ -136,7 +136,7 @@ class InstallController extends Controller
     private function defaults(): array
     {
         return [
-            'app_name' => (string) config('app.name', 'TAVO'),
+            'app_name' => (string) config('app.name', 'Taveo'),
             'app_url' => rtrim(request()->getSchemeAndHttpHost(), '/'),
             'db_host' => '127.0.0.1',
             'db_port' => '3306',

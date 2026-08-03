@@ -532,7 +532,7 @@ class ContentSeeder extends Seeder
             'perex' => 'Jak nakládáme s údaji, které nám pošlete přes poptávkový formulář.',
             'content' => <<<'HTML'
 <h2>Kdo je správcem údajů</h2>
-<p>Správcem osobních údajů je TAVO. Kontaktovat nás můžete na e-mailu uvedeném v patičce webu.</p>
+<p>Správcem osobních údajů je Taveo. Kontaktovat nás můžete na e-mailu uvedeném v patičce webu.</p>
 <h2>Jaké údaje zpracováváme</h2>
 <p>Zpracováváme údaje, které nám sami vyplníte v poptávkovém formuláři: jméno, firmu, e-mail, telefon a text zprávy. Dále technické údaje nutné k ochraně před spamem (IP adresa, prohlížeč).</p>
 <h2>Proč je zpracováváme</h2>

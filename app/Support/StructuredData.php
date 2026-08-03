@@ -32,7 +32,7 @@ class StructuredData
             '@id' => url('/').self::ORGANIZATION_ID,
             'name' => $site->brand_name,
             'url' => url('/'),
-            'logo' => url('/images/tavo-logo-dark.svg'),
+            'logo' => url('/images/taveo-logo-dark.svg'),
             'description' => $seo->default_description,
             'email' => $contact->email,
             'address' => [

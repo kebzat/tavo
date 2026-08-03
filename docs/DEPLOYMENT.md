@@ -43,9 +43,9 @@ Stránka zároveň ukazuje verzi PHP, prostředí, stav databáze a poslední mi
 
 ```bash
 # jednorázově
-gh repo create tavo-web --private --source=. --remote=origin --push
+gh repo create taveo-web --private --source=. --remote=origin --push
 # nebo repo založit ručně na github.com a pak:
-git remote add origin git@github.com:<uzivatel>/tavo-web.git
+git remote add origin git@github.com:<uzivatel>/taveo-web.git
 git push -u origin main
 ```
 
@@ -69,25 +69,25 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Databáze
-sudo mysql -e "CREATE DATABASE tavo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -e "CREATE USER 'tavo'@'localhost' IDENTIFIED BY 'SILNE_HESLO';"
-sudo mysql -e "GRANT ALL ON tavo.* TO 'tavo'@'localhost'; FLUSH PRIVILEGES;"
+sudo mysql -e "CREATE DATABASE taveo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -e "CREATE USER 'taveo'@'localhost' IDENTIFIED BY 'SILNE_HESLO';"
+sudo mysql -e "GRANT ALL ON taveo.* TO 'taveo'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
 První nasazení ručně:
 
 ```bash
-sudo mkdir -p /var/www/tavo && sudo chown -R $USER:www-data /var/www/tavo
-git clone git@github.com:<uzivatel>/tavo-web.git /var/www/tavo
-cd /var/www/tavo
+sudo mkdir -p /var/www/taveo && sudo chown -R $USER:www-data /var/www/taveo
+git clone git@github.com:<uzivatel>/taveo-web.git /var/www/taveo
+cd /var/www/taveo
 
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
 
 cp .env.example .env
 php artisan key:generate
-# v .env nastavit: APP_ENV=production, APP_DEBUG=false, APP_URL=https://tavo.cz,
-#                  DB_USERNAME=tavo, DB_PASSWORD=…, MAIL_* (SMTP)
+# v .env nastavit: APP_ENV=production, APP_DEBUG=false, APP_URL=https://taveo.cz,
+#                  DB_USERNAME=taveo, DB_PASSWORD=…, MAIL_* (SMTP)
 
 php artisan migrate --force --seed
 php artisan storage:link
@@ -101,8 +101,8 @@ sudo chown -R www-data:www-data storage bootstrap/cache
 ```nginx
 server {
     listen 80;
-    server_name tavo.cz www.tavo.cz;
-    root /var/www/tavo/public;
+    server_name taveo.cz www.taveo.cz;
+    root /var/www/taveo/public;
 
     index index.php;
     charset utf-8;
@@ -130,15 +130,15 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/tavo /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/taveo /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d tavo.cz -d www.tavo.cz
+sudo certbot --nginx -d taveo.cz -d www.taveo.cz
 ```
 
 ### Cron (plánované úlohy Laravelu)
 
 ```
-* * * * * cd /var/www/tavo && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/taveo && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 ## 3. Klíč pro deploy
@@ -159,8 +159,8 @@ Ve `Settings → Secrets and variables → Actions` nastavte:
 | `SSH_USER` | uživatel, pod kterým se nasazuje |
 | `SSH_KEY` | obsah privátního klíče `~/.ssh/github_deploy` |
 | `SSH_PORT` | volitelné, výchozí 22 |
-| `DEPLOY_PATH` | `/var/www/tavo` |
-| `PRODUCTION_URL` | `https://tavo.cz` |
+| `DEPLOY_PATH` | `/var/www/taveo` |
+| `PRODUCTION_URL` | `https://taveo.cz` |
 
 Server musí mít přístup ke GitHubu (deploy key repozitáře nebo veřejný repozitář).
 
@@ -181,7 +181,7 @@ Deploy jde spustit i ručně: **Actions → Deploy → Run workflow**.
 ## 5. Rollback
 
 ```bash
-cd /var/www/tavo
+cd /var/www/taveo
 git log --oneline -10
 git reset --hard <předchozí-commit>
 composer install --no-dev --optimize-autoloader
@@ -203,8 +203,8 @@ php artisan migrate:rollback --path=database/migrations/<konkretni_soubor>.php
 Doporučené minimum — denní cron:
 
 ```bash
-0 3 * * * mysqldump -u tavo -p'HESLO' tavo | gzip > /var/backups/tavo-$(date +\%F).sql.gz
-0 4 * * * tar czf /var/backups/tavo-media-$(date +\%F).tar.gz /var/www/tavo/storage/app/public
+0 3 * * * mysqldump -u taveo -p'HESLO' taveo | gzip > /var/backups/taveo-$(date +\%F).sql.gz
+0 4 * * * tar czf /var/backups/taveo-media-$(date +\%F).tar.gz /var/www/taveo/storage/app/public
 ```
 
 ## 7. Kontrolní seznam před prvním spuštěním

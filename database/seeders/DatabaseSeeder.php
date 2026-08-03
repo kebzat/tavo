@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
      */
     private function createAdmin(): void
     {
-        $email = (string) env('ADMIN_EMAIL', 'admin@tavo.cz');
+        $email = (string) env('ADMIN_EMAIL', 'admin@taveo.cz');
 
         if (User::query()->where('email', $email)->exists()) {
             $this->command?->info("Správce {$email} už existuje — heslo ponecháno beze změny.");
@@ -72,7 +72,7 @@ class DatabaseSeeder extends Seeder
         $founder
             ->addMedia($photo)
             ->preservingOriginal()
-            ->withCustomProperties(['alt' => 'Pavel a Tom, zakladatelé TAVO'])
+            ->withCustomProperties(['alt' => 'Pavel a Tom, zakladatelé Taveo'])
             ->toMediaCollection(Founder::MEDIA_PHOTO);
     }
 

@@ -15,7 +15,7 @@ ADMIN_PASSWORD=DlouheSilneHeslo123!
 …nebo ho seeder vygeneruje náhodně a jednorázově vypíše do konzole:
 
 ```
-Vytvořen správce: admin@tavo.cz
+Vytvořen správce: admin@taveo.cz
 Heslo: xY7$kQ2mNp4wLz9r
 Uložte si ho — znovu se nezobrazí.
 ```

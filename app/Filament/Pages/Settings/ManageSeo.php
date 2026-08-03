@@ -39,7 +39,7 @@ class ManageSeo extends SettingsPage
                     TextInput::make('default_title')->label('Výchozí titulek')->required(),
                     TextInput::make('title_suffix')
                         ->label('Přípona titulku')
-                        ->helperText('Připojí se za titulek každé stránky, např. „ | TAVO".'),
+                        ->helperText('Připojí se za titulek každé stránky, např. „ | Taveo".'),
                     Textarea::make('default_description')->label('Výchozí popisek')->rows(3),
                     FileUpload::make('og_image')
                         ->label('Obrázek pro sdílení')

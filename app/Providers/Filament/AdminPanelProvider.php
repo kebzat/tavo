@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('TAVO')
+            ->brandName('Taveo')
             ->favicon(asset('favicon.svg'))
             ->colors([
                 // Cihlová z designu (#db4b24)

@@ -12,10 +12,10 @@
          :data-open="$store.nav.open"
          class="fixed inset-x-0 top-0 z-50 flex items-center justify-between px-[6vw] py-[18px]">
         <a href="{{ route('home') }}" class="relative flex items-center" aria-label="{{ $site->brand_name }} — úvodní stránka">
-            <img src="/images/tavo-logo-dark.svg" alt="{{ $site->brand_name }}"
+            <img src="/images/taveo-logo-dark.svg" alt="{{ $site->brand_name }}"
                  class="block h-[26px] w-auto transition-opacity duration-300 ease-tavo"
                  :class="$store.nav.open && 'opacity-0'">
-            <img src="/images/tavo-logo-cream.svg" alt="" aria-hidden="true"
+            <img src="/images/taveo-logo-cream.svg" alt="" aria-hidden="true"
                  class="absolute top-0 left-0 block h-[26px] w-auto opacity-0 transition-opacity duration-300 ease-tavo"
                  :class="$store.nav.open && 'opacity-100'">
         </a>
