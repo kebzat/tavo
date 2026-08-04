@@ -27,6 +27,20 @@ Pravidlo pro běžný provoz: **po spuštění se formulace ladí v administraci
 Migrace se píše, když přibývá pole. Nové pole bez migrace je jediná varianta, která
 produkci opravdu shodí — settings třída bude chtít hodnotu, kterou databáze nemá.
 
+### A co celá nová stránka?
+
+Stejný problém: `ContentSeeder` se pouští jen při prvním nasazení, takže stránka
+přidaná do seederu se na běžící web nikdy nedostane. Nasazení spouští `migrate`,
+proto se nová stránka přiveze **datovou migrací**. Vzor je
+[`2026_08_04_150000_add_eshop_landing_page`](../database/migrations/2026_08_04_150000_add_eshop_landing_page.php):
+
+- Na začátku zkontroluje, jestli slug už neexistuje, a když ano, **nedělá nic**.
+  Chová se tedy jako `add()`: co správce mezitím upravil v administraci, zůstane.
+- Obrázky se do gitu nedostanou přes `storage/` (ta je z nasazení vyloučená). Leží
+  proto v `database/seeders/assets/` a migrace je odtud zkopíruje na disk `public`.
+  Existující soubor nepřepisuje.
+- `down()` stránku smaže, ale obrázky nechá být. Správce mohl mezitím nahrát vlastní.
+
 ## Nastavení → Homepage
 
 Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.

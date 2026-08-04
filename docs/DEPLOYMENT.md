@@ -195,6 +195,16 @@ a vývojové věci (`tests/`, `docs/`, `design-source/`, `node_modules/`).
 **Když na serveru vznikne něco ručně mimo tyto cesty, přidej to do toho souboru** —
 jinak to příští nasazení smaže.
 
+### Jak dostat na běžící web novou stránku nebo obrázek
+
+`db:seed` se pouští jen při prvním nasazení, takže obsah přidaný do seederu se na
+produkci nedostane. Nová stránka se veze **datovou migrací**, protože `migrate --force`
+běží při každém nasazení. Podrobnosti a vzor v
+[CONTENT-MODEL.md](CONTENT-MODEL.md#a-co-celá-nová-stránka).
+
+Obrázky, které má migrace nahrát, patří do `database/seeders/assets/`. Složka `storage/`
+je z nasazení vyloučená, takže cokoliv v ní se na server přes git nedostane.
+
 ## 5. Rollback
 
 Na serveru už git není, rollback se dělá přes repozitář — vrátí se `main`
