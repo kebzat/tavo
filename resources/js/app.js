@@ -57,6 +57,27 @@ Alpine.data('tavoGallery', (images) => ({
     },
 }));
 
+/**
+ * Porovnání „před a po" v bloku statické stránky. Dělicí čára sleduje ukazatel,
+ * takže stačí přejet myší; na dotyku se táhne prstem.
+ *
+ * Ovládání klávesnicí zajišťuje skrytý `input[type=range]` v šabloně, který píše
+ * do stejné `position`. Kdo nemá myš, posune čáru šipkami.
+ */
+Alpine.data('tavoBeforeAfter', () => ({
+    position: 50,
+
+    track(event) {
+        const frame = this.$refs.frame?.getBoundingClientRect();
+
+        if (! frame?.width) return;
+
+        const ratio = ((event.clientX - frame.left) / frame.width) * 100;
+
+        this.position = Math.min(100, Math.max(0, ratio));
+    },
+}));
+
 window.Alpine = Alpine;
 Alpine.start();
 

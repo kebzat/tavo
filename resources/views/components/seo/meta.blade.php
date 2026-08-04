@@ -9,8 +9,7 @@
     $seo = app(App\Settings\SeoSettings::class);
     $pageTitle = $title ? $title.$seo->title_suffix : $seo->default_title.$seo->title_suffix;
     $pageDescription = $description ?: $seo->default_description;
-    $image = $ogImage ?: $seo->og_image;
-    $imageUrl = $image ? (str_starts_with($image, 'http') ? $image : url($image)) : null;
+    $imageUrl = $seo->imageUrl($ogImage ?: $seo->og_image);
     $documents = array_merge([App\Support\StructuredData::professionalService()], $schema);
 @endphp
 

@@ -116,6 +116,72 @@ fotografii a jména vysází jako pilulky přes ni.
 Ochrana osobních údajů, cookies a další právní texty. URL vzniká ze slugu: `/cookies`.
 Odkazy na ně jsou natvrdo v patičce.
 
+Obsah stránky se **skládá z bloků**. Tlačítkem „Přidat blok" se rozbalí mřížka náhledů,
+kde je u každého typu vidět drátěnka jeho rozvržení; z ní poznáte i výchozí barvu sekce.
+Pořadí měníte tažením za šipky vlevo nahoře, blok jde sbalit i smazat. Na právní text
+stačí jeden blok „Text", zbytek jsou grafické sekce ze stejné sady, jakou používá web.
+
+| Blok | Co vysází |
+|---|---|
+| **Text** | běžný editor v úzkém sloupci — nadpisy, odstavce, seznamy, odkazy |
+| **Obrázek a text** | dvousloupec; přepínačem volíte stranu obrázku a světlou/tmavou barvu sekce |
+| **Před a po** | dva snímky přes sebe s dělicí čárou, která sleduje myš; návštěvník si přejetím ukáže původní i nový stav |
+| **Statistiky** | řada velkých čísel s popisky a poznámkou pod nimi |
+| **Očíslované body** | nadpis vlevo, perex a číslovaný seznam vpravo (jako sekce „Web je hotový" na úvodu) |
+| **Postup v krocích** | tři nebo čtyři sloupce s číslem, názvem a popisem, každý s linkou nahoře |
+| **Karty** | mřížka karet s nadpisem a textem, na dva nebo tři sloupce |
+| **Výčet v pilulkách** | nadpis s perexem vlevo, krátké výrazy jako pilulky vpravo (názvy platforem, technologií) |
+| **Obrázek** | samostatný obrázek přes šířku textu, volitelně s popiskem |
+| **Citace** | výrok s cihlovou linkou a jménem pod ním |
+| **Výzva k akci** | cihlový pruh s tlačítky na e-mail a telefon (bere je z Nastavení → Kontakt) |
+
+**Zástupný vizuál.** Blok „Obrázek a text" má pole **Popisek zástupného vizuálu**. Když ho
+vyplníte a fotku ještě nemáte, drží místo šrafované pole s tímhle textem, takže sekce
+vypadá hotově a fotka se doplní později. Prázdný popisek bez fotky = sekce bude jen text.
+
+**Blok „Před a po"** potřebuje oba snímky, jinak se vůbec nezobrazí. Nahrajte je pokud
+možno ve stejné šířce a vyfocené od stejného místa stránky; snímky se ořezávají odshora
+do jednoho poměru, takže rozdílná výška nevadí, ale jiný výřez ano. Štítky nad rohy jdou
+přejmenovat (výchozí je „Před" a „Po").
+
+**Prázdný blok se na webu nezobrazí** — nenechá po sobě ani prázdné místo. Platí to i pro
+jednotlivá pole: nevyplněný nadtitulek prostě nebude, žádný náhradní text se nedoplňuje.
+
+**Střídejte světlou a tmavou barvu sekce.** Dva tmavé bloky za sebou splynou v jeden
+dlouhý pruh a předěl mezi tématy se ztratí. Odsazení mezi sekcemi se v takovém případě
+samo sloučí, aby uprostřed nezůstala díra, ale číst se to bude hůř.
+
+### Hlavička stránky
+
+Záložka **Hlavička** je nepovinná a prázdná nechá střídmý úvod, jaký mají právní texty.
+Jakmile vyplníte **Nadtitulek**, hlavička se přepne do podoby dopadové stránky: nadpis
+vyroste přes celou šířku a nad ním se objeví cihlový nadtitulek s čárkou.
+
+- **Zvýrazněná část nadpisu** je slovo nebo úsek z názvu stránky, který se vysází cihlově
+  kurzívou. Když se v názvu nenajde, nic se nerozbije, jen se nic nezvýrazní.
+- **Tlačítka na e-mail a telefon** berou kontakt z Nastavení → Kontakt.
+
+### `/e-shop` — dopadová stránka pro oslovování
+
+Stránka, na kterou vede odkaz v e-mailech a zprávách majitelům e-shopů. Není v menu ani
+v patičce, chodí se na ni jen z odkazu. Devět bloků, které se v barvě pravidelně střídají,
+konec je výzva poslat odkaz na e-shop.
+
+Dvě věci v ní schválně chybí:
+
+- **Ceny.** Blok „Co to stojí" zatím jen popisuje, co vyjde dráž a co levněji. Až budete
+  mít potvrzené částky, doplňte orientační „od" ceny, nejlépe jako blok Statistiky nad něj.
+- **Čísla z odvedené práce.** Blok Statistiky uvádí jen to, co slibujeme (odpověď do dvou
+  dnů, analýza zdarma), ne výsledky projektů. Ty se doplní, až je budeme mít od klientů
+  potvrzené, spolu s blokem Citace.
+
+Sekce „Přetáhněte čáru a uvidíte rozdíl" porovnává úvodní stránku e-shopu 2e Kompresory
+před předěláním a po něm. **Než stránku pustíte ven, ověřte, že máte od 2e souhlas
+s uvedením jako reference** včetně snímků obrazovky.
+
+**Obrázky v blocích** se nahrávají přímo do bloku a alt text je vedle nich ve stejném
+bloku. Nejde tedy o media knihovnu jako u referencí — blok si obrázek nese sám.
+
 ## Poptávky
 
 Vše, co přijde z formuláře. Údaje od zákazníka nejdou editovat (jsou to doklady),

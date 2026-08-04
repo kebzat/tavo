@@ -5,7 +5,7 @@
     <header class="section-x pt-[150px] pb-[50px]">
         <div class="container-tavo">
             <a href="{{ route('home') }}" data-reveal
-               class="mb-[30px] inline-flex items-center gap-2 text-[13px] font-semibold tracking-[.12em] text-muted uppercase">
+               class="mb-[30px] flex w-fit items-center gap-2 text-[13px] font-semibold tracking-[.12em] text-muted uppercase">
                 ← Zpět na úvod
             </a>
             <h1 data-reveal class="text-page-title m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">

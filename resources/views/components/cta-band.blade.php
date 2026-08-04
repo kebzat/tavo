@@ -8,7 +8,8 @@
     'id' => null,
 ])
 
-<section @if ($id) id="{{ $id }}" @endif class="section-x section-y bg-brick text-ink">
+<section @if ($id) id="{{ $id }}" @endif
+         {{ $attributes->class(['section-x section-y bg-brick text-ink']) }}>
     <div class="{{ $form ? 'container-tavo max-w-[1300px]' : 'container-tavo max-w-[1200px]' }} text-center">
         @if ($eyebrow)
             <x-eyebrow data-reveal tone="ink" class="mb-[26px]">{{ $eyebrow }}</x-eyebrow>

@@ -205,6 +205,31 @@
     text-decoration: underline;
 }
 
+/* Tentýž rich-text uvnitř tmavé sekce (blok „Obrázek a text“ ve variantě Tmavá). */
+.prose-tavo-dark p,
+.prose-tavo-dark li {
+    color: color-mix(in oklab, var(--color-cream) 78%, transparent);
+}
+
+/*
+| Odsazení bloků statických stránek
+|
+| Každý blok si nese svislé odsazení sám (`section-y-sm`). Když jdou za sebou dvě
+| sekce se stejným pozadím, sečte se spodní odsazení první a horní odsazení druhé
+| a v místě, kde není vidět žádný předěl, vznikne díra. Druhé z nich proto horní
+| odsazení sebereme a obě sekce splynou v jeden souvislý pruh. Barvu nese
+| `data-block-bg`, který nastavují komponenty v resources/views/components/blocks/.
+*/
+[data-block-bg='cream'] + [data-block-bg='cream'],
+[data-block-bg='ink'] + [data-block-bg='ink'] {
+    padding-block-start: 0;
+}
+
+/* První světlá sekce navazuje na perex v hlavičce, plný odstup sekce tam trhá text. */
+header + [data-block-bg='cream'] {
+    padding-block-start: clamp(20px, 3vw, 36px);
+}
+
 /*
 |--------------------------------------------------------------------------
 | Motion — řídí resources/js/motion.js

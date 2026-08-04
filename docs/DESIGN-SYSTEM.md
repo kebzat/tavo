@@ -72,6 +72,25 @@ Standardní `sm: md: lg:` zůstávají k dispozici.
 `section-y` / `section-y-sm` (svislé odsazení sekcí), `hatch-light` / `hatch-dark`
 (šrafovaný vzor zástupných vizuálů).
 
+Obsah z rich-text editoru sází třída `prose-tavo`. Uvnitř tmavé sekce se k ní přidává
+`prose-tavo-dark`, která přebarví odstavce a odrážky na krémovou — bez ní by zůstaly
+v tmavé barvě textu a nebyly vidět.
+
+## Odsazení bloků statických stránek
+
+Každý blok si nese svislé odsazení sám (`section-y-sm`) a v atributu `data-block-bg`
+říká, jaké má pozadí (`cream` / `ink` / `brick`). Když jdou za sebou dvě sekce se stejným
+pozadím, CSS druhé z nich sebere horní odsazení, aby v místě bez viditelného předělu
+nevznikla díra. Světlá sekce hned pod hlavičkou stránky dostane jen malý odstup,
+protože navazuje na perex.
+
+Pravidlo drží [`resources/css/app.css`](../resources/css/app.css) přes sousedící
+selektory, ne Blade. Nový blok proto musí `data-block-bg` nastavit, jinak se do
+slučování nezapojí.
+
+**Při skládání stránky střídejte světlou a tmavou sekci.** Dva tmavé pruhy za sebou
+splynou v jeden dlouhý blok, ve kterém se ztratí předěl mezi tématy.
+
 ## Animace
 
 Řídí je [`resources/js/motion.js`](../resources/js/motion.js) — port původního JS,

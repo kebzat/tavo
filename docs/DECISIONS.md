@@ -123,6 +123,88 @@ toho **galerii** s libovolným počtem obrázků — 0, 1 nebo víc.
 Poznámka: `<x-media>` s `fit="natural"` v projektu zůstává (komponenta i test), i když
 ho teď nikdo nevolá — je to připravená varianta pro obrázek, který se nemá ořezávat.
 
+## Statická stránka jako bloky, ne jeden WYSIWYG (4. 8. 2026)
+
+Statická stránka byla jeden sloupec HTML z rich-text editoru. To stačí na cookies a GDPR,
+ale nešlo z toho postavit nic, co vypadá jako zbytek webu — editor umí jen text v jednom
+úzkém sloupci, ne tmavý pruh přes celou šířku nebo obrázek vedle textu.
+
+Ve hře byly dvě cesty:
+
+1. **Filament `Builder`** — stránka je pole bloků, každý blok má vlastní pole a vlastní
+   Blade komponentu.
+2. **`RichEditor::customBlocks()`** — vlastní prvky se vkládají dovnitř textu a edituje
+   se v modálu.
+
+Vybrali jsme **Builder**, protože blok může být sekce přes celou šířku (`bg-ink`, cihlový
+CTA pruh). Custom blocks by zůstaly uvězněné v 900px sloupci a navíc vyžadují přepnutí
+editoru na `->json()`, tedy převod celého stávajícího obsahu z HTML. Běžný text neztrácíme:
+je z něj blok „Text" s tím samým editorem, takže právní stránky se píšou přesně jako dřív.
+
+- Migrace `2026_08_04_090000_add_blocks_to_pages_table` přidá `blocks`, přesune stávající
+  `content` do jednoho textového bloku a `content` zahodí. Rollback text vrátí zpátky,
+  grafické bloky při něm zaniknou (do jednoho HTML sloupce se nevejdou).
+- Sada bloků vychází z komponent, které už na webu jsou (sekce „Problém" na úvodu, karty
+  u služby, metriky u reference), aby nevznikl druhý vizuální jazyk. Komponenty jsou
+  v `resources/views/components/blocks/`, formulář v `PageForm`.
+- **Obrázky v blocích jdou přes `FileUpload` na disk `public`, ne přes MediaLibrary** —
+  výjimka z konvence webu. `SpatieMediaLibraryFileUpload` maže v kolekci média, která
+  nemá ve svém stavu; uvnitř Builderu by si tak bloky se sdílenou kolekcí navzájem
+  promazávaly obrázky. Cesta k souboru i alt text proto bydlí přímo v JSON bloku.
+- Kdyby někdy přibyl požadavek na prvek uprostřed odstavce, `customBlocks()` jde přidat
+  do bloku „Text" dodatečně — jedno druhé nevylučuje.
+
+**Hlídá to** `tests/Feature/PageBlocksTest.php`.
+
+## Dopadová stránka `/e-shop` (4. 8. 2026)
+
+První stránka postavená z bloků. Vede na ni odkaz z e-mailů majitelům e-shopů, není
+v menu ani v patičce. Cílí na jiný dotaz než `/sluzby/tvorba-eshopu` (předělání
+a převod, ne tvorba), aby si obě stránky nebraly pozice navzájem.
+
+Kvůli ní přibylo:
+
+- **Hlavička s nadtitulkem** (migrace `2026_08_04_140000_add_hero_to_pages_table`).
+  Právní stránky ji nechají prázdnou a vypadají jako dosud.
+- **Bloky „Postup v krocích" a „Výčet v pilulkách".** Devět sekcí ze tří typů vypadalo
+  monotónně. Oba nové bloky vycházejí z hotových vzorů: kroky z detailu služby, pilulky
+  ze štítků u reference.
+- **Zástupný vizuál v bloku „Obrázek a text".** Dřív se sekce bez fotky vysázela jen
+  jako text, takže stránka neměla žádný obrázek, dokud správce něco nenahrál. Teď se
+  chová stejně jako náhled reference: šrafované pole s popiskem drží místo.
+- **Blok „Před a po".** Dva snímky přes sebe, vrchní se ořezává přes `clip-path` podle
+  polohy dělicí čáry. Čára sleduje `pointermove`, takže na myši stačí přejet a na dotyku
+  se táhne prstem, bez zvláštní větve v kódu. Stav drží Alpine komponenta `tavoBeforeAfter`
+  v `resources/js/app.js`, žádná další knihovna.
+
+  Kdo nemá myš, posune čáru šipkami: nad snímky leží `input[type=range]` ve třídě
+  `sr-only`, který píše do stejné hodnoty. Bez něj by sekce byla ovladatelná jen ukazatelem.
+
+  Snímky se sázejí `object-cover object-top` do pevného poměru, aby se dvě obrazovky
+  s různou výškou daly porovnat bez ořezávání v grafice.
+
+Ceny a metriky z projektů na stránce nejsou. Nemáme je od klientů potvrzené a vymyšlené
+číslo na webu je lež, kterou zákazník přečte dřív než Google.
+
+## Náhledy bloků v administraci (4. 8. 2026)
+
+Se třinácti typy bloků přestal seznam „ikona + název" stačit: z piktogramu není poznat,
+jestli blok vysází mřížku karet, nebo tmavý pruh s čísly. Nabídka „Přidat blok" je proto
+mřížka drátěnek.
+
+- Náhledy jsou **SVG v `public/images/blocks/`**, jedna drátěnka na blok, ve firemních
+  barvách. Vysází i výchozí barvu sekce, takže je dopředu vidět, co se s čím střídá.
+  Rastrové snímky by musel někdo přegenerovat po každé úpravě šablony a stejně by
+  v 160 px byly nečitelné.
+- `Block::icon()` bere řetězec s lomítkem jako cestu k obrázku, takže se drátěnka
+  podstrčí místo piktogramu. Žádný vlastní Livewire komponent není potřeba.
+- Vzhled řeší `resources/views/filament/block-picker-styles.blade.php`, vložený do
+  hlavičky panelu přes `PanelsRenderHook::HEAD_END`. Panel nemá vlastní téma a kvůli
+  pár řádkům CSS se nevyplatí zavádět build krok pro Filament.
+- **Pozor na selektor:** Filament dává třídu `fi-icon` rovnou na `<img>`, žádný obal
+  kolem něj není. Pravidla proto míří na `img.fi-icon`; s `.fi-icon img` se nechytí nic.
+  Rozsah drží `:has(img.fi-icon)`, takže ostatní rozbalovací nabídky zůstávají beze změny.
+
 ## Drobnosti k dořešení
 
 - `contact.phone` je zatím `+420 000 000 000` z designu — doplnit reálné číslo

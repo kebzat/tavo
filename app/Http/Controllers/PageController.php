@@ -11,6 +11,10 @@ class PageController extends Controller
     {
         $page = Page::published()->where('slug', $slug)->firstOrFail();
 
-        return view('pages.show', ['page' => $page]);
+        return view('pages.show', [
+            'page' => $page,
+            'blocks' => $page->contentBlocks(),
+            'headline' => $page->headlineParts(),
+        ]);
     }
 }

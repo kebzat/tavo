@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100" role="img">
+    <rect width="160" height="100" fill="#131110"/>
+    <rect x="16" y="24" width="20" height="3" rx="1.5" fill="#db4b24"/>
+    <rect x="16" y="34" width="52" height="7" rx="2" fill="#f4ede1"/>
+    <rect x="16" y="45" width="38" height="7" rx="2" fill="#f4ede1"/>
+    <g>
+        <rect x="84" y="26" width="60" height="1" fill="#f4ede1" opacity=".2"/>
+        <rect x="84" y="32" width="6" height="3" rx="1.5" fill="#db4b24"/>
+        <rect x="95" y="32" width="49" height="3" rx="1.5" fill="#f4ede1" opacity=".6"/>
+        <rect x="84" y="44" width="60" height="1" fill="#f4ede1" opacity=".2"/>
+        <rect x="84" y="50" width="6" height="3" rx="1.5" fill="#db4b24"/>
+        <rect x="95" y="50" width="40" height="3" rx="1.5" fill="#f4ede1" opacity=".6"/>
+        <rect x="84" y="62" width="60" height="1" fill="#f4ede1" opacity=".2"/>
+        <rect x="84" y="68" width="6" height="3" rx="1.5" fill="#db4b24"/>
+        <rect x="95" y="68" width="45" height="3" rx="1.5" fill="#f4ede1" opacity=".6"/>
+    </g>
+</svg>
