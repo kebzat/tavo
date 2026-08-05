@@ -2,8 +2,9 @@
 
 @php
     $dark = ($data['tone'] ?? 'ink') === 'ink';
-    $before = $data['before_url'] ?? null;
-    $after = $data['after_url'] ?? null;
+    $before = $data['before_image'] ?? null;
+    $after = $data['after_image'] ?? null;
+    $sizes = '(min-width: 861px) 88vw, 88vw';
     $beforeLabel = $data['before_label'] ?? null ?: 'Před';
     $afterLabel = $data['after_label'] ?? null ?: 'Po';
 @endphp
@@ -37,12 +38,18 @@
                  class="group relative aspect-[4/3] w-full cursor-ew-resize overflow-hidden rounded-media select-none menu:aspect-[16/8]">
 
                 {{-- Spodní vrstva je stav „po", vrchní se ořezává podle polohy čáry. --}}
-                <img src="{{ $after }}" alt="{{ $data['after_alt'] ?? '' }}"
+                <img src="{{ $after['src'] }}"
+                     @if ($after['srcset']) srcset="{{ $after['srcset'] }}" sizes="{{ $sizes }}" @endif
+                     alt="{{ $after['alt'] }}"
+                     @if ($after['width']) width="{{ $after['width'] }}" height="{{ $after['height'] }}" @endif
                      draggable="false" loading="lazy" decoding="async"
                      class="absolute inset-0 h-full w-full object-cover object-top">
 
                 <div class="absolute inset-0" x-bind:style="`clip-path: inset(0 ${100 - position}% 0 0)`">
-                    <img src="{{ $before }}" alt="{{ $data['before_alt'] ?? '' }}"
+                    <img src="{{ $before['src'] }}"
+                         @if ($before['srcset']) srcset="{{ $before['srcset'] }}" sizes="{{ $sizes }}" @endif
+                         alt="{{ $before['alt'] }}"
+                         @if ($before['width']) width="{{ $before['width'] }}" height="{{ $before['height'] }}" @endif
                          draggable="false" loading="lazy" decoding="async"
                          class="absolute inset-0 h-full w-full object-cover object-top">
                 </div>

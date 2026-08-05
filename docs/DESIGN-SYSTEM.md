@@ -20,10 +20,34 @@ Když měníš hodnotu tam, uprav i tenhle dokument.
 
 Použití v Blade: `bg-cream`, `text-brick`, `border-ink/14`, `text-cream/65` atd.
 
+### Kontrast
+
+Paleta je součástí vizuálního stylu značky a **kvůli kontrastu se nemění**.
+Cihlová na krémové (3,58:1) a krémová na cihlové (3,58:1) nesplňují WCAG AA
+pro drobný text; je to vědomé rozhodnutí, ne opomenutí. Automatický audit
+proto na barvy hlásit chyby bude — u ostatních pravidel (fokus, ARIA, struktura,
+formuláře) ale zůstává nulová tolerance, viz [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Typografie
 
-Písmo **Montserrat** (300–900 + kurzívy), self-hostované přes Bunny Fonts —
+Písmo **Montserrat** (300–800 + kurzívy), self-hostované přes Bunny Fonts —
 stahuje se při buildu do `public/build/assets`, web nikdy nevolá Google.
+
+Konfigurace je v [`vite.config.js`](../vite.config.js), do stránky ho pouští
+direktiva `@fonts` v `components/layout/app.blade.php`. **Bez ní se písmo vůbec
+nenačte** a web se vysází systémovým fontem — na vývojářském Macu si toho nikdo
+nevšimne, protože Montserrat bývá nainstalovaný lokálně.
+
+Tři věci, na kterých to stojí:
+
+- **`subsets: ['latin', 'latin-ext']`** — č, ď, ě, ň, ř, š, ť, ů a ž leží
+  v latin-ext. Bez něj by se půlka české diakritiky vysázela náhradním písmem.
+- **`preload`** jen pro 400 a 800 (běžný text a nadpisy na první obrazovce).
+  Předsunout všechny řezy by znamenalo ~500 kB blokujících požadavků.
+- **Jen WOFF2.** Bunny vrací ke každému řezu i WOFF; obě pravidla mají stejnou
+  rodinu i unicode-range, takže podle kaskády vyhraje to poslední (WOFF) a
+  prohlížeč stáhne obojí. Plugin `woff2Only()` ve `vite.config.js` proto WOFF
+  po sestavení zahodí.
 
 Velikosti jsou fluidní `clamp()` tokeny, ne pevné hodnoty:
 

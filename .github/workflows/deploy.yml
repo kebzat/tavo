@@ -96,6 +96,11 @@ jobs:
             "$PHP" artisan migrate --force
             "$PHP" artisan storage:link || true
 
+            # Zmenšeniny obrázků. Nové vznikají při uložení v administraci, tady
+            # se doplní ty, které na serveru ještě nejsou (první nasazení, obsah
+            # nahraný před zavedením zmenšenin). Hotové se přeskočí.
+            "$PHP" artisan obrazky:zmensit || true
+
             "$PHP" artisan optimize
             "$PHP" artisan queue:restart
 

@@ -1,4 +1,4 @@
-@props(['home', 'founders'])
+@props(['home', 'founders', 'photo' => null])
 
 <section id="lide" class="section-x section-y bg-cream">
     <div class="container-tavo">
@@ -8,11 +8,13 @@
         </div>
 
         <div class="grid grid-cols-1 items-center gap-[clamp(24px,4vw,64px)] menu:grid-cols-[1.05fr_0.95fr]">
-            @php($photo = $founders->map->photoUrl()->filter()->first())
-
             <div data-reveal class="relative overflow-hidden rounded-card bg-ink">
                 @if ($photo)
-                    <img src="{{ $photo }}" alt="Zakladatelé {{ $founders->pluck('name')->join(' a ') }}"
+                    <img src="{{ $photo['src'] }}"
+                         @if ($photo['srcset']) srcset="{{ $photo['srcset'] }}" sizes="(min-width: 861px) 45vw, 88vw" @endif
+                         alt="{{ $photo['alt'] }}"
+                         @if ($photo['width']) width="{{ $photo['width'] }}" height="{{ $photo['height'] }}" @endif
+                         loading="lazy" decoding="async"
                          class="block aspect-square h-full w-full object-cover">
                 @else
                     <div class="aspect-square w-full hatch-dark"></div>

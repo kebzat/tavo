@@ -17,10 +17,10 @@
                    class="mb-[90px] grid grid-cols-1 items-center gap-[clamp(28px,4vw,70px)] text-inherit no-underline last:mb-0 menu:grid-cols-[0.82fr_1.28fr]">
                     {{-- Pořadí drží původní design: vizuál vždy vlevo, text vpravo. --}}
                     <x-media
-                        :url="$case->thumbUrl()"
-                        :alt="$case->imageAlt()"
+                        :image="$case->thumbImage()"
                         :label="$case->thumb_label"
-                        :parallax="true" />
+                        :parallax="true"
+                        sizes="(min-width: 861px) 34vw, 88vw" />
 
                     <div>
                         <div class="mb-4 text-[13px] font-bold tracking-[.14em] text-brick uppercase">{{ $case->eyebrow }}</div>

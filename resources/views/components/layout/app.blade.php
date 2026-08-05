@@ -2,6 +2,7 @@
     'title' => null,
     'description' => null,
     'ogImage' => null,
+    'ogImageAlt' => null,
     'bodyClass' => '',
     'schema' => [],
 ])
@@ -13,7 +14,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <x-seo.meta :title="$title" :description="$description" :ogImage="$ogImage" :schema="$schema" />
+    <x-seo.meta :title="$title" :description="$description" :ogImage="$ogImage" :ogImageAlt="$ogImageAlt" :schema="$schema" />
+
+    {{-- Montserrat — @fonts vysází @font-face pravidla a preload odkazy podle
+         konfigurace v vite.config.js. Bez téhle direktivy se písmo vůbec
+         nenačte a web se vysází systémovým fontem. --}}
+    @fonts
 
     {{-- Značka z loga. SVG pro současné prohlížeče, .ico pro ty, co si o něj
          řeknou samy, PNG pro ikonu na ploše iPhonu. --}}

@@ -4,6 +4,7 @@
 
 ```
 app/
+├─ Console/Commands/           obrazky:zmensit — hromadné zmenšeniny obrázků
 ├─ Filament/
 │  ├─ Pages/Settings/          ManageHome, ManageSite, ManageContact, ManageSeo
 │  └─ Resources/               CaseStudies, Services, CaseStudyCategories,
@@ -13,8 +14,14 @@ app/
 ├─ Mail/LeadReceived           notifikace o nové poptávce
 ├─ Models/                     CaseStudy, CaseStudyCategory, Service,
 │                              ProcessStep, Founder, Page, Lead, User
-├─ Providers/AppServiceProvider  sdílí $site a $contact do všech šablon
-└─ Settings/                   SiteSettings, ContactSettings, HomeSettings, SeoSettings
+├─ Providers/AppServiceProvider  sdílí $site a $contact, spouští ImageDerivatives
+├─ Settings/                   SiteSettings, ContactSettings, HomeSettings, SeoSettings
+└─ Support/
+   ├─ ResponsiveImage          WebP zmenšeniny + srcset a rozměry
+   ├─ ImageDerivatives         hledá obrázky v obsahu, poslouchá uložení
+   ├─ PageMeta                 title, description, OG, robots pro <head>
+   ├─ StructuredData           JSON-LD
+   └─ ContentSettingsMigration základ migrací nastavení
 
 database/
 ├─ migrations/                 schéma tabulek
@@ -83,12 +90,45 @@ Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 | `<x-home.*>` | jednotlivé sekce homepage |
 | `<x-errors.layout>` | společný layout chybových stránek |
 
-### Ořez obrázků v `<x-media>`
+### Obrázky — zmenšeniny a `<x-media>`
+
+Do administrace se nahrávají originály, na web se posílají **WebP zmenšeniny**.
+Řeší to `App\Support\ResponsiveImage`: z každého obrázku udělá varianty v šířkách
+480 / 768 / 1024 / 1440 / 1920 px (nezvětšuje; když je originál znatelně širší než
+nejbližší stupeň, přidá i jeho vlastní šířku) a vrátí pole `src`, `srcset`,
+`width`, `height`, `alt`.
+
+- Varianty vznikají **při uložení obsahu** — `App\Support\ImageDerivatives::listen()`
+  poslouchá uložení `Media` i modelů se skládaným obsahem (`CaseStudy`, `Page`).
+- Pro starší obsah a po nasazení na nový server je `php artisan obrazky:zmensit`.
+- Kdyby varianta přesto chyběla, dopočítá se při vykreslení, aby na webu nikdy
+  nechyběl obrázek.
+- Leží v `storage/app/public/zmenseniny/` se stejnou strukturou jako originály.
+- **Jen WebP, bez zálohy v původním formátu** — web stojí na `color-mix(in oklab)`
+  a `aspect-ratio`, což umí právě ty prohlížeče, které umí i WebP.
+- Obrázek pro sdílení (OG) naopak zůstává v **původním formátu** (`thumbPath()`) —
+  čtečky odkazů na LinkedInu si s WebP neporadí.
+
+Kdo obrázek dodává:
+
+| Zdroj | Metoda |
+|---|---|
+| náhled reference | `CaseStudy::thumbImage()` |
+| galerie reference | `CaseStudy::galleryImages()` |
+| fotka zakladatelů | `Founder::photoImage()` |
+| obrázky v blocích | klíč `*_image` z `HasContentBlocks` |
+
+Komponenta `<x-media :image="…">` z toho vysází `<img>` včetně `width`/`height`
+(bez nich stránka při načítání poskakuje) a `srcset`/`sizes`. Volající předává
+`sizes` podle toho, jak široký slot obrázek v rozvržení zabírá — výchozí hodnota
+odpovídá dvousloupcové mřížce. `:priority="true"` je pro obrázek na první
+obrazovce (`loading="eager"` + `fetchpriority="high"`), všechno ostatní se načítá
+až při scrollování.
 
 | `fit` | Chování | Kde se používá |
 |---|---|---|
 | `cover` (výchozí) | obrázek se ořízne na poměr z `ratio` | náhledy ve výpisech a na homepage — mřížka musí být zarovnaná |
-| `natural` | obrázek si drží vlastní poměr, `ratio` platí jen pro zástupný vizuál | dřívější hlavní vizuál reference (dnes ho nahradila galerie) |
+| `natural` | obrázek si drží vlastní poměr, `ratio` platí jen pro zástupný vizuál | obrázkový blok statické stránky |
 
 Zaoblení drží rámeček (`overflow-hidden` + `rounded-*`), takže funguje v obou režimech.
 
@@ -104,10 +144,20 @@ na `CaseStudy`), ne jeden pevný vizuál:
   na hoveru rámu. Obrázky se v rámu ořezávají na 4:3 kvůli konzistentní výšce;
   plný obrázek bez ořezu ukáže lightbox po kliknutí.
 
-Rozměry čte `CaseStudy::galleryImages()` ze souboru a cachuje je (`Cache::rememberForever`
-podle id + `updated_at` média), aby šel obrázku rezervovat `width`/`height`. Slider
-i lightbox řídí Alpine komponenta `tavoGallery` v `resources/js/app.js` — tečky/šipky
-mění `index`, ovládání klávesnicí Esc / šipky, klik na obrázek otevře lightbox.
+Obrázky dodává `CaseStudy::galleryImages()` přes `ResponsiveImage` (viz výš), takže
+každý snímek nese rozměry i `srcset`. Slider i lightbox řídí Alpine komponenta
+`tavoGallery` v `resources/js/app.js` — tečky/šipky mění `index`, klik na obrázek
+otevře lightbox.
+
+Přístupnost slideru:
+
+- Skrytý snímek je `inert`, takže tabulátorem projde jen ten viditelný.
+- Tečky nejsou `role="tab"` (to by chtělo navázaný `tabpanel`), ale skupina
+  tlačítek s `aria-current`.
+- Lightbox je `role="dialog"` s **pastí na fokus** (`trapFocus`) — po otevření
+  jde fokus na křížek, Tab z dialogu neuteče a po Esc se vrátí tam, odkud se
+  otevřel. Šipky doleva/doprava fungují jen v otevřeném lightboxu, aby
+  klávesnice nepřepínala slider mimo obrazovku.
 
 Slider je **klientský** (Alpine `x-for`), takže alt texty ani URL nejsou v serverovém
 HTML — jsou v `x-data` payloadu. Feature testy proto ověřují přítomnost komponenty

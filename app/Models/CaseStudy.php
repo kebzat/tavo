@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasContentBlocks;
+use App\Support\ResponsiveImage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -64,9 +64,30 @@ class CaseStudy extends Model implements HasMedia
         $this->addMediaConversion('preview')->width(600)->nonQueued();
     }
 
-    public function thumbUrl(): ?string
+    /**
+     * Náhled reference i s rozměry a sadou zmenšenin pro `srcset`.
+     *
+     * @return array{src: string, srcset: ?string, width: ?int, height: ?int, alt: string}|null
+     */
+    public function thumbImage(): ?array
     {
-        return $this->getFirstMediaUrl(self::MEDIA_THUMB) ?: null;
+        $media = $this->getFirstMedia(self::MEDIA_THUMB);
+
+        if (! $media) {
+            return null;
+        }
+
+        return ResponsiveImage::make($media->getPathRelativeToRoot(), $this->imageAlt());
+    }
+
+    /**
+     * Cesta k náhledu na disku `public`. Používá se jako obrázek pro sdílení —
+     * proto originál, ne WebP zmenšenina: LinkedIn a další čtečky odkazů si
+     * s WebP neporadí.
+     */
+    public function thumbPath(): ?string
+    {
+        return $this->getFirstMedia(self::MEDIA_THUMB)?->getPathRelativeToRoot();
     }
 
     public function imageAlt(string $collection = self::MEDIA_THUMB): string
@@ -75,46 +96,21 @@ class CaseStudy extends Model implements HasMedia
     }
 
     /**
-     * Galerie pro detail reference. Rozměry se čtou ze souboru, aby šlo obrázku
-     * dopředu rezervovat místo a stránka při načítání neposkakovala; výsledek
-     * se cachuje, takže se soubor sahá jen jednou.
+     * Galerie pro detail reference. Každý obrázek nese rozměry, aby mu šlo
+     * dopředu rezervovat místo a stránka při načítání neposkakovala.
      *
-     * @return Collection<int, array{url: string, alt: string, width: ?int, height: ?int}>
+     * @return Collection<int, array{src: string, srcset: ?string, width: ?int, height: ?int, alt: string}>
      */
     public function galleryImages(): Collection
     {
         return $this->getMedia(self::MEDIA_GALLERY)
             ->values()
-            ->map(function (Media $media, int $index) {
-                [$width, $height] = $this->imageDimensions($media);
-
-                return [
-                    'url' => $media->getUrl(),
-                    'alt' => $media->getCustomProperty('alt')
-                        ?: $this->title.' — ukázka '.($index + 1),
-                    'width' => $width,
-                    'height' => $height,
-                ];
-            });
-    }
-
-    /** @return array{0: ?int, 1: ?int} */
-    private function imageDimensions(Media $media): array
-    {
-        return Cache::rememberForever(
-            "media-dimensions-{$media->id}-{$media->updated_at?->timestamp}",
-            function () use ($media) {
-                $path = $media->getPath();
-
-                if (! is_file($path)) {
-                    return [null, null];
-                }
-
-                $size = @getimagesize($path);
-
-                return $size ? [$size[0], $size[1]] : [null, null];
-            },
-        );
+            ->map(fn (Media $media, int $index) => ResponsiveImage::make(
+                $media->getPathRelativeToRoot(),
+                $media->getCustomProperty('alt') ?: $this->title.' — ukázka '.($index + 1),
+            ))
+            ->filter()
+            ->values();
     }
 
     /** Následující reference v pořadí (pro blok „Další projekt"). */

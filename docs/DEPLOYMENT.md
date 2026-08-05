@@ -176,8 +176,14 @@ sestaví na GitHubu a na server se pošle hotový:
 ```
 composer install --no-dev + npm run build (na GitHubu)
 → php artisan down → rsync celého projektu na server
-→ migrate --force → storage:link → optimize → queue:restart → php artisan up
+→ migrate --force → storage:link → obrazky:zmensit
+→ optimize → queue:restart → php artisan up
 ```
+
+`obrazky:zmensit` dopočítá WebP zmenšeniny k obrázkům, které je ještě nemají
+(první nasazení, obsah nahraný dřív). Hotové přeskočí, takže běh je při dalších
+nasazeních prakticky okamžitý. Nové obrázky si zmenšeniny udělají samy při
+uložení v administraci — viz [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Nakonec ověří, že produkce vrací HTTP 200 — pokud ne, běh skončí červeně.
 Když nasazení spadne uprostřed, web se přesto nahodí zpátky z údržby.

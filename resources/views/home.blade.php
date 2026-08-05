@@ -5,7 +5,7 @@
     <x-home.services :home="$home" :services="$services" />
     <x-home.cases :home="$home" :cases="$cases" />
     <x-home.loop :home="$home" :items="$loopItems" />
-    <x-home.founders :home="$home" :founders="$founders" />
+    <x-home.founders :home="$home" :founders="$founders" :photo="$foundersPhoto" />
     <x-home.process :home="$home" :steps="$processSteps" />
 
     <x-cta-band

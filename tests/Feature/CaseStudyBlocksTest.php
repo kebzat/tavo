@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\CaseStudy;
 use Database\Seeders\ContentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -64,14 +66,34 @@ class CaseStudyBlocksTest extends TestCase
             ->assertSee('Jan Novák', false);
     }
 
-    public function test_obrazek_v_bloku_reference_dostane_verejnou_url(): void
+    public function test_obrazek_v_bloku_reference_dostane_zmenseninu_i_popisek(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('reference/foto.jpg', UploadedFile::fake()->image('foto.jpg', 1600, 900)->get());
+
         CaseStudy::where('slug', 'vcely-uhersko')->update(['blocks' => [
             ['type' => 'image', 'data' => ['image' => 'reference/foto.jpg', 'image_alt' => 'Popisek']],
         ]]);
 
         $this->get('/reference/vcely-uhersko')
             ->assertOk()
-            ->assertSee('/storage/reference/foto.jpg', false);
+            // Návštěvník dostane WebP v šířce podle displeje, ne původní soubor.
+            ->assertSee('/storage/zmenseniny/reference/foto-1440.webp', false)
+            ->assertSee('srcset=', false)
+            ->assertSee('alt="Popisek"', false);
+    }
+
+    public function test_blok_s_chybejicim_souborem_stranku_neshodi(): void
+    {
+        Storage::fake('public');
+
+        CaseStudy::where('slug', 'vcely-uhersko')->update(['blocks' => [
+            ['type' => 'image', 'data' => ['image' => 'reference/neexistuje.jpg', 'image_alt' => 'Popisek']],
+        ]]);
+
+        // Bez souboru se blok prostě vynechá — lepší než rozbitý obrázek.
+        $this->get('/reference/vcely-uhersko')
+            ->assertOk()
+            ->assertDontSee('reference/neexistuje.jpg', false);
     }
 }

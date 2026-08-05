@@ -9,13 +9,19 @@
 <div x-data
      @keydown.escape.window="$store.nav.close()">
     <nav data-nav
+         aria-label="Hlavní navigace"
          :data-open="$store.nav.open"
          class="fixed inset-x-0 top-0 z-50 flex items-center justify-between px-[6vw] py-[18px]">
         <a href="{{ route('home') }}" class="relative flex items-center" aria-label="{{ $site->brand_name }} — úvodní stránka">
+            {{-- Logo je SVG bez vlastních rozměrů (width/height="100%"), takže
+                 dokud se nestáhne, prohlížeč neví, jak je široké, a lišta pod
+                 ním poskočí. Rozměry proto uvádíme rovnou v atributech. --}}
             <img src="/images/taveo-logo-dark.svg" alt="{{ $site->brand_name }}"
+                 width="112" height="26"
                  class="block h-[26px] w-auto transition-opacity duration-300 ease-tavo"
                  :class="$store.nav.open && 'opacity-0'">
             <img src="/images/taveo-logo-cream.svg" alt="" aria-hidden="true"
+                 width="112" height="26"
                  class="absolute top-0 left-0 block h-[26px] w-auto opacity-0 transition-opacity duration-300 ease-tavo"
                  :class="$store.nav.open && 'opacity-100'">
         </a>
@@ -37,15 +43,20 @@
                 data-burger
                 @click="$store.nav.toggle()"
                 :aria-expanded="$store.nav.open ? 'true' : 'false'"
-                aria-label="Menu"
+                aria-controls="hlavni-menu"
+                :aria-label="$store.nav.open ? 'Zavřít menu' : 'Otevřít menu'"
                 class="relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl bg-ink transition-[background-color,border-radius,transform] duration-300 ease-tavo active:scale-90 menu:hidden">
-            <span data-burger-bar></span>
-            <span data-burger-bar></span>
+            <span data-burger-bar aria-hidden="true"></span>
+            <span data-burger-bar aria-hidden="true"></span>
         </button>
     </nav>
 
-    <div x-show="$store.nav.open"
+    {{-- Vlastní <nav>, ne <div> — jinak odkazy v rozbaleném menu leží mimo
+         orientační body stránky a čtečka je při procházení landmarků přeskočí. --}}
+    <nav x-show="$store.nav.open"
          x-cloak
+         id="hlavni-menu"
+         aria-label="Menu"
          data-nav-panel
          x-transition:enter="nav-panel-motion"
          x-transition:enter-start="nav-panel-hidden"
@@ -73,5 +84,5 @@
            class="rounded-2xl bg-brick p-[18px] text-center text-[17px] font-bold text-ink">
             {{ $site->nav_cta_label }} →
         </a>
-    </div>
+    </nav>
 </div>

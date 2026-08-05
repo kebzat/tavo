@@ -43,10 +43,11 @@
                         <a href="{{ route('cases.show', $case->slug) }}" data-reveal class="group block">
                             <div class="relative">
                                 <x-media
-                                    :url="$case->thumbUrl()"
-                                    :alt="$case->imageAlt()"
+                                    :image="$case->thumbImage()"
                                     :label="$case->thumb_label"
+                                    :priority="$loop->first"
                                     radius="rounded-thumb"
+                                    sizes="(min-width: 861px) 44vw, 88vw"
                                     class="transition-transform duration-500 ease-tavo group-hover:scale-[1.02]" />
 
                                 @if ($case->category)

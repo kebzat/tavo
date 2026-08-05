@@ -27,8 +27,11 @@ Alpine.data('tavoGallery', (images) => ({
     index: 0,
     lightbox: false,
 
+    /** Prvek, ze kterého se lightbox otevřel — po zavření se na něj vrátí fokus. */
+    openedFrom: null,
+
     get current() {
-        return this.images[this.index] ?? { url: '', alt: '' };
+        return this.images[this.index] ?? { src: '', srcset: null, alt: '' };
     },
 
     go(i) {
@@ -45,6 +48,7 @@ Alpine.data('tavoGallery', (images) => ({
 
     openLightbox(i) {
         if (i != null) this.index = i;
+        this.openedFrom = document.activeElement;
         this.lightbox = true;
         document.body.style.overflow = 'hidden';
         this.$nextTick(() => this.$refs.close?.focus());
@@ -54,6 +58,30 @@ Alpine.data('tavoGallery', (images) => ({
         if (! this.lightbox) return;
         this.lightbox = false;
         document.body.style.overflow = '';
+        this.openedFrom?.focus();
+        this.openedFrom = null;
+    },
+
+    /**
+     * Fokus musí zůstat v otevřeném dialogu — jinak by tabulátor odešel na
+     * stránku pod ním, kterou uživatel nevidí.
+     */
+    trapFocus(event) {
+        const focusable = Array.from(
+            this.$el.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])'),
+        ).filter((el) => el.offsetParent !== null);
+
+        if (! focusable.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const current = document.activeElement;
+
+        if (event.shiftKey) {
+            (current === first || ! focusable.includes(current) ? last : focusable[focusable.indexOf(current) - 1]).focus();
+        } else {
+            (current === last || ! focusable.includes(current) ? first : focusable[focusable.indexOf(current) + 1]).focus();
+        }
     },
 }));
 

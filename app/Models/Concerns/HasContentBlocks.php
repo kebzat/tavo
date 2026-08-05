@@ -2,9 +2,8 @@
 
 namespace App\Models\Concerns;
 
-use Illuminate\Filesystem\FilesystemAdapter;
+use App\Support\ResponsiveImage;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Skládaný obsah z Filament Builderu. Model, který trait použije, musí mít
@@ -40,21 +39,23 @@ trait HasContentBlocks
     }
 
     /**
-     * Obrázky se v blocích ukládají jako cesta na disku `public`; web potřebuje
-     * URL. Ke každé cestě proto přibude klíč se sufixem `_url`.
+     * Obrázky se v blocích ukládají jako cesta na disku `public`; šablona
+     * potřebuje URL, zmenšeniny a rozměry. Ke každé cestě proto přibude klíč
+     * se sufixem `_image` s hotovým polem pro <x-media>, případně `null`,
+     * když soubor chybí — blok se pak vysází bez obrázku.
+     *
+     * Popisek (alt) leží v sousedním klíči `*_alt`, ať ho nemusí dohledávat
+     * šablona.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function resolveBlockImages(array $data): array
     {
-        /** @var FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
-
         foreach (self::BLOCK_IMAGE_KEYS as $key) {
-            if (filled($data[$key] ?? null)) {
-                $data[$key.'_url'] = $disk->url($data[$key]);
-            }
+            $data[$key.'_image'] = filled($data[$key] ?? null)
+                ? ResponsiveImage::make($data[$key], (string) ($data[$key.'_alt'] ?? ''))
+                : null;
         }
 
         return $data;

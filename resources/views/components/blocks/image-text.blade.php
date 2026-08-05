@@ -3,7 +3,7 @@
 @php
     $dark = ($data['tone'] ?? 'cream') === 'ink';
     $imageLeft = ($data['side'] ?? 'left') === 'left';
-    $image = $data['image_url'] ?? null;
+    $image = $data['image_image'] ?? null;
     $label = $data['image_label'] ?? null;
 
     // Dokud není nahraná fotka, drží místo šrafovaný zástupný vizuál s popiskem.
@@ -18,10 +18,10 @@
         <div class="container-tavo grid grid-cols-1 items-center gap-[clamp(30px,5vw,80px)] {{ $hasVisual && $hasText ? 'menu:grid-cols-2' : 'max-w-[900px]' }}">
             @if ($hasVisual)
                 <x-media data-reveal
-                         :url="$image"
-                         :alt="$data['image_alt'] ?? ''"
+                         :image="$image"
                          :label="$label"
                          :tone="$dark ? 'dark' : 'light'"
+                         sizes="(min-width: 861px) 44vw, 88vw"
                          class="{{ $imageLeft ? 'menu:order-1' : 'menu:order-2' }}" />
             @endif
 

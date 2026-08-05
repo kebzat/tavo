@@ -69,8 +69,16 @@ class CaseStudyGalleryTest extends TestCase
         $this->assertCount(3, $images);
         $this->assertSame('První ukázka', $images->first()['alt']);
         $this->assertSame('Třetí ukázka', $images->last()['alt']);
-        $this->assertSame(1200, $images->first()['width']);
-        $this->assertSame(800, $images->first()['height']);
+
+        // Vykresluje se zmenšenina, ne originál — poměr stran ale musí sedět,
+        // jinak by prohlížeč rezervoval špatnou výšku a stránka by poskočila.
+        $first = $images->first();
+        $this->assertStringEndsWith('.webp', $first['src']);
+        $this->assertSame(
+            round(1200 / 800, 2),
+            round($first['width'] / $first['height'], 2),
+        );
+        $this->assertStringContainsString('w,', (string) $first['srcset']);
     }
 
     public function test_chybejici_alt_ma_rozumny_zalozni_text(): void

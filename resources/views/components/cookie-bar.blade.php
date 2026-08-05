@@ -25,6 +25,9 @@
      x-show="open && ! $store.nav.open"
      x-cloak
      x-transition
+     role="dialog"
+     aria-modal="false"
+     aria-label="Souhlas s cookies"
      class="fixed inset-x-4 bottom-4 z-[60] mx-auto max-w-2xl rounded-card bg-ink p-6 text-cream shadow-2xl md:inset-x-auto md:right-6 md:bottom-6">
     <p class="m-0 text-[14px] leading-[1.55] text-cream/75">
         Používáme nezbytné cookies pro běh webu.

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Settings\ContactSettings;
 use App\Settings\SiteSettings;
+use App\Support\ImageDerivatives;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -31,5 +32,8 @@ class AppServiceProvider extends ServiceProvider
                 'contact' => app(ContactSettings::class),
             ]);
         });
+
+        // Zmenšeniny nahraných obrázků vznikají hned při uložení v administraci.
+        ImageDerivatives::listen();
     }
 }

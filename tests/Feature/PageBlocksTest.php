@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Page;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -105,6 +107,10 @@ class PageBlocksTest extends TestCase
 
     public function test_porovnani_pred_a_po_vysadi_oba_obrazky(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('pages/pred.jpg', UploadedFile::fake()->image('pred.jpg', 1600, 900)->get());
+        Storage::disk('public')->put('pages/po.jpg', UploadedFile::fake()->image('po.jpg', 1600, 900)->get());
+
         $this->makePage([
             ['type' => 'before_after', 'data' => [
                 'title' => 'Přetáhněte čáru',
@@ -118,8 +124,8 @@ class PageBlocksTest extends TestCase
         $this->get('/zkusebni')
             ->assertOk()
             ->assertSee('Přetáhněte čáru', false)
-            ->assertSee('/storage/pages/pred.jpg', false)
-            ->assertSee('/storage/pages/po.jpg', false)
+            ->assertSee('/storage/zmenseniny/pages/pred-1440.webp', false)
+            ->assertSee('/storage/zmenseniny/pages/po-1440.webp', false)
             ->assertSee('alt="Původní stav"', false)
             // Bez myši musí jít čára posunout klávesnicí.
             ->assertSee('aria-label="Porovnání stavu Před a Po"', false);
@@ -232,20 +238,27 @@ class PageBlocksTest extends TestCase
             ->assertDontSee('<section', false);
     }
 
-    public function test_obrazek_v_bloku_dostane_verejnou_url(): void
+    public function test_obrazek_v_bloku_dostane_zmenseninu_i_rozmery(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('pages/foto.jpg', UploadedFile::fake()->image('foto.jpg', 1600, 900)->get());
+
         $page = $this->makePage([
             ['type' => 'image', 'data' => ['image' => 'pages/foto.jpg', 'image_alt' => 'Popisek']],
         ]);
 
+        $image = $page->contentBlocks()->first()['data']['image_image'];
+
         $this->assertSame(
-            '/storage/pages/foto.jpg',
-            parse_url($page->contentBlocks()->first()['data']['image_url'], PHP_URL_PATH),
+            '/storage/zmenseniny/pages/foto-1440.webp',
+            parse_url($image['src'], PHP_URL_PATH),
         );
+        $this->assertSame('Popisek', $image['alt']);
+        $this->assertSame(1440, $image['width']);
 
         $this->get('/zkusebni')
             ->assertOk()
-            ->assertSee('/storage/pages/foto.jpg', false)
+            ->assertSee('/storage/zmenseniny/pages/foto-1440.webp', false)
             ->assertSee('alt="Popisek"', false);
     }
 

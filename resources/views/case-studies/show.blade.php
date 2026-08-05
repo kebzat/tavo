@@ -1,6 +1,10 @@
+{{-- Náhled reference slouží i jako obrázek pro sdílení — každý projekt tak má
+     na sociálních sítích vlastní vizuál místo obecného loga. --}}
 <x-layout.app
     :title="$case->seo_title ?: $case->title"
     :description="$case->seo_description ?: $case->excerpt"
+    :ogImage="$case->thumbPath()"
+    :ogImageAlt="$case->imageAlt()"
     :schema="$schema">
 
     @php($hasGallery = $gallery->isNotEmpty())
@@ -107,11 +111,11 @@
                 <a href="{{ route('cases.show', $next->slug) }}" data-reveal
                    class="grid grid-cols-1 items-center gap-[clamp(24px,3vw,50px)] overflow-hidden rounded-card bg-ink-soft transition-transform duration-500 ease-tavo hover:-translate-y-1.5 menu:grid-cols-[1fr_1.3fr]">
                     <x-media
-                        :url="$next->thumbUrl()"
-                        :alt="$next->imageAlt()"
+                        :image="$next->thumbImage()"
                         :label="$next->thumb_label"
                         tone="dark"
-                        radius="rounded-none" />
+                        radius="rounded-none"
+                        sizes="(min-width: 861px) 40vw, 88vw" />
 
                     <div class="px-[clamp(26px,3vw,44px)] pb-8 menu:pb-0">
                         <div class="mb-3.5 text-xs font-bold tracking-[.1em] text-brick uppercase">{{ $next->eyebrow }}</div>

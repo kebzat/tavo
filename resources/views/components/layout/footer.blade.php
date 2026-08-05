@@ -2,7 +2,9 @@
     <div class="container-tavo">
         <div class="grid grid-cols-2 gap-x-[30px] gap-y-10 border-b border-cream/15 pb-14 menu:grid-cols-[2fr_1fr_1fr_1.4fr]">
             <div>
-                <img src="/images/taveo-logo-cream.svg" alt="{{ $site->brand_name }}" class="mb-[18px] block h-[34px] w-auto">
+                <img src="/images/taveo-logo-cream.svg" alt="{{ $site->brand_name }}"
+                     width="146" height="34" loading="lazy" decoding="async"
+                     class="mb-[18px] block h-[34px] w-auto">
                 <p class="m-0 max-w-[34ch] text-[15px] leading-[1.6] text-cream/60">{{ $site->brand_claim }}</p>
             </div>
 

@@ -94,8 +94,14 @@
 */
 @layer base {
     html {
-        scroll-behavior: smooth;
         scroll-padding-top: 90px;
+    }
+
+    /* Plynulé rolování jen pro toho, kdo si nevypnul animace v systému. */
+    @media (prefers-reduced-motion: no-preference) {
+        html {
+            scroll-behavior: smooth;
+        }
     }
 
     body {

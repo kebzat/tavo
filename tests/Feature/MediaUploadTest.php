@@ -43,7 +43,8 @@ class MediaUploadTest extends TestCase
 
         $this->assertNotNull($media, 'Obrázek se vůbec nepřipojil k referenci.');
         $this->assertSame('public', $media->disk);
-        $this->assertStringStartsWith('/storage/', $case->thumbUrl());
+        $this->assertSame($media->id.'/'.$media->file_name, $case->thumbPath());
+        $this->assertStringStartsWith('/storage/', parse_url($case->thumbImage()['src'], PHP_URL_PATH));
         Storage::disk('public')->assertExists($media->id.'/'.$media->file_name);
     }
 }
