@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CaseStudies\Schemas;
 
+use App\Filament\Schemas\ContentBlocks;
 use App\Models\CaseStudy;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -139,49 +140,14 @@ class CaseStudyForm
                             ->simple(TextInput::make('text')->required())
                             ->defaultItems(0),
                     ]),
-
-                    Section::make('Role marketingu a vývoje')->schema([
-                        TextInput::make('roles_title')->label('Nadpis sekce')->default('Jak jsme to táhli spolu'),
-                        Textarea::make('roles_perex')->label('Perex')->rows(2),
-
-                        TextInput::make('marketing_title')->label('Nadpis levého sloupce')->default('Role marketingu — Pavel'),
-                        Repeater::make('marketing_items')
-                            ->label('Body marketingu')
-                            ->addActionLabel('Přidat bod')
-                            ->simple(TextInput::make('text')->required())
-                            ->defaultItems(0),
-
-                        TextInput::make('dev_title')->label('Nadpis pravého sloupce')->default('Role vývoje — Tom'),
-                        Repeater::make('dev_items')
-                            ->label('Body vývoje')
-                            ->addActionLabel('Přidat bod')
-                            ->simple(TextInput::make('text')->required())
-                            ->defaultItems(0),
-                    ]),
                 ]),
 
-                Tab::make('Výsledky')->schema([
-                    Section::make('Čísla')->schema([
-                        Repeater::make('results')
-                            ->label('Metriky')
-                            ->addActionLabel('Přidat metriku')
-                            ->schema([
-                                TextInput::make('value')->label('Hodnota')->required()->helperText('Např. „+41 %"'),
-                                TextInput::make('label')->label('Popisek')->required()->helperText('Např. „tržby z online za 4 měsíce"'),
-                            ])
-                            ->columns(2)
-                            ->defaultItems(0)
-                            ->helperText('První dvě metriky se použijí i na homepage.'),
-
-                        Textarea::make('disclaimer')
-                            ->label('Poznámka pod čísly')
-                            ->rows(2),
-                    ]),
-
-                    Section::make('Citace klienta')->columns(2)->schema([
-                        Textarea::make('quote')->label('Citace')->rows(3)->columnSpanFull(),
-                        TextInput::make('quote_author')->label('Kdo to řekl'),
-                    ]),
+                Tab::make('Obsah')->schema([
+                    Section::make()
+                        ->description('Spodek detailu pod zadáním. Skládá se ze stejných bloků jako statické stránky, takže u každé reference může vypadat jinak.')
+                        ->schema([
+                            ContentBlocks::builder('reference'),
+                        ]),
                 ]),
 
                 Tab::make('SEO')->schema([

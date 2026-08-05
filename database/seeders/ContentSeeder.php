@@ -224,6 +224,27 @@ class ContentSeeder extends Seeder
         ]);
     }
 
+    /**
+     * Sekce „Co jsme na projektu dělali" jako blok. Spodek detailu reference se
+     * skládá z bloků, tohle je jediný, který má každá reference z designu stejný.
+     *
+     * @param  array<int, string>  $items
+     * @return array<int, array{type: string, data: array<string, mixed>}>
+     */
+    private function rolesBlock(string $title, string $perex, string $label, array $items, string $note): array
+    {
+        return [[
+            'type' => 'bullets',
+            'data' => [
+                'tone' => 'ink',
+                'title' => $title,
+                'perex' => $perex,
+                'columns' => [['label' => $label, 'items' => $items]],
+                'note' => $note,
+            ],
+        ]];
+    }
+
     private function caseStudies(): void
     {
         // Původní ukázkové reference z designu měly vymyšlená čísla i citace klientů.
@@ -268,17 +289,13 @@ class ContentSeeder extends Seeder
                 'Med a přespání v sadu jsou dvě nabídky pro dvě různá publika.',
                 'Apidomek se teprve staví, takže web musel počítat s tím, že nabídka poroste.',
             ],
-            'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Vizuální styl, etiketu i web jsme dělali od nuly.',
-            'dev_title' => 'Značka a web',
-            'dev_items' => [
+            'blocks' => $this->rolesBlock('Co jsme na projektu dělali', 'Vizuální styl, etiketu i web jsme dělali od nuly.', 'Značka a web', [
                 'Vizuální styl značky od loga po barvy a typografii.',
                 'Návrh etikety na med, ať sklenice a web mluví stejným jazykem.',
                 'Klidný web, kde fotky sadu nesou víc než text.',
                 'Sekce pro přespání v sadu s odkazem na rezervaci přes Bezkempu.',
                 'Galerie sadu a připravené místo pro apidomek, který se teprve staví.',
-            ],
-            'disclaimer' => $solo,
+            ], $solo),
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'chrudimlab'], [
@@ -307,17 +324,13 @@ class ContentSeeder extends Seeder
                 'Zakázky se domlouvaly telefonem a e-mailem bez jasného postupu.',
                 'Ordinace potřebovaly místo, kam se přihlásí a vyřídí věci bez telefonátu.',
             ],
-            'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Web i obsah má na starosti Tom.',
-            'dev_title' => 'Tom: vývoj a obsah',
-            'dev_items' => [
+            'blocks' => $this->rolesBlock('Co jsme na projektu dělali', 'Web i obsah má na starosti Tom.', 'Tom: vývoj a obsah', [
                 'Prezentace frézovacího centra a technologií, kterými se laboratoř liší.',
                 'Vlastní rezervační formulář místo domlouvání po telefonu.',
                 'Uzamčená sekce pro lékaře pro komunikaci s ordinacemi.',
                 'Fotogalerie hotových prací, protože ta přesvědčí zubaře nejrychleji.',
                 'Ceník a kalendář školení pro zubní techniky v administraci, kterou si laboratoř spravuje sama.',
-            ],
-            'disclaimer' => $solo,
+            ], $solo),
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'hopnjoy'], [
@@ -346,17 +359,13 @@ class ContentSeeder extends Seeder
                 'Nabídka atrakcí nebyla nikde pohromadě.',
                 'Rodič potřebuje vidět rozměry a fotky, ne obecný popis.',
             ],
-            'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Web i obsah má na starosti Tom.',
-            'dev_title' => 'Tom: vývoj a obsah',
-            'dev_items' => [
+            'blocks' => $this->rolesBlock('Co jsme na projektu dělali', 'Web i obsah má na starosti Tom.', 'Tom: vývoj a obsah', [
                 'Logo, které sedí k dětským oslavám a dá se použít i na plachtu na hrad.',
                 'Katalog atrakcí s fotkami a rozměry u každé položky.',
                 'Popis toho, jak dovoz a instalace probíhá, aby se na to nikdo nemusel ptát.',
                 'Objednávka rovnou z webu místo dohadování ve zprávách.',
                 'Administrace, ve které si půjčovna přidává nové atrakce sama.',
-            ],
-            'disclaimer' => $solo,
+            ], $solo),
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'ales-malinsky'], [
@@ -385,17 +394,13 @@ class ContentSeeder extends Seeder
                 'Prodávající se ptají pořád na to samé, jen se nemají kde zeptat dopředu.',
                 'Nabídku nemovitostí bylo potřeba mít i na vlastní adrese.',
             ],
-            'roles_title' => 'Co jsme na projektu dělali',
-            'roles_perex' => 'Web i obsah má na starosti Tom.',
-            'dev_title' => 'Tom: vývoj a obsah',
-            'dev_items' => [
+            'blocks' => $this->rolesBlock('Co jsme na projektu dělali', 'Web i obsah má na starosti Tom.', 'Tom: vývoj a obsah', [
                 'Nové logo a vizuální styl, který drží od vizitky po web.',
                 'Web postavený kolem konkrétního člověka, ne kolem realitní branže.',
                 'Výpis nemovitostí, které má makléř zrovna v nabídce.',
                 'Sekce s nejčastějšími dotazy, ať se prodávající zorientuje ještě před schůzkou.',
                 'Kontakt dostupný z každé stránky.',
-            ],
-            'disclaimer' => $solo,
+            ], $solo),
         ]);
 
         // Reálné ukázky Pavlovy práce stažené z jeho webu. Texty jsou zatím
@@ -429,16 +434,12 @@ class ContentSeeder extends Seeder
                 'Každá kampaň chce vlastní vizuál, ne jednu grafiku dokola.',
                 'Bez variant se nedá poznat, které sdělení zabírá.',
             ],
-            'roles_title' => 'Co Pavel dělá',
-            'roles_perex' => 'Grafiku i kampaně vede Pavel se svými parťáky.',
-            'marketing_title' => 'Pavel: grafika a reklama',
-            'marketing_items' => [
+            'blocks' => $this->rolesBlock('Co Pavel dělá', 'Grafiku i kampaně vede Pavel se svými parťáky.', 'Pavel: grafika a reklama', [
                 'Návrh reklamních vizuálů podle nabídky a sezóny.',
                 'Série variant pro testování, ne jeden banner.',
                 'Sladění grafiky s tím, kam reklama vede.',
                 'Vyhodnocení, co ve feedu funguje, a úprava podle toho.',
-            ],
-            'disclaimer' => $adDisclaimer,
+            ], $adDisclaimer),
         ]);
 
         CaseStudy::updateOrCreate(['slug' => 'reels-video'], [
@@ -467,16 +468,12 @@ class ContentSeeder extends Seeder
                 'Produkt musí být vidět v běžné situaci, ne jen v katalogu.',
                 'Každá značka chce jiný tón i tempo střihu.',
             ],
-            'roles_title' => 'Co Pavel dělá',
-            'roles_perex' => 'Scénář, natáčení i střih vede Pavel se svými parťáky.',
-            'marketing_title' => 'Pavel: video a reels',
-            'marketing_items' => [
+            'blocks' => $this->rolesBlock('Co Pavel dělá', 'Scénář, natáčení i střih vede Pavel se svými parťáky.', 'Pavel: video a reels', [
                 'Náměty a scénáře podle produktu a značky.',
                 'Natáčení a střih do svislého formátu pro reels.',
                 'Titulky a pobídka, ať video funguje i bez zvuku.',
                 'Nasazení do kampaní a sledování, co lidi dokoukají.',
-            ],
-            'disclaimer' => $adDisclaimer,
+            ], $adDisclaimer),
         ]);
     }
 

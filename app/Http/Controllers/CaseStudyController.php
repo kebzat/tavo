@@ -36,6 +36,7 @@ class CaseStudyController extends Controller
 
         return view('case-studies.show', [
             'case' => $case,
+            'blocks' => $case->contentBlocks(),
             'gallery' => $case->galleryImages(),
             'next' => $case->next(),
             'schema' => [

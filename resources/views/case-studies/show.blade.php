@@ -89,84 +89,11 @@
         </section>
     @endif
 
-    @if ($case->marketing_items || $case->dev_items)
-        <section class="section-x bg-ink text-cream pt-[clamp(70px,9vw,120px)] pb-[clamp(30px,4vw,50px)]">
-            <div class="container-tavo">
-                <h2 data-reveal class="text-h2 mt-0 mb-3 font-extrabold tracking-[-.02em]">{{ $case->roles_title }}</h2>
-                <p data-reveal class="text-perex mt-0 mb-[clamp(28px,3.4vw,44px)] max-w-[48ch] text-cream/65">{{ $case->roles_perex }}</p>
-
-                {{-- Label nad výčtem; při dvou rolích jsou bloky vedle sebe. --}}
-                <div data-reveal class="grid grid-cols-1 gap-x-[clamp(40px,5vw,80px)] gap-y-[clamp(30px,4vw,50px)] border-t border-cream/18 pt-[clamp(28px,3.4vw,44px)] {{ $case->hasBothRoles() ? 'menu:grid-cols-2' : '' }}">
-                    @foreach ([
-                        ['title' => $case->marketing_title, 'items' => $case->marketing_items],
-                        ['title' => $case->dev_title, 'items' => $case->dev_items],
-                    ] as $role)
-                        @if ($role['items'])
-                            <div>
-                                <div class="mb-4 text-[13px] font-bold tracking-[.12em] text-brick uppercase">{{ $role['title'] }}</div>
-                                <ul class="m-0 flex list-none flex-col gap-3 p-0">
-                                    @foreach ($role['items'] as $item)
-                                        <li class="flex gap-3 text-base leading-[1.5] text-cream/82">
-                                            <span class="font-bold text-brick">—</span>{{ $item }}
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
-
-                @if ($case->disclaimerPlacement() === 'roles')
-                    <p data-reveal class="mt-[clamp(28px,3.4vw,44px)] mb-0 max-w-[80ch] text-[13px] leading-[1.6] text-cream/50">
-                        {{ $case->disclaimer }}
-                    </p>
-                @endif
-            </div>
-        </section>
-    @endif
-
-    @if ($case->results)
-        <section class="section-x section-y-sm bg-brick text-ink">
-            <div class="container-tavo">
-                <x-eyebrow data-reveal tone="ink" class="mb-10">Výsledek</x-eyebrow>
-
-                <div class="grid grid-cols-1 gap-[30px] menu:grid-cols-3">
-                    @foreach ($case->results as $result)
-                        <div data-reveal class="border-t-2 border-ink pt-[22px]">
-                            <div class="text-metric-lg font-extrabold tracking-[-.04em]">{{ $result['value'] }}</div>
-                            <div class="mt-3 text-base text-ink/80">{{ $result['label'] }}</div>
-                        </div>
-                    @endforeach
-                </div>
-
-                @if ($case->disclaimer)
-                    <p data-reveal class="mt-10 mb-0 text-[13px] text-ink/60">{{ $case->disclaimer }}</p>
-                @endif
-            </div>
-        </section>
-    @endif
-
-    {{-- Když chybí metriky i role, nemá se poznámka kam schovat a dostane vlastní pruh. --}}
-    @if ($case->disclaimerPlacement() === 'standalone')
-        <section class="section-x bg-cream py-[clamp(40px,5vw,70px)]">
-            <div class="container-tavo">
-                <p data-reveal class="m-0 max-w-[70ch] text-[13px] leading-[1.6] text-muted">
-                    {{ $case->disclaimer }}
-                </p>
-            </div>
-        </section>
-    @endif
-
-    @if ($case->quote)
-        <section class="section-x section-y-sm bg-cream">
-            <div class="container-tavo max-w-[1100px] text-center">
-                <blockquote data-reveal class="text-quote m-0 font-semibold tracking-[-.02em] text-ink">{{ $case->quote }}</blockquote>
-                @if ($case->quote_author)
-                    <div data-reveal class="mt-7 text-[15px] font-bold text-muted">{{ $case->quote_author }}</div>
-                @endif
-            </div>
-        </section>
-    @endif
+    {{-- Spodek detailu si skládá správce sám. Odsazení i podmínku zobrazení
+         řeší každý blok ve své komponentě, viz components/blocks/. --}}
+    @foreach ($blocks as $block)
+        <x-dynamic-component :component="$block['component']" :data="$block['data']" />
+    @endforeach
 
     @if ($next)
         <section class="section-x bg-ink text-cream pt-[clamp(50px,6vw,80px)] pb-[clamp(70px,9vw,120px)]">

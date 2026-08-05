@@ -82,11 +82,26 @@ Nejbohatší část administrace, rozdělená do záložek:
 | Záložka | Obsah |
 |---|---|
 | **Základ** | název, URL, kategorie, pořadí, zveřejnění, „vypíchnout na homepage", texty do výpisu, štítky, obrázky |
-| **Detail** | nadpis detailu, údaje o projektu (klient/obor/rozsah/doba), výchozí stav, role marketingu a vývoje |
-| **Výsledky** | metriky (hodnota + popisek) a citace klienta |
+| **Detail** | nadpis detailu, údaje o projektu (klient/obor/rozsah/doba), zadání |
+| **Obsah** | bloky, ze kterých se skládá zbytek stránky |
 | **SEO** | vlastní titulek a popisek; prázdné = použije se název a krátký popis |
 
 Pořadí ve výpisu se mění tažením řádků v seznamu.
+
+**Detail reference má pevný jen úvod:** hlavičku s galerií, pruh s údaji o projektu
+a zadání. Ty má každý projekt stejné, tak se needitují po blocích. **Všechno pod zadáním
+si skládáte sami** ze stejné sady bloků, jakou mají statické stránky, a u každé reference
+to může vypadat jinak. Konec stránky (odkaz na další projekt a výzva k akci) se
+zase přidává sám.
+
+Dosavadní sekce mají svůj protějšek mezi bloky, takže se nic needituje jinde než dřív:
+
+| Bývalá sekce | Blok |
+|---|---|
+| Role marketingu a vývoje | **Odrážky ve sloupcích** (jeden sloupec, nebo dva vedle sebe) |
+| Výsledky | **Statistiky** v cihlové barvě |
+| Poznámka pod čísly | pole „Poznámka" u toho bloku, pod kterým má viset |
+| Citace klienta | **Citace** |
 
 **Obrázky:**
 - **Náhled ve výpisu** (doporučeně 4:3) — jeden obrázek, zobrazí se na homepage
@@ -142,6 +157,7 @@ stačí jeden blok „Text", zbytek jsou grafické sekce ze stejné sady, jakou 
 | **Před a po** | dva snímky přes sebe s dělicí čárou, která sleduje myš; návštěvník si přejetím ukáže původní i nový stav |
 | **Statistiky** | řada velkých čísel s popisky a poznámkou pod nimi |
 | **Očíslované body** | nadpis vlevo, perex a číslovaný seznam vpravo (jako sekce „Web je hotový" na úvodu) |
+| **Odrážky ve sloupcích** | nadpis, perex a jeden nebo dva sloupce odrážek s cihlovým nadtitulkem |
 | **Postup v krocích** | tři nebo čtyři sloupce s číslem, názvem a popisem, každý s linkou nahoře |
 | **Karty** | mřížka karet s nadpisem a textem, na dva nebo tři sloupce |
 | **Výčet v pilulkách** | nadpis s perexem vlevo, krátké výrazy jako pilulky vpravo (názvy platforem, technologií) |

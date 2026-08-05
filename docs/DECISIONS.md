@@ -186,6 +186,32 @@ Kvůli ní přibylo:
 Ceny a metriky z projektů na stránce nejsou. Nemáme je od klientů potvrzené a vymyšlené
 číslo na webu je lež, kterou zákazník přečte dřív než Google.
 
+## Bloky i na detailu reference (5. 8. 2026)
+
+Spodní polovina detailu reference byla natvrdo: role, výsledky, poznámka, citace.
+U každého projektu se ale hodí něco jiného, a když sekce nesedí, správce ji nechá
+prázdnou a stránka má díru. Nově se skládá z bloků, stejných jako na stránkách.
+
+**Pevný zůstává jen úvod** (hlavička s galerií, údaje o projektu, zadání) a konec
+(další projekt, CTA). Ten má každá reference stejný a nemá smysl ho editovat po blocích.
+
+Kvůli tomu se sdílený kód vytáhl na jedno místo:
+
+- `App\Models\Concerns\HasContentBlocks` — čtení bloků na modelu, používá ho `Page`
+  i `CaseStudy`.
+- `App\Filament\Schemas\ContentBlocks` — definice bloků pro formulář. Bere `$directory`,
+  aby se nahrané obrázky stránek a referencí nemíchaly do jedné složky.
+
+Přibyl blok **„Odrážky ve sloupcích"** a **cihlová** varianta bloku Statistiky. Obojí
+existuje proto, aby šly dosavadní sekce přepsat do bloků 1:1 a reference vypadaly úplně
+stejně jako předtím. Na cihlové je číslo tmavé, jinak by cihlová svítila na cihlové.
+
+Migrace `2026_08_05_090000_add_blocks_to_case_studies_table` převede stávající obsah
+a teprve pak zahodí staré sloupce. `down()` je vrátí zpátky, ale bloky, které mezitím
+někdo přidal navíc, při rollbacku zaniknou; do sloupců pro role a metriky se nevejdou.
+
+**Hlídá to** `tests/Feature/CaseStudyBlocksTest.php`.
+
 ## Náhledy bloků v administraci (4. 8. 2026)
 
 Se třinácti typy bloků přestal seznam „ikona + název" stačit: z piktogramu není poznat,

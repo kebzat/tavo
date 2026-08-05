@@ -41,6 +41,68 @@ class PageBlocksTest extends TestCase
             ->assertSee('Ozvěte se nám.', false);
     }
 
+    public function test_odrazky_ve_sloupcich_vysadi_nadtitulek_i_poznamku(): void
+    {
+        $this->makePage([
+            ['type' => 'bullets', 'data' => [
+                'tone' => 'ink',
+                'title' => 'Co jsme dělali',
+                'columns' => [
+                    ['label' => 'Role marketingu', 'items' => ['První bod', '', 'Druhý bod']],
+                    ['label' => 'Role vývoje', 'items' => ['Třetí bod']],
+                ],
+                'note' => 'Čísla nemáme ověřená.',
+            ]],
+        ]);
+
+        $this->get('/zkusebni')
+            ->assertOk()
+            ->assertSee('Co jsme dělali', false)
+            ->assertSee('Role marketingu', false)
+            ->assertSee('Role vývoje', false)
+            ->assertSee('První bod', false)
+            ->assertSee('Třetí bod', false)
+            ->assertSee('Čísla nemáme ověřená.', false)
+            // Dva sloupce se dělí na půl, jeden by zabral celou šířku.
+            ->assertSee('menu:grid-cols-2', false);
+    }
+
+    public function test_sloupec_bez_odrazek_se_zahodi(): void
+    {
+        $this->makePage([
+            ['type' => 'bullets', 'data' => [
+                'columns' => [
+                    ['label' => 'Má odrážky', 'items' => ['Bod']],
+                    ['label' => 'Prázdný sloupec', 'items' => []],
+                ],
+            ]],
+        ]);
+
+        $this->get('/zkusebni')
+            ->assertOk()
+            ->assertSee('Má odrážky', false)
+            ->assertDontSee('Prázdný sloupec', false)
+            ->assertDontSee('menu:grid-cols-2', false);
+    }
+
+    public function test_statistiky_v_cihlove_maji_tmavy_text(): void
+    {
+        $this->makePage([
+            ['type' => 'metrics', 'data' => [
+                'tone' => 'brick',
+                'title' => 'Výsledek',
+                'items' => [['value' => '+41 %', 'label' => 'růst']],
+            ]],
+        ]);
+
+        // Na cihlové by cihlové číslo zaniklo, musí být tmavé.
+        $this->get('/zkusebni')
+            ->assertOk()
+            ->assertSee('data-block-bg="brick"', false)
+            ->assertSee('bg-brick text-ink', false)
+            ->assertDontSee('text-metric-lg font-extrabold tracking-[-.03em] text-brick', false);
+    }
+
     public function test_porovnani_pred_a_po_vysadi_oba_obrazky(): void
     {
         $this->makePage([

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasContentBlocks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class CaseStudy extends Model implements HasMedia
 {
+    use HasContentBlocks;
     use InteractsWithMedia;
 
     public const MEDIA_THUMB = 'thumb';
@@ -27,9 +29,7 @@ class CaseStudy extends Model implements HasMedia
         'published' => 'boolean',
         'tags' => 'array',
         'problem_points' => 'array',
-        'marketing_items' => 'array',
-        'dev_items' => 'array',
-        'results' => 'array',
+        'blocks' => 'array',
     ];
 
     public function category(): BelongsTo
@@ -115,35 +115,6 @@ class CaseStudy extends Model implements HasMedia
                 return $size ? [$size[0], $size[1]] : [null, null];
             },
         );
-    }
-
-    /** Má reference vyplněnou marketingovou i vývojářskou roli? */
-    public function hasBothRoles(): bool
-    {
-        return ! empty($this->marketing_items) && ! empty($this->dev_items);
-    }
-
-    /**
-     * Kam na stránce patří poznámka pod čarou. Původně visela jen pod metrikami,
-     * takže u referencí bez čísel zmizela úplně — a právě ty ji potřebují nejvíc.
-     *
-     * @return 'none'|'results'|'roles'|'standalone'
-     */
-    public function disclaimerPlacement(): string
-    {
-        if (! $this->disclaimer) {
-            return 'none';
-        }
-
-        if ($this->results) {
-            return 'results';
-        }
-
-        if ($this->marketing_items || $this->dev_items) {
-            return 'roles';
-        }
-
-        return 'standalone';
     }
 
     /** Následující reference v pořadí (pro blok „Další projekt"). */
