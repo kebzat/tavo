@@ -106,6 +106,62 @@ Alpine.data('tavoBeforeAfter', () => ({
     },
 }));
 
+/**
+ * Odškrtávání položek na sdíleném checklistu.
+ *
+ * Políčko je uvnitř normálního formuláře, takže bez JS se odešle klasicky
+ * a stránka se překreslí. Tady jen odchytneme odeslání, pošleme ho na pozadí
+ * a rovnou přepíšeme čísla progresu, aby se u sto položek nemuselo pokaždé
+ * čekat na načtení stránky.
+ */
+Alpine.data('tavoChecklistItem', (hotovoNaZacatku) => ({
+    hotovo: hotovoNaZacatku,
+    rozbaleno: false,
+    odesila: false,
+
+    async prepnout() {
+        if (this.odesila) return;
+
+        this.odesila = true;
+        const puvodni = this.hotovo;
+        this.hotovo = ! this.hotovo;
+
+        try {
+            const odpoved = await fetch(this.$el.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+            });
+
+            if (! odpoved.ok) throw new Error(odpoved.status);
+
+            const data = await odpoved.json();
+
+            this.hotovo = data.done;
+            prepisProgres('[data-progres-kategorie]', data.kategorie);
+            prepisProgres('[data-progres-celkem]', data.celkem);
+        } catch {
+            // Nepovedlo se uložit, vracíme políčko do původního stavu,
+            // ať uživatel nevidí odškrtnuto něco, co v databázi není.
+            this.hotovo = puvodni;
+        } finally {
+            this.odesila = false;
+        }
+    },
+}));
+
+/** Přepíše čísla a šířku proužku v jednom bloku progresu. */
+function prepisProgres(selektor, progres) {
+    document.querySelectorAll(selektor).forEach((blok) => {
+        blok.querySelectorAll('[data-progres-procenta]').forEach((el) => (el.textContent = progres.percent));
+        blok.querySelectorAll('[data-progres-hotovo]').forEach((el) => (el.textContent = progres.done));
+        blok.querySelectorAll('[data-progres-vypln]').forEach((el) => (el.style.width = `${progres.percent}%`));
+    });
+}
+
 window.Alpine = Alpine;
 Alpine.start();
 

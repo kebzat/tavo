@@ -51,6 +51,17 @@ class UserRolesTest extends TestCase
         $this->actingAs($editor)->get('/admin/maintenance')->assertForbidden();
     }
 
+    /**
+     * Panel nástrojů drží podklady k cizím zakázkám, takže je celý jen
+     * pro správce. Hlídá to User::canAccessPanel(), ne OnlyForAdmins.
+     */
+    public function test_redaktor_se_nedostane_do_panelu_nastroju(): void
+    {
+        $this->actingAs($this->admin())->get('/nastroje/checklists')->assertOk();
+        $this->actingAs($this->editor())->get('/nastroje/checklists')->assertForbidden();
+        $this->actingAs($this->editor())->get('/nastroje/clients')->assertForbidden();
+    }
+
     public function test_redaktor_dal_spravuje_obsah(): void
     {
         $this->actingAs($this->editor())

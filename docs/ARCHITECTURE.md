@@ -54,12 +54,61 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/sitemap.xml` | `SitemapController@sitemap` | `sitemap` |
 | GET | `/robots.txt` | `SitemapController@robots` | — |
 | POST | `/poptavka` | `LeadController` | přesměruje na `/#kontakt` |
+| GET | `/checklist/{token}` | `ChecklistController@show` | `checklist/show` |
+| POST | `/checklist/{token}/polozka/{item}` | `ChecklistToggleController` | JSON nebo návrat zpět |
+| GET | `/checklist/{token}/{slug}` | `ChecklistController@category` | `checklist/category` |
 | GET | `/{slug}` | `PageController@show` | `pages/show` |
 
 > Poslední routa chytá volný slug pro statické stránky — **musí zůstat na konci** souboru
 > `routes/web.php`, jinak přebije všechno ostatní.
 
 Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
+
+## Dva Filament panely
+
+| Panel | URL | Kdo se dostane dovnitř | Kde žijí třídy |
+|---|---|---|---|
+| `admin` (výchozí) | `/admin` | správce i redaktor | `app/Filament/Resources`, `app/Filament/Pages` |
+| `tools` | `/nastroje` | jen správce | `app/Filament/Tools/Resources`, `app/Filament/Tools/Pages` |
+
+Panel `tools` drží interní nástroje, které se správou obsahu webu nesouvisí. Zatím
+v něm žijí **technické checklisty klientských webů**: jedna univerzální šablona
+(`is_template`), z ní se klonuje checklist pro každou zakázku a ten se dá zpřístupnit
+klientovi odkazem `/checklist/{token}`.
+
+Dvě věci, na kterých to stojí:
+
+- **Adresáře se nesmí překrývat.** `AdminPanelProvider` prohledává `app/Filament/Resources`.
+  Kdyby nástroje ležely uvnitř, objevily by se v obou panelech.
+- **Přístup hlídá `User::canAccessPanel()`**, ne `OnlyForAdmins`. Trait skrývá jednotlivé
+  resources, tady je potřeba zavřít celý panel.
+
+### Struktura checklistu
+
+`Checklist → ChecklistCategory → ChecklistSection → ChecklistItem`
+
+Kategorie je karta na rozcestníku, sekce podnadpis uvnitř ní. Bez kategorií by měl
+rozcestník patnáct odkazů, bez sekcí by kategorie o sedmatřiceti položkách byla
+nečitelná.
+
+Položka nese kromě sekce i **přímý odkaz na checklist**. Je to vědomá redundance:
+Eloquent protáhne vztah jen přes jednu mezitabulku, takže bez toho sloupce by
+se progres i souhrnná tabulka v administraci skládaly ručním joinem. Doplňuje
+se sám v `ChecklistItem::booted()`.
+
+### Sdílená stránka
+
+Vlastní layout `<x-layout.document>` bez navigace webu, bez patičky, bez cookie lišty
+a bez měřicího kódu, protože stránka nic neměří. Vzhled jde ze stejných tokenů
+v `resources/css/app.css` jako zbytek webu.
+
+**Odškrtávat může každý, kdo zná odkaz.** Checklist je pracovní podklad, ne účetnictví,
+a přihlašování by ho pro klienta zabilo. Políčko sedí v opravdovém `<form>`, takže
+při vypnutém JS se odešle klasicky; Alpine odeslání jen odchytí a pošle na pozadí,
+aby se u sto položek nečekalo na překreslení stránky.
+
+Interní poznámky se do pohledu vůbec nenačítají, `ChecklistController` je vynechává
+už ve výběru sloupců.
 
 ## Jak se obsah dostane na stránku
 

@@ -24,10 +24,15 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Do administrace se dostane každý účet. Co uvnitř uvidí, rozhoduje role —
      * správce vše, redaktor jen obsah (viz App\Filament\Concerns\OnlyForAdmins).
+     *
+     * Panel interních nástrojů je jiný případ: obsahuje podklady k cizím
+     * zakázkám, takže je celý jen pro správce.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $panel->getId() === 'tools'
+            ? $this->isAdmin()
+            : true;
     }
 
     public function isAdmin(): bool

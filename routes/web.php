@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\CaseStudyController;
+use App\Http\Controllers\ChecklistController;
+use App\Http\Controllers\ChecklistToggleController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
@@ -42,6 +44,15 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 Route::post('/poptavka', LeadController::class)
     ->middleware('throttle:5,1')
     ->name('lead.store');
+
+// Sdílený technický checklist klienta. Chráněný jen náhodným tokenem —
+// obsah není citlivý, ale do vyhledávačů nepatří (noindex + robots.txt).
+// Odškrtávat smí každý, kdo zná odkaz, viz ChecklistToggleController.
+Route::get('/checklist/{token}', [ChecklistController::class, 'show'])->name('checklist.show');
+Route::post('/checklist/{token}/polozka/{item}', ChecklistToggleController::class)
+    ->middleware('throttle:120,1')
+    ->name('checklist.toggle');
+Route::get('/checklist/{token}/{slug}', [ChecklistController::class, 'category'])->name('checklist.category');
 
 // Statické stránky (GDPR, cookies…) — musí zůstat poslední, chytá volný slug.
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
