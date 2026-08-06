@@ -35,6 +35,17 @@ class ChecklistForm
                         ->preload()
                         ->visible(fn ($get): bool => ! $get('is_template')),
 
+                    // Není to sloupec v databázi. Hodnotu vyzvedne a odstraní
+                    // CreateChecklist, který po uložení přelije strukturu.
+                    Select::make('template_id')
+                        ->label('Předvyplnit ze šablony')
+                        ->options(fn (): array => Checklist::templates()->orderBy('name')->pluck('name', 'id')->all())
+                        ->default(fn (): ?int => Checklist::templates()->value('id'))
+                        ->placeholder('Založit prázdný')
+                        ->columnSpanFull()
+                        ->visible(fn ($operation, $get): bool => $operation === 'create' && ! $get('is_template'))
+                        ->helperText('Zkopíruje kategorie, sekce i položky. Stavy začnou na „Čeká".'),
+
                     Textarea::make('intro')
                         ->label('Úvod')
                         ->rows(4)
@@ -43,8 +54,9 @@ class ChecklistForm
                 ]),
 
             Section::make('Sdílení s klientem')
-                ->description('Odkaz je veřejný a nechráněný heslem. Kdo ho zná, checklist uvidí.')
-                ->visible(fn ($get): bool => ! $get('is_template'))
+                ->description('Odkaz je veřejný a nechráněný heslem. Kdo ho zná, checklist uvidí a může v něm odškrtávat.')
+                // Při zakládání ještě není co sdílet, odkaz vznikne až s záznamem.
+                ->visible(fn ($operation, $get): bool => $operation === 'edit' && ! $get('is_template'))
                 ->schema([
                     Toggle::make('is_public')
                         ->label('Zpřístupnit přes odkaz'),

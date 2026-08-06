@@ -105,11 +105,26 @@ class Checklist extends Model
                 'intro' => $this->intro,
             ]);
 
+            $this->copyStructureInto($copy);
+
+            return $copy->fresh();
+        });
+    }
+
+    /**
+     * Přelije strukturu do už založeného checklistu. Používá to jednak
+     * duplicateFor(), jednak předvyplnění při zakládání v administraci.
+     *
+     * Cílový checklist musí být prázdný, jinak by se kategorie zdvojily.
+     */
+    public function copyStructureInto(self $target): void
+    {
+        DB::transaction(function () use ($target): void {
             $this->categories()
                 ->ordered()
                 ->with(['sections' => fn ($query) => $query->ordered()->with(['items' => fn ($q) => $q->ordered()])])
-                ->each(function (ChecklistCategory $category) use ($copy): void {
-                    $newCategory = $copy->categories()->create([
+                ->each(function (ChecklistCategory $category) use ($target): void {
+                    $newCategory = $target->categories()->create([
                         'title' => $category->title,
                         'slug' => $category->slug,
                         'description' => $category->description,
@@ -125,18 +140,18 @@ class Checklist extends Model
 
                         $newSection->items()->createMany(
                             $section->items->map(fn (ChecklistItem $item): array => [
-                                'checklist_id' => $copy->getKey(),
+                                'checklist_id' => $target->getKey(),
                                 'title' => $item->title,
                                 'description' => $item->description,
                                 'priority' => $item->priority,
+                                // Stavy patří k zakázce, ne k šabloně, a interní
+                                // poznámky se nekopírují vůbec.
                                 'status' => ChecklistItemStatus::Todo,
                                 'order_column' => $item->order_column,
                             ])->all()
                         );
                     }
                 });
-
-            return $copy->fresh();
         });
     }
 

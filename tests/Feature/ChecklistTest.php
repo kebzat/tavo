@@ -4,10 +4,15 @@ namespace Tests\Feature;
 
 use App\Enums\ChecklistItemStatus;
 use App\Enums\ChecklistPriority;
+use App\Enums\UserRole;
+use App\Filament\Tools\Resources\Checklists\Pages\CreateChecklist;
 use App\Models\Checklist;
 use App\Models\ChecklistItem;
 use App\Models\Client;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ChecklistTest extends TestCase
@@ -64,6 +69,17 @@ class ChecklistTest extends TestCase
         return Client::create(['name' => 'Zkušební klient '.$poradi, 'slug' => 'zkusebni-klient-'.$poradi]);
     }
 
+    /**
+     * Resource checklistů žije v panelu `tools`, ale výchozí je `admin`.
+     * Bez přepnutí by Livewire hledal routy v tom špatném.
+     */
+    private function spravceVPaneluNastroju(): User
+    {
+        Filament::setCurrentPanel('tools');
+
+        return User::factory()->create(['role' => UserRole::Admin]);
+    }
+
     private function sdilenyChecklist(): Checklist
     {
         $copy = $this->sablona()->duplicateFor($this->klient(), 'Checklist klienta');
@@ -110,6 +126,59 @@ class ChecklistTest extends TestCase
         $item = $section->items()->create(['title' => 'Dodatečná položka']);
 
         $this->assertSame($template->getKey(), $item->fresh()->checklist_id);
+    }
+
+    public function test_predvyplneni_ze_sablony_prelije_strukturu_do_prazdneho_checklistu(): void
+    {
+        $template = $this->sablona();
+        $novy = Checklist::create(['name' => 'Nový checklist', 'client_id' => $this->klient()->getKey()]);
+
+        $template->copyStructureInto($novy);
+
+        $this->assertSame(1, $novy->categories()->count());
+        $this->assertSame(3, $novy->items()->count());
+        $this->assertSame(3, $novy->items()->where('status', ChecklistItemStatus::Todo->value)->count());
+        $this->assertSame(0, $novy->items()->whereNotNull('internal_note')->count());
+    }
+
+    /** Formulář zakládání nabízí předvyplnění, ale pole není sloupec v databázi. */
+    public function test_zalozeni_v_administraci_predvyplni_ze_sablony(): void
+    {
+        $template = $this->sablona();
+        $admin = $this->spravceVPaneluNastroju();
+
+        Livewire::actingAs($admin)
+            ->test(CreateChecklist::class)
+            ->fillForm([
+                'name' => 'Checklist z formuláře',
+                'client_id' => $this->klient()->getKey(),
+                'template_id' => $template->getKey(),
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $novy = Checklist::where('name', 'Checklist z formuláře')->firstOrFail();
+
+        $this->assertSame(1, $novy->categories()->count());
+        $this->assertSame(3, $novy->items()->count());
+    }
+
+    public function test_zalozeni_bez_vybrane_sablony_necha_checklist_prazdny(): void
+    {
+        $this->sablona();
+        $admin = $this->spravceVPaneluNastroju();
+
+        Livewire::actingAs($admin)
+            ->test(CreateChecklist::class)
+            ->fillForm([
+                'name' => 'Prázdný z formuláře',
+                'client_id' => $this->klient()->getKey(),
+                'template_id' => null,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(0, Checklist::where('name', 'Prázdný z formuláře')->firstOrFail()->items()->count());
     }
 
     public function test_sablona_nemuze_byt_verejna(): void
