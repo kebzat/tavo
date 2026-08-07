@@ -24,22 +24,37 @@ class CreateChecklist extends CreateRecord
 
     protected function afterCreate(): void
     {
-        if (! $this->templateId) {
-            return;
+        $template = $this->templateId
+            ? Checklist::templates()->find($this->templateId)
+            : null;
+
+        $template?->copyStructureInto($this->record);
+
+        $this->oznam($template !== null);
+    }
+
+    /** Shrnutí do jedné hlášky: co se zkopírovalo a kam se to dá poslat. */
+    private function oznam(bool $predvyplneno): void
+    {
+        $radky = [];
+
+        if ($predvyplneno) {
+            $radky[] = 'Ze šablony se zkopírovalo '.$this->record->items()->count().' položek.';
         }
 
-        $template = Checklist::templates()->find($this->templateId);
-
-        if (! $template) {
-            return;
+        if ($odkaz = $this->record->publicUrl()) {
+            $radky[] = 'Odkaz pro klienta: '.$odkaz;
         }
 
-        $template->copyStructureInto($this->record);
+        if (! $radky) {
+            return;
+        }
 
         Notification::make()
             ->success()
-            ->title('Předvyplněno ze šablony')
-            ->body('Zkopírovalo se '.$this->record->items()->count().' položek.')
+            ->title('Checklist je připravený')
+            ->body(implode(' ', $radky))
+            ->persistent()
             ->send();
     }
 }

@@ -55,18 +55,22 @@ class ChecklistForm
 
             Section::make('Sdílení s klientem')
                 ->description('Odkaz je veřejný a nechráněný heslem. Kdo ho zná, checklist uvidí a může v něm odškrtávat.')
-                // Při zakládání ještě není co sdílet, odkaz vznikne až s záznamem.
-                ->visible(fn ($operation, $get): bool => $operation === 'edit' && ! $get('is_template'))
+                ->visible(fn ($get): bool => ! $get('is_template'))
                 ->schema([
                     Toggle::make('is_public')
-                        ->label('Zpřístupnit přes odkaz'),
+                        ->label('Zpřístupnit přes odkaz')
+                        ->default(true)
+                        ->helperText('Odkaz se vygeneruje hned při uložení.'),
 
+                    // Na zakládací obrazovce ještě není co ukázat, odkaz
+                    // vznikne až se záznamem.
                     TextInput::make('public_token')
                         ->label('Odkaz pro klienta')
                         ->disabled()
                         ->dehydrated(false)
+                        ->visible(fn ($operation): bool => $operation === 'edit')
                         ->formatStateUsing(fn (?Checklist $record): ?string => $record?->publicUrl())
-                        ->placeholder('Vznikne po uložení a zapnutí sdílení.'),
+                        ->placeholder('Zapněte sdílení a uložte.'),
                 ]),
         ]);
     }

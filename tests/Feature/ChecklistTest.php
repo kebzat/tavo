@@ -6,6 +6,8 @@ use App\Enums\ChecklistItemStatus;
 use App\Enums\ChecklistPriority;
 use App\Enums\UserRole;
 use App\Filament\Tools\Resources\Checklists\Pages\CreateChecklist;
+use App\Filament\Tools\Resources\Checklists\Pages\EditChecklist;
+use App\Filament\Tools\Resources\Checklists\RelationManagers\ItemsRelationManager;
 use App\Models\Checklist;
 use App\Models\ChecklistItem;
 use App\Models\Client;
@@ -163,6 +165,28 @@ class ChecklistTest extends TestCase
         $this->assertSame(3, $novy->items()->count());
     }
 
+    /** Odkaz má být po ruce hned, ne až po dodatečném zapnutí. */
+    public function test_zalozeni_v_administraci_rovnou_zapne_sdileni(): void
+    {
+        $this->sablona();
+        $admin = $this->spravceVPaneluNastroju();
+
+        Livewire::actingAs($admin)
+            ->test(CreateChecklist::class)
+            ->fillForm([
+                'name' => 'Rovnou sdílený',
+                'client_id' => $this->klient()->getKey(),
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $novy = Checklist::where('name', 'Rovnou sdílený')->firstOrFail();
+
+        $this->assertTrue($novy->is_public);
+        $this->assertNotNull($novy->publicUrl());
+        $this->get($novy->publicUrl())->assertOk();
+    }
+
     public function test_zalozeni_bez_vybrane_sablony_necha_checklist_prazdny(): void
     {
         $this->sablona();
@@ -179,6 +203,42 @@ class ChecklistTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(0, Checklist::where('name', 'Prázdný z formuláře')->firstOrFail()->items()->count());
+    }
+
+    /**
+     * Přesun položky do jiné sekce v administraci.
+     *
+     * Roletka sekcí se dřív skládala přes flatMap(), jenže ten uvnitř volá
+     * array_merge, který celočíselné klíče přečísluje na 0, 1, 2… Select pak
+     * nabízel neexistující ID, u položky svítilo holé číslo místo názvu
+     * a uložení spadlo na validation.in.
+     */
+    public function test_polozku_jde_presunout_do_jine_sekce(): void
+    {
+        $checklist = $this->sablona();
+        $admin = $this->spravceVPaneluNastroju();
+
+        $druhaSekce = $checklist->categories()->first()->sections()->create([
+            'title' => 'Druhá sekce',
+            'order_column' => 2,
+        ]);
+
+        $polozka = $checklist->items()->orderBy('id')->first();
+
+        Livewire::actingAs($admin)
+            ->test(ItemsRelationManager::class, [
+                'ownerRecord' => $checklist,
+                'pageClass' => EditChecklist::class,
+            ])
+            ->callTableAction('edit', $polozka, [
+                'checklist_section_id' => $druhaSekce->getKey(),
+                'title' => $polozka->title,
+                'priority' => $polozka->priority->value,
+                'status' => $polozka->status->value,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame($druhaSekce->getKey(), $polozka->fresh()->checklist_section_id);
     }
 
     public function test_sablona_nemuze_byt_verejna(): void
@@ -251,6 +311,7 @@ class ChecklistTest extends TestCase
     public function test_nezverejneny_checklist_vraci_404(): void
     {
         $copy = $this->sablona()->duplicateFor($this->klient(), 'Checklist klienta');
+        $copy->update(['is_public' => false]);
 
         $this->get(route('checklist.show', $copy->public_token))->assertNotFound();
         $this->get(route('checklist.category', [$copy->public_token, 'mereni-a-data']))->assertNotFound();
@@ -320,6 +381,7 @@ class ChecklistTest extends TestCase
     public function test_nezverejnenym_checklistem_nejde_odskrtavat(): void
     {
         $copy = $this->sablona()->duplicateFor($this->klient(), 'Checklist klienta');
+        $copy->update(['is_public' => false]);
 
         $this->post(route('checklist.toggle', [$copy->public_token, $copy->items()->first()]))
             ->assertNotFound();

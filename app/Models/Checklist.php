@@ -100,7 +100,9 @@ class Checklist extends Model
             $copy = self::create([
                 'client_id' => $client?->getKey(),
                 'is_template' => false,
-                'is_public' => false,
+                // Klientský checklist zakládáme rovnou sdílený, ať je odkaz
+                // po ruce hned. Vypnout se dá v administraci.
+                'is_public' => true,
                 'name' => $name,
                 'intro' => $this->intro,
             ]);

@@ -168,6 +168,10 @@ class ItemsRelationManager extends RelationManager
      * Sekce s předřazenou kategorií, ať se v roletce pozná „Nástroje"
      * z Měření od „Nástroje" odjinud.
      *
+     * Klíč musí zůstat ID sekce. Skládá se proto ručně: flatMap() uvnitř
+     * volá array_merge, který celočíselné klíče přečísluje na 0, 1, 2…
+     * Select by pak nabízel neexistující ID a ukládání by spadlo na validaci.
+     *
      * @return array<int, string>
      */
     private function sectionOptions(): array
@@ -175,13 +179,19 @@ class ItemsRelationManager extends RelationManager
         /** @var Checklist $checklist */
         $checklist = $this->getOwnerRecord();
 
-        return $checklist->categories()
+        $categories = $checklist->categories()
             ->ordered()
             ->with(['sections' => fn ($query) => $query->ordered()])
-            ->get()
-            ->flatMap(fn ($category) => $category->sections->mapWithKeys(
-                fn ($section) => [$section->id => $category->title.': '.$section->title]
-            ))
-            ->all();
+            ->get();
+
+        $options = [];
+
+        foreach ($categories as $category) {
+            foreach ($category->sections as $section) {
+                $options[$section->id] = $category->title.': '.$section->title;
+            }
+        }
+
+        return $options;
     }
 }
