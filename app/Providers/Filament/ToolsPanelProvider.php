@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Tools\Pages\Today;
+use App\Http\Middleware\NoIndex;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -9,6 +11,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -31,6 +34,13 @@ class ToolsPanelProvider extends PanelProvider
         return $panel
             ->id('tools')
             ->path('nastroje')
+            ->viteTheme('resources/css/filament/tools/theme.css')
+            // Interní nástroje do vyhledávačů nepatří. Meta i hlavička, protože
+            // robots.txt je jen prosba a přihlašovací stránka je veřejná.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<meta name="robots" content="noindex, nofollow, noarchive">',
+            )
             ->login()
             ->brandName('Taveo nástroje')
             ->favicon(asset('favicon.svg'))
@@ -38,9 +48,23 @@ class ToolsPanelProvider extends PanelProvider
                 'primary' => Color::hex('#db4b24'),
             ])
             ->navigationGroups([
+                'CRM',
                 'Checklisty',
             ])
+            // Po přihlášení se chodí do CRM, ne na seznam checklistů —
+            // obchod je denní práce, checklisty se otevírají párkrát za zakázku.
+            ->homeUrl(fn (): string => Today::getUrl(panel: 'tools'))
             ->sidebarCollapsibleOnDesktop()
+            // Vlastní téma. Filament dodává jen ty utility, které používá sám;
+            // stránky CRM (přehled „Dnes", kanban, grafy) stojí na vlastním
+            // rozvržení, takže potřebují Tailwind sestavený nad jejich šablonami.
+            ->viteTheme('resources/css/filament/tools/theme.css')
+            // Interní nástroje do vyhledávačů nepatří. Meta i hlavička, protože
+            // robots.txt je jen prosba a přihlašovací stránka je veřejná.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<meta name="robots" content="noindex, nofollow, noarchive">',
+            )
             ->discoverResources(in: app_path('Filament/Tools/Resources'), for: 'App\Filament\Tools\Resources')
             ->discoverPages(in: app_path('Filament/Tools/Pages'), for: 'App\Filament\Tools\Pages')
             ->middleware([
@@ -53,6 +77,7 @@ class ToolsPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                NoIndex::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

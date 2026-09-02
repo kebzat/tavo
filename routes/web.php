@@ -3,12 +3,15 @@
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
+use App\Http\Controllers\Crm\DemandImportController;
+use App\Http\Controllers\Crm\PipelineExportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\VerifyCrmToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -30,6 +33,28 @@ Route::withoutMiddleware([
     Route::get('/install', [InstallController::class, 'show'])->name('install.show');
     Route::post('/install', [InstallController::class, 'run'])->name('install.run');
 });
+
+// Strojové rozhraní interního CRM. Bez session a CSRF — volá ho automatizace,
+// ne prohlížeč — a ověřené sdíleným tokenem z .env. Musí být nad catch-all
+// routou /{slug} níž, i když by ji dvousegmentová adresa stejně minula.
+Route::prefix('nastroje/api')
+    ->middleware(VerifyCrmToken::class)
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->group(function () {
+        Route::post('/demands/import', DemandImportController::class)
+            ->middleware('throttle:60,1')
+            ->name('crm.demands.import');
+
+        Route::get('/export/pipeline', PipelineExportController::class)
+            ->middleware('throttle:60,1')
+            ->name('crm.export.pipeline');
+    });
 
 Route::get('/', HomeController::class)->name('home');
 
