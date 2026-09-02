@@ -80,7 +80,7 @@ function woff2Only() {
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/css/filament/tools/theme.css'],
             refresh: true,
             fonts: [
                 // Self-hostováno (Bunny Fonts, EU, bez trackingu) — nikdy Google Fonts CDN.
