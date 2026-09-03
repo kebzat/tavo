@@ -24,6 +24,9 @@ class SiteSettings extends Settings
 
     public ?string $footer_note;
 
+    /** Volitelný řádek pod spodní lištou patičky. Prázdné = nevykreslí se. */
+    public ?string $footer_bottom_text;
+
     public string $copyright;
 
     public static function group(): string
