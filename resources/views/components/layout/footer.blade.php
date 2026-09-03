@@ -30,5 +30,9 @@
                 <span>{{ $site->footer_note }}</span>
             </div>
         </div>
+
+        @if ($site->footer_bottom_text)
+            <p class="m-0 mt-5 text-[13px] leading-[1.6] text-cream/45">{{ $site->footer_bottom_text }}</p>
+        @endif
     </div>
 </footer>

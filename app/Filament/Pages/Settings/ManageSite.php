@@ -74,6 +74,11 @@ class ManageSite extends SettingsPage
                     ])
                     ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
                     ->collapsed(),
+
+                TextInput::make('footer_bottom_text')
+                    ->label('Text v patičce pod odkazy')
+                    ->helperText('Nepovinné. Prázdné pole se na webu vůbec nezobrazí.')
+                    ->columnSpanFull(),
             ]),
         ]);
     }
