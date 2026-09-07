@@ -120,6 +120,55 @@ class StructuredData
     }
 
     /**
+     * Nabídka pro e-shopy z App\Support\EshopOffers. Nemá vlastní model,
+     * proto samostatná metoda vedle service() výš.
+     *
+     * @param  array<string, mixed>  $offer
+     * @return array<string, mixed>
+     */
+    public static function eshopOffer(array $offer): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'Service',
+            'name' => $offer['nav_label'],
+            'description' => $offer['seo_description'],
+            'url' => $offer['url'],
+            'serviceType' => $offer['service_type'],
+            'provider' => ['@id' => url('/').self::ORGANIZATION_ID],
+            'areaServed' => [
+                ['@type' => 'City', 'name' => 'Hradec Králové'],
+                ['@type' => 'Country', 'name' => 'Česko'],
+            ],
+        ];
+    }
+
+    /**
+     * Sekce „Časté otázky". Odpovědi musí být na stránce vidět — Google
+     * strukturovaná data, která na stránce nikde nejsou, ignoruje.
+     *
+     * @param  list<array{question: string, answer: string}>  $items
+     * @return array<string, mixed>
+     */
+    public static function faq(array $items): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => collect($items)
+                ->map(fn (array $item) => [
+                    '@type' => 'Question',
+                    'name' => $item['question'],
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => $item['answer'],
+                    ],
+                ])
+                ->all(),
+        ];
+    }
+
+    /**
      * @param  array<string, string>  $items  název => URL, v pořadí od úvodní stránky
      * @return array<string, mixed>
      */

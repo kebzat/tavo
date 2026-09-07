@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Settings\ContactSettings;
 use App\Settings\SiteSettings;
+use App\Support\EshopOffers;
 use App\Support\ImageDerivatives;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -31,6 +32,14 @@ class AppServiceProvider extends ServiceProvider
                 'site' => app(SiteSettings::class),
                 'contact' => app(ContactSettings::class),
             ]);
+        });
+
+        /*
+         * Skupina „Pro e-shopy" v patičce. Nabídky nejsou v databázi, protože
+         * ke každé patří vlastní routa a šablona — viz App\Support\EshopOffers.
+         */
+        View::composer('components.layout.footer', function ($view) {
+            $view->with('eshopOffers', EshopOffers::all());
         });
 
         // Zmenšeniny nahraných obrázků vznikají hned při uložení v administraci.

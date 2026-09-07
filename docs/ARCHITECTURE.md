@@ -9,7 +9,8 @@ app/
 │  ├─ Pages/Settings/          ManageHome, ManageSite, ManageContact, ManageSeo
 │  └─ Resources/               CaseStudies, Services, CaseStudyCategories,
 │                              ProcessSteps, Founders, Pages, Leads
-├─ Http/Controllers/           Home, CaseStudy, Service, Page, Lead, Sitemap
+├─ Http/Controllers/           Home, CaseStudy, Service, EshopOffer, Page, Lead,
+│                              Sitemap
 ├─ Http/Requests/LeadRequest   validace poptávkového formuláře
 ├─ Mail/LeadReceived           notifikace o nové poptávce
 ├─ Models/                     CaseStudy, CaseStudyCategory, Service,
@@ -21,6 +22,7 @@ app/
    ├─ ImageDerivatives         hledá obrázky v obsahu, poslouchá uložení
    ├─ PageMeta                 title, description, OG, robots pro <head>
    ├─ StructuredData           JSON-LD
+   ├─ EshopOffers              obsah čtyř dopadových stránek pro e-shopy
    └─ ContentSettingsMigration základ migrací nastavení
 
 database/
@@ -36,6 +38,7 @@ resources/
    ├─ home.blade.php           skládá homepage z <x-home.*> sekcí
    ├─ case-studies/            výpis a detail referencí
    ├─ services/show            detail služby
+   ├─ eshop/show               nabídka pro e-shopy (společná pro čtyři routy)
    ├─ pages/show               statické stránky
    ├─ errors/                  404, 419, 500, 503
    └─ sitemap.blade.php        XML mapa webu
@@ -51,6 +54,10 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/reference` | `CaseStudyController@index` | `case-studies/index` |
 | GET | `/reference/{slug}` | `CaseStudyController@show` | `case-studies/show` |
 | GET | `/sluzby/{slug}` | `ServiceController@show` | `services/show` |
+| GET | `/mereni-pro-eshopy` | `EshopOfferController` | `eshop/show` |
+| GET | `/aplikace-pro-shoptet-premium` | `EshopOfferController` | `eshop/show` |
+| GET | `/migrace-na-shoptet` | `EshopOfferController` | `eshop/show` |
+| GET | `/rozvoj-eshopu` | `EshopOfferController` | `eshop/show` |
 | GET | `/sitemap.xml` | `SitemapController@sitemap` | `sitemap` |
 | GET | `/robots.txt` | `SitemapController@robots` | — |
 | POST | `/poptavka` | `LeadController` | přesměruje na `/#kontakt` |
@@ -61,6 +68,10 @@ design-source/                 původní Claude design (needitovat, jen referenc
 
 > Poslední routa chytá volný slug pro statické stránky — **musí zůstat na konci** souboru
 > `routes/web.php`, jinak přebije všechno ostatní.
+
+> Čtyři adresy nabídek pro e-shopy jsou jednosegmentové, takže je `routes/web.php`
+> registruje **nad** catch-all routou. Slugy i obsah drží `App\Support\EshopOffers`,
+> odtud je bere i patička a mapa webu.
 
 Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 

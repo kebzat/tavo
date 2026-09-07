@@ -20,6 +20,20 @@
                     </div>
                 </div>
             @endforeach
+
+            {{-- Nabídky pro e-shopy. Nejdou z nastavení, protože ke každé patří
+                 vlastní routa — kdyby se odkaz smazal v administraci, zůstala by
+                 stránka bez cesty k ní. Zdroj je App\Support\EshopOffers,
+                 sdílí ho AppServiceProvider. --}}
+            <div>
+                <div class="mb-[18px] text-xs font-bold tracking-[.14em] text-cream/45 uppercase">Pro e-shopy</div>
+                <div class="flex flex-col gap-3">
+                    @foreach ($eshopOffers as $slug => $offer)
+                        <a href="{{ route('eshop.'.$slug) }}"
+                           class="text-[15px] text-cream transition-colors hover:text-brick">{{ $offer['nav_label'] }}</a>
+                    @endforeach
+                </div>
+            </div>
         </div>
 
         <div class="flex flex-wrap justify-between gap-5 pt-[26px] text-[13px] text-cream/45">

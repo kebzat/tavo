@@ -5,6 +5,7 @@ use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
 use App\Http\Controllers\Crm\DemandImportController;
 use App\Http\Controllers\Crm\PipelineExportController;
+use App\Http\Controllers\EshopOfferController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\VerifyCrmToken;
+use App\Support\EshopOffers;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -62,6 +64,15 @@ Route::get('/reference', [CaseStudyController::class, 'index'])->name('cases.ind
 Route::get('/reference/{slug}', [CaseStudyController::class, 'show'])->name('cases.show');
 
 Route::get('/sluzby/{slug}', [ServiceController::class, 'show'])->name('services.show');
+
+// Dopadové stránky s nabídkami pro e-shopy. Adresy jsou jednosegmentové,
+// takže je musí zaregistrovat před catch-all routou /{slug} na konci souboru.
+// Slugy i obsah drží App\Support\EshopOffers.
+foreach (EshopOffers::slugs() as $eshopSlug) {
+    Route::get('/'.$eshopSlug, EshopOfferController::class)
+        ->defaults('slug', $eshopSlug)
+        ->name('eshop.'.$eshopSlug);
+}
 
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');

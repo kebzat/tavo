@@ -6,6 +6,7 @@ use App\Models\CaseStudy;
 use App\Models\Page;
 use App\Models\Service;
 use App\Settings\SeoSettings;
+use App\Support\EshopOffers;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -21,6 +22,14 @@ class SitemapController extends Controller
             $urls[] = [
                 'loc' => route('services.show', $service->slug),
                 'lastmod' => $service->updated_at?->toAtomString(),
+                'priority' => '0.8',
+                'changefreq' => 'monthly',
+            ];
+        }
+
+        foreach (EshopOffers::slugs() as $slug) {
+            $urls[] = [
+                'loc' => EshopOffers::url($slug),
                 'priority' => '0.8',
                 'changefreq' => 'monthly',
             ];
