@@ -45,6 +45,7 @@
                                 <x-media
                                     :image="$case->thumbImage()"
                                     :label="$case->thumb_label"
+                                    :fit="$case->thumbFit()"
                                     :priority="$loop->first"
                                     radius="rounded-thumb"
                                     sizes="(min-width: 861px) 44vw, 88vw"
@@ -57,15 +58,25 @@
                                 @endif
                             </div>
 
-                            <div class="mt-5 flex items-start justify-between gap-4">
-                                <div>
-                                    <h2 class="text-h3-sm mt-0 mb-2 font-extrabold tracking-[-.02em] text-ink">{{ $case->title }}</h2>
-                                    <p class="m-0 max-w-[42ch] text-[15px] leading-[1.5] text-muted">{{ $case->excerpt }}</p>
+                            <div class="mt-5">
+                                {{-- Číslo drží řádek s nadpisem, popis pak jde přes celou šířku karty. --}}
+                                <div class="flex items-start justify-between gap-4">
+                                    <h2 class="text-h3-sm m-0 font-extrabold tracking-[-.02em] text-ink">{{ $case->title }}</h2>
+                                    @if ($case->headline_metric)
+                                        <span class="text-metric-sm font-extrabold tracking-[-.03em] whitespace-nowrap text-brick">
+                                            {{ $case->headline_metric }}
+                                        </span>
+                                    @endif
                                 </div>
-                                @if ($case->headline_metric)
-                                    <span class="text-metric-sm font-extrabold tracking-[-.03em] whitespace-nowrap text-brick">
-                                        {{ $case->headline_metric }}
-                                    </span>
+
+                                <p class="mt-2 mb-0 text-[15px] leading-[1.5] text-muted">{{ $case->excerpt }}</p>
+
+                                @if ($case->tags)
+                                    <div class="mt-4 flex flex-wrap gap-2">
+                                        @foreach ($case->tags as $tag)
+                                            <x-tag size="xs">{{ $tag }}</x-tag>
+                                        @endforeach
+                                    </div>
                                 @endif
                             </div>
                         </a>

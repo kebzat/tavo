@@ -81,6 +81,18 @@ class CaseStudy extends Model implements HasMedia
     }
 
     /**
+     * Jak se náhled chová v rámečku výpisu — platí všude, kde se reference
+     * vypisuje (homepage, /reference, blok „Další projekt").
+     *
+     * `cover` vyplní rámeček a ořízne, co přebývá; `contain` zmenší obrázek tak,
+     * aby se do rámečku vešel celý i s jiným poměrem stran.
+     */
+    public function thumbFit(): string
+    {
+        return $this->thumb_fit === 'contain' ? 'contain' : 'cover';
+    }
+
+    /**
      * Cesta k náhledu na disku `public`. Používá se jako obrázek pro sdílení —
      * proto originál, ne WebP zmenšenina: LinkedIn a další čtečky odkazů si
      * s WebP neporadí.

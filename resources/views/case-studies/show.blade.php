@@ -26,6 +26,9 @@
                         @if ($case->eyebrow)
                             <x-tag size="xs">{{ $case->eyebrow }}</x-tag>
                         @endif
+                        @foreach ($case->tags ?? [] as $tag)
+                            <x-tag size="xs">{{ $tag }}</x-tag>
+                        @endforeach
                     </div>
 
                     {{-- Vedle galerie musí být nadpis menší, ať se do sloupce vejde. --}}
@@ -113,6 +116,7 @@
                     <x-media
                         :image="$next->thumbImage()"
                         :label="$next->thumb_label"
+                        :fit="$next->thumbFit()"
                         tone="dark"
                         radius="rounded-none"
                         sizes="(min-width: 861px) 40vw, 88vw" />

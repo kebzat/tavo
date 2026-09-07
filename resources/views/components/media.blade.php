@@ -5,7 +5,7 @@
     'radius' => 'rounded-media',
     'tone' => 'light',        // light | dark
     'parallax' => false,
-    'fit' => 'cover',         // cover = ořízne na daný poměr | natural = nechá obrázku vlastní poměr
+    'fit' => 'cover',         // cover = ořízne na daný poměr | contain = vejde se celý | natural = nechá obrázku vlastní poměr
     'sizes' => '(min-width: 861px) 45vw, 88vw',
     'priority' => false,      // true jen u obrázku na první obrazovce
 ])
@@ -23,6 +23,19 @@
      * kdy výšku určí sám obrázek.
      */
     $natural = $fit === 'natural' && $image;
+
+    /*
+     * „contain" drží rámeček i jeho poměr, ale obrázek do něj jen zmenší, takže
+     * z něj nic neuřízne. Kolem zbyde podklad rámečku — u screenshotů webů to
+     * vypadá jako vizuál na barevné kartě, u fotek se hodí spíš „cover".
+     */
+    $contain = $fit === 'contain' && $image;
+
+    $imageClass = match (true) {
+        $natural => 'block h-auto w-full',
+        $contain => 'absolute inset-0 h-full w-full object-contain p-4 menu:p-6',
+        default => 'absolute inset-0 h-full w-full object-cover',
+    };
 @endphp
 
 <div {{ $attributes->class([$ratio => ! $natural, $radius, 'relative overflow-hidden', $gradient]) }}
@@ -44,7 +57,7 @@
              loading="{{ $priority ? 'eager' : 'lazy' }}"
              @if ($priority) fetchpriority="high" @endif
              decoding="async"
-             class="{{ $natural ? 'block h-auto w-full' : 'absolute inset-0 h-full w-full object-cover' }}">
+             class="{{ $imageClass }}">
     @else
         <div class="absolute inset-0 flex items-center justify-center {{ $hatch }}"
              @if ($parallax) data-parallax @endif>

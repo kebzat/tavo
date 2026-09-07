@@ -19,6 +19,7 @@
                     <x-media
                         :image="$case->thumbImage()"
                         :label="$case->thumb_label"
+                        :fit="$case->thumbFit()"
                         :parallax="true"
                         sizes="(min-width: 861px) 34vw, 88vw" />
 

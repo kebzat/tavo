@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CaseStudies\Schemas;
 
 use App\Filament\Schemas\ContentBlocks;
 use App\Models\CaseStudy;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -87,7 +88,8 @@ class CaseStudyForm
                             ->addActionLabel('Přidat štítek')
                             ->simple(TextInput::make('text')->required())
                             ->columnSpanFull()
-                            ->defaultItems(0),
+                            ->defaultItems(0)
+                            ->helperText('Zobrazí se na homepage, ve výpisu referencí i v hlavičce detailu. Sem patří třeba „Přes agenturu" u projektů, které jste dělali v subdodávce.'),
                     ]),
 
                     Section::make('Obrázky')->schema([
@@ -96,7 +98,17 @@ class CaseStudyForm
                             ->collection(CaseStudy::MEDIA_THUMB)
                             ->image()
                             ->imageEditor()
-                            ->helperText('Zobrazí se na homepage a ve výpisu referencí. Doporučený poměr 4:3, min. 1200 px na šířku.'),
+                            ->helperText('Zobrazí se na homepage, ve výpisu referencí a v bloku „Další projekt". Nejlépe poměr 4:3 a min. 1200 px na šířku — jiný poměr zvládne volba pod tímto polem.'),
+
+                        Radio::make('thumb_fit')
+                            ->label('Jak náhled vyplní rámeček')
+                            ->options([
+                                'cover' => 'Vyplnit celý rámeček (ořízne okraje)',
+                                'contain' => 'Zobrazit celý obrázek (nic se neořízne)',
+                            ])
+                            ->default('cover')
+                            ->required()
+                            ->helperText('Rámeček má všude poměr 4:3, aby dlaždice lícovaly. „Vyplnit" se hodí na fotky a koláže v poměru 4:3. U screenshotu webu (širokého, třeba 1512×800) sáhněte po druhé volbě — jinak přijde o třetinu výšky. Volba platí všude, kde se reference vypisuje.'),
 
                         SpatieMediaLibraryFileUpload::make('gallery')
                             ->label('Galerie na detailu')
