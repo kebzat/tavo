@@ -32,7 +32,7 @@
         </div>
 
         {{-- Kdo nechce čekat na odpověď, zavolá rovnou člověku. --}}
-        <x-contact-people data-reveal class="mt-7 justify-center" />
+        <x-contact-people tone="brick" data-reveal class="mt-7 justify-center" />
 
         @if ($form)
             <x-lead-form />
