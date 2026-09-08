@@ -75,6 +75,41 @@ sudo mysql -e "CREATE USER 'taveo'@'localhost' IDENTIFIED BY 'SILNE_HESLO';"
 sudo mysql -e "GRANT ALL ON taveo.* TO 'taveo'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
+### E-maily z poptávkového formuláře
+
+Poptávka se **vždycky uloží do databáze** a je vidět v administraci pod „Poptávky“.
+E-mail je jen upozornění navíc: když se ho nepodaří odeslat, formulář to
+návštěvníkovi nevyčte a chyba jde do logu (`Nepodařilo se odeslat notifikaci
+o poptávce`). Když tedy „nic nechodí“, projděte tohle:
+
+| Kde | Co má být |
+|---|---|
+| `.env` → `MAIL_MAILER` | `smtp`. Výchozí `log` zprávy jen zapíše do souboru a nikam neodejde. |
+| `.env` → `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | údaje ke schránce od poskytovatele |
+| `.env` → `MAIL_FROM_ADDRESS` | **adresa na ověřené doméně**, ke které patří přihlášení. Poskytovatelé odmítají zprávy, které se tváří jako z cizí adresy. |
+| Nastavení → Kontakt → Příjemci notifikací | existující schránka, kterou někdo čte |
+
+**Resend se tu používá přes SMTP, ne přes `MAIL_MAILER=resend`.** K API transportu
+patří balíček `resend/resend-php`, který v projektu není, a bez něj odesílání spadne
+na `Class "Resend" not found`. Formulář to nevyčte (poptávka se uloží tak jako tak),
+takže se to pozná jen ze zkušebního e-mailu v Údržbě nebo z logu. Správné nastavení:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.resend.com
+MAIL_PORT=587
+MAIL_USERNAME=resend
+MAIL_PASSWORD=re_xxxxxxxxxxxxxxxxxxxx   # API klíč z resend.com/api-keys
+MAIL_FROM_ADDRESS="spoluprace@taveo.cz" # doména musí být v Resendu ověřená (DKIM + SPF)
+```
+
+`.env` se při nasazení nepřepisuje, takže tyhle hodnoty musí být na serveru
+nastavené ručně.
+
+Ověřit to jde z administrace: **Nastavení → Údržba** ukazuje kanál, odesílatele
+i adresy příjemců a tlačítkem **Zkušební e-mail** pošle zprávu na stejné adresy
+jako formulář. Když odeslání selže, vypíše hlášku ze serveru.
+
 ### Limity PHP pro nahrávání obrázků
 
 Výchozí `upload_max_filesize` je **2 MB** — míň, než má běžný screenshot webu.
