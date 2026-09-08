@@ -3,9 +3,9 @@
 namespace App\Filament\Pages\Settings;
 
 use App\Filament\Concerns\OnlyForAdmins;
+use App\Filament\Schemas\ImageUpload;
 use App\Settings\SeoSettings;
 use BackedEnum;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -41,9 +41,8 @@ class ManageSeo extends SettingsPage
                         ->label('Přípona titulku')
                         ->helperText('Připojí se za titulek každé stránky, např. „ | Taveo".'),
                     Textarea::make('default_description')->label('Výchozí popisek')->rows(3),
-                    FileUpload::make('og_image')
+                    ImageUpload::file('og_image')
                         ->label('Obrázek pro sdílení')
-                        ->image()
                         ->directory('seo')
                         ->helperText('Doporučeno 1200 × 630 px.'),
                 ]),

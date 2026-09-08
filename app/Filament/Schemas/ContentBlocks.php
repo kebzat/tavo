@@ -130,16 +130,14 @@ class ContentBlocks
 
                 Textarea::make('perex')->label('Perex')->rows(2)->columnSpanFull(),
 
-                FileUpload::make('before')
+                ImageUpload::file('before')
                     ->label('Obrázek před')
-                    ->image()
                     ->imageEditor()
                     ->directory($directory)
                     ->helperText('Bez obou obrázků se sekce nezobrazí. Ideálně stejně široké snímky.'),
 
-                FileUpload::make('after')
+                ImageUpload::file('after')
                     ->label('Obrázek po')
-                    ->image()
                     ->imageEditor()
                     ->directory($directory),
 
@@ -416,9 +414,8 @@ class ContentBlocks
      */
     private static function imageUpload(string $directory): FileUpload
     {
-        return FileUpload::make('image')
+        return ImageUpload::file('image')
             ->label('Obrázek')
-            ->image()
             ->imageEditor()
             ->directory($directory);
     }

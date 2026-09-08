@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\CaseStudies\Schemas;
 
 use App\Filament\Schemas\ContentBlocks;
+use App\Filament\Schemas\ImageUpload;
 use App\Models\CaseStudy;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -92,17 +92,15 @@ class CaseStudyForm
                     ]),
 
                     Section::make('Obrázky')->schema([
-                        SpatieMediaLibraryFileUpload::make('thumb')
+                        ImageUpload::media('thumb')
                             ->label('Náhled ve výpisu')
                             ->collection(CaseStudy::MEDIA_THUMB)
-                            ->image()
                             ->imageEditor()
                             ->helperText('Zobrazí se na homepage, ve výpisu referencí a v bloku „Další projekt". Rámeček má poměr 16:10 a min. 1200 px na šířku — v tomhle poměru se náhled nikde neořízne. Screenshot webu (16:9) i koláž 4:3 se do něj vejdou s ořezem pár procent, takže je nemusíte předělávat.'),
 
-                        SpatieMediaLibraryFileUpload::make('gallery')
+                        ImageUpload::media('gallery')
                             ->label('Galerie na detailu')
                             ->collection(CaseStudy::MEDIA_GALLERY)
-                            ->image()
                             ->multiple()
                             ->reorderable()
                             ->appendFiles()

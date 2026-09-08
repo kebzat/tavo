@@ -62,6 +62,26 @@ Tři možnosti, jak to obejít:
 
 3. **Plná cesta**: `/opt/homebrew/opt/php/bin/php artisan …`
 
+### Limity pro nahrávání obrázků
+
+Čerstvé PHP má `upload_max_filesize = 2M`. Screenshot webu z Retina displeje bývá
+větší a PHP ho zahodí dřív, než se k němu aplikace dostane — v administraci to
+vypadá jako **nekonečné „probíhá upload“**, bez chybové hlášky.
+
+Nastavení drží `conf.d` soubor mimo repozitář:
+
+```bash
+cat > /opt/homebrew/etc/php/8.4/conf.d/99-tavo-uploads.ini <<'INI'
+upload_max_filesize = 32M
+post_max_size = 40M
+memory_limit = 512M
+max_file_uploads = 30
+INI
+```
+
+Po změně **restartuj `php artisan serve`** — běžící proces si ini načetl při startu.
+Ověření: `./bin/php -r 'echo ini_get("upload_max_filesize");'`
+
 ## Databáze
 
 MySQL 8 běží přes Homebrew (`brew services list`). Databáze projektu se jmenuje `tavo`,
@@ -98,6 +118,7 @@ Fonty (Montserrat) se stahují při buildu a hostují se lokálně — web nikdy
 | Změna v administraci se neprojeví | `php artisan optimize:clear` |
 | `Class … not found` po přidání souboru | `composer dump-autoload` |
 | Obrázky se nezobrazují | chybí `php artisan storage:link` |
+| Nahrávání obrázku se zasekne na „probíhá upload“ | soubor je větší než `upload_max_filesize`, viz sekce výše; po úpravě ini restartuj `artisan serve` |
 | Nahraný obrázek je v administraci vidět, ale na webu ne | soubor skončil na špatném disku — ověř `SELECT disk FROM media`, musí být `public`; viz [DECISIONS.md](DECISIONS.md) |
 
 ## Kontrola v prohlížeči

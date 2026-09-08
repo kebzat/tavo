@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\Founders\Schemas;
 
+use App\Filament\Schemas\ImageUpload;
 use App\Models\Founder;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -33,10 +33,9 @@ class FounderForm
             Section::make('Fotka')
                 ->description('Použije se v sekci „Lidé" na homepage. Stačí jedna společná fotka u prvního zakladatele.')
                 ->schema([
-                    SpatieMediaLibraryFileUpload::make('photo')
+                    ImageUpload::media('photo')
                         ->label('Fotka')
                         ->collection(Founder::MEDIA_PHOTO)
-                        ->image()
                         ->imageEditor(),
                 ]),
         ]);

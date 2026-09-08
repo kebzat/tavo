@@ -75,6 +75,26 @@ sudo mysql -e "CREATE USER 'taveo'@'localhost' IDENTIFIED BY 'SILNE_HESLO';"
 sudo mysql -e "GRANT ALL ON taveo.* TO 'taveo'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
+### Limity PHP pro nahrávání obrázků
+
+Výchozí `upload_max_filesize` je **2 MB** — míň, než má běžný screenshot webu.
+PHP takový soubor zahodí dřív, než se k němu aplikace dostane, a v administraci
+to vypadá jako nekonečné „probíhá upload“, bez chybové hlášky:
+
+```bash
+sudo tee /etc/php/8.4/fpm/conf.d/99-tavo-uploads.ini >/dev/null <<'INI'
+upload_max_filesize = 32M
+post_max_size = 40M
+memory_limit = 512M
+max_file_uploads = 30
+INI
+sudo systemctl restart php8.4-fpm
+```
+
+Platí ten nejnižší z limitů v řadě, takže s tím musí jít nahoru i
+`client_max_body_size` v nginx (níž v konfiguraci) — nastav ho na `40M`.
+Na CyberPanelu se totéž mění v php.ini vybrané verze lsphp.
+
 Před prvním nasazením stačí připravit složku a `.env` — kód a `vendor/` doveze
 sám workflow:
 
@@ -107,7 +127,7 @@ server {
 
     index index.php;
     charset utf-8;
-    client_max_body_size 20M;
+    client_max_body_size 40M;   # musí být >= post_max_size v PHP
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;

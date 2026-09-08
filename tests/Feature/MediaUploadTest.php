@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\CaseStudies\Pages\EditCaseStudy;
+use App\Filament\Schemas\ImageUpload;
 use App\Models\CaseStudy;
 use App\Models\User;
 use Database\Seeders\ContentSeeder;
@@ -24,6 +25,20 @@ class MediaUploadTest extends TestCase
     public function test_filament_uklada_soubory_na_verejny_disk(): void
     {
         $this->assertSame('public', config('filament.default_filesystem_disk'));
+    }
+
+    /**
+     * Pole bez `maxSize` je past: soubor větší, než dovolí PHP, se zastaví
+     * na hranici serveru a Filament o tom neví — donekonečna ukazuje
+     * „probíhá upload". S limitem to pole odchytí už v prohlížeči.
+     */
+    public function test_pole_pro_obrazek_zna_limit_serveru(): void
+    {
+        $field = ImageUpload::media('thumb');
+
+        $this->assertSame(ImageUpload::maxKilobytes(), $field->getMaxSize());
+        $this->assertLessThanOrEqual(12288, ImageUpload::maxKilobytes());
+        $this->assertGreaterThan(0, ImageUpload::maxKilobytes());
     }
 
     public function test_nahrany_obrazek_reference_je_dostupny_z_webu(): void
