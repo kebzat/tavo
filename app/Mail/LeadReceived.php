@@ -18,7 +18,7 @@ class LeadReceived extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nová poptávka z webu — '.$this->lead->name,
+            subject: 'Nová poptávka z webu: '.$this->lead->name,
             replyTo: [$this->lead->email],
         );
     }

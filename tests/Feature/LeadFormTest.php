@@ -28,6 +28,26 @@ class LeadFormTest extends TestCase
         ], $overrides);
     }
 
+    public function test_upozorneni_ma_kazdy_udaj_na_svem_radku(): void
+    {
+        $data = $this->validData(['message' => 'Chceme e-shop na Shoptetu.']);
+        unset($data['gdpr']);
+
+        $lead = Lead::create($data + ['status' => 'new']);
+
+        $html = (new LeadReceived($lead))->render();
+
+        // Markdown slepí sousední řádky do jednoho odstavce. Seznam to drží
+        // oddělené, což je přesně to, co v e-mailu chybělo.
+        foreach (['Jméno', 'Firma', 'E-mail', 'Telefon', 'O co jde', 'Rozpočet'] as $label) {
+            $this->assertStringContainsString($label, $html);
+        }
+
+        $this->assertGreaterThanOrEqual(6, substr_count($html, '<li'));
+        $this->assertStringContainsString('mailto:jan@novak.cz', $html);
+        $this->assertStringContainsString('Chceme e-shop na Shoptetu.', $html);
+    }
+
     public function test_bez_klicu_od_cloudflare_se_turnstile_nepta(): void
     {
         Mail::fake();
