@@ -33,7 +33,7 @@
 {{ $lead->message }}
 </x-mail::panel>
 
-<x-mail::button :url="url('/admin/leads/'.$lead->id)">
+<x-mail::button :url="$adminUrl">
 Otevřít v administraci
 </x-mail::button>
 

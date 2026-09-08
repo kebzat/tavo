@@ -45,6 +45,8 @@ class LeadFormTest extends TestCase
 
         $this->assertGreaterThanOrEqual(6, substr_count($html, '<li'));
         $this->assertStringContainsString('mailto:jan@novak.cz', $html);
+        // Bez `/edit` na konci vrací Filament 404.
+        $this->assertStringContainsString('/admin/leads/'.$lead->id.'/edit', $html);
         $this->assertStringContainsString('Chceme e-shop na Shoptetu.', $html);
     }
 
