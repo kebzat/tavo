@@ -1,6 +1,10 @@
+@php
+    $skupina = 'Výpis referencí';
+@endphp
+
 <x-layout.app
-    title="Reference"
-    description="Weby, e-shopy a reklamní účty, které máme za sebou. Weby a značky staví Tom, reklamu vede Pavel.">
+    :title="text('reference.seo_titulek', 'Reference', $skupina, 'Titulek stránky /reference v prohlížeči a ve vyhledávačích')"
+    :description="text('reference.seo_popis', 'Weby, e-shopy a reklamní účty, které máme za sebou. Weby a značky staví Tom, reklamu vede Pavel.', $skupina, 'Popisek stránky /reference ve vyhledávačích')">
 
     <header class="section-x pt-[150px] pb-[50px]">
         <div class="container-tavo">
@@ -8,12 +12,13 @@
                class="mb-[30px] flex w-fit items-center gap-2 text-[13px] font-semibold tracking-[.12em] text-muted uppercase">
                 ← Zpět na úvod
             </a>
+            {{-- Druhá část nadpisu se vysází cihlovou kurzívou. --}}
             <h1 data-reveal class="text-page-title m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
-                Na čem jsme <span class="text-brick italic">dělali.</span>
+                {{ text('reference.nadpis', 'Na čem jsme', $skupina, 'Nadpis nad výpisem referencí') }}
+                <span class="text-brick italic">{{ text('reference.nadpis_zvyrazneni', 'dělali.', $skupina, 'Zvýrazněná část nadpisu, vysází se cihlovou kurzívou') }}</span>
             </h1>
             <p data-reveal class="text-perex mt-[34px] mb-0 max-w-[52ch] text-body">
-                Výběr toho, co máme za sebou. Weby a značky staví Tom, reklamní účty vede Pavel.
-                Čísla u nich neuvádíme, protože je nemáme od klientů ověřená.
+                {{ text('reference.perex', 'Výběr toho, co máme za sebou. Weby a značky staví Tom, reklamní účty vede Pavel. Čísla u nich neuvádíme, protože je nemáme od klientů ověřená.', $skupina, 'Text pod nadpisem na /reference') }}
             </p>
         </div>
     </header>
@@ -36,7 +41,7 @@
     <section class="section-x pt-10 pb-[clamp(70px,9vw,120px)]">
         <div class="container-tavo">
             @if ($cases->isEmpty())
-                <p class="text-body-lg text-muted">V této kategorii zatím žádný projekt nemáme.</p>
+                <p class="text-body-lg text-muted">{{ text('reference.prazdno', 'V této kategorii zatím žádný projekt nemáme.', $skupina, 'Hláška, když ve vybrané kategorii není žádná reference') }}</p>
             @else
                 <div class="grid grid-cols-1 gap-[clamp(28px,3vw,48px)] menu:grid-cols-2">
                     @foreach ($cases as $case)
@@ -90,7 +95,7 @@
     </section>
 
     <x-cta-band
-        title="Řekněte nám, co potřebujete."
+        :title="text('reference.cta_nadpis', 'Řekněte nám, co potřebujete.', $skupina, 'Nadpis cihlového pruhu na konci /reference')"
         secondary-label="Co děláme"
         :secondary-url="route('home').'#sluzby'" />
 </x-layout.app>

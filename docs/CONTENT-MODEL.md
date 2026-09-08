@@ -27,6 +27,44 @@ Pravidlo pro běžný provoz: **po spuštění se formulace ladí v administraci
 Migrace se píše, když přibývá pole. Nové pole bez migrace je jediná varianta, která
 produkci opravdu shodí — settings třída bude chtít hodnotu, kterou databáze nemá.
 
+### Statické texty (Nastavení → Statické texty)
+
+Nadpisy a perexy výpisů, popisky tlačítek, hlášky formuláře. Věci, které nemají
+vlastní pole v nastavení, protože by na jedno slovo bylo škoda zakládat settings
+třídu, a přesto je správce potřebuje umět přepsat bez commitu.
+
+V šabloně se použije helper `text()`:
+
+```blade
+{{ text('reference.perex', 'Výběr toho, co máme za sebou.', 'Výpis referencí', 'Text pod nadpisem na /reference') }}
+```
+
+| Argument | K čemu je |
+|---|---|
+| klíč | `sekce.nazev`, podle něj se text najde v administraci |
+| výchozí znění | **zůstává v kódu**, takže stránka nikdy nezůstane prázdná a v repozitáři je vidět, co na webu stojí |
+| skupina | volitelná, jen řadí výpis v administraci; bez ní se odvodí z klíče |
+| poznámka | volitelná, ukáže správci, kde na webu text je |
+
+**Klíč se zakládá sám** při prvním vykreslení stránky. Žádná migrace ani seeder,
+stačí do šablony napsat `text(...)` a po nasazení se text objeví v administraci.
+
+**Smazání není ztráta.** Tlačítko „Vrátit původní" jen zahodí řádek v databázi
+a při dalším vykreslení se klíč založí znovu se zněním ze šablony.
+
+Texty se čtou na každé stránce, takže leží v cache; ta se zahodí při každém uložení
+v administraci. Když do tabulky `web_texts` někdo sáhne přímo v databázi, cache
+o tom neví a je potřeba použít Údržba → Obnovit cache.
+
+**Kdy sáhnout po čem:**
+
+| Typ obsahu | Kam patří |
+|---|---|
+| seznam položek (reference, služby, lidé) | vlastní model + resource v „Obsah" |
+| celá stránka s vlastní strukturou | statická stránka s bloky |
+| pojmenované pole konkrétní sekce (nadpis homepage, kontakt, SEO) | settings třída + stránka v „Nastavení" |
+| volný text v šabloně, který nemá vlastní pole | `text()` a Statické texty |
+
 ### A co celá nová stránka?
 
 Stejný problém: `ContentSeeder` se pouští jen při prvním nasazení, takže stránka

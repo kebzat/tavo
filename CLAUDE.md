@@ -36,6 +36,10 @@ V shellu je `php` alias na PHP 8.2, projekt potřebuje 8.4. Používej wrappery:
 
 - **Seznam položek → vlastní model + Filament resource.** Singletonový obsah stránky
   → settings třída v `app/Settings/` + settings stránka v `app/Filament/Pages/Settings/`.
+- **Volný text v šabloně nepiš natvrdo.** Nadpisy výpisů, popisky tlačítek a hlášky
+  obal helperem `text('klic', 'Výchozí znění')` — výchozí znění zůstane v kódu, klíč
+  se sám založí a správce ho přepíše v Nastavení → Statické texty. Viz
+  [docs/CONTENT-MODEL.md](docs/CONTENT-MODEL.md).
 - **Nové pole v settings třídě vyžaduje migraci** v `database/settings/`, jinak
   aplikace spadne na chybějící hodnotě.
 - **Settings migrace dědí od `App\Support\ContentSettingsMigration`** a používají

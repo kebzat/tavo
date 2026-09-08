@@ -13,7 +13,7 @@ app/
 │                              Sitemap
 ├─ Http/Requests/LeadRequest   validace poptávkového formuláře
 ├─ Mail/LeadReceived           notifikace o nové poptávce
-├─ Models/                     CaseStudy, CaseStudyCategory, Service,
+├─ Models/                     CaseStudy, CaseStudyCategory, Service, WebText,
 │                              ProcessStep, Founder, Page, Lead, User
 ├─ Providers/AppServiceProvider  sdílí $site a $contact, spouští ImageDerivatives
 ├─ Settings/                   SiteSettings, ContactSettings, HomeSettings, SeoSettings
@@ -22,6 +22,8 @@ app/
    ├─ ImageDerivatives         hledá obrázky v obsahu, poslouchá uložení
    ├─ PageMeta                 title, description, OG, robots pro <head>
    ├─ StructuredData           JSON-LD
+   ├─ WebTexts                 statické texty editovatelné v administraci
+   ├─ helpers.php              globální text() nad WebTexts
    ├─ EshopOffers              obsah čtyř dopadových stránek pro e-shopy
    └─ ContentSettingsMigration základ migrací nastavení
 
