@@ -116,7 +116,7 @@
                     <x-media
                         :image="$next->thumbImage()"
                         :label="$next->thumb_label"
-                        :fit="$next->thumbFit()"
+                        ratio="aspect-[16/10]"
                         tone="dark"
                         radius="rounded-none"
                         sizes="(min-width: 861px) 40vw, 88vw" />

@@ -42,11 +42,14 @@
                     @foreach ($cases as $case)
                         <a href="{{ route('cases.show', $case->slug) }}" data-reveal class="group block">
                             <div class="relative">
+                                {{-- Rámeček 16:10. Náhledy chodí ve dvou tvarech — připravené koláže
+                                     4:3 a screenshoty webů skoro 16:9 — a tenhle poměr leží mezi nimi,
+                                     takže ani jednomu neubere víc než pár procent. --}}
                                 <x-media
                                     :image="$case->thumbImage()"
                                     :label="$case->thumb_label"
-                                    :fit="$case->thumbFit()"
                                     :priority="$loop->first"
+                                    ratio="aspect-[16/10]"
                                     radius="rounded-thumb"
                                     sizes="(min-width: 861px) 44vw, 88vw"
                                     class="transition-transform duration-500 ease-tavo group-hover:scale-[1.02]" />
