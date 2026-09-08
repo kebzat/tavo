@@ -188,7 +188,7 @@ class PageBlocksTest extends TestCase
             ->assertOk()
             ->assertSee('Pro majitele e-shopů', false)
             ->assertSee('<span class="text-brick italic">nevydělává</span>', false)
-            ->assertSee('Zavolat', false);
+            ->assertSee('mailto:', false);
     }
 
     public function test_nenalezeny_zvyraznovany_vyraz_nadpis_nerozbije(): void

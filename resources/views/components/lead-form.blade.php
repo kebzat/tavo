@@ -10,152 +10,245 @@
      */
     $invalidClass = 'border-ink';
     $errorClass = 'mt-1.5 text-[13px] font-bold text-ink';
+    $alertClass = 'mb-6 rounded-2xl border-[1.5px] border-ink bg-cream px-5 py-4 text-[14px] leading-[1.5] text-ink';
+
+    // Bez klíče od Cloudflare se widget nevykreslí a validace se neptá.
+    $turnstileSiteKey = config('services.turnstile.site_key');
 @endphp
 
 <div class="mx-auto mt-14 w-full max-w-3xl text-left" id="poptavka">
     @if ($sent)
-        {{-- role="status" — čtečka potvrzení přečte, i když se na něj uživatel nedívá. --}}
-        <div role="status"
-             class="rounded-card border-[1.5px] border-ink/20 bg-cream p-8 text-center">
-            <div class="text-h3 font-extrabold tracking-[-.02em]">Díky, máme to.</div>
-            <p class="mx-auto mt-4 mb-0 max-w-[46ch] text-[16px] leading-[1.6] text-body">
-                Ozveme se do dvou pracovních dnů. Pokud to spěchá, napište rovnou na
-                <a href="{{ $contact->emailHref() }}" class="font-bold text-brick underline">{{ $contact->email }}</a>.
-            </p>
-        </div>
+        {{-- Sem dojde prohlížeč bez JS, kterého po odeslání přesměroval server. --}}
+        <x-lead-sent />
     @else
-        <form method="POST" action="{{ route('lead.store') }}" class="rounded-card bg-cream/35 p-6 md:p-9">
-            @csrf
+        {{--
+            S JS se formulář odešle na pozadí a poděkování nastoupí na jeho
+            místo. Stránka se nepřekresluje, takže návštěvník zůstane tam, kde
+            byl, a nepřijde o rozečtený text nad formulářem.
+        --}}
+        <div x-data="tavoLeadForm()">
+            <div x-show="odeslano" x-cloak x-ref="podekovani">
+                <x-lead-sent />
+            </div>
 
-            @if ($errors->any())
+            <form method="POST" action="{{ route('lead.store') }}"
+                  x-ref="formular"
+                  x-show="! odeslano"
+                  @submit.prevent="odeslat"
+                  class="rounded-card bg-cream/35 p-6 md:p-9">
+                @csrf
+
                 {{--
-                    Souhrn chyb je zároveň cíl, na který se po odeslání skočí
-                    (`tabindex="-1"` + autofocus), aby uživatel klávesnice i čtečky
+                    Souhrn chyb je zároveň cíl, na který se po neúspěšném odeslání
+                    skočí (`tabindex="-1"` + fokus), aby uživatel klávesnice i čtečky
                     věděl, proč se formulář neodeslal. Konkrétní chyba je pak
                     ještě u každého pole zvlášť.
+
+                    Jsou tu dvě varianty: první plní odpověď ze serveru při
+                    odeslání na pozadí, druhá přijde z relace, když JS neběží.
                 --}}
                 <div role="alert"
                      tabindex="-1"
-                     autofocus
-                     class="mb-6 rounded-2xl border-[1.5px] border-ink bg-cream px-5 py-4 text-[14px] leading-[1.5] text-ink">
+                     x-ref="souhrn"
+                     x-show="seznamChyb.length"
+                     x-cloak
+                     class="{{ $alertClass }}">
                     <strong class="mb-1 block">Formulář se nepodařilo odeslat:</strong>
                     <ul class="m-0 list-disc pl-5">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
+                        <template x-for="hlaska in seznamChyb" :key="hlaska">
+                            <li x-text="hlaska"></li>
+                        </template>
                     </ul>
                 </div>
-            @endif
 
-            <div class="grid gap-5 md:grid-cols-2">
-                <div>
-                    <label for="lead-name" class="{{ $labelClass }}">Jméno *</label>
-                    <input id="lead-name" name="name" type="text" required autocomplete="name"
-                           value="{{ old('name') }}"
-                           @error('name') aria-invalid="true" aria-describedby="lead-name-error" @enderror
-                           class="{{ $inputClass }} @error('name') {{ $invalidClass }} @enderror"
-                           placeholder="Jan Novák">
-                    @error('name')
-                        <p id="lead-name-error" class="{{ $errorClass }}">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="lead-company" class="{{ $labelClass }}">Firma</label>
-                    <input id="lead-company" name="company" type="text" autocomplete="organization"
-                           value="{{ old('company') }}"
-                           @error('company') aria-invalid="true" aria-describedby="lead-company-error" @enderror
-                           class="{{ $inputClass }} @error('company') {{ $invalidClass }} @enderror"
-                           placeholder="Novák s.r.o.">
-                    @error('company')
-                        <p id="lead-company-error" class="{{ $errorClass }}">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="lead-email" class="{{ $labelClass }}">E-mail *</label>
-                    <input id="lead-email" name="email" type="email" required autocomplete="email"
-                           value="{{ old('email') }}"
-                           @error('email') aria-invalid="true" aria-describedby="lead-email-error" @enderror
-                           class="{{ $inputClass }} @error('email') {{ $invalidClass }} @enderror"
-                           placeholder="jan@novak.cz">
-                    @error('email')
-                        <p id="lead-email-error" class="{{ $errorClass }}">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="lead-phone" class="{{ $labelClass }}">Telefon</label>
-                    <input id="lead-phone" name="phone" type="tel" autocomplete="tel"
-                           value="{{ old('phone') }}"
-                           @error('phone') aria-invalid="true" aria-describedby="lead-phone-error" @enderror
-                           class="{{ $inputClass }} @error('phone') {{ $invalidClass }} @enderror"
-                           placeholder="+420 777 123 456">
-                    @error('phone')
-                        <p id="lead-phone-error" class="{{ $errorClass }}">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="lead-topic" class="{{ $labelClass }}">O co jde</label>
-                    <select id="lead-topic" name="topic"
-                            @error('topic') aria-invalid="true" aria-describedby="lead-topic-error" @enderror
-                            class="{{ $inputClass }} @error('topic') {{ $invalidClass }} @enderror">
-                        <option value="">Vyberte…</option>
-                        @foreach (['Nový web', 'Nový e-shop', 'Předělání webu, který máme', 'Reklama a kampaně', 'Správa a rozvoj webu', 'Něco jiného'] as $topic)
-                            <option value="{{ $topic }}" @selected(old('topic') === $topic)>{{ $topic }}</option>
-                        @endforeach
-                    </select>
-                    @error('topic')
-                        <p id="lead-topic-error" class="{{ $errorClass }}">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="lead-budget" class="{{ $labelClass }}">Orientační rozpočet</label>
-                    <select id="lead-budget" name="budget"
-                            @error('budget') aria-invalid="true" aria-describedby="lead-budget-error" @enderror
-                            class="{{ $inputClass }} @error('budget') {{ $invalidClass }} @enderror">
-                        <option value="">Zatím nevím</option>
-                        @foreach (['do 50 tis. Kč', '50–150 tis. Kč', '150–300 tis. Kč', 'nad 300 tis. Kč', 'měsíční spolupráce'] as $budget)
-                            <option value="{{ $budget }}" @selected(old('budget') === $budget)>{{ $budget }}</option>
-                        @endforeach
-                    </select>
-                    @error('budget')
-                        <p id="lead-budget-error" class="{{ $errorClass }}">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
+                @if ($errors->any())
+                    <div role="alert" tabindex="-1" autofocus class="{{ $alertClass }}">
+                        <strong class="mb-1 block">Formulář se nepodařilo odeslat:</strong>
+                        <ul class="m-0 list-disc pl-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-            <div class="mt-5">
-                <label for="lead-message" class="{{ $labelClass }}">Napište pár vět o vašem podnikání *</label>
-                <textarea id="lead-message" name="message" rows="5" required
-                          @error('message') aria-invalid="true" aria-describedby="lead-message-error" @enderror
-                          class="{{ $inputClass }} @error('message') {{ $invalidClass }} @enderror"
-                          placeholder="Co děláte, kam se chcete dostat a co vás teď nejvíc brzdí.">{{ old('message') }}</textarea>
-                @error('message')
-                    <p id="lead-message-error" class="{{ $errorClass }}">{{ $message }}</p>
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label for="lead-name" class="{{ $labelClass }}">Jméno *</label>
+                        <input id="lead-name" name="name" type="text" required autocomplete="name"
+                               value="{{ old('name') }}"
+                               :aria-invalid="chyby.name ? 'true' : null"
+                               :class="chyby.name && '{{ $invalidClass }}'"
+                               @error('name') aria-invalid="true" aria-describedby="lead-name-error" @enderror
+                               class="{{ $inputClass }} @error('name') {{ $invalidClass }} @enderror"
+                               placeholder="Jan Novák">
+                        @error('name')
+                            <p id="lead-name-error" class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                        <template x-if="chyby.name">
+                            <p class="{{ $errorClass }}" x-text="chyby.name[0]"></p>
+                        </template>
+                    </div>
+                    <div>
+                        <label for="lead-company" class="{{ $labelClass }}">Firma</label>
+                        <input id="lead-company" name="company" type="text" autocomplete="organization"
+                               value="{{ old('company') }}"
+                               :aria-invalid="chyby.company ? 'true' : null"
+                               :class="chyby.company && '{{ $invalidClass }}'"
+                               @error('company') aria-invalid="true" aria-describedby="lead-company-error" @enderror
+                               class="{{ $inputClass }} @error('company') {{ $invalidClass }} @enderror"
+                               placeholder="Novák s.r.o.">
+                        @error('company')
+                            <p id="lead-company-error" class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                        <template x-if="chyby.company">
+                            <p class="{{ $errorClass }}" x-text="chyby.company[0]"></p>
+                        </template>
+                    </div>
+                    <div>
+                        <label for="lead-email" class="{{ $labelClass }}">E-mail *</label>
+                        <input id="lead-email" name="email" type="email" required autocomplete="email"
+                               value="{{ old('email') }}"
+                               :aria-invalid="chyby.email ? 'true' : null"
+                               :class="chyby.email && '{{ $invalidClass }}'"
+                               @error('email') aria-invalid="true" aria-describedby="lead-email-error" @enderror
+                               class="{{ $inputClass }} @error('email') {{ $invalidClass }} @enderror"
+                               placeholder="jan@novak.cz">
+                        @error('email')
+                            <p id="lead-email-error" class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                        <template x-if="chyby.email">
+                            <p class="{{ $errorClass }}" x-text="chyby.email[0]"></p>
+                        </template>
+                    </div>
+                    <div>
+                        <label for="lead-phone" class="{{ $labelClass }}">Telefon</label>
+                        <input id="lead-phone" name="phone" type="tel" autocomplete="tel"
+                               value="{{ old('phone') }}"
+                               :aria-invalid="chyby.phone ? 'true' : null"
+                               :class="chyby.phone && '{{ $invalidClass }}'"
+                               @error('phone') aria-invalid="true" aria-describedby="lead-phone-error" @enderror
+                               class="{{ $inputClass }} @error('phone') {{ $invalidClass }} @enderror"
+                               placeholder="+420 777 123 456">
+                        @error('phone')
+                            <p id="lead-phone-error" class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                        <template x-if="chyby.phone">
+                            <p class="{{ $errorClass }}" x-text="chyby.phone[0]"></p>
+                        </template>
+                    </div>
+                    <div>
+                        <label for="lead-topic" class="{{ $labelClass }}">O co jde</label>
+                        <select id="lead-topic" name="topic"
+                                :aria-invalid="chyby.topic ? 'true' : null"
+                                :class="chyby.topic && '{{ $invalidClass }}'"
+                                @error('topic') aria-invalid="true" aria-describedby="lead-topic-error" @enderror
+                                class="{{ $inputClass }} @error('topic') {{ $invalidClass }} @enderror">
+                            <option value="">Vyberte…</option>
+                            @foreach (['Nový web', 'Nový e-shop', 'Předělání webu, který máme', 'Reklama a kampaně', 'Správa a rozvoj webu', 'Něco jiného'] as $topic)
+                                <option value="{{ $topic }}" @selected(old('topic') === $topic)>{{ $topic }}</option>
+                            @endforeach
+                        </select>
+                        @error('topic')
+                            <p id="lead-topic-error" class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                        <template x-if="chyby.topic">
+                            <p class="{{ $errorClass }}" x-text="chyby.topic[0]"></p>
+                        </template>
+                    </div>
+                    <div>
+                        <label for="lead-budget" class="{{ $labelClass }}">Orientační rozpočet</label>
+                        <select id="lead-budget" name="budget"
+                                :aria-invalid="chyby.budget ? 'true' : null"
+                                :class="chyby.budget && '{{ $invalidClass }}'"
+                                @error('budget') aria-invalid="true" aria-describedby="lead-budget-error" @enderror
+                                class="{{ $inputClass }} @error('budget') {{ $invalidClass }} @enderror">
+                            <option value="">Zatím nevím</option>
+                            @foreach (['do 50 tis. Kč', '50–150 tis. Kč', '150–300 tis. Kč', 'nad 300 tis. Kč', 'měsíční spolupráce'] as $budget)
+                                <option value="{{ $budget }}" @selected(old('budget') === $budget)>{{ $budget }}</option>
+                            @endforeach
+                        </select>
+                        @error('budget')
+                            <p id="lead-budget-error" class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                        <template x-if="chyby.budget">
+                            <p class="{{ $errorClass }}" x-text="chyby.budget[0]"></p>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <label for="lead-message" class="{{ $labelClass }}">Napište pár vět o vašem podnikání *</label>
+                    <textarea id="lead-message" name="message" rows="5" required
+                              :aria-invalid="chyby.message ? 'true' : null"
+                              :class="chyby.message && '{{ $invalidClass }}'"
+                              @error('message') aria-invalid="true" aria-describedby="lead-message-error" @enderror
+                              class="{{ $inputClass }} @error('message') {{ $invalidClass }} @enderror"
+                              placeholder="Co děláte, kam se chcete dostat a co vás teď nejvíc brzdí.">{{ old('message') }}</textarea>
+                    @error('message')
+                        <p id="lead-message-error" class="{{ $errorClass }}">{{ $message }}</p>
+                    @enderror
+                    <template x-if="chyby.message">
+                        <p class="{{ $errorClass }}" x-text="chyby.message[0]"></p>
+                    </template>
+                </div>
+
+                {{-- Honeypot — pro lidi neviditelné, roboti ho vyplní a poptávku odmítneme. --}}
+                <div aria-hidden="true" class="absolute h-0 w-0 overflow-hidden opacity-0">
+                    <label for="lead-website">Web (nevyplňujte)</label>
+                    <input id="lead-website" name="website" type="text" tabindex="-1" autocomplete="off">
+                </div>
+
+                <label class="mt-5 flex items-start gap-3 text-left text-[13px] leading-[1.5] text-ink/80">
+                    <input name="gdpr" type="checkbox" value="1" required
+                           :aria-invalid="chyby.gdpr ? 'true' : null"
+                           @error('gdpr') aria-invalid="true" aria-describedby="lead-gdpr-error" @enderror
+                           class="mt-0.5 h-4 w-4 accent-ink">
+                    <span>
+                        Souhlasím se zpracováním údajů za účelem odpovědi na poptávku.
+                        <a href="{{ url('/ochrana-osobnich-udaju') }}" class="font-bold underline">Více informací</a>.
+                    </span>
+                </label>
+                @error('gdpr')
+                    <p id="lead-gdpr-error" class="{{ $errorClass }}">{{ $message }}</p>
                 @enderror
-            </div>
+                <template x-if="chyby.gdpr">
+                    <p class="{{ $errorClass }}" x-text="chyby.gdpr[0]"></p>
+                </template>
 
-            {{-- Honeypot — pro lidi neviditelné, roboti ho vyplní a poptávku odmítneme. --}}
-            <div aria-hidden="true" class="absolute h-0 w-0 overflow-hidden opacity-0">
-                <label for="lead-website">Web (nevyplňujte)</label>
-                <input id="lead-website" name="website" type="text" tabindex="-1" autocomplete="off">
-            </div>
+                @if ($turnstileSiteKey)
+                    {{--
+                        Turnstile pozná i roboty, kteří honeypot obejdou. Widget
+                        je ve většině případů tichý, návštěvník nic neopisuje.
+                    --}}
+                    <div class="mt-6">
+                        <div class="cf-turnstile"
+                             data-sitekey="{{ $turnstileSiteKey }}"
+                             data-theme="light"
+                             data-language="cs"
+                             data-response-field-name="cf-turnstile-response"></div>
 
-            <label class="mt-5 flex items-start gap-3 text-left text-[13px] leading-[1.5] text-ink/80">
-                <input name="gdpr" type="checkbox" value="1" required
-                       @error('gdpr') aria-invalid="true" aria-describedby="lead-gdpr-error" @enderror
-                       class="mt-0.5 h-4 w-4 accent-ink">
-                <span>
-                    Souhlasím se zpracováním údajů za účelem odpovědi na poptávku.
-                    <a href="{{ url('/ochrana-osobnich-udaju') }}" class="font-bold underline">Více informací</a>.
-                </span>
-            </label>
-            @error('gdpr')
-                <p id="lead-gdpr-error" class="{{ $errorClass }}">{{ $message }}</p>
-            @enderror
+                        <template x-if="chyby['cf-turnstile-response']">
+                            <p class="{{ $errorClass }}" x-text="chyby['cf-turnstile-response'][0]"></p>
+                        </template>
+                        @error('cf-turnstile-response')
+                            <p class="{{ $errorClass }}">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-            <div class="mt-7 flex flex-wrap items-center gap-4">
-                <x-btn type="submit" variant="dark" size="lg">Odeslat poptávku</x-btn>
-                <span class="text-[13px] text-ink/65">Ozveme se do dvou pracovních dnů.</span>
-            </div>
-        </form>
+                    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                @endif
+
+                <div class="mt-7 flex flex-wrap items-center gap-4">
+                    <x-btn type="submit" variant="dark" size="lg"
+                           x-bind:disabled="odesila"
+                           class="disabled:pointer-events-none disabled:opacity-60">
+                        <span x-show="! odesila">Odeslat poptávku</span>
+                        <span x-show="odesila" x-cloak>Odesíláme</span>
+                    </x-btn>
+                    <span class="text-[13px] text-ink/65">Ozveme se vám.</span>
+                </div>
+            </form>
+        </div>
     @endif
 </div>

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\LeadReceived;
 use App\Models\Lead;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -25,6 +26,64 @@ class LeadFormTest extends TestCase
             'message' => 'Potřebujeme nový web pro naši firmu, máme zastaralou prezentaci.',
             'gdpr' => '1',
         ], $overrides);
+    }
+
+    public function test_bez_klicu_od_cloudflare_se_turnstile_nepta(): void
+    {
+        Mail::fake();
+        config(['services.turnstile.secret' => null]);
+
+        // Bez tokenu a přesto projde — jinak by vypnutá ochrana zablokovala web.
+        $this->postJson('/poptavka', $this->validData())->assertOk();
+
+        $this->assertSame(1, Lead::count());
+    }
+
+    public function test_zapnuty_turnstile_odmitne_odeslani_bez_tokenu(): void
+    {
+        Mail::fake();
+        Http::fake();
+        config(['services.turnstile.secret' => 'tajny-klic-jen-pro-test']);
+
+        $this->postJson('/poptavka', $this->validData())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('cf-turnstile-response');
+
+        $this->assertSame(0, Lead::count());
+        // Chybějící token se pozná z pravidla `required`, Cloudflare se neptáme.
+        Http::assertNothingSent();
+    }
+
+    public function test_zapnuty_turnstile_pusti_overene_odeslani(): void
+    {
+        Mail::fake();
+        Http::fake(['challenges.cloudflare.com/*' => Http::response(['success' => true])]);
+        config(['services.turnstile.secret' => 'tajny-klic-jen-pro-test']);
+
+        $this->postJson('/poptavka', $this->validData(['cf-turnstile-response' => 'token-z-widgetu']))
+            ->assertOk();
+
+        $this->assertSame(1, Lead::count());
+    }
+
+    public function test_odeslani_na_pozadi_vrati_json_misto_presmerovani(): void
+    {
+        Mail::fake();
+
+        $this->postJson('/poptavka', $this->validData())
+            ->assertOk()
+            ->assertExactJson(['ok' => true]);
+
+        $this->assertSame('Jan Novák', Lead::sole()->name);
+    }
+
+    public function test_chyby_pri_odeslani_na_pozadi_prijdou_po_polich(): void
+    {
+        $this->postJson('/poptavka', $this->validData(['email' => 'tohle není e-mail']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('email');
+
+        $this->assertSame(0, Lead::count());
     }
 
     public function test_odeslani_ulozi_poptavku_a_posle_e_mail(): void

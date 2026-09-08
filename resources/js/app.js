@@ -153,6 +153,87 @@ Alpine.data('tavoChecklistItem', (hotovoNaZacatku) => ({
     },
 }));
 
+/**
+ * Poptávkový formulář.
+ *
+ * Bez JS se odešle klasicky a stránka se překreslí. Tady odeslání odchytneme
+ * a pošleme na pozadí: návštěvník zůstane tam, kde byl, a poděkování nastoupí
+ * rovnou na místo formuláře.
+ */
+Alpine.data('tavoLeadForm', () => ({
+    odesila: false,
+    odeslano: false,
+
+    /** Chyby z odpovědi 422 ve tvaru `{ pole: ['hláška'] }`. */
+    chyby: {},
+
+    get seznamChyb() {
+        return Object.values(this.chyby).flat();
+    },
+
+    async odeslat() {
+        if (this.odesila) return;
+
+        this.odesila = true;
+        this.chyby = {};
+
+        try {
+            // Token CSRF veze FormData z @csrf, hlavičku k tomu netřeba.
+            const odpoved = await fetch(this.$refs.formular.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(this.$refs.formular),
+            });
+
+            if (odpoved.ok) {
+                this.odeslano = true;
+                this.$nextTick(() => this.ukaz(this.$refs.podekovani?.querySelector('[role="status"]')));
+
+                return;
+            }
+
+            if (odpoved.status === 422) {
+                this.chyby = (await odpoved.json()).errors ?? {};
+            } else if (odpoved.status === 429) {
+                this.chyby = { obecna: ['Formulář jste odeslali několikrát po sobě. Zkuste to prosím za chvíli.'] };
+            } else {
+                this.chyby = { obecna: ['Odeslání se nepovedlo. Zkuste to prosím znovu, nebo nám napište na e-mail.'] };
+            }
+        } catch {
+            this.chyby = { obecna: ['Odeslání se nepovedlo, zkontrolujte prosím připojení k internetu.'] };
+        } finally {
+            this.odesila = false;
+
+            if (! this.odeslano) {
+                // Token od Turnstile je jednorázový. Bez tohohle by druhý pokus
+                // po chybě spadl na „ověření se nepodařilo", i kdyby byl v pořádku.
+                window.turnstile?.reset();
+                this.$nextTick(() => this.ukaz(this.$refs.souhrn));
+            }
+        }
+    },
+
+    /**
+     * Poděkování je nižší než formulář, který nahradilo, takže se dokument
+     * zkrátí a obsah pod ním vyskočí nahoru; na mobilu pak návštěvník kouká
+     * na patičku místo na potvrzení. Posuneme se na výsledek sami.
+     *
+     * Posun musí počkat na `requestAnimationFrame`. V `$nextTick` je DOM sice
+     * přepsaný, ale výška stránky ještě ne, a rozjetý plynulý posun prohlížeč
+     * při té změně zruší.
+     */
+    ukaz(prvek) {
+        if (! prvek) return;
+
+        prvek.focus({ preventScroll: true });
+
+        requestAnimationFrame(() => prvek.scrollIntoView({
+            block: 'center',
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        }));
+    },
+}));
+
 /** Přepíše čísla a šířku proužku v jednom bloku progresu. */
 function prepisProgres(selektor, progres) {
     document.querySelectorAll(selektor).forEach((blok) => {

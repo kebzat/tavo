@@ -28,10 +28,11 @@
 
             @if ($secondaryLabel && $secondaryUrl)
                 <x-btn :href="$secondaryUrl" variant="ghost-dark" size="lg">{{ $secondaryLabel }}</x-btn>
-            @else
-                <x-btn :href="$contact->phoneHref()" variant="ghost-dark" size="lg">Zavolat</x-btn>
             @endif
         </div>
+
+        {{-- Kdo nechce čekat na odpověď, zavolá rovnou člověku. --}}
+        <x-contact-people data-reveal class="mt-7 justify-center" />
 
         @if ($form)
             <x-lead-form />

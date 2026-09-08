@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Founder;
 use App\Settings\ContactSettings;
 use App\Settings\SiteSettings;
 use App\Support\EshopOffers;
@@ -40,6 +41,14 @@ class AppServiceProvider extends ServiceProvider
          */
         View::composer('components.layout.footer', function ($view) {
             $view->with('eshopOffers', EshopOffers::all());
+        });
+
+        /*
+         * Telefony na Pavla a Toma pro spěchající. Komponenta si je nesmí tahat
+         * sama — v šabloně nemá být dotaz do databáze.
+         */
+        View::composer('components.contact-people', function ($view) {
+            $view->with('contactPeople', Founder::callable()->ordered()->get());
         });
 
         // Zmenšeniny nahraných obrázků vznikají hned při uložení v administraci.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\Turnstile;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LeadRequest extends FormRequest
@@ -23,8 +24,14 @@ class LeadRequest extends FormRequest
             'budget' => ['nullable', 'string', 'max:120'],
             'message' => ['required', 'string', 'min:10', 'max:4000'],
             'gdpr' => ['accepted'],
-            // Honeypot — skryté pole, které smí vyplnit jen robot.
+            // Honeypot — skryté pole, které smí vyplnit jen robot. Turnstile ho
+            // nenahrazuje, jen doplňuje: nestojí nic a odfiltruje spam dřív,
+            // než se kvůli němu volá Cloudflare.
             'website' => ['prohibited'],
+            // Turnstile se ověřuje, jen když jsou v `.env` klíče od Cloudflare.
+            'cf-turnstile-response' => Turnstile::enabled()
+                ? ['required', new Turnstile($this->ip())]
+                : [],
         ];
     }
 
@@ -40,6 +47,7 @@ class LeadRequest extends FormRequest
             'budget' => 'rozpočet',
             'message' => 'zpráva',
             'gdpr' => 'souhlas se zpracováním údajů',
+            'cf-turnstile-response' => 'ověření proti robotům',
         ];
     }
 
@@ -50,6 +58,7 @@ class LeadRequest extends FormRequest
             'gdpr.accepted' => 'Bez souhlasu se zpracováním údajů vám bohužel nemůžeme odpovědět.',
             'website.prohibited' => 'Formulář se nepodařilo odeslat.',
             'message.min' => 'Napište nám prosím alespoň pár vět, ať víme, o co jde.',
+            'cf-turnstile-response.required' => 'Ověření, že nejste robot, neproběhlo. Načtěte prosím stránku znovu.',
         ];
     }
 }

@@ -25,6 +25,28 @@ class Founder extends Model implements HasMedia
         return $query->orderBy('order_column')->orderBy('id');
     }
 
+    /** Zakladatelé, kterým se dá zavolat. Bez čísla se nabízet nemá smysl. */
+    public function scopeCallable(Builder $query): Builder
+    {
+        return $query->whereNotNull('phone')->where('phone', '!=', '');
+    }
+
+    /**
+     * Číslo, jak se píše na webu. Předvolbu +420 vynecháváme: Čech ji v čísle
+     * nečte a bez ní se dvojice čísel pod sebou přehlédne líp. V odkazu
+     * `tel:` samozřejmě zůstává, viz phoneHref().
+     */
+    public function phoneLabel(): string
+    {
+        return trim(preg_replace('/^\+420\s*/', '', (string) $this->phone));
+    }
+
+    /** Číslo ve tvaru pro href="tel:" — bez mezer, s předvolbou. */
+    public function phoneHref(): string
+    {
+        return 'tel:'.preg_replace('/[^0-9+]/', '', (string) $this->phone);
+    }
+
     public function registerMediaCollections(): void
     {
         // useDisk('public') — viz komentář v CaseStudy::registerMediaCollections().

@@ -18,6 +18,10 @@ class FounderForm
             Section::make()->columns(2)->schema([
                 TextInput::make('name')->label('Jméno')->required(),
                 TextInput::make('role_label')->label('Role')->helperText('Např. „Marketing & růst"'),
+                TextInput::make('phone')
+                    ->label('Telefon')
+                    ->tel()
+                    ->helperText('Nabídne se na webu jako číslo pro spěchající. Prázdné pole číslo nikde nezobrazí.'),
                 TextInput::make('external_url')->label('Vlastní web')->url(),
                 TextInput::make('order_column')->label('Pořadí')->numeric()->default(0),
                 Textarea::make('bio')->label('Popis')->rows(3)->columnSpanFull(),

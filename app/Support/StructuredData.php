@@ -61,6 +61,7 @@ class StructuredData
                     '@type' => 'Person',
                     'name' => $founder->name,
                     'jobTitle' => $founder->role_label,
+                    'telephone' => $founder->phone,
                     'url' => $founder->external_url,
                 ]))
                 ->all();

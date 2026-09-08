@@ -27,8 +27,9 @@
             @if ($page->hero_cta)
                 <div data-reveal class="mt-9 flex flex-wrap gap-3.5">
                     <x-btn :href="$contact->emailHref()" size="lg">{{ $contact->email }}</x-btn>
-                    <x-btn :href="$contact->phoneHref()" variant="ghost" size="lg">Zavolat</x-btn>
                 </div>
+
+                <x-contact-people data-reveal class="mt-6" />
             @endif
         </div>
     </header>
