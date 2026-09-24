@@ -154,6 +154,66 @@ Alpine.data('tavoChecklistItem', (hotovoNaZacatku) => ({
 }));
 
 /**
+ * Obsah sdíleného auditu: při scrollování zvýrazní kapitolu, ve které čtenář
+ * právě je. Aktivní je poslední nadpis `##`, který už přejel pod horní okraj
+ * okna. Na konci stránky vyhraje poslední kapitola, i když je krátká a její
+ * nadpis nahoru nikdy nedojede.
+ */
+Alpine.data('tavoAuditToc', () => ({
+    active: null,
+
+    init() {
+        const nadpisy = Array.from(document.querySelectorAll('[data-audit-body] h2[id]'));
+
+        if (! nadpisy.length) return;
+
+        // Nadpis po kliknutí v menu přistane kousek pod horním okrajem
+        // (scroll-padding + scroll-margin), proto rezerva 140 px.
+        const hranice = 140;
+        let ceka = false;
+
+        const zmer = () => {
+            ceka = false;
+
+            const naKonci = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+            const prejete = nadpisy.filter((nadpis) => nadpis.getBoundingClientRect().top <= hranice);
+            const aktualni = naKonci ? nadpisy[nadpisy.length - 1] : (prejete[prejete.length - 1] ?? nadpisy[0]);
+
+            if (aktualni.id === this.active) return;
+
+            this.active = aktualni.id;
+            this.$nextTick(() => this.dorolujMenu());
+        };
+
+        window.addEventListener('scroll', () => {
+            if (ceka) return;
+            ceka = true;
+            requestAnimationFrame(zmer);
+        }, { passive: true });
+
+        zmer();
+    },
+
+    /**
+     * U dlouhého obsahu se boční sloupec sám posouvá. Aktivní odkaz v něm
+     * držíme na očích, ale jen posunem sloupce, stránkou se nehýbe.
+     */
+    dorolujMenu() {
+        const sloupec = this.$root;
+        const odkaz = sloupec?.querySelector('[aria-current="location"]');
+
+        if (! odkaz || sloupec.scrollHeight <= sloupec.clientHeight) return;
+
+        const o = odkaz.getBoundingClientRect();
+        const s = sloupec.getBoundingClientRect();
+
+        if (o.top < s.top || o.bottom > s.bottom) {
+            sloupec.scrollTop += o.top - s.top - s.height / 2 + o.height / 2;
+        }
+    },
+}));
+
+/**
  * Poptávkový formulář.
  *
  * Bez JS se odešle klasicky a stránka se překreslí. Tady odeslání odchytneme

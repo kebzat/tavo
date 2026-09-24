@@ -62,8 +62,11 @@
         ])>
 
             @if ($toc)
-                {{-- Obsah: na širokém displeji přilepený sloupec, jinak rozbalovací seznam. --}}
-                <nav aria-label="Obsah auditu" class="loop:sticky loop:top-6 loop:max-h-[calc(100vh-48px)] loop:self-start loop:overflow-y-auto">
+                {{-- Obsah: na širokém displeji přilepený sloupec, jinak rozbalovací seznam.
+                     V bočním sloupci se zvýrazní kapitola, ve které čtenář právě je. --}}
+                <nav aria-label="Obsah auditu"
+                     x-data="tavoAuditToc"
+                     class="loop:sticky loop:top-6 loop:max-h-[calc(100vh-48px)] loop:self-start loop:overflow-y-auto">
                     <details class="group rounded-card border border-ink/14 p-5 loop:hidden">
                         <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">
                             Obsah auditu
@@ -86,7 +89,8 @@
                             @foreach ($toc as $entry)
                                 <li>
                                     <a href="#{{ $entry['id'] }}"
-                                       class="-ml-px block border-l-2 border-transparent pl-4 text-sm leading-snug text-body transition-colors duration-200 ease-tavo hover:border-brick hover:text-brick">
+                                       :aria-current="active === @js($entry['id']) ? 'location' : false"
+                                       class="-ml-px block border-l-2 border-transparent pl-4 text-sm leading-snug text-body transition-colors duration-200 ease-tavo hover:border-brick hover:text-brick aria-[current=location]:border-brick aria-[current=location]:font-bold aria-[current=location]:text-brick">
                                         {{ $entry['title'] }}
                                     </a>
                                 </li>
@@ -96,7 +100,7 @@
                 </nav>
             @endif
 
-            <article class="prose-audit min-w-0">
+            <article data-audit-body class="prose-audit min-w-0">
                 {!! $html !!}
             </article>
         </div>
