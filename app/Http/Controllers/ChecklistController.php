@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Audit;
 use App\Models\Checklist;
 use Illuminate\Contracts\View\View;
 
@@ -19,6 +20,7 @@ class ChecklistController extends Controller
         return view('checklist.show', [
             'checklist' => $checklist,
             'progress' => $checklist->progress(),
+            'links' => $this->auditLinks($checklist),
         ]);
     }
 
@@ -34,7 +36,33 @@ class ChecklistController extends Controller
             'checklist' => $checklist,
             'category' => $category,
             'progress' => $category->progress(),
+            'links' => $this->auditLinks($checklist),
         ]);
+    }
+
+    /**
+     * Sdílené audity téhož klienta jako tlačítka v hlavičce. Nejnovější první.
+     *
+     * @return list<array{label: string, url: string}>
+     */
+    private function auditLinks(Checklist $checklist): array
+    {
+        if (! $checklist->client) {
+            return [];
+        }
+
+        return $checklist->client->audits()
+            ->public()
+            ->orderByDesc('audited_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Audit $audit): array => [
+                'label' => $audit->audited_at
+                    ? 'Přečíst audit z '.$audit->audited_at->format('j. n. Y')
+                    : $audit->title,
+                'url' => $audit->publicUrl(),
+            ])
+            ->all();
     }
 
     /**

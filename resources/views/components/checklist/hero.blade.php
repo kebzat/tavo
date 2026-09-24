@@ -1,6 +1,7 @@
 @props([
     'checklist',
     'progress',
+    'links' => [],
 ])
 
 {{-- Tmavá hlavička s celkovým progresem. Stejná na rozcestníku i v kategorii. --}}
@@ -22,6 +23,8 @@
                     @if ($checklist->intro)
                         <p class="mt-5 text-perex text-cream/70">{{ $checklist->intro }}</p>
                     @endif
+
+                    <x-client-docs.links :links="$links" class="mt-7" />
                 </div>
 
                 <div class="shrink-0">

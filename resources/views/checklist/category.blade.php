@@ -5,7 +5,7 @@
 --}}
 <x-layout.document :title="$category->title.' — '.$checklist->name" :eyebrow="$checklist->client?->name">
 
-    <x-checklist.hero :checklist="$checklist" :progress="$checklist->progress()" />
+    <x-checklist.hero :checklist="$checklist" :progress="$checklist->progress()" :links="$links" />
 
     <section class="section-x section-y-sm">
         <div class="container-tavo">

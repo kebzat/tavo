@@ -61,7 +61,7 @@ class SitemapController extends Controller
     public function robots(SeoSettings $seo): Response
     {
         $body = $seo->indexable
-            ? "User-agent: *\nDisallow: /admin\nDisallow: /nastroje\nDisallow: /checklist\nDisallow: /poptavka\n\nSitemap: ".url('/sitemap.xml')."\n"
+            ? "User-agent: *\nDisallow: /admin\nDisallow: /nastroje\nDisallow: /checklist\nDisallow: /audit\nDisallow: /poptavka\n\nSitemap: ".url('/sitemap.xml')."\n"
             : "User-agent: *\nDisallow: /\n";
 
         return response($body, 200, ['Content-Type' => 'text/plain']);

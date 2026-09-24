@@ -4,7 +4,7 @@
 --}}
 <x-layout.document :title="$checklist->name" :eyebrow="$checklist->client?->name">
 
-    <x-checklist.hero :checklist="$checklist" :progress="$progress" />
+    <x-checklist.hero :checklist="$checklist" :progress="$progress" :links="$links" />
 
     <section class="section-x section-y-sm">
         <div class="container-tavo grid gap-5 sm:grid-cols-2">

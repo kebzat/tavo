@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
@@ -89,6 +90,9 @@ Route::post('/checklist/{token}/polozka/{item}', ChecklistToggleController::clas
     ->middleware('throttle:120,1')
     ->name('checklist.toggle');
 Route::get('/checklist/{token}/{slug}', [ChecklistController::class, 'category'])->name('checklist.category');
+
+// Audit klientského webu. Sdílí se stejně jako checklist a oba na sebe odkazují.
+Route::get('/audit/{token}', AuditController::class)->name('audit.show');
 
 // Statické stránky (GDPR, cookies…) — musí zůstat poslední, chytá volný slug.
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');

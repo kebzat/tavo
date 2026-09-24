@@ -66,6 +66,7 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/checklist/{token}` | `ChecklistController@show` | `checklist/show` |
 | POST | `/checklist/{token}/polozka/{item}` | `ChecklistToggleController` | JSON nebo návrat zpět |
 | GET | `/checklist/{token}/{slug}` | `ChecklistController@category` | `checklist/category` |
+| GET | `/audit/{token}` | `AuditController` | `audit/show` |
 | GET | `/{slug}` | `PageController@show` | `pages/show` |
 
 > Poslední routa chytá volný slug pro statické stránky — **musí zůstat na konci** souboru
@@ -122,6 +123,18 @@ aby se u sto položek nečekalo na překreslení stránky.
 
 Interní poznámky se do pohledu vůbec nenačítají, `ChecklistController` je vynechává
 už ve výběru sloupců.
+
+### Audity
+
+Vedle checklistu může mít klient **audit**: dlouhý dokument s nálezy, který dostane
+odkazem `/audit/{token}` a může se k němu vracet. Spravuje se v panelu nástrojů
+(Checklisty → Audity). Sdílené audity a checklisty téhož klienta na sebe odkazují
+tlačítkem v tmavé hlavičce.
+
+Text je v **Markdownu**, převádí ho `App\Support\AuditMarkdown`. Nad běžným Markdownem
+(včetně tabulek) umí štítek stavu `[[kritické]]`, jehož barvu určuje slovo, a z nadpisů
+`##` skládá obsah v bočním sloupci. Syrové HTML se escapuje. Styly jsou v `app.css`
+pod `.prose-audit` a `.audit-tag`.
 
 ## Jak se obsah dostane na stránku
 
