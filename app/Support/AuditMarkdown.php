@@ -8,11 +8,14 @@ use League\CommonMark\GithubFlavoredMarkdownConverter;
 /**
  * Převod textu auditu z Markdownu do HTML.
  *
- * Nad běžným Markdownem (GFM, tedy i tabulky) umí dvě věci navíc:
+ * Nad běžným Markdownem (GFM, tedy i tabulky) umí tři věci navíc:
  *
  * - Štítek stavu zapsaný `[[kritické]]`. Barvu určuje slovo podle TONES,
  *   neznámé slovo dostane neutrální štítek. Funguje v nadpisu, v tabulce
  *   i v textu, jen ne uvnitř kódu.
+ * - Box (třeba položka ceníku) mezi řádky `::: box Popisek` a `:::`.
+ *   Popisek je nepovinný, uvnitř je běžný Markdown. Boxy těsně za sebou
+ *   se postaví vedle sebe.
  * - Nadpisy druhé úrovně dostanou `id` a tvoří obsah v boční navigaci.
  *
  * Syrové HTML v textu se escapuje. Audit píše jen správce, ale sdílená
@@ -39,23 +42,37 @@ class AuditMarkdown
             return ['html' => '', 'toc' => []];
         }
 
-        $converter = new GithubFlavoredMarkdownConverter([
-            'html_input' => 'escape',
-            'allow_unsafe_links' => false,
-        ]);
+        // Boxy se vytáhnou dřív, než text uvidí převodník, a na jejich místo
+        // přijde značka. Vnitřek se převede zvlášť a vrátí se na konci.
+        $boxes = [];
 
-        $html = (string) $converter->convert($markdown);
+        $markdown = preg_replace_callback(
+            '/^:::[ \t]*box(?:[ \t]+(.+?))?[ \t]*\R(.*?)\R:::[ \t]*$/msu',
+            function (array $m) use (&$boxes): string {
+                $boxes[] = ['label' => trim($m[1]), 'body' => $m[2]];
 
-        $html = self::replaceOutsideCode($html, fn (string $chunk): string => preg_replace_callback(
-            '/\[\[([^\[\]]{1,40})\]\]/u',
-            fn (array $m): string => self::tag($m[1]),
-            $chunk,
-        ));
+                return "\n\n@@box".(count($boxes) - 1)."@@\n\n";
+            },
+            str_replace("\r\n", "\n", $markdown),
+        );
 
-        // Široké tabulky se na mobilu posouvají do strany samy, stránka ne.
-        $html = str_replace(['<table>', '</table>'], ['<div class="audit-table"><table>', '</table></div>'], $html);
+        $html = self::toHtml($markdown);
 
-        $html = preg_replace('/<a href="(https?:\/\/[^"]+)">/', '<a href="$1" target="_blank" rel="noopener">', $html);
+        // Značky těsně za sebou tvoří jednu mřížku.
+        $html = preg_replace_callback('/(?:<p>@@box\d+@@<\/p>\s*)+/', function (array $m) use ($boxes): string {
+            preg_match_all('/@@box(\d+)@@/', $m[0], $ids);
+
+            $inner = collect($ids[1])->map(function (string $id) use ($boxes): string {
+                $box = $boxes[(int) $id];
+                $label = $box['label'] !== ''
+                    ? '<p class="audit-box__label">'.e($box['label']).'</p>'
+                    : '';
+
+                return '<div class="audit-box">'.$label.self::toHtml($box['body']).'</div>';
+            })->implode('');
+
+            return '<div class="audit-boxes">'.$inner.'</div>'."\n";
+        }, $html);
 
         $toc = [];
         $used = [];
@@ -77,6 +94,28 @@ class AuditMarkdown
         }, $html);
 
         return ['html' => $html, 'toc' => $toc];
+    }
+
+    /** Markdown → HTML se štítky, obalenými tabulkami a externími odkazy. */
+    private static function toHtml(string $markdown): string
+    {
+        $converter = new GithubFlavoredMarkdownConverter([
+            'html_input' => 'escape',
+            'allow_unsafe_links' => false,
+        ]);
+
+        $html = (string) $converter->convert($markdown);
+
+        $html = self::replaceOutsideCode($html, fn (string $chunk): string => preg_replace_callback(
+            '/\[\[([^\[\]]{1,40})\]\]/u',
+            fn (array $m): string => self::tag($m[1]),
+            $chunk,
+        ));
+
+        // Široké tabulky se na mobilu posouvají do strany samy, stránka ne.
+        $html = str_replace(['<table>', '</table>'], ['<div class="audit-table"><table>', '</table></div>'], $html);
+
+        return preg_replace('/<a href="(https?:\/\/[^"]+)">/', '<a href="$1" target="_blank" rel="noopener">', $html);
     }
 
     private static function tag(string $word): string

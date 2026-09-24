@@ -73,7 +73,9 @@ class AuditForm
                             'Markdown. ## Nadpis = kapitola v obsahu vlevo. ### Nadpis = nález. '
                             .'Štítek stavu: [[kritické]], [[vysoké]], [[střední]], [[nízké]], [[v pořádku]], '
                             .'v tabulkách třeba [[ano]], [[ne]], [[částečně]]. Citace (> text) se vykreslí '
-                            .'jako zvýrazněný blok, hodí se na „Oprava:“.'
+                            .'jako zvýrazněný blok, hodí se na „Oprava:“. Box (třeba ceník) začíná řádkem '
+                            .'„::: box Popisek“ a končí „:::“. Uvnitř ### název a pod ním **cena**. '
+                            .'Boxy těsně za sebou se postaví vedle sebe.'
                         )
                         ->columnSpanFull(),
                 ]),

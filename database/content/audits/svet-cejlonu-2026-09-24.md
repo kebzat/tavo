@@ -541,7 +541,10 @@ Perplexity i ChatGPT Search často citují srovnání a doporučení z jiných w
 
 Nabídka má dvě části. Nejdřív jednorázový **úklid**, který opraví chyby, jež web dnes poškozují. Pak **měsíční péče**, ve které postupně přibývá obsah a každý měsíc je vidět, co se změnilo. Ceny jsou bez DPH.
 
-### SEO úklid: 4 900 Kč jednorázově
+::: box Jednorázově
+### SEO úklid
+
+**4 900 Kč**
 
 - Google Search Console, Bing Webmaster Tools, Seznam Webmaster, odeslání sitemap
 - 1 786 filtračních stránek a 104 variant pryč z indexu a ze sitemapy
@@ -553,10 +556,12 @@ Nabídka má dvě části. Nejdřív jednorázový **úklid**, který opraví ch
 - GA4: propojení se Search Console a sledování návštěv z AI asistentů
 
 Hotovo do týdne od dodání přístupu k DNS domény.
+:::
 
-### SEO a AI péče: 1 900 Kč měsíčně
+::: box Měsíčně · minimálně 3 měsíce
+### SEO a AI péče
 
-Minimálně 3 měsíce.
+**1 900 Kč** / měsíc
 
 - **2 odborné články do Rádce** měsíčně (cejlonská skořice vs. kasie, oblasti čaje, louhování…) nebo text kategorie
 - **fakta a FAQ u 5 produktů** měsíčně, začíná se nejprodávanějšími
@@ -565,6 +570,7 @@ Minimálně 3 měsíce.
 - **krátký měsíční report**: návštěvy z Googlu a Seznamu, dotazy, na které se web zobrazuje, návštěvy z AI a jestli ChatGPT a Perplexity e-shop doporučují
 
 Výsledky SEO se projevují po 2–3 měsících, proto minimální délka 3 měsíce. Pak lze kdykoliv ukončit.
+:::
 
 > **První 3 měsíce celkem: 10 600 Kč** (4 900 Kč úklid + 3 × 1 900 Kč péče). Za tu dobu přibude 6 článků nebo textů kategorií a fakta s FAQ u 15 produktů. To je obsah, podle kterého web začnou nacházet Google i AI asistenti.
 

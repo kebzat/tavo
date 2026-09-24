@@ -74,6 +74,23 @@ class AuditTest extends TestCase
         $this->assertStringContainsString('<h2 id="shrnuti-2">', $rendered['html']);
     }
 
+    public function test_boxy_za_sebou_tvori_jednu_mrizku(): void
+    {
+        $html = AuditMarkdown::render(
+            "## Ceník\n\n::: box Jednorázově\n### Úklid\n\n**4 900 Kč**\n\n- [[ano]]\n:::\n\n"
+            ."::: box\n### Péče\n\n**1 900 Kč** / měsíc\n:::\n\nText pod boxy."
+        )['html'];
+
+        $this->assertSame(1, substr_count($html, '<div class="audit-boxes">'));
+        $this->assertSame(2, substr_count($html, '<div class="audit-box">'));
+        $this->assertStringContainsString('<p class="audit-box__label">Jednorázově</p>', $html);
+        $this->assertStringContainsString('<strong>4 900 Kč</strong>', $html);
+        $this->assertStringContainsString('audit-tag--good', $html);
+        $this->assertStringNotContainsString('@@box', $html);
+        $this->assertStringNotContainsString(':::', $html);
+        $this->assertStringContainsString('<p>Text pod boxy.</p>', $html);
+    }
+
     public function test_tabulka_dostane_obal_a_syrove_html_se_escapuje(): void
     {
         $html = AuditMarkdown::render("| A |\n|---|\n| 1 |\n\n<script>alert(1)</script>")['html'];
