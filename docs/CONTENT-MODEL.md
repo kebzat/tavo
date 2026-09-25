@@ -91,6 +91,7 @@ Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
 | **Služby a reference** | jen nadpisy sekcí — obsah přichází z Obsah → Služby a Obsah → Reference |
 | **Proč my** | černá sekce se čtyřmi sloupci (Marketing → Web → Data → Rozvoj) |
 | **Lidé a proces** | nadpisy sekcí „Kdo jsme" a „Jak spolu pracujeme", plus blok o specialistech kolem nás |
+| **Ceník** | černá sekce „A kolik to celé stojí?" se třemi kartami (konzultace, jednorázová a pravidelná spolupráce). Karta bez názvu nebo ceny se nevypíše, bez karet zmizí celá sekce |
 | **Závěrečné CTA** | cihlová sekce s formulářem na konci stránky |
 
 > Které reference se objeví na homepage, řídí přepínač **„Vypíchnout na homepage"**

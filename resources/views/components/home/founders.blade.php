@@ -7,8 +7,10 @@
             <p data-reveal class="m-0 max-w-[34ch] text-[15px] text-muted">{{ $home->founders_perex }}</p>
         </div>
 
-        <div class="grid grid-cols-1 items-center gap-[clamp(24px,4vw,64px)] menu:grid-cols-[1.05fr_0.95fr]">
-            <div data-reveal class="relative overflow-hidden rounded-card bg-ink">
+        {{-- Text vpravo bývá delší než fotka. Fotka proto drží nahoře a od `menu:`
+             se při rolování lepí pod hlavičku, ať pod ní nezůstává prázdné místo. --}}
+        <div class="grid grid-cols-1 items-start gap-[clamp(24px,4vw,64px)] menu:grid-cols-[1.05fr_0.95fr]">
+            <div data-reveal class="relative overflow-hidden rounded-card bg-ink menu:sticky menu:top-[110px]">
                 @if ($photo)
                     <img src="{{ $photo['src'] }}"
                          @if ($photo['srcset']) srcset="{{ $photo['srcset'] }}" sizes="(min-width: 861px) 45vw, 88vw" @endif
@@ -30,7 +32,7 @@
             </div>
 
             <div data-reveal>
-                <p class="mt-0 mb-[30px] max-w-[42ch] text-[clamp(17px,1.8vw,23px)] leading-[1.5] font-medium tracking-[-.01em] text-ink">
+                <p class="text-lead mt-0 mb-[30px] max-w-[48ch] font-medium tracking-[-.01em] text-ink">
                     {{ $home->founders_intro }}
                 </p>
 

@@ -8,6 +8,10 @@
     <x-home.founders :home="$home" :founders="$founders" :photo="$foundersPhoto" />
     <x-home.process :home="$home" :steps="$processSteps" />
 
+    @if ($pricingPlans->isNotEmpty())
+        <x-home.pricing :home="$home" :plans="$pricingPlans" />
+    @endif
+
     <x-cta-band
         id="kontakt"
         :eyebrow="$home->cta_eyebrow"

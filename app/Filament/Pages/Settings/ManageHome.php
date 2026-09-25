@@ -9,6 +9,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Pages\SettingsPage;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -161,6 +162,30 @@ class ManageHome extends SettingsPage
                         ->description('Kroky se editují v menu Obsah → Postup spolupráce.')
                         ->schema([
                             TextInput::make('process_title')->label('Nadpis'),
+                        ]),
+                ]),
+
+                Tab::make('Ceník')->schema([
+                    Section::make('Sekce „A kolik to celé stojí?"')
+                        ->description('Stojí mezi postupem spolupráce a formulářem. Bez jediné karty se sekce nezobrazí.')
+                        ->schema([
+                            TextInput::make('pricing_title')->label('Nadpis'),
+                            Textarea::make('pricing_perex')->label('Text vpravo od nadpisu')->rows(2),
+                            Repeater::make('pricing_plans')
+                                ->label('Formy spolupráce')
+                                ->addActionLabel('Přidat formu spolupráce')
+                                ->schema([
+                                    TextInput::make('name')->label('Název')->required(),
+                                    TextInput::make('when')->label('Pro koho')->helperText('Cihlový řádek pod názvem, např. „Když potřebujete…"'),
+                                    Textarea::make('text')->label('Popis')->rows(4)->columnSpanFull(),
+                                    TextInput::make('price')->label('Cena')->required()->helperText('Např. „2 000 Kč" nebo „od 8 900 Kč"'),
+                                    TextInput::make('price_unit')->label('Za co')->helperText('Např. „/ hod." nebo „/ měsíc"'),
+                                    Textarea::make('price_note')->label('Poznámka pod cenou')->rows(2)->columnSpanFull(),
+                                    Toggle::make('highlight')->label('Zvýraznit')->helperText('Karta dostane cihlový rámeček.'),
+                                ])
+                                ->columns(2)
+                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                                ->maxItems(3),
                         ]),
                 ]),
 

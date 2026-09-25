@@ -34,6 +34,11 @@ V shellu je `php` alias na PHP 8.2, projekt potřebuje 8.4. Používej wrappery:
 
 ## Obsah
 
+- **Než napíšeš cokoli o nabídce, cenách nebo o tom, co TAVEO slibuje**, přečti
+  [docs/BRAND-STRATEGY.md](docs/BRAND-STRATEGY.md). Je tam positioning, role Pavla a Toma,
+  co se nesmí slibovat a které údaje jsou jen „k ověření". Dokument dodali zakladatelé,
+  needituj ho bez jejich pokynu.
+
 - **Seznam položek → vlastní model + Filament resource.** Singletonový obsah stránky
   → settings třída v `app/Settings/` + settings stránka v `app/Filament/Pages/Settings/`.
 - **Volný text v šabloně nepiš natvrdo.** Nadpisy výpisů, popisky tlačítek a hlášky

@@ -81,6 +81,13 @@ class HomeSettings extends Settings
     // Proces
     public ?string $process_title;
 
+    // Ceník: tři formy spolupráce
+    public ?string $pricing_title;
+
+    public ?string $pricing_perex;
+
+    public array $pricing_plans;
+
     // Závěrečné CTA
     public ?string $cta_eyebrow;
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
 use App\Http\Controllers\Crm\DemandImportController;
 use App\Http\Controllers\Crm\PipelineExportController;
+use App\Http\Controllers\EmailSignatureController;
 use App\Http\Controllers\EshopOfferController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
@@ -93,6 +94,11 @@ Route::get('/checklist/{token}/{slug}', [ChecklistController::class, 'category']
 
 // Audit klientského webu. Sdílí se stejně jako checklist a oba na sebe odkazují.
 Route::get('/audit/{token}', AuditController::class)->name('audit.show');
+
+// Náhled e-mailového podpisu. Jen lokálně, na ostrém webu nemá co dělat.
+if (app()->isLocal()) {
+    Route::get('/podpis-emailu', EmailSignatureController::class)->name('email-signature');
+}
 
 // Statické stránky (GDPR, cookies…) — musí zůstat poslední, chytá volný slug.
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
