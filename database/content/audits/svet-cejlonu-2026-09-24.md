@@ -16,7 +16,7 @@ Technický základ e-shopu je v pořádku: HTTPS, kanonické adresy, obsah vykre
 | AI vyhledávání | [[vysoké]] | dva blokovaní roboti, ve výsledcích je konkurence |
 | Titulky a popisky | [[vysoké]] | verzálky, popisky jen opakují titulek |
 | Obsah | [[vysoké]] | kategorie bez vlastního textu, žádné návody |
-| Strukturovaná data | [[střední]] | chyby v recenzích a v údajích o firmě |
+| Strukturovaná data | [[střední]] | chyby v recenzích, v údajích o firmě i v názvu webu |
 | Rychlost | [[střední]] | server občas odpovídá přes 8 s |
 | Důvěryhodnost | [[střední]] | chybí stránka Kontakt |
 | Technický základ | [[v pořádku]] | HTTPS, přesměrování, stránka 404, kanonické adresy |
@@ -31,15 +31,15 @@ Jednotlivé kroky jsou rozepsané v checklistu, odkaz je nahoře na stránce.
 | # | Úkol | Dopad |
 |---|---|---|
 | 1 | Založit Google Search Console, Bing Webmaster Tools a Seznam Webmaster | [[kritický]] |
-| 2 | Filtrační stránky nastavit jako „neindexovat“ | [[kritický]] |
+| 2 | Filtrační stránky vyřadit z indexu a zakázat robotům | [[kritický]] |
 | 3 | Vyřadit varianty produktů ze sitemapy | [[kritický]] |
 | 4 | Smazat ukázkový obsah Upgates | [[kritický]] |
 | 5 | Napsat podpoře Upgates kvůli blokovaným AI robotům | [[vysoký]] |
 | 6 | Titulky a popisky úvodky, kategorií a stránek | [[vysoký]] |
-| 7 | Opravit údaje o firmě a recenze ve strukturovaných datech | [[vysoký]] |
+| 7 | Opravit název webu, údaje o firmě a recenze ve strukturovaných datech | [[vysoký]] |
 | 8 | Úvodní text a otázky v každé kategorii | [[vysoký]] |
 | 9 | Návody do Rádce | [[vysoký]] |
-| 10 | Sloučit Firmy.cz a ověřit Google Business Profile | [[střední]] |
+| 10 | Sloučit dva záznamy na Firmy.cz | [[střední]] |
 | 11 | Projít zdravotní tvrzení u ájurvédy a doplňků | [[střední]] |
 
 ## Indexace a sitemapa
@@ -63,9 +63,9 @@ Každá kombinace kategorie, parametru a hodnoty má vlastní adresu a je v site
 | `/caje/p-tip/s-citronem-zvyrazni-svezest-nalevu` | ČAJE - Tip - S citronem – zvýrazní svěžest nálevu. |
 | `/ajurveda/p-baleni/velke-baleni-25-g-safran` | ÁJURVÉDA - Balení - Velké balení - 25 g - Šafrán |
 
-Část adres v sitemapě navíc vrací chybu 404. Google pak sitemapě přestává věřit.
+Část adres v sitemapě navíc vrací chybu 404. Vyhledávače chtějí v sitemapě jen platné adresy.
 
-> **Oprava:** filtrační stránky vyřadíme z indexu i ze sitemapy. Ve vyhledávání necháme jen pár štítků s vlastním textem (celé listy, bez kofeinu, skořice Alba).
+> **Oprava:** filtrační stránky nejdřív vyřadíme z indexu i ze sitemapy. Až z výsledků zmizí, zakážeme je robotům i v robots.txt, aby na ně přestali chodit. Takový postup u filtrů doporučuje Google. Ve vyhledávání necháme jen pár štítků s vlastním textem (celé listy, bez kofeinu, skořice Alba).
 
 ### [[kritické]] 104 variant produktů v sitemapě
 
@@ -103,17 +103,17 @@ Kategorie a stránky mají popisek stejný jako titulek, třeba `ČAJE :: Svět 
 
 Bez popisku jsou Chilli, Dárková krabice velká a malá, Přenosná čajová sada, Samahan a Skleněný louhovač.
 
-### [[střední]] Názvy verzálkami a víc hlavních nadpisů
+### [[střední]] Názvy verzálkami
 
-35 z 59 produktů má název velkými písmeny (`KURKUMA - MLETÁ`). Ve výsledcích hledání to působí jako křik. Ayush pleťový krém má pět hlavních nadpisů H1 včetně řádků z podtržítek, Kardamon, Navratna a O nás mají dva.
+35 z 59 produktů má název velkými písmeny (`KURKUMA - MLETÁ`). Ve výsledcích hledání to působí jako křik a hůř se to čte.
 
-### [[střední]] Překlepy v názvech a adresách
+### [[nízké]] Víc hlavních nadpisů
 
-- „RARANAVARA“ místo Ranavara
-- `/p/lotovovy-kvet` místo lotosový a `/p/cerny-caj-earl-gray` místo Grey
-- `/p/mangostan-zeleny-caj` je ve skutečnosti černý čaj
+Ayush pleťový krém má pět hlavních nadpisů H1 včetně řádků z podtržítek, Kardamon, Navratna a O nás mají dva. Google podle vlastních slov počet ani pořadí nadpisů neřeší, jde hlavně o čitelnost a přístupnost.
 
-Adresy jde měnit jen s přesměrováním ze staré.
+### [[střední]] Překlepy v názvech
+
+„RARANAVARA“ místo Ranavara. Překlepy jsou i v adresách (`/p/lotovovy-kvet`, `/p/cerny-caj-earl-gray`), ty ale necháme. Slova v adrese mají podle Googlu na pozice zanedbatelný vliv a změna by přinesla zbytečné riziko.
 
 ## Strukturovaná data
 
@@ -122,10 +122,14 @@ Podle strukturovaných dat Google pozná cenu, hodnocení i to, kdo e-shop provo
 | Typ | Stav | Poznámka |
 |---|---|---|
 | Recenze | [[chybné]] | hodnocení nepatří k recenzi a datum má neplatný formát, proto se hvězdičky ve výsledcích nejspíš nezobrazí |
+| Název webu | [[chybné]] | v datech je „Marek Bezdíček“, Google ho může ukazovat nad výsledky místo „Svět Cejlonu“ |
 | Firma | [[chybné]] | jmenuje se „Marek Bezdíček“ a cenová hladina je „$$$$$$“ |
 | Odkazy na profily firmy | [[chybí]] | web v datech neuvádí svůj Instagram, Facebook, Heureku ani Firmy.cz, i když profily existují |
-| Produkt | [[částečně]] | chybí značka, EAN a země původu |
+| Produkt | [[částečně]] | chybí značka a EAN, Google je doporučuje |
+| Doprava a vrácení zboží | [[chybí]] | Google je doporučuje uvést jednou za celou firmu |
 | Drobečková navigace | [[duplicitní]] | na detailu produktu dvakrát |
+
+Hvězdičky jsou možné u produktů. Hodnocení celé firmy z vlastního webu Google hvězdičkami neukazuje, to sbírá Heureka a Firmy.cz.
 
 Opravíme to v šabloně. Od vás potřebujeme vědět, jestli v datech chcete uvést adresu, když ji na webu schováváte.
 
@@ -137,13 +141,10 @@ Opravíme to v šabloně. Od vás potřebujeme vědět, jestli v datech chcete u
 | Obsah čitelný bez JavaScriptu | [[ano]] |
 | Stránka Kontakt | [[ne]] |
 | Obrázky v sitemapě | [[ne]] |
-| HTTP/2 | [[ne]] |
-
-HTTP/2 Upgates nepodporuje a změnit se to nedá.
 
 ### [[střední]] Pomalý server
 
-Polovina stránek odpoví do 0,7 s. Některé ale trvaly přes 8 s a `/p/cerny-caj` dokonce 22,9 s. Na mobilu se hlavní obrázek detailu produktu načetl až za 11,9 s. Na web vede i placená reklama z Instagramu a Facebooku, takže pomalé stránky stojí peníze za kliknutí.
+Polovina stránek odpoví do 0,7 s. Některé ale trvaly přes 8 s a `/p/cerny-caj` dokonce 22,9 s. Na mobilu se hlavní obrázek detailu produktu načetl až za 11,9 s. Na web vede i placená reklama z Instagramu a Facebooku, takže pomalé stránky stojí peníze za kliknutí. Do pozic v Googlu se rychlost promítá podle měření od skutečných návštěvníků, a těch má e-shop na to nejspíš zatím málo. Rychlost teď rozhoduje hlavně o tom, kolik lidí z reklamy nakoupí.
 
 Nejvíc brzdí velké obrázky, zmenšené máme připravené. Měřicí kódy (GA4, Meta pixel, Clarity, Heureka) zdrží stránku asi o 0,4 s. Pixel kvůli reklamám potřebujete, jen se dá načítat šetrněji. Časy pošleme podpoře Upgates.
 
@@ -179,7 +180,7 @@ Názvy jako „Ájurvédský balzám (Bolest hlavy)“ nebo mast na „plísňov
 | Místo | Stav | Co udělat |
 |---|---|---|
 | Firmy.cz | [[duplicita]] | dva záznamy, sloučit do jednoho |
-| Google Business Profile | [[neověřeno]] | ověřit, případně založit jako firmu bez provozovny |
+| Google Business Profile | [[pozor]] | jen s výdejním místem nebo prodejnou, čistý e-shop podle pravidel Googlu nárok nemá |
 | Heureka | [[aktivní]] | zapojit feed produktů |
 | Google Merchant Center, Zboží.cz | [[ne]] | feed je v Upgates připravený |
 | Instagram, Facebook | [[aktivní]] | běží reklamy, profily propojíme s webem ve strukturovaných datech |
@@ -189,7 +190,7 @@ Odkazy z jiných webů přinese nejspíš příběh tamilské školy, cestovatel
 
 ## AI vyhledávání (GEO)
 
-ChatGPT, Perplexity nebo Gemini hledají přes Bing a Google a často citují weby s konkrétními čísly. Pět dotazů jsme zkusili ve webovém vyhledávání, ze kterého AI nástroje čerpají:
+ChatGPT, Perplexity nebo Gemini hledají přes Bing a Google a často citují weby s konkrétními čísly. Google pro AI Overviews a AI Mode žádnou zvláštní úpravu nechce, stačí běžné SEO. Pět dotazů jsme zkusili ve webovém vyhledávání, ze kterého AI nástroje čerpají:
 
 | Dotaz | svetcejlonu.cz | Ve výsledcích místo toho |
 |---|---|---|
@@ -204,6 +205,10 @@ Z cejlonskekoreni.cz se ve výsledcích cituje věta o obsahu kumarinu ve skoři
 ### [[vysoké]] Upgates blokuje roboty OpenAI a Anthropic
 
 GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zkoušeli, projde. Modely se tak z webu nic nenaučí a e-shop najdou jen přes vyhledávání. Blokace je na straně Upgates a v robots.txt se vyřešit nedá. Napíšeme proto podpoře Upgates.
+
+### Jak to měřit
+
+Bing Webmaster Tools ukazuje, kdy web citoval Copilot a AI odpovědi Bingu. Přes IndexNow se dá Bingu a dalším vyhledávačům hned oznámit každá změna na webu, pokud to Upgates podporuje.
 
 ### Co AI cituje
 
