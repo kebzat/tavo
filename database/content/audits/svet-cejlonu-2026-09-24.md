@@ -219,8 +219,6 @@ GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zko
 
 ## Cenová nabídka
 
-Ceny jsou bez DPH.
-
 ::: box Jednorázově
 ### SEO úklid
 
@@ -238,21 +236,23 @@ Ceny jsou bez DPH.
 Hotovo do týdne od dodání přístupu k DNS domény.
 :::
 
-::: box Měsíčně · minimálně 3 měsíce
-### SEO a AI péče
+::: box Měsíčně
+### SEO monitoring
 
 **1 900 Kč** / měsíc
 
-- **2 odborné články do Rádce** měsíčně nebo text kategorie
-- **fakta a otázky u 5 produktů** měsíčně, od nejprodávanějších
-- SEO titulek a popisek pro každý nový produkt
+- sledování organického růstu a propadů webu
+- doporučení pro úpravy obsahu na webu
+- konkrétní checklist pro každý měsíc
+- měsíční report návštěvnosti a analytiky webu
 - kontrola indexace a chyb v Search Console
-- **krátký měsíční report**: návštěvy z Googlu a Seznamu, dotazy, na které se web zobrazuje, návštěvy z AI a jestli e-shop doporučuje ChatGPT a Perplexity
+- možnost e-mailových konzultací
+- WhatsApp skupina pro rychlé diskuze
 
-Výsledky SEO jsou vidět po 2–3 měsících, proto minimálně 3 měsíce. Pak se dá kdykoliv skončit.
+Výsledky SEO bývají vidět po 2–3 měsících.
 :::
 
-> **První 3 měsíce celkem 10 600 Kč** (4 900 Kč úklid + 3 × 1 900 Kč péče). Za tu dobu přibude 6 článků nebo textů kategorií a fakta s otázkami u 15 produktů.
+> **První 3 měsíce celkem 10 600 Kč** (4 900 Kč úklid + 3 × 1 900 Kč monitoring).
 
 ### Na straně klienta
 
@@ -267,7 +267,7 @@ Výsledky SEO jsou vidět po 2–3 měsících, proto minimálně 3 měsíce. Pa
 |---|---|
 | Feedy Zboží.cz a Google Merchant Center | 800 Kč |
 | Nahrání zmenšených fotek produktů s popisnými názvy souborů | 800 Kč |
-| Článek do Rádce navíc | 600 Kč / ks |
+| Článek do Rádce | 600 Kč / ks |
 
 ## Návrhy titulků a popisků
 
