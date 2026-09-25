@@ -28,19 +28,19 @@ Technický základ e-shopu je v pořádku: HTTPS, kanonické adresy, obsah vykre
 
 Jednotlivé kroky jsou rozepsané v checklistu, odkaz je nahoře na stránce.
 
-| # | Úkol | Dopad | Kdo |
-|---|---|---|---|
-| 1 | Založit Google Search Console, Bing Webmaster Tools a Seznam Webmaster | [[kritický]] | vy + my |
-| 2 | Filtrační stránky nastavit jako „neindexovat“ | [[kritický]] | administrace |
-| 3 | Vyřadit varianty produktů ze sitemapy | [[kritický]] | administrace |
-| 4 | Smazat ukázkový obsah Upgates | [[kritický]] | administrace |
-| 5 | Napsat podpoře Upgates kvůli blokovaným AI robotům | [[vysoký]] | vy |
-| 6 | Titulky a popisky úvodky, kategorií a stránek | [[vysoký]] | administrace |
-| 7 | Opravit údaje o firmě a recenze ve strukturovaných datech | [[vysoký]] | my |
-| 8 | Úvodní text a otázky v každé kategorii | [[vysoký]] | vy + my |
-| 9 | Návody do Rádce | [[vysoký]] | vy |
-| 10 | Sloučit Firmy.cz a ověřit Google Business Profile | [[střední]] | vy |
-| 11 | Projít zdravotní tvrzení u ájurvédy a doplňků | [[střední]] | vy |
+| # | Úkol | Dopad |
+|---|---|---|
+| 1 | Založit Google Search Console, Bing Webmaster Tools a Seznam Webmaster | [[kritický]] |
+| 2 | Filtrační stránky nastavit jako „neindexovat“ | [[kritický]] |
+| 3 | Vyřadit varianty produktů ze sitemapy | [[kritický]] |
+| 4 | Smazat ukázkový obsah Upgates | [[kritický]] |
+| 5 | Napsat podpoře Upgates kvůli blokovaným AI robotům | [[vysoký]] |
+| 6 | Titulky a popisky úvodky, kategorií a stránek | [[vysoký]] |
+| 7 | Opravit údaje o firmě a recenze ve strukturovaných datech | [[vysoký]] |
+| 8 | Úvodní text a otázky v každé kategorii | [[vysoký]] |
+| 9 | Návody do Rádce | [[vysoký]] |
+| 10 | Sloučit Firmy.cz a ověřit Google Business Profile | [[střední]] |
+| 11 | Projít zdravotní tvrzení u ájurvédy a doplňků | [[střední]] |
 
 ## Indexace a sitemapa
 
@@ -200,14 +200,14 @@ Z cejlonskekoreni.cz se ve výsledcích cituje věta o obsahu kumarinu ve skoři
 
 ### [[vysoké]] Upgates blokuje roboty OpenAI a Anthropic
 
-GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zkoušeli, projde. Modely se tak z webu nic nenaučí a e-shop najdou jen přes vyhledávání. Blokace je na straně Upgates a v robots.txt se vyřešit nedá. Text dotazu na podporu vám připravíme.
+GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zkoušeli, projde. Modely se tak z webu nic nenaučí a e-shop najdou jen přes vyhledávání. Blokace je na straně Upgates a v robots.txt se vyřešit nedá. Napíšeme proto podpoře Upgates.
 
 ### Co AI cituje
 
 - Produkt, jehož první věta říká, co to je: „Ibišek je sušený květ ze Srí Lanky, ze kterého vzniká červený kyselkavý čaj bez kofeinu.“
 - Tabulku faktů: původ, třída, kofein, teplota a doba louhování.
 - Otázky a odpovědi na konci popisu.
-- Návody v Rádci. Pokud je budete psát, začněte třeba skořicí (cejlonská, nebo kasie?), oblastmi cejlonského čaje a tabulkou louhování.
+- Návody v Rádci. Začít se dá třeba skořicí (cejlonská, nebo kasie?), oblastmi cejlonského čaje a tabulkou louhování.
 
 ## Cenová nabídka
 
@@ -245,12 +245,12 @@ Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce
 
 > **První 3 měsíce celkem 19 900 Kč** (4 900 Kč úklid + 3 × 5 000 Kč). Úkoly z checklistu bereme od nejdůležitějších.
 
-### Na straně klienta
+### Co od vás budeme potřebovat
 
-- přidat DNS záznam pro Search Console (stačí poslat přístup, zabere to 5 minut)
-- sloučit dva záznamy na Firmy.cz, ověřit nebo založit Google Business Profile (s návodem)
-- dodat fakta k produktům: oblast původu, farmy, sklizeň, vlastní zkušenosti
-- nechat odborníka zkontrolovat zdravotní tvrzení u ájurvédy a doplňků
+- přístup k DNS domény kvůli ověření Search Console
+- přístupy do administrace Upgates, Google Analytics a Firmy.cz
+- fakta k produktům: oblast původu, farmy, sklizeň, vlastní zkušenosti
+- kontrolu zdravotních tvrzení u ájurvédy a doplňků od odborníka na regulaci
 
 ### Volitelně
 
