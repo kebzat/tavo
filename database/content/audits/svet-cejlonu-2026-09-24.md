@@ -4,7 +4,7 @@ Technický základ e-shopu je v pořádku: HTTPS, kanonické adresy, obsah vykre
 
 1. Google dostává 1 974 adres a užitečných je z nich asi 80. Zbytek jsou filtry a varianty produktů.
 2. Na webu zůstal ukázkový obsah ze šablony Upgates. Jeden nesmyslný článek už je ve výsledcích Seznamu.
-3. AI asistenti e-shop skoro neznají. Roboti OpenAI a Anthropic dostávají od serveru chybu a na obecné dotazy AI doporučuje konkurenci.
+3. Pro AI asistenty je e-shop skoro neviditelný. Roboti OpenAI a Anthropic dostávají od serveru chybu a ve vyhledávání, ze kterého AI čerpá, se na obecné dotazy objevuje konkurence.
 
 ### Stav podle oblastí
 
@@ -13,7 +13,7 @@ Technický základ e-shopu je v pořádku: HTTPS, kanonické adresy, obsah vykre
 | Indexace a sitemapa | [[kritické]] | v indexu jsou filtry a varianty produktů |
 | Ukázkový obsah | [[kritické]] | 4 aktuality, návod na brož a výrobce „Upgates“ |
 | Měření | [[kritické]] | chybí Search Console, Bing i Seznam Webmaster |
-| AI vyhledávání | [[vysoké]] | dva blokovaní roboti, v odpovědích AI je konkurence |
+| AI vyhledávání | [[vysoké]] | dva blokovaní roboti, ve výsledcích je konkurence |
 | Titulky a popisky | [[vysoké]] | verzálky, popisky jen opakují titulek |
 | Obsah | [[vysoké]] | kategorie bez vlastního textu, žádné návody |
 | Strukturovaná data | [[střední]] | chyby v recenzích a v údajích o firmě |
@@ -39,7 +39,7 @@ Jednotlivé kroky jsou rozepsané v checklistu, odkaz je nahoře na stránce.
 | 7 | Opravit údaje o firmě a recenze ve strukturovaných datech | [[vysoký]] | my |
 | 8 | Úvodní text a otázky v každé kategorii | [[vysoký]] | vy + my |
 | 9 | Návody do Rádce | [[vysoký]] | vy |
-| 10 | Sloučit Firmy.cz a založit Google Business Profile | [[střední]] | vy |
+| 10 | Sloučit Firmy.cz a ověřit Google Business Profile | [[střední]] | vy |
 | 11 | Projít zdravotní tvrzení u ájurvédy a doplňků | [[střední]] | vy |
 
 ## Indexace a sitemapa
@@ -69,7 +69,7 @@ Každá kombinace kategorie, parametru a hodnoty má vlastní adresu a je v site
 
 ### [[kritické]] 104 variant produktů v sitemapě
 
-Adresy jako `/p/lotovovy-kvet/203` se liší jen hmotností. Bing už variantu ukazuje místo hlavního produktu.
+Adresy jako `/p/lotovovy-kvet/203` se liší jen hmotností. Ve výsledcích vyhledávání se už objevuje varianta místo hlavního produktu.
 
 > **Oprava:** *Nastavení → Rozšířené → SEO* → vyloučit varianty ze sitemapy. Na kanonickou adresu variant se zeptáme podpory Upgates.
 
@@ -121,7 +121,7 @@ Podle strukturovaných dat Google pozná cenu, hodnocení i to, kdo e-shop provo
 
 | Typ | Stav | Poznámka |
 |---|---|---|
-| Recenze | [[chybné]] | hodnocení nepatří k recenzi a datum má neplatný formát, proto se ve výsledcích neukazují hvězdičky |
+| Recenze | [[chybné]] | hodnocení nepatří k recenzi a datum má neplatný formát, proto se hvězdičky ve výsledcích nejspíš nezobrazí |
 | Firma | [[chybné]] | jmenuje se „Marek Bezdíček“ a cenová hladina je „$$$$$$“ |
 | Propojení se sítěmi | [[chybí]] | Instagram, Facebook, Heureka a Firmy.cz |
 | Produkt | [[částečně]] | chybí značka, EAN a země původu |
@@ -177,7 +177,7 @@ Názvy jako „Ájurvédský balzám (Bolest hlavy)“ nebo mast na „plísňov
 | Místo | Stav | Co udělat |
 |---|---|---|
 | Firmy.cz | [[duplicita]] | dva záznamy, sloučit do jednoho |
-| Google Business Profile | [[chybí]] | založit jako firmu bez provozovny |
+| Google Business Profile | [[neověřeno]] | ověřit, případně založit jako firmu bez provozovny |
 | Heureka | [[aktivní]] | zapojit feed produktů |
 | Google Merchant Center, Zboží.cz | [[ne]] | feed je v Upgates připravený |
 | YouTube | [[ne]] | nahrát videa ze Srí Lanky |
@@ -186,36 +186,28 @@ Odkazy z jiných webů přinese nejspíš příběh tamilské školy, cestovatel
 
 ## AI vyhledávání (GEO)
 
-ChatGPT, Perplexity nebo Gemini hledají přes Bing a Google a nejraději citují weby s konkrétními čísly. Zkusili jsme pět dotazů:
+ChatGPT, Perplexity nebo Gemini hledají přes Bing a Google a často citují weby s konkrétními čísly. Pět dotazů jsme zkusili ve webovém vyhledávání, ze kterého AI nástroje čerpají:
 
-| Dotaz | svetcejlonu.cz | AI doporučila |
+| Dotaz | svetcejlonu.cz | Ve výsledcích místo toho |
 |---|---|---|
 | „Svět Cejlonu“ čaj | [[nezmíněn]] | Wikipedii, cajovebedynky.cz, manutea.cz |
 | cejlonský sypaný čaj přímo od farmářů | [[nezmíněn]] | dobracajovna.com, cejlonskycaj.cz |
 | kde koupit pravou cejlonskou skořici | [[nezmíněn]] | cejlonskekoreni.cz, bylik.cz |
 | srílanské koření a ájurvéda | [[nezmíněn]] | zdravizesrilanky.cz, ayurshop.cz |
-| svetcejlonu.cz | [[ano]] | údaje z Firmy.cz a z varianty produktu |
+| svetcejlonu.cz | [[ano]] | jen Firmy.cz a varianta produktu |
 
-Cejlonskekoreni.cz AI cituje kvůli jedné větě o obsahu kumarinu ve skořici. Podobné údaje na svetcejlonu.cz buď nejsou, nebo se ztrácí mezi emoji.
+Z cejlonskekoreni.cz se ve výsledcích cituje věta o obsahu kumarinu ve skořici. Podobné údaje na svetcejlonu.cz buď nejsou, nebo se ztrácí mezi emoji.
 
 ### [[vysoké]] Upgates blokuje roboty OpenAI a Anthropic
 
-GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zkoušeli, projde. ChatGPT a Claude se tak o e-shopu nemají odkud dozvědět. Blokace je na straně Upgates a v robots.txt se vyřešit nedá. Text dotazu na podporu vám připravíme.
+GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zkoušeli, projde. Modely se tak z webu nic nenaučí a e-shop najdou jen přes vyhledávání. Blokace je na straně Upgates a v robots.txt se vyřešit nedá. Text dotazu na podporu vám připravíme.
 
 ### Co AI cituje
 
 - Produkt, jehož první věta říká, co to je: „Ibišek je sušený květ ze Srí Lanky, ze kterého vzniká červený kyselkavý čaj bez kofeinu.“
 - Tabulku faktů: původ, třída, kofein, teplota a doba louhování.
 - Otázky a odpovědi na konci popisu.
-- Návody. Do Rádce bychom začali těmito:
-
-| Článek | Proč |
-|---|---|
-| Cejlonská skořice, nebo kasie? | přesně tohle AI dnes cituje od konkurence |
-| Cejlonský čaj podle oblastí | na dotaz „cejlonský čaj“ dnes vyhrává Wikipedie |
-| Jak louhovat sypaný čaj | tabulka teplot a časů pro každý druh |
-| Co znamená Pekoe, BOP nebo GS-1 | lidi se na to často ptají |
-| Proč modrý čaj mění barvu | motýlí květ má už teď silný text i recenze |
+- Návody v Rádci. Pokud je budete psát, začněte třeba skořicí (cejlonská, nebo kasie?), oblastmi cejlonského čaje a tabulkou louhování.
 
 ## Cenová nabídka
 
@@ -237,7 +229,9 @@ Hotovo do týdne od dodání přístupu k DNS domény.
 
 **5 000 Kč** / měsíc
 
-- postupně dotáhneme zbytek auditu: titulky a popisky, údaje o firmě a recenze v šabloně, stránku Kontakt, opravy nadpisů a překlepů
+- první měsíc: titulky a popisky úvodky, kategorií a stránek
+- druhý měsíc: šablona, tedy údaje o firmě, recenze a nadpisy
+- třetí měsíc: stránka Kontakt, opravy nadpisů a překlepů v produktech
 - sledování organického růstu a propadů webu
 - doporučení pro úpravy obsahu na webu
 - konkrétní checklist pro každý měsíc
@@ -246,7 +240,7 @@ Hotovo do týdne od dodání přístupu k DNS domény.
 - možnost e-mailových konzultací
 - WhatsApp skupina pro rychlé diskuze
 
-Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce.
+Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce. Po třetím měsíci se domluvíme, jestli monitoring pokračuje a v jakém rozsahu.
 :::
 
 > **První 3 měsíce celkem 19 900 Kč** (4 900 Kč úklid + 3 × 5 000 Kč). Úkoly z checklistu bereme od nejdůležitějších.
@@ -254,7 +248,7 @@ Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce
 ### Na straně klienta
 
 - přidat DNS záznam pro Search Console (stačí poslat přístup, zabere to 5 minut)
-- sloučit dva záznamy na Firmy.cz, založit Google Business Profile (s návodem)
+- sloučit dva záznamy na Firmy.cz, ověřit nebo založit Google Business Profile (s návodem)
 - dodat fakta k produktům: oblast původu, farmy, sklizeň, vlastní zkušenosti
 - nechat odborníka zkontrolovat zdravotní tvrzení u ájurvédy a doplňků
 
@@ -264,7 +258,6 @@ Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce
 |---|---|
 | Feedy Zboží.cz a Google Merchant Center | 800 Kč |
 | Nahrání zmenšených fotek produktů s popisnými názvy souborů | 800 Kč |
-| Článek do Rádce | 600 Kč / ks |
 
 ## Návrhy titulků a popisků
 
@@ -288,11 +281,11 @@ Titulky do 60 znaků, popisky do 155. Pokud Upgates přidá „:: Svět Cejlonu�
 
 | Produkt | Titulek | Popisek (první věta krátkého popisu) |
 |---|---|---|
-| Ibišek | Ibiškový čaj – sušený květ ibišku ze Srí Lanky \| Svět Cejlonu | Sušené květy ibišku ze Srí Lanky na rubínově červený, osvěžující čaj bez kofeinu. Výborný horký i ledový, 20–100 g. |
+| Ibišek | Ibiškový čaj – sušený květ ze Srí Lanky \| Svět Cejlonu | Sušené květy ibišku ze Srí Lanky na rubínově červený, osvěžující čaj bez kofeinu. Výborný horký i ledový, balení 20–80 g. |
 | Skořice celá | Pravá cejlonská skořice Alba celá \| Svět Cejlonu | Pravá cejlonská skořice nejvyšší třídy Alba: tenké křehké svitky s jemně sladkým aroma a minimem kumarinu. Přímo ze Srí Lanky. |
 | Motýlí květ | Modrý čaj z motýlího květu (butterfly pea) \| Svět Cejlonu | Bylinný čaj z květů motýlího hrachoru, který se s citronem zbarví z modré do fialové. Bez kofeinu, ze Srí Lanky. |
 | Černý čaj Pekoe | Cejlonský černý čaj Pekoe sypaný \| Svět Cejlonu | Klasický cejlonský černý čaj třídy Pekoe z vybraných oblastí Srí Lanky. Plná, čistá chuť, ideální k snídani i s mlékem. |
 
 ## Jak jsme měřili
 
-24. 9. 2026 jsme prošli 1 009 stránek a všech 1 974 adres ze sitemapy. Server jsme vyzkoušeli se 14 roboty a rychlost změřili v Lighthouse. Bez Search Console nevidíme skutečné pozice, hledanosti ani to, kolik adres Google opravdu zaindexoval. To ukáže až Search Console měsíc po založení.
+Dne 24. 9. 2026 jsme prošli 1 009 stránek a všech 1 974 adres ze sitemapy. Server jsme vyzkoušeli se 14 roboty a rychlost změřili v Lighthouse. Bez Search Console nevidíme skutečné pozice, hledanosti ani to, kolik adres Google opravdu zaindexoval. To ukáže až Search Console měsíc po založení.
