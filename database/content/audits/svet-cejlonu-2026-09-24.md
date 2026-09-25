@@ -65,17 +65,17 @@ Každá kombinace kategorie, parametru a hodnoty má vlastní adresu a je v site
 
 Část adres v sitemapě navíc vrací chybu 404. Google pak sitemapě přestává věřit.
 
-> **Oprava:** *Nastavení → Produkty → Filtry a řazení* → označit vše → „Označit jako neindexovat“. Stránky zmizí i ze sitemapy. Indexované necháme jen pár štítků s vlastním textem (celé listy, bez kofeinu, skořice Alba).
+> **Oprava:** filtrační stránky vyřadíme z indexu i ze sitemapy. Ve vyhledávání necháme jen pár štítků s vlastním textem (celé listy, bez kofeinu, skořice Alba).
 
 ### [[kritické]] 104 variant produktů v sitemapě
 
 Adresy jako `/p/lotovovy-kvet/203` se liší jen hmotností. Ve výsledcích vyhledávání se už objevuje varianta místo hlavního produktu.
 
-> **Oprava:** *Nastavení → Rozšířené → SEO* → vyloučit varianty ze sitemapy. Na kanonickou adresu variant se zeptáme podpory Upgates.
+> **Oprava:** varianty vyřadíme ze sitemapy a na kanonickou adresu variant se zeptáme podpory Upgates.
 
 ### [[vysoké]] Pomocné stránky ve vyhledávání
 
-`/oznameni-dovolena`, `/oznameni-kosik` a `/oznameni-lista` jsou jen zdroj textů pro vyskakovací okno a lištu. `/why-us` je prázdná. Nemazat, jen v SEO záložce nastavit „neindexovat“.
+`/oznameni-dovolena`, `/oznameni-kosik` a `/oznameni-lista` jsou jen zdroj textů pro vyskakovací okno a lištu. `/why-us` je prázdná. Z vyhledávání je vyřadíme.
 
 ## Ukázkový obsah Upgates
 
@@ -83,13 +83,13 @@ Adresy jako `/p/lotovovy-kvet/203` se liší jen hmotností. Ve výsledcích vyh
 
 Na webu zůstaly 4 ukázkové aktuality a jeden návod v Rádci. Text je generovaný nesmysl („Obrázek samozřejmostí mi unii tištěném druhů…“). Seznam už má ve výsledcích článek „Dárek k produktům značky Citizen“. Úvodní stránka na aktuality pořád odkazuje, blok je schovaný jen pro oko.
 
-> **Oprava:** smazat aktuality (*Obsah → Aktuality*), návod na brož (*Obsah → Rádce*) a výrobce „Upgates“ (*Produkty → Výrobci*). Blok aktualit odstraníme ze šablony.
+> **Oprava:** ukázkové aktuality, návod na brož i výrobce „Upgates“ smažeme a blok aktualit odstraníme ze šablony.
 
 ## Titulky a popisky
 
 ### [[vysoké]] Úvodní stránka se v Googlu jmenuje jen „Svět Cejlonu“
 
-V titulku chybí čaj, koření i Srí Lanka. Popisek zní „Vítejte na e-shopu Svět Cejlonu! :: Svět Cejlonu“. Návrhy jsou dole v kapitole Návrhy titulků a popisků.
+V titulku chybí čaj, koření i Srí Lanka. Popisek zní „Vítejte na e-shopu Svět Cejlonu! :: Svět Cejlonu“. Návrh je dole v kapitole Návrhy titulků a popisků.
 
 ### [[vysoké]] Popisky opakují titulek
 
@@ -261,30 +261,12 @@ Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce
 
 ## Návrhy titulků a popisků
 
-Titulky do 60 znaků, popisky do 155. Pokud Upgates přidá „:: Svět Cejlonu“ na konec titulku sám, „| Svět Cejlonu“ z návrhů vynecháme.
+Nové titulky a popisky máme připravené pro úvodku, 6 kategorií, 4 obsahové stránky a hlavní produkty. Ukázka pro úvodní stránku:
 
-| Stránka | Titulek | Popisek |
+| | Dnes | Návrh |
 |---|---|---|
-| **Úvodka** | Cejlonský čaj, koření a ájurvéda ze Srí Lanky \| Svět Cejlonu | Sypané cejlonské čaje, pravá cejlonská skořice a ájurvédské produkty od menších pěstitelů ze Srí Lanky. Ručně baleno v ČR, dárek ke každé objednávce. |
-| `/caje` | Cejlonské sypané čaje ze Srí Lanky \| Svět Cejlonu | Černé, zelené, bílé i bylinné čaje z horských oblastí Srí Lanky. Celé listy, známý původ a chuť, kterou v sáčku nenajdete. |
-| `/koreni` | Cejlonská skořice a srílanské koření \| Svět Cejlonu | Pravá cejlonská skořice Alba, kardamon, hřebíček, kurkuma a kari listy přímo od srílanských pěstitelů. Bez příměsí, v malých šaržích. |
-| `/doplnky-stravy` | Moringa, amla a ashwagandha ze Srí Lanky \| Svět Cejlonu | Tradiční srílanské byliny a plody v jemně mleté podobě: moringa, amla, ashwagandha, triphala. Přírodní složení, známý původ. |
-| `/ajurveda` | Ájurvédská kosmetika a péče ze Srí Lanky \| Svět Cejlonu | Ájurvédská mýdla, oleje, balzámy a zubní pasty podle tradičních srílanských receptur. Dovezeno přímo z ostrova. |
-| `/ostatni` | Čajové příslušenství a vonné tyčinky \| Svět Cejlonu | Skleněné louhovače a konvice, louhovací sáčky, dřevěné podtácky a přírodní vonné tyčinky ze Srí Lanky. |
-| `/darkove-balicky` | Dárkové balíčky čaje a koření ze Srí Lanky \| Svět Cejlonu | Sestavte dárek z cejlonských čajů, koření a ájurvédy v dárkové krabici. Ideální pro milovníky čaje i exotické kuchyně. |
-| `/o-nas` | Náš příběh: čaj a koření přímo ze Srí Lanky \| Svět Cejlonu | Jak vznikl Svět Cejlonu, proč nakupujeme přímo od menších farmářů a co to znamená pro to, co si nasypete do šálku. |
-| `/pomahame-skole-na-sri-lance` | Pomáháme tamilské škole na Srí Lance \| Svět Cejlonu | Část z každé objednávky jde na tamilskou školu na Srí Lance. Co se z vašich nákupů už pořídilo a jak projekt pokračuje. |
-| `/velkoobchod-a-spoluprace` | Velkoobchod cejlonského čaje a koření \| Svět Cejlonu | Cejlonské čaje, skořici a koření dodáváme čajovnám, kavárnám, restauracím i obchodům. Napište si o velkoobchodní ceník. |
-| `/vse-o-nakupu` | Doprava, platba a obchodní podmínky \| Svět Cejlonu | Jak u nás nakoupit, možnosti dopravy a platby, doprava zdarma od 1 600 Kč, reklamace a obchodní podmínky. |
-
-### Vzor pro produkty
-
-| Produkt | Titulek | Popisek (první věta krátkého popisu) |
-|---|---|---|
-| Ibišek | Ibiškový čaj – sušený květ ze Srí Lanky \| Svět Cejlonu | Sušené květy ibišku ze Srí Lanky na rubínově červený, osvěžující čaj bez kofeinu. Výborný horký i ledový, balení 20–80 g. |
-| Skořice celá | Pravá cejlonská skořice Alba celá \| Svět Cejlonu | Pravá cejlonská skořice nejvyšší třídy Alba: tenké křehké svitky s jemně sladkým aroma a minimem kumarinu. Přímo ze Srí Lanky. |
-| Motýlí květ | Modrý čaj z motýlího květu (butterfly pea) \| Svět Cejlonu | Bylinný čaj z květů motýlího hrachoru, který se s citronem zbarví z modré do fialové. Bez kofeinu, ze Srí Lanky. |
-| Černý čaj Pekoe | Cejlonský černý čaj Pekoe sypaný \| Svět Cejlonu | Klasický cejlonský černý čaj třídy Pekoe z vybraných oblastí Srí Lanky. Plná, čistá chuť, ideální k snídani i s mlékem. |
+| Titulek | Svět Cejlonu | Cejlonský čaj, koření a ájurvéda ze Srí Lanky \| Svět Cejlonu |
+| Popisek | Vítejte na e-shopu Svět Cejlonu! :: Svět Cejlonu | Sypané cejlonské čaje, pravá cejlonská skořice a ájurvédské produkty od menších pěstitelů ze Srí Lanky. Ručně baleno v ČR, dárek ke každé objednávce. |
 
 ## Jak jsme měřili
 
