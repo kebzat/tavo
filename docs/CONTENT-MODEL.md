@@ -143,15 +143,19 @@ Dosavadní sekce mají svůj protějšek mezi bloky, takže se nic needituje jin
 | Citace klienta | **Citace** |
 
 **Obrázky:**
-- **Náhled ve výpisu** (doporučeně 4:3) — jeden obrázek, zobrazí se na homepage
-  i ve výpisu referencí. Dokud ho nenahrajete, je tam šrafované pole s textem
-  z pole „Popisek zástupného vizuálu".
-- **Galerie na detailu** — libovolný počet obrázků, zobrazí se jako **slider vedle
-  nadpisu** v úvodu detailu. Pořadí měníte přetažením. Při více obrázcích jsou pod
-  slidem tečky (aktivní se protáhne do cihlové čárky) a šipky. Náhled ve slideru
-  má jednotný poměr; návštěvník si obrázek **zvětší kliknutím** (v lightboxu je bez
-  ořezu). **Prázdná galerie = úvod detailu je jen text, bez obrázku** — reference
-  tedy klidně může být bez obrázků.
+- **Náhled ve výpisu** — jeden obrázek na homepage, ve výpisu referencí a v bloku
+  „Další projekt". Zobrazí se **vždy celý, nic se neořezává**; výšku karty určí sám
+  obrázek. U webů a e-shopů proto nahrávejte **screenshot 1920 × 1200 px (16:10)**,
+  ať mají karty stejnou výšku. Dokud náhled nenahrajete, je tam šrafované pole
+  s textem z pole „Popisek zástupného vizuálu".
+- **Galerie na detailu** — zobrazí se **přes celou šířku pod nadpisem a perexem**,
+  stejně jako na tomaskebza.cz. Rámeček přebírá poměr prvního obrázku, další obrázky
+  se do něj vejdou celé. Při více obrázcích jsou pod ním tečky a šipky, kliknutím se
+  obrázek zvětší. U webů dávejte jako první stejný screenshot jako v náhledu.
+  **Prázdná galerie = úvod detailu je jen text, bez obrázku.**
+
+Screenshoty webů pochází z tomaskebza.cz/reference. Původní obrázky (fotky notebooku,
+koláže) nikdo nesmazal: leží ve skryté kolekci `archiv` u každé reference.
 
 ## Obsah → Služby
 
@@ -208,9 +212,9 @@ stačí jeden blok „Text", zbytek jsou grafické sekce ze stejné sady, jakou 
 vyplníte a fotku ještě nemáte, drží místo šrafované pole s tímhle textem, takže sekce
 vypadá hotově a fotka se doplní později. Prázdný popisek bez fotky = sekce bude jen text.
 
-**Blok „Před a po"** potřebuje oba snímky, jinak se vůbec nezobrazí. Nahrajte je pokud
-možno ve stejné šířce a vyfocené od stejného místa stránky; snímky se ořezávají odshora
-do jednoho poměru, takže rozdílná výška nevadí, ale jiný výřez ano. Štítky nad rohy jdou
+**Blok „Před a po"** potřebuje oba snímky, jinak se vůbec nezobrazí. Rámeček přebírá
+poměr snímku „po", takže je vidět celý i na mobilu. Snímek „před" se do něj ořízne odshora,
+proto oba nahrávejte **ve stejném rozměru** a vyfocené od stejného místa stránky. Štítky nad rohy jdou
 přejmenovat (výchozí je „Před" a „Po").
 
 **Prázdný blok se na webu nezobrazí** — nenechá po sobě ani prázdné místo. Platí to i pro

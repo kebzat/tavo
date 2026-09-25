@@ -96,7 +96,7 @@ class CaseStudyForm
                             ->label('Náhled ve výpisu')
                             ->collection(CaseStudy::MEDIA_THUMB)
                             ->imageEditor()
-                            ->helperText('Zobrazí se na homepage, ve výpisu referencí a v bloku „Další projekt". Rámeček má poměr 16:10 a min. 1200 px na šířku — v tomhle poměru se náhled nikde neořízne. Screenshot webu (16:9) i koláž 4:3 se do něj vejdou s ořezem pár procent, takže je nemusíte předělávat.'),
+                            ->helperText('Zobrazí se na homepage, ve výpisu referencí a v bloku „Další projekt", vždy celý a bez ořezu. U webů a e-shopů nahrávejte screenshot 1920 × 1200 px (16:10), ať mají všechny karty stejnou výšku.'),
 
                         ImageUpload::media('gallery')
                             ->label('Galerie na detailu')
@@ -106,7 +106,7 @@ class CaseStudyForm
                             ->appendFiles()
                             ->openable()
                             ->panelLayout('grid')
-                            ->helperText('Libovolný počet obrázků — pořadí změníte přetažením. Obrázky se nikde neořezávají, zobrazí se v poměru, v jakém je nahrajete. Když galerii necháte prázdnou, sekce se na webu vůbec neobjeví.'),
+                            ->helperText('Zobrazí se přes celou šířku pod nadpisem detailu; víc obrázků se přepíná šipkami. Rámeček přebírá poměr prvního obrázku a nic se neořezává. U webů dejte jako první stejný screenshot jako v náhledu. Prázdná galerie = hlavička bez obrázku.'),
                     ]),
                 ]),
 

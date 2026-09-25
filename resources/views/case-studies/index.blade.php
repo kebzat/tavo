@@ -47,14 +47,15 @@
                     @foreach ($cases as $case)
                         <a href="{{ route('cases.show', $case->slug) }}" data-reveal class="group block">
                             <div class="relative">
-                                {{-- Rámeček 16:10. Náhledy chodí ve dvou tvarech — připravené koláže
-                                     4:3 a screenshoty webů skoro 16:9 — a tenhle poměr leží mezi nimi,
-                                     takže ani jednomu neubere víc než pár procent. --}}
+                                {{-- Náhled se nikdy neořezává, výšku určí sám obrázek. Weby mají
+                                     screenshoty 1920×1200 (16:10), takže karty vyjdou stejně vysoké.
+                                     Poměr 16:10 drží jen zástupný vizuál, dokud obrázek chybí. --}}
                                 <x-media
                                     :image="$case->thumbImage()"
                                     :label="$case->thumb_label"
                                     :priority="$loop->first"
                                     ratio="aspect-[16/10]"
+                                    fit="natural"
                                     radius="rounded-thumb"
                                     sizes="(min-width: 861px) 44vw, 88vw"
                                     class="transition-transform duration-500 ease-tavo group-hover:scale-[1.02]" />

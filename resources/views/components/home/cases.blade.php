@@ -20,6 +20,7 @@
                         :image="$case->thumbImage()"
                         :label="$case->thumb_label"
                         ratio="aspect-[16/10]"
+                        fit="natural"
                         :parallax="true"
                         sizes="(min-width: 861px) 34vw, 88vw" />
 

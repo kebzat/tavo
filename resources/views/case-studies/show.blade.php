@@ -16,8 +16,10 @@
                 ← Všechny reference
             </a>
 
-            {{-- S galerií je hero dvousloupcový (text + slider), bez ní jen text. --}}
-            <div class="grid grid-cols-1 items-center gap-[clamp(36px,5vw,72px)] {{ $hasGallery ? 'menu:grid-cols-[1.05fr_0.95fr]' : '' }}">
+            {{-- Nadpis vlevo, perex vpravo a pod nimi galerie přes celou šířku,
+                 ať je screenshot webu vidět celý a ve velkém. Bez galerie zůstává
+                 jen text s nadpisem přes celou šířku. --}}
+            <div class="grid grid-cols-1 items-end gap-x-[clamp(24px,4vw,72px)] gap-y-[30px] {{ $hasGallery ? 'menu:grid-cols-[1.1fr_0.9fr]' : '' }}">
                 <div>
                     <div data-reveal class="mb-6 flex flex-wrap gap-2.5">
                         @if ($case->category)
@@ -31,7 +33,7 @@
                         @endforeach
                     </div>
 
-                    {{-- Vedle galerie musí být nadpis menší, ať se do sloupce vejde. --}}
+                    {{-- Vedle perexu musí být nadpis menší, ať se do sloupce vejde. --}}
                     <h1 data-reveal
                         class="{{ $hasGallery ? 'text-[clamp(32px,4.4vw,68px)] leading-[1.02]' : 'text-case-title' }} m-0 max-w-[15ch] font-extrabold tracking-[-.03em]">
                         {{ $case->hero_headline ?: $case->title }}
@@ -39,20 +41,20 @@
                             <span class="text-brick italic">{{ $case->hero_headline_accent }}</span>
                         @endif
                     </h1>
-
-                    @if ($case->hero_perex ?: $case->excerpt)
-                        <p data-reveal class="text-lead mt-[30px] mb-0 max-w-[52ch] text-body">
-                            {{ $case->hero_perex ?: $case->excerpt }}
-                        </p>
-                    @endif
                 </div>
 
-                @if ($hasGallery)
-                    <div data-reveal>
-                        <x-gallery :images="$gallery" />
-                    </div>
+                @if ($case->hero_perex ?: $case->excerpt)
+                    <p data-reveal class="text-lead m-0 max-w-[52ch] text-body">
+                        {{ $case->hero_perex ?: $case->excerpt }}
+                    </p>
                 @endif
             </div>
+
+            @if ($hasGallery)
+                <div data-reveal class="mt-[clamp(36px,5vw,64px)]">
+                    <x-gallery :images="$gallery" sizes="(min-width: 1660px) 1500px, 88vw" />
+                </div>
+            @endif
         </div>
     </header>
 
@@ -117,6 +119,7 @@
                         :image="$next->thumbImage()"
                         :label="$next->thumb_label"
                         ratio="aspect-[16/10]"
+                        fit="natural"
                         tone="dark"
                         radius="rounded-none"
                         sizes="(min-width: 861px) 40vw, 88vw" />

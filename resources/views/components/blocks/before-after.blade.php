@@ -7,6 +7,12 @@
     $sizes = '(min-width: 861px) 88vw, 88vw';
     $beforeLabel = $data['before_label'] ?? null ?: 'Před';
     $afterLabel = $data['after_label'] ?? null ?: 'Po';
+
+    // Rám přebírá poměr snímku „po", takže je vidět celý i na mobilu.
+    // Snímek „před" se do něj ořízne odshora, proto oba nahrávat ve stejném rozměru.
+    $ratio = ($after['width'] ?? null) && ($after['height'] ?? null)
+        ? $after['width'].' / '.$after['height']
+        : '16 / 8';
 @endphp
 
 {{-- Bez obou obrázků není co porovnávat, takže se sekce vůbec nevysází. --}}
@@ -35,7 +41,8 @@
                  x-ref="frame"
                  @pointermove="track($event)"
                  @pointerdown="track($event)"
-                 class="group relative aspect-[4/3] w-full cursor-ew-resize overflow-hidden rounded-media select-none menu:aspect-[16/8]">
+                 style="aspect-ratio: {{ $ratio }}"
+                 class="group relative w-full cursor-ew-resize overflow-hidden rounded-media select-none">
 
                 {{-- Spodní vrstva je stav „po", vrchní se ořezává podle polohy čáry. --}}
                 <img src="{{ $after['src'] }}"

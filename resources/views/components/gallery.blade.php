@@ -1,10 +1,19 @@
 @props([
     'images' => [],   // pole z ResponsiveImage::make() — src, srcset, width, height, alt
+    'sizes' => '(min-width: 861px) 42vw, 88vw',
 ])
 
 @php
     $images = collect($images)->values();
     $count = $images->count();
+
+    // Rám přebírá poměr prvního obrázku. Screenshoty webů mají všechny 16:10,
+    // takže se vejdou celé; jiný poměr dostane po stranách pruh podkladu,
+    // ale oříznutý není nikdy.
+    $first = $images->first();
+    $ratio = ($first['width'] ?? null) && ($first['height'] ?? null)
+        ? $first['width'].' / '.$first['height']
+        : '4 / 3';
 @endphp
 
 @if ($count)
@@ -13,7 +22,8 @@
          class="w-full">
 
         {{-- Rám slideru — pevný poměr, ať tečky pod ním nepodskakují mezi obrázky. --}}
-        <div class="group relative aspect-[4/3] overflow-hidden rounded-card bg-gradient-to-br from-sand-100 to-sand-400">
+        <div class="group relative overflow-hidden rounded-card bg-gradient-to-br from-sand-100 to-sand-400 ring-1 ring-ink/10"
+             style="aspect-ratio: {{ $ratio }}">
             <template x-for="(image, i) in images" :key="i">
                 {{--
                     Skrytý snímek se vypne i pro čtečku a klávesnici (`inert`),
@@ -25,18 +35,18 @@
                         class="absolute inset-0 cursor-zoom-in transition-opacity duration-500 ease-tavo"
                         :class="i === index ? 'opacity-100' : 'pointer-events-none opacity-0'"
                         :aria-label="`Zvětšit obrázek: ${image.alt}`">
-                    {{-- Galerie stojí v hlavičce hned vedle nadpisu, takže první
+                    {{-- Galerie stojí v hlavičce hned pod nadpisem, takže první
                          snímek je na první obrazovce a čeká se na něj. --}}
                     <img :src="image.src"
                          :srcset="image.srcset"
-                         sizes="(min-width: 861px) 42vw, 88vw"
+                         sizes="{{ $sizes }}"
                          :alt="image.alt"
                          :width="image.width"
                          :height="image.height"
                          :loading="i === 0 ? 'eager' : 'lazy'"
                          :fetchpriority="i === 0 ? 'high' : 'auto'"
                          decoding="async"
-                         class="h-full w-full object-cover">
+                         class="h-full w-full object-contain">
                 </button>
             </template>
 
