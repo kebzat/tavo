@@ -33,9 +33,7 @@ return new class extends Migration
             'client_id' => $client->getKey(),
             'title' => 'SEO a GEO audit e-shopu svetcejlonu.cz',
             'audited_at' => '2026-09-24',
-            'intro' => 'Prověrka viditelnosti ve vyhledávačích (Google, Seznam, Bing) a v AI asistentech '
-                .'(ChatGPT, Perplexity, Gemini, Claude, Copilot). Prošli jsme 1 009 stránek a všech 1 974 adres '
-                .'ze sitemapy. Všechno je naměřené na živém webu, protože Google Search Console zatím chybí.',
+            'intro' => 'Jak e-shop vidí Google, Seznam a AI asistenti jako ChatGPT nebo Perplexity, a co opravit nejdřív.',
             'highlights' => [
                 ['value' => '1 974', 'label' => 'adres v sitemapě, užitečných je jen asi 80'],
                 ['value' => '1 786', 'label' => 'filtračních stránek (22. 9. jich bylo 228)'],
