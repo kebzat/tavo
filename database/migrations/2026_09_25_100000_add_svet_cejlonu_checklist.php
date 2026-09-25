@@ -112,7 +112,7 @@ return new class extends Migration
             [
                 'title' => 'Tento týden: úklid a měření',
                 'slug' => 'tento-tyden',
-                'description' => 'Zapnout nástroje, které ukážou, co Google vidí, a uklidit tisíce zbytečných adres. Celkem asi 3 hodiny práce.',
+                'description' => 'Zapnout nástroje, které ukážou, co Google vidí, a uklidit tisíce zbytečných adres.',
                 'sections' => [
                     [
                         'title' => 'Nástroje pro měření',
@@ -197,7 +197,7 @@ return new class extends Migration
             [
                 'title' => 'Do měsíce: texty, šablona a firma',
                 'slug' => 'do-mesice',
-                'description' => 'Jak e-shop vypadá ve výsledcích hledání a podle čeho ho Google a AI poznají jako firmu. Asi 2 dny práce.',
+                'description' => 'Jak e-shop vypadá ve výsledcích hledání a podle čeho ho Google a AI poznají jako firmu.',
                 'sections' => [
                     [
                         'title' => 'Titulky a popisky ve výsledcích hledání',

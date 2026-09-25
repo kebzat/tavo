@@ -19,26 +19,26 @@ Technicky stojí e-shop na dobrém základu: HTTPS, kanonické adresy, obsah vyk
 | **Server-side rendering** | [[v pořádku]] | Veškerý obsah je v HTML bez JavaScriptu, což je výhoda pro AI i roboty |
 | **Alt texty** | [[v pořádku]] | Od 22. 9. doplněné. Zbývají jen 2 technické obrázky ze šablony na každé stránce |
 
-> **Co se od 22. 9. zhoršilo:** počet adres v sitemapě vyskočil ze 414 na 1 974. Příčinou je hromadný import parametrů produktů (chuťový profil, tipy, složení, použití…). Upgates z *každé hodnoty každého parametru* vyrobil indexovatelnou stránku, například `/caje/p-tip/s-citronem-zvyrazni-svezest-nalevu` s titulkem „ČAJE – Tip – S citronem – zvýrazní svěžest nálevu.“ Oprava zabere pár minut v administraci, viz Indexace.
+> **Co se od 22. 9. zhoršilo:** počet adres v sitemapě vyskočil ze 414 na 1 974. Příčinou je hromadný import parametrů produktů (chuťový profil, tipy, složení, použití…). Upgates z *každé hodnoty každého parametru* vyrobil indexovatelnou stránku, například `/caje/p-tip/s-citronem-zvyrazni-svezest-nalevu` s titulkem „ČAJE – Tip – S citronem – zvýrazní svěžest nálevu.“ Oprava je v administraci, viz Indexace.
 
 ## Top 12 priorit
 
-Seřazeno podle poměru dopad / práce. Sloupec „Kdo“ říká, jestli to jde udělat v administraci (klient), v šabloně (my), nebo jestli je potřeba podpora Upgates.
+Seřazeno podle dopadu a náročnosti. Sloupec „Kdo“ říká, jestli to jde udělat v administraci (klient), v šabloně (my), nebo jestli je potřeba podpora Upgates.
 
-| # | Úkol | Dopad | Práce | Kdo |
-|---|---|---|---|---|
-| 1 | **Založit Google Search Console, Bing Webmaster Tools a Seznam Webmaster** a odeslat sitemapu | [[kritický]] | 30 min | klient + my |
-| 2 | **Filtrační stránky označit jako „neindexovat“** (1 786 URL). Výjimku dostane jen pár štítků s vlastním textem | [[kritický]] | 15 min | administrace |
-| 3 | **Vypnout varianty v sitemapě** (104 URL, například `/p/lotovovy-kvet/203`, kterou už Bing zaindexoval) | [[kritický]] | 5 min | administrace |
-| 4 | **Smazat ukázkový obsah Upgates**: 4 aktuality, rádce „brož“, výrobce „Upgates“, stránku `/why-us` a pomocné `/oznameni-*` vyřadit z indexu | [[kritický]] | 20 min | administrace |
-| 5 | **Zeptat se podpory Upgates na odblokování GPTBot a ClaudeBot** (dnes vrací 503) a na kanonické URL u variant a filtrů | [[vysoký]] | 1 e-mail | podpora Upgates |
-| 6 | **Titulek a popisek úvodky, 5 kategorií a obsahových stránek** (hotové návrhy v příloze) | [[vysoký]] | 1–2 h | administrace |
-| 7 | **JSON-LD Organization / OnlineStore** se `sameAs` (Instagram, Facebook, Heureka, Firmy.cz) a opravit LocalBusiness („Marek Bezdíček“, `$$$$$$`) | [[vysoký]] | 1 h | my (šablona) |
-| 8 | **Opravit mikrodata recenzí** (`reviewRating`, formát data), aby Google mohl ukazovat hvězdičky | [[vysoký]] | 1 h | my (šablona) |
-| 9 | **Vlastní úvodní text kategorií** (150–300 slov) + FAQ blok v každé kategorii | [[vysoký]] | 1 den | klient (text) + my |
-| 10 | **Rádce: 6–10 odborných návodů** (skořice cejlonská vs. kasie, jak louhovat, co je Pekoe/BOP, moringa…), které cituje AI | [[vysoký]] | průběžně | klient |
-| 11 | **Sjednotit Firmy.cz** (dnes dva záznamy: „Svetcejlonu.cz“ a „Svět Cejlonu“) a založit Google Business Profile | [[střední]] | 30 min | klient |
-| 12 | **Projít zdravotní tvrzení** u ájurvédy a doplňků („bolest hlavy“, „plísňové potíže“, „zubní první pomoc“) | [[střední]] | 2 h | klient |
+| # | Úkol | Dopad | Kdo |
+|---|---|---|---|
+| 1 | **Založit Google Search Console, Bing Webmaster Tools a Seznam Webmaster** a odeslat sitemapu | [[kritický]] | klient + my |
+| 2 | **Filtrační stránky označit jako „neindexovat“** (1 786 URL). Výjimku dostane jen pár štítků s vlastním textem | [[kritický]] | administrace |
+| 3 | **Vypnout varianty v sitemapě** (104 URL, například `/p/lotovovy-kvet/203`, kterou už Bing zaindexoval) | [[kritický]] | administrace |
+| 4 | **Smazat ukázkový obsah Upgates**: 4 aktuality, rádce „brož“, výrobce „Upgates“, stránku `/why-us` a pomocné `/oznameni-*` vyřadit z indexu | [[kritický]] | administrace |
+| 5 | **Zeptat se podpory Upgates na odblokování GPTBot a ClaudeBot** (dnes vrací 503) a na kanonické URL u variant a filtrů | [[vysoký]] | podpora Upgates |
+| 6 | **Titulek a popisek úvodky, 5 kategorií a obsahových stránek** (hotové návrhy v příloze) | [[vysoký]] | administrace |
+| 7 | **JSON-LD Organization / OnlineStore** se `sameAs` (Instagram, Facebook, Heureka, Firmy.cz) a opravit LocalBusiness („Marek Bezdíček“, `$$$$$$`) | [[vysoký]] | my (šablona) |
+| 8 | **Opravit mikrodata recenzí** (`reviewRating`, formát data), aby Google mohl ukazovat hvězdičky | [[vysoký]] | my (šablona) |
+| 9 | **Vlastní úvodní text kategorií** (150–300 slov) + FAQ blok v každé kategorii | [[vysoký]] | klient (text) + my |
+| 10 | **Rádce: 6–10 odborných návodů** (skořice cejlonská vs. kasie, jak louhovat, co je Pekoe/BOP, moringa…), které cituje AI | [[vysoký]] | klient |
+| 11 | **Sjednotit Firmy.cz** (dnes dva záznamy: „Svetcejlonu.cz“ a „Svět Cejlonu“) a založit Google Business Profile | [[střední]] | klient |
+| 12 | **Projít zdravotní tvrzení** u ájurvédy a doplňků („bolest hlavy“, „plísňové potíže“, „zubní první pomoc“) | [[střední]] | klient |
 
 ## Bez Google Search Console: co to znamená a co s tím
 
@@ -104,7 +104,7 @@ Každá kombinace *kategorie + parametr + hodnota* má vlastní URL, odpovídá 
 
 Navíc je v sitemapě i **zastaralá část**: prošlé filtry vracely `404` (například `/caje/p-aroma/intenzivnejsi-95`) nebo `302` zpět na kategorii. Sitemapa tedy tvrdí, že existují stránky, které už neexistují. Google z toho usuzuje, že sitemapě nelze věřit.
 
-> **Oprava (administrace, 15 min):** *Nastavení → Produkty → Filtry a řazení* → označit všechny položky → hromadná akce **„Označit jako neindexovat“**. Podle dokumentace Upgates tím stránky zmizí i ze `sitemap.xml`. Filtrační stránky vznikají vždy, vypnout jde jen jejich indexace.
+> **Oprava (administrace):** *Nastavení → Produkty → Filtry a řazení* → označit všechny položky → hromadná akce **„Označit jako neindexovat“**. Podle dokumentace Upgates tím stránky zmizí i ze `sitemap.xml`. Filtrační stránky vznikají vždy, vypnout jde jen jejich indexace.
 >
 > **Výjimka:** indexované nechat jen štítky, které odpovídají skutečnému hledání, a jen pokud dostanou vlastní titulek, popisek a odstavec textu. Kandidáti: `/caje/t-cele-listy`, štítek „bez kofeinu“ a „cejlonská skořice Alba“.
 >
@@ -214,7 +214,7 @@ Bez popisku: Chilli, Dárková krabice velká, Dárková krabice malá, Přenosn
 
 Logo v patičce i v hlavičce má `alt` i `title` nastavené na titulek aktuální stránky, například „IBIŠEK – Řezaný květ :: Svět Cejlonu“. Logo má mít `alt="Svět Cejlonu"`. Lighthouse to hlásí jako *image-redundant-alt*.
 
-> **Oprava:** v šabloně (`logo.phtml`, pozor, má vlastní odkaz), 5 minut.
+> **Oprava:** v šabloně (`logo.phtml`, pozor, má vlastní odkaz).
 
 ## Strukturovaná data
 
@@ -495,7 +495,7 @@ Robot se řídí jen nejkonkrétnější skupinou `User-agent`, proto se v ní m
 
 ### [[nízké]] llms.txt
 
-`/llms.txt` je navrhovaný standard, přehled webu pro AI v Markdownu. Na Upgates ho do kořene domény nahrát nejde (adresa dnes vrací prázdnou stránku s kódem 200) a žádný z velkých AI vyhledávačů zatím potvrzeně nepoužívá. **Nedoporučuji tím ztrácet čas.** Stejnou službu udělá dobře napsaná stránka `/o-nas` + JSON-LD Organization. Kdyby Upgates nahrání souboru do kořene umožnil, připravíme ho za 15 minut.
+`/llms.txt` je navrhovaný standard, přehled webu pro AI v Markdownu. Na Upgates ho do kořene domény nahrát nejde (adresa dnes vrací prázdnou stránku s kódem 200) a žádný z velkých AI vyhledávačů zatím potvrzeně nepoužívá. **Nedoporučuji tím ztrácet čas.** Stejnou službu udělá dobře napsaná stránka `/o-nas` + JSON-LD Organization. Kdyby Upgates nahrání souboru do kořene umožnil, připravíme ho.
 
 ## Obsah, který AI cituje
 
