@@ -220,27 +220,24 @@ GPTBot a ClaudeBot dostávají chybu 503. Ostatních 12 robotů, které jsme zko
 ## Cenová nabídka
 
 ::: box Jednorázově
-### SEO úklid
+### Základní úklid
 
 **4 900 Kč**
 
-- Google Search Console, Bing Webmaster Tools, Seznam Webmaster, odeslání sitemap
+- Google Search Console, Bing Webmaster Tools a Seznam Webmaster, odeslání sitemap
 - 1 786 filtračních stránek a 104 variant pryč z indexu a ze sitemapy
 - smazání ukázkového obsahu Upgates, noindex pomocných stránek
-- `robots.txt` pro AI roboty a dotaz na Upgates kvůli zablokovaným GPTBot a ClaudeBot
-- titulky a popisky úvodky, kategorií a obsahových stránek
-- šablona: údaje o firmě, oprava recenzí pro hvězdičky ve vyhledávání, náhled při sdílení, nadpisy
-- stránka Kontakt, opravy nadpisů a překlepů v produktech
-- GA4: propojení se Search Console a měření návštěv z AI asistentů
+- dotaz na Upgates kvůli zablokovaným robotům OpenAI a Anthropic
 
 Hotovo do týdne od dodání přístupu k DNS domény.
 :::
 
-::: box Měsíčně
+::: box Měsíčně · minimálně 3 měsíce
 ### SEO monitoring
 
-**1 900 Kč** / měsíc
+**5 000 Kč** / měsíc
 
+- postupně dotáhneme zbytek auditu: titulky a popisky, údaje o firmě a recenze v šabloně, stránku Kontakt, opravy nadpisů a překlepů
 - sledování organického růstu a propadů webu
 - doporučení pro úpravy obsahu na webu
 - konkrétní checklist pro každý měsíc
@@ -249,10 +246,10 @@ Hotovo do týdne od dodání přístupu k DNS domény.
 - možnost e-mailových konzultací
 - WhatsApp skupina pro rychlé diskuze
 
-Výsledky SEO bývají vidět po 2–3 měsících.
+Výsledky SEO bývají vidět po 2–3 měsících, proto minimálně 3 měsíce.
 :::
 
-> **První 3 měsíce celkem 10 600 Kč** (4 900 Kč úklid + 3 × 1 900 Kč monitoring).
+> **První 3 měsíce celkem 19 900 Kč** (4 900 Kč úklid + 3 × 5 000 Kč). Úkoly z checklistu bereme od nejdůležitějších.
 
 ### Na straně klienta
 
