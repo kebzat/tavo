@@ -12,7 +12,7 @@ Technický základ e-shopu je v pořádku: HTTPS, kanonické adresy, obsah vykre
 |---|---|---|
 | Indexace a sitemapa | [[kritické]] | v indexu jsou filtry a varianty produktů |
 | Ukázkový obsah | [[kritické]] | 4 aktuality, návod na brož a výrobce „Upgates“ |
-| Měření | [[kritické]] | chybí Search Console, Bing i Seznam Webmaster |
+| Měření vyhledávání | [[kritické]] | GA4 a Meta pixel běží, chybí Search Console, Bing i Seznam Webmaster |
 | AI vyhledávání | [[vysoké]] | dva blokovaní roboti, ve výsledcích je konkurence |
 | Titulky a popisky | [[vysoké]] | verzálky, popisky jen opakují titulek |
 | Obsah | [[vysoké]] | kategorie bez vlastního textu, žádné návody |
@@ -123,7 +123,7 @@ Podle strukturovaných dat Google pozná cenu, hodnocení i to, kdo e-shop provo
 |---|---|---|
 | Recenze | [[chybné]] | hodnocení nepatří k recenzi a datum má neplatný formát, proto se hvězdičky ve výsledcích nejspíš nezobrazí |
 | Firma | [[chybné]] | jmenuje se „Marek Bezdíček“ a cenová hladina je „$$$$$$“ |
-| Propojení se sítěmi | [[chybí]] | Instagram, Facebook, Heureka a Firmy.cz |
+| Odkazy na profily firmy | [[chybí]] | web v datech neuvádí svůj Instagram, Facebook, Heureku ani Firmy.cz, i když profily existují |
 | Produkt | [[částečně]] | chybí značka, EAN a země původu |
 | Drobečková navigace | [[duplicitní]] | na detailu produktu dvakrát |
 
@@ -143,7 +143,9 @@ HTTP/2 Upgates nepodporuje a změnit se to nedá.
 
 ### [[střední]] Pomalý server
 
-Polovina stránek odpoví do 0,7 s. Některé ale trvaly přes 8 s a `/p/cerny-caj` dokonce 22,9 s. Mobilní test Lighthouse dal detailu produktu 47 bodů ze 100. Nejvíc brzdí velké obrázky a měřicí kódy (GA4, Facebook, Clarity, Heureka). Časy pošleme podpoře Upgates, zmenšené obrázky máme připravené.
+Polovina stránek odpoví do 0,7 s. Některé ale trvaly přes 8 s a `/p/cerny-caj` dokonce 22,9 s. Na mobilu se hlavní obrázek detailu produktu načetl až za 11,9 s. Na web vede i placená reklama z Instagramu a Facebooku, takže pomalé stránky stojí peníze za kliknutí.
+
+Nejvíc brzdí velké obrázky, zmenšené máme připravené. Měřicí kódy (GA4, Meta pixel, Clarity, Heureka) zdrží stránku asi o 0,4 s. Pixel kvůli reklamám potřebujete, jen se dá načítat šetrněji. Časy pošleme podpoře Upgates.
 
 ## Obsah a klíčová slova
 
@@ -180,7 +182,8 @@ Názvy jako „Ájurvédský balzám (Bolest hlavy)“ nebo mast na „plísňov
 | Google Business Profile | [[neověřeno]] | ověřit, případně založit jako firmu bez provozovny |
 | Heureka | [[aktivní]] | zapojit feed produktů |
 | Google Merchant Center, Zboží.cz | [[ne]] | feed je v Upgates připravený |
-| YouTube | [[ne]] | nahrát videa ze Srí Lanky |
+| Instagram, Facebook | [[aktivní]] | běží reklamy, profily propojíme s webem ve strukturovaných datech |
+| YouTube | [[ne]] | nahrát videa ze Srí Lanky, třeba ta z reklam |
 
 Odkazy z jiných webů přinese nejspíš příběh tamilské školy, cestovatelské blogy o Srí Lance a čajovny, které od vás odebírají.
 
@@ -267,7 +270,3 @@ Nové titulky a popisky máme připravené pro úvodku, 6 kategorií, 4 obsahov�
 |---|---|---|
 | Titulek | Svět Cejlonu | Cejlonský čaj, koření a ájurvéda ze Srí Lanky \| Svět Cejlonu |
 | Popisek | Vítejte na e-shopu Svět Cejlonu! :: Svět Cejlonu | Sypané cejlonské čaje, pravá cejlonská skořice a ájurvédské produkty od menších pěstitelů ze Srí Lanky. Ručně baleno v ČR, dárek ke každé objednávce. |
-
-## Jak jsme měřili
-
-Dne 24. 9. 2026 jsme prošli 1 009 stránek a všech 1 974 adres ze sitemapy. Server jsme vyzkoušeli se 14 roboty a rychlost změřili v Lighthouse. Bez Search Console nevidíme skutečné pozice, hledanosti ani to, kolik adres Google opravdu zaindexoval. To ukáže až Search Console měsíc po založení.
