@@ -47,6 +47,15 @@
                             {{ $case->hero_perex ?: $case->excerpt }}
                         </p>
                     @endif
+
+                    @if ($case->website_url)
+                        <a data-reveal href="{{ $case->website_url }}" target="_blank" rel="noopener"
+                           class="group mt-7 inline-flex items-center gap-1.5 border-b-2 border-brick pb-[3px] text-[15px] font-bold text-ink">
+                            {{ text('reference.odkaz_na_web', 'Podívat se na web', 'Detail reference', 'Odkaz na živý web projektu pod perexem') }}
+                            <span aria-hidden="true" class="transition-transform duration-300 ease-tavo group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
+                            <span class="sr-only">(otevře se v novém okně)</span>
+                        </a>
+                    @endif
                 </div>
 
                 @if ($hasGallery)

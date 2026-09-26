@@ -128,6 +128,12 @@ class CaseStudyForm
                         TextInput::make('industry')->label('Obor'),
                         TextInput::make('scope')->label('Rozsah'),
                         TextInput::make('duration')->label('Doba'),
+                        TextInput::make('website_url')
+                            ->label('Odkaz na web')
+                            ->url()
+                            ->placeholder('https://www.example.cz/')
+                            ->helperText('Na detailu se ukáže pod perexem jako „Podívat se na web". Prázdné = bez odkazu.')
+                            ->columnSpanFull(),
                     ]),
 
                     Section::make('Výchozí stav')->schema([

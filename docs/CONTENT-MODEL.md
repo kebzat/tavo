@@ -121,7 +121,7 @@ Nejbohatší část administrace, rozdělená do záložek:
 | Záložka | Obsah |
 |---|---|
 | **Základ** | název, URL, kategorie, pořadí, zveřejnění, „vypíchnout na homepage", texty do výpisu, štítky, obrázky |
-| **Detail** | nadpis detailu, údaje o projektu (klient/obor/rozsah/doba), zadání |
+| **Detail** | nadpis detailu, údaje o projektu (klient/obor/rozsah/doba), odkaz na živý web (pod perexem jako „Podívat se na web ↗“, prázdné = bez odkazu), zadání |
 | **Obsah** | bloky, ze kterých se skládá zbytek stránky |
 | **SEO** | vlastní titulek a popisek; prázdné = použije se název a krátký popis |
 
