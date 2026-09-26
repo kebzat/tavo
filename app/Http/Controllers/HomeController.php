@@ -37,7 +37,7 @@ class HomeController extends Controller
     }
 
     /**
-     * Nejnovější projekt pod úvodem. Posuvník „před a po", když ho reference
+     * Nejnovější projekt za sekcí se dvěma situacemi. Posuvník „před a po", když ho reference
      * má, jinak její první obrázek. Bez obrázku nemá sekce smysl a vynechá se.
      *
      * @return array{case: CaseStudy, comparison: ?array<string, mixed>, image: ?array<string, mixed>}|null

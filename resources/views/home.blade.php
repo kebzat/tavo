@@ -1,12 +1,14 @@
 <x-layout.app>
     <x-home.hero :home="$home" />
+    <x-home.problem :home="$home" />
+    <x-home.situations :home="$home" />
 
+    {{-- Hned za „Web už máme a chceme z něj dostat víc": konkrétní ukázka
+         a zároveň předěl mezi textovými sekcemi. --}}
     @if ($latest)
         <x-home.latest :latest="$latest" />
     @endif
 
-    <x-home.problem :home="$home" />
-    <x-home.situations :home="$home" />
     <x-home.services :home="$home" :services="$services" />
     <x-home.cases :home="$home" :cases="$cases" />
     <x-home.loop :home="$home" :items="$loopItems" />

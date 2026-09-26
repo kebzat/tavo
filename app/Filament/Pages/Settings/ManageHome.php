@@ -106,7 +106,7 @@ class ManageHome extends SettingsPage
 
                 Tab::make('Služby a reference')->schema([
                     Section::make('Nejnovější projekt')
-                        ->description('Velký obrázek hned pod úvodem homepage, ať stránka nezačíná jen textem.')
+                        ->description('Ukázka projektu za sekcí „Dvě situace“: text vlevo, obrázek vpravo. Rozbije dlouhý úsek textu.')
                         ->schema([
                             Select::make('latest_case_id')
                                 ->label('Reference')

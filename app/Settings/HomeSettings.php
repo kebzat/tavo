@@ -52,7 +52,7 @@ class HomeSettings extends Settings
 
     public ?string $services_perex;
 
-    // Nejnovější projekt pod úvodem (ID reference, prázdné = sekce se nezobrazí)
+    // Nejnovější projekt za „Dvěma situacemi“ (ID reference, prázdné = sekce se nezobrazí)
     public ?int $latest_case_id;
 
     // Reference
