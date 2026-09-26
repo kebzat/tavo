@@ -1,5 +1,10 @@
 <x-layout.app>
     <x-home.hero :home="$home" />
+
+    @if ($latest)
+        <x-home.latest :latest="$latest" />
+    @endif
+
     <x-home.problem :home="$home" />
     <x-home.situations :home="$home" />
     <x-home.services :home="$home" :services="$services" />

@@ -113,6 +113,23 @@ class CaseStudy extends Model implements HasMedia
             ->values();
     }
 
+    /**
+     * První porovnání „před a po" z bloků reference, s hotovými obrázky.
+     * Homepage ho ukazuje u nejnovějšího projektu. Bez obou snímků `null`.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function beforeAfter(): ?array
+    {
+        $block = $this->contentBlocks()->first(
+            fn (array $block): bool => $block['component'] === 'blocks.before-after'
+                && $block['data']['before_image']
+                && $block['data']['after_image'],
+        );
+
+        return $block['data'] ?? null;
+    }
+
     /** Následující reference v pořadí (pro blok „Další projekt"). */
     public function next(): ?self
     {

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Settings;
 
 use App\Filament\Concerns\OnlyForAdmins;
+use App\Models\CaseStudy;
 use App\Settings\HomeSettings;
 use BackedEnum;
 use Filament\Forms\Components\Repeater;
@@ -104,6 +105,17 @@ class ManageHome extends SettingsPage
                 ]),
 
                 Tab::make('Služby a reference')->schema([
+                    Section::make('Nejnovější projekt')
+                        ->description('Velký obrázek hned pod úvodem homepage, ať stránka nezačíná jen textem.')
+                        ->schema([
+                            Select::make('latest_case_id')
+                                ->label('Reference')
+                                ->options(fn (): array => CaseStudy::published()->ordered()->pluck('title', 'id')->all())
+                                ->searchable()
+                                ->placeholder('Nezobrazovat')
+                                ->helperText('Když má reference blok „Před a po", ukáže se posuvník se starým a novým webem. Jinak první obrázek z galerie. Prázdné = sekce se nezobrazí.'),
+                        ]),
+
                     Section::make('Sekce „Co umíme"')
                         ->description('Samotné služby se editují v menu Obsah → Služby.')
                         ->columns(2)

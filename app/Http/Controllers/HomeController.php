@@ -23,6 +23,7 @@ class HomeController extends Controller
             'loopItems' => $home->loop_items,
             'processSteps' => ProcessStep::ordered()->get(),
             'pricingPlans' => $this->pricingPlans($home),
+            'latest' => $this->latestCase($home),
             'founders' => $founders,
             // Společná fotka je jedna, ale nahrává se u kteréhokoliv zakladatele —
             // vezmeme první, která existuje.
@@ -33,6 +34,32 @@ class HomeController extends Controller
                 ->filter()
                 ->first(),
         ]);
+    }
+
+    /**
+     * Nejnovější projekt pod úvodem. Posuvník „před a po", když ho reference
+     * má, jinak její první obrázek. Bez obrázku nemá sekce smysl a vynechá se.
+     *
+     * @return array{case: CaseStudy, comparison: ?array<string, mixed>, image: ?array<string, mixed>}|null
+     */
+    private function latestCase(HomeSettings $home): ?array
+    {
+        $case = $home->latest_case_id
+            ? CaseStudy::published()->find($home->latest_case_id)
+            : null;
+
+        if (! $case) {
+            return null;
+        }
+
+        $comparison = $case->beforeAfter();
+        $image = $comparison ? null : ($case->galleryImages()->first() ?? $case->thumbImage());
+
+        if (! $comparison && ! $image) {
+            return null;
+        }
+
+        return ['case' => $case, 'comparison' => $comparison, 'image' => $image];
     }
 
     /**

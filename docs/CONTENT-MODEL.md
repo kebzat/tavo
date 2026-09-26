@@ -88,7 +88,7 @@ Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
 | **Úvod** | velký nadpis přes tři řádky (odkrývá se po řádcích), perex, obě tlačítka |
 | **Problém** | černá sekce „Web je hotový a tím to skončí" — nadpis, perex, očíslované body |
 | **Dvě situace** | dvě velké karty („Potřebujeme nový web" / „Web máme, ale…") |
-| **Služby a reference** | jen nadpisy sekcí — obsah přichází z Obsah → Služby a Obsah → Reference |
+| **Služby a reference** | **Nejnovější projekt** pod úvodem (výběr reference: s blokem „Před a po“ ukáže posuvník, jinak první obrázek z galerie; prázdné = sekce není) a nadpisy sekcí; obsah přichází z Obsah → Služby a Obsah → Reference |
 | **Proč my** | černá sekce se čtyřmi sloupci (Marketing → Web → Data → Rozvoj) |
 | **Lidé a proces** | nadpisy sekcí „Kdo jsme" a „Jak spolu pracujeme", plus blok o specialistech kolem nás |
 | **Ceník** | černá sekce „A kolik to celé stojí?" se třemi kartami (konzultace, jednorázová a pravidelná spolupráce). Karta bez názvu nebo ceny se nevypíše, bez karet zmizí celá sekce |
