@@ -148,8 +148,8 @@ Dosavadní sekce mají svůj protějšek mezi bloky, takže se nic needituje jin
   obrázek. U webů a e-shopů proto nahrávejte **screenshot 1920 × 1200 px (16:10)**,
   ať mají karty stejnou výšku. Dokud náhled nenahrajete, je tam šrafované pole
   s textem z pole „Popisek zástupného vizuálu".
-- **Galerie na detailu** — zobrazí se **přes celou šířku pod nadpisem a perexem**,
-  stejně jako na tomaskebza.cz. Rámeček přebírá poměr prvního obrázku, další obrázky
+- **Galerie na detailu** — zobrazí se jako **slider vpravo vedle nadpisu** (na mobilu
+  pod textem). Rámeček přebírá poměr prvního obrázku, další obrázky
   se do něj vejdou celé. Při více obrázcích jsou pod ním tečky a šipky, kliknutím se
   obrázek zvětší. U webů dávejte jako první stejný screenshot jako v náhledu.
   **Prázdná galerie = úvod detailu je jen text, bez obrázku.**

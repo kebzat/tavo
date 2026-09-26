@@ -106,7 +106,7 @@ class CaseStudyForm
                             ->appendFiles()
                             ->openable()
                             ->panelLayout('grid')
-                            ->helperText('Zobrazí se přes celou šířku pod nadpisem detailu; víc obrázků se přepíná šipkami. Rámeček přebírá poměr prvního obrázku a nic se neořezává. U webů dejte jako první stejný screenshot jako v náhledu. Prázdná galerie = hlavička bez obrázku.'),
+                            ->helperText('Zobrazí se vpravo vedle nadpisu detailu; víc obrázků se přepíná šipkami. Rámeček přebírá poměr prvního obrázku a nic se neořezává. U webů dejte jako první stejný screenshot jako v náhledu. Prázdná galerie = hlavička bez obrázku.'),
                     ]),
                 ]),
 

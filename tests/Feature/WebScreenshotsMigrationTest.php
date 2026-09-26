@@ -90,4 +90,17 @@ class WebScreenshotsMigrationTest extends TestCase
             ->assertSee('tavoBeforeAfter', false)
             ->assertSee('Starý e-shop vedle nového');
     }
+
+    public function test_rappa_dostane_do_prazdne_galerie_svuj_nahled(): void
+    {
+        $case = $this->case('rappa', 'RAPPA');
+        $case->addMedia(UploadedFile::fake()->image('rappa.png', 1600, 1000))->toMediaCollection(CaseStudy::MEDIA_THUMB);
+
+        $migration = require database_path('migrations/2026_09_26_090000_rappa_gallery_from_thumb.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame(['rappa.png'], $case->refresh()->getMedia(CaseStudy::MEDIA_GALLERY)->pluck('file_name')->all());
+        $this->assertSame('rappa.png', $case->getFirstMedia(CaseStudy::MEDIA_THUMB)->file_name);
+    }
 }
