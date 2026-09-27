@@ -28,6 +28,13 @@ class EditAudit extends EditRecord
                 ->url(fn (Audit $record): ?string => $record->publicUrl(), shouldOpenInNewTab: true)
                 ->visible(fn (Audit $record): bool => $record->publicUrl() !== null),
 
+            Action::make('preview')
+                ->label('Náhled')
+                ->icon(Heroicon::OutlinedEye)
+                ->color('gray')
+                ->url(fn (Audit $record): ?string => $record->previewUrl(), shouldOpenInNewTab: true)
+                ->visible(fn (Audit $record): bool => $record->publicUrl() === null && $record->previewUrl() !== null),
+
             // Znovu nechat Clauda projít web. Přepíše text, čísla i úkoly
             // v checklistu, proto s potvrzením.
             Action::make('deepAudit')

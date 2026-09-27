@@ -324,6 +324,22 @@ class CrmScoutTest extends TestCase
             ->assertDontSee('::: zámek');
     }
 
+    public function test_neverejny_audit_otevre_jen_prihlaseny_spravce(): void
+    {
+        $audit = $this->auditZFirmy();
+        $this->assertFalse($audit->is_public);
+
+        $this->get($audit->previewUrl())->assertNotFound();
+
+        $this->actingAs($this->obchodnik())
+            ->get($audit->previewUrl())
+            ->assertOk()
+            ->assertSee('Nejdůležitější nález')
+            ->assertDontSee('Zkusili jsme web otevřít jako roboti');
+
+        $this->assertSame(0, $audit->fresh()->view_count);
+    }
+
     public function test_plna_verze_ukaze_vse_a_zpristupni_checklist(): void
     {
         $audit = $this->auditZFirmy();

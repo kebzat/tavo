@@ -15,8 +15,10 @@ class AuditController extends Controller
 {
     public function __invoke(Request $request, string $token): View
     {
+        // Přihlášený správce otevře i audit, který ještě nesdílíme, aby ho
+        // mohl před odesláním zkontrolovat přesně tak, jak ho uvidí klient.
         $audit = Audit::query()
-            ->public()
+            ->when($request->user() === null, fn ($query) => $query->public())
             ->where('public_token', $token)
             ->with('client.crmCompany')
             ->firstOrFail();

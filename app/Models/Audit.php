@@ -49,6 +49,12 @@ class Audit extends Model
         return route('audit.show', $this->public_token);
     }
 
+    /** Náhled pro přihlášeného správce. Funguje i u auditu, který ještě nesdílíme. */
+    public function previewUrl(): ?string
+    {
+        return $this->public_token ? route('audit.show', $this->public_token) : null;
+    }
+
     /**
      * Text převedený do HTML a obsah pro boční navigaci.
      *
