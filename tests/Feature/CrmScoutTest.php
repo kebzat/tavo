@@ -161,13 +161,29 @@ class CrmScoutTest extends TestCase
         $this->assertSame([], $company->scout_data['findings']);
     }
 
-    public function test_agentura_je_partner_bez_ohledu_na_skore(): void
+    public function test_agentura_ani_sluzby_se_nehodi_i_s_vysokym_skore(): void
     {
         $this->fakeShop();
+        $scout = app(ProspectScout::class);
 
-        $company = app(ProspectScout::class)->scout($this->firma(['segment' => CompanySegment::Agency]));
+        $agentura = $scout->scout($this->firma(['segment' => CompanySegment::Agency]));
+        $autoskola = $scout->scout($this->firma(['name' => 'Autoškola', 'website' => 'https://shop.test/a', 'segment' => CompanySegment::Local]));
 
-        $this->assertSame(FitVerdict::Partner, $company->fit_verdict);
+        $this->assertSame(70, $agentura->fit_score);
+        $this->assertSame(FitVerdict::Poor, $agentura->fit_verdict);
+        $this->assertSame(FitVerdict::Poor, $autoskola->fit_verdict);
+        $reasons = $autoskola->scout_data['reasons'];
+        $this->assertStringContainsString('hledáme jen e-shopy', end($reasons));
+        $this->assertTrue($scout->parkIfRejected($agentura));
+    }
+
+    public function test_web_bez_eshopu_se_nehodi(): void
+    {
+        $this->fakeShop(['shop.test*' => Http::response('<html><head><title>Firma</title></head><body><h1>Služby</h1></body></html>')]);
+
+        $company = app(ProspectScout::class)->scout($this->firma());
+
+        $this->assertSame(FitVerdict::Poor, $company->fit_verdict);
     }
 
     public function test_usudek_clauda_posune_skore_nejvys_o_dvacet(): void

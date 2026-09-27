@@ -133,10 +133,15 @@ a bolest, když chybí. Co někdo vyplnil ručně, zůstane.
 | 2+ závažné nálezy / 1 | +10 / +5 |
 
 Verdikt: 60+ **Silný kandidát**, 40–59 **Zvážit**, pod 40 **Nehodí se**,
-nedostupný web **Web nejde načíst**. Agentura je vždy **Partner**, skóre
-jejího webu nic neříká.
+nedostupný web **Web nejde načíst**.
 
-**Claude** (s `ANTHROPIC_API_KEY`) si přečte měření a text úvodní stránky,
+**Hledáme jen e-shopy** (rozhodnutí z 27. 9. 2026). Firma ze segmentu jiného
+než E-shop, Bývalý klient nebo Jiné (tedy lokální služby, zdraví, SVJ,
+konference, agentury) a web, který podle měření e-shop není, dostane
+**Nehodí se** bez ohledu na skóre. Skóre zůstává vidět, kdyby se rozhodnutí
+změnilo. Starší verdikt **Partner** se už nepřiřazuje a odkládá se stejně.
+
+**Claude** (s `ANTHROPIC_API_KEY`) posuzuje jen e-shopy. Přečte si měření a text úvodní stránky,
 napíše, co firma prodává, a posune skóre nejvýš o ±20 bodů. Postřeh k oslovení
 uloží jako bolest. Bez klíče všechno běží jen z měření.
 

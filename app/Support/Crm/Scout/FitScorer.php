@@ -14,6 +14,9 @@ use App\Enums\Crm\FitVerdict;
  * Malý web bez známek rozpočtu nebo uzavřený systém se nehodí, i kdyby
  * měl chyb nejvíc.
  *
+ * Hledáme jen e-shopy. Firma z jiného segmentu nebo web bez e-shopu
+ * dostane verdikt „Nehodí se" bez ohledu na skóre.
+ *
  * Skóre je jen z měření. Úsudek Clauda ho umí posunout o ±20 bodů
  * (viz ProspectScout), ne přepsat.
  */
@@ -21,6 +24,9 @@ class FitScorer
 {
     /** Platformy, na kterých Tom dodá úpravy bez čekání na cizí tým. */
     private const OUR_PLATFORMS = ['Shoptet', 'Upgates', 'Shopify', 'WooCommerce', 'WordPress', 'PrestaShop'];
+
+    /** Segmenty, ve kterých může být e-shop. Ostatní (služby, agentury…) se odkládají. */
+    public const ESHOP_SEGMENTS = [CompanySegment::Eshop, CompanySegment::FormerClient, CompanySegment::Other];
 
     /** Stavebnice a uzavřené systémy, kde jde upravit jen málo. */
     private const CLOSED_PLATFORMS = ['Webnode', 'Wix', 'Squarespace', 'Webareal', 'Eshop-rychle', 'ByznysWeb'];
@@ -108,12 +114,21 @@ class FitScorer
         };
 
         $score = max(0, min(100, $score));
+        $verdict = FitVerdict::fromScore($score);
 
-        // Agentura není zákazník na web, ale partner na subdodávky.
-        // Skóre jejího vlastního webu o tom nic neříká.
-        $verdict = $segment === CompanySegment::Agency
-            ? FitVerdict::Partner
-            : FitVerdict::fromScore($score);
+        // Hledáme jen e-shopy (rozhodnutí Toma z 27. 9. 2026). Firma z jiného
+        // segmentu nebo web, který e-shop není, se do fronty nedostane, ať má
+        // skóre jakékoli. Skóre zůstává, kdyby se rozhodnutí změnilo.
+        $notEshop = match (true) {
+            $segment !== null && ! in_array($segment, self::ESHOP_SEGMENTS, true) => 'segment „'.$segment->getLabel().'", hledáme jen e-shopy',
+            ! ($m['is_eshop'] ?? false) => 'web nevypadá jako e-shop, hledáme jen e-shopy',
+            default => null,
+        };
+
+        if ($notEshop !== null) {
+            $reasons[] = $notEshop;
+            $verdict = FitVerdict::Poor;
+        }
 
         return ['score' => $score, 'verdict' => $verdict, 'reasons' => $reasons];
     }

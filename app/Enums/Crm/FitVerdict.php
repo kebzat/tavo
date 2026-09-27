@@ -17,7 +17,10 @@ enum FitVerdict: string implements HasColor, HasLabel
     /** Malý nebo opuštěný web bez známek rozpočtu. */
     case Poor = 'poor';
 
-    /** Agentura nebo marketér. Neprodáváme jim web, ale vývojovou kapacitu. */
+    /**
+     * Agentura nebo marketér. Už se nepřiřazuje, hledáme jen e-shopy.
+     * Zůstává kvůli starým záznamům a odkládá se stejně jako „Nehodí se".
+     */
     case Partner = 'partner';
 
     /** Web nejde načíst. Buď leží, nebo firma skončila. */
@@ -57,6 +60,6 @@ enum FitVerdict: string implements HasColor, HasLabel
     /** Verdikty, u kterých se firma z rešerše smí odložit automaticky. */
     public function isRejected(): bool
     {
-        return in_array($this, [self::Poor, self::Unreachable], true);
+        return in_array($this, [self::Poor, self::Unreachable, self::Partner], true);
     }
 }

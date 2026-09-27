@@ -28,7 +28,7 @@ class ClaudeProspectAi implements ProspectAi
 
     private const TAVEO = <<<'TXT'
         TAVEO jsou dva lidé z Hradce Králové: Pavel Včeliš (marketing, výkonnostní reklama na Meta) a Tomáš Kebza (weby a e-shopy na Shoptetu, WooCommerce, Shopify, Upgates, WordPressu a Laravelu). Nejsou agentura.
-        Hledají menší a střední e-shopy a firmy s rozběhnutým webem a marketingem, kterým chybí společné priority a kapacita na změny. Nabízejí konzultaci (2 400 Kč/h), jednorázovou spolupráci (1 200 Kč/h) a pravidelnou péči od 9 600 Kč měsíčně.
+        Hledají jen e-shopy: menší a střední, s rozběhnutým webem a marketingem, kterým chybí společné priority a kapacita na změny. Firmy se službami bez e-shopu a agentury nehledají. Nabízejí konzultaci (2 400 Kč/h), jednorázovou spolupráci (1 200 Kč/h) a pravidelnou péči od 9 600 Kč měsíčně.
         Nehodí se: malé živnosti bez rozpočtu na marketing, weby na stavebnicích, kde nejde nic upravit, velké firmy s vlastním týmem, firmy bez zjevné poptávky po produktu.
         TXT;
 

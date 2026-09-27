@@ -48,15 +48,16 @@ class ProspectScout
         $score = $fit['score'];
         $verdict = $fit['verdict'];
 
-        // Claude jen upřesňuje. Nedostupný web ani agenturu nepřehodnotí.
-        if ($measurements['reachable'] && $this->ai->enabled()) {
+        // Claude jen upřesňuje skóre e-shopů. Co e-shop není, neposuzuje,
+        // verdikt by stejně nezměnil a dotaz by stál zbytečně.
+        if ($measurements['reachable'] && $verdict !== FitVerdict::Poor && $this->ai->enabled()) {
             $scout['ai'] = $this->ai->judge($company, $scout);
             $scout['ai_error'] = $scout['ai'] === null ? $this->ai->lastError() : null;
 
             if ($scout['ai'] !== null) {
                 $scout['ai']['adjustment'] = max(-20, min(20, (int) $scout['ai']['adjustment']));
                 $score = max(0, min(100, $score + $scout['ai']['adjustment']));
-                $verdict = $verdict === FitVerdict::Partner ? $verdict : FitVerdict::fromScore($score);
+                $verdict = FitVerdict::fromScore($score);
             }
         }
 
