@@ -12,6 +12,7 @@ use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Today;
 use App\Filament\Tools\Resources\Audits\Pages\EditAudit;
 use App\Filament\Tools\Resources\Companies\Pages\EditCompany;
+use App\Jobs\CompletePageSpeed;
 use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
 use App\Models\Crm\Company;
@@ -20,6 +21,7 @@ use App\Support\Crm\Ai\DeepAuditPrompt;
 use App\Support\Crm\Ai\ProspectAi;
 use App\Support\Crm\AuditFromCompany;
 use App\Support\Crm\Scout\ProspectScout;
+use App\Support\Crm\Scout\WebScout;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -523,6 +525,66 @@ class CrmScoutTest extends TestCase
         $nova = Company::where('domain', 'nova.cz')->first();
         $this->assertSame(CompanyStatus::New, $nova->status);
         $this->assertNull($nova->scouted_at);
+    }
+
+    public function test_api_prevezme_mereni_a_posudek_bez_dotazu_na_clauda(): void
+    {
+        config(['crm.import_token' => 'tajne']);
+        $this->fakeShop();
+        $this->app->instance(ProspectAi::class, new class extends FakeAi
+        {
+            public function judge(Company $company, array $scout): ?array
+            {
+                throw new \RuntimeException('Claude se nemá ptát.');
+            }
+        });
+
+        $measurements = app(WebScout::class)->measure('https://shop.test');
+        $measurements['pagespeed'] = null;
+        Bus::fake();
+
+        $this->postJson(route('crm.companies.import'), [
+            'companies' => [[
+                'website' => 'shop.test',
+                'name' => 'Čajovna',
+                'measurements' => $measurements,
+                'assessment' => ['summary' => 'Čaje z Cejlonu.', 'adjustment' => 30, 'note' => 'Hodí se.', 'hook' => 'Máte pomalý mobil — a menu.'],
+            ]],
+        ], ['X-Crm-Token' => 'tajne'])
+            ->assertOk()
+            ->assertJson(['created' => 1, 'pagespeed_pending' => 1]);
+
+        $company = Company::where('domain', 'shop.test')->first();
+        $this->assertNotNull($company->scouted_at);
+        $this->assertSame(20, $company->scout_data['ai']['adjustment']);
+        $this->assertSame($company->scout_data['base_score'] + 20, $company->fit_score);
+        $this->assertSame('Máte pomalý mobil, a menu.', $company->pain);
+        Bus::assertDispatchedAfterResponse(CompletePageSpeed::class);
+
+        (new CompletePageSpeed([$company->getKey()]))->handle(app(WebScout::class), app(ProspectScout::class));
+
+        $company->refresh();
+        $this->assertSame(38, $company->scout_data['measurements']['pagespeed']['score']);
+        $this->assertSame('Čaje z Cejlonu.', $company->scout_data['ai']['summary']);
+    }
+
+    public function test_api_obnovi_smazanou_firmu_a_vrati_skore(): void
+    {
+        config(['crm.import_token' => 'tajne']);
+        $old = $this->firma(['website' => 'stara.cz', 'status' => CompanyStatus::Parked]);
+        $old->delete();
+
+        $this->postJson(route('crm.companies.import'), [
+            'companies' => [['website' => 'https://stara.cz', 'measurements' => ['reachable' => false, 'error' => 'Nejde načíst.']]],
+        ], ['X-Crm-Token' => 'tajne'])
+            ->assertOk()
+            ->assertJson(['created' => 0, 'restored' => 1]);
+
+        $this->getJson(route('crm.companies.scout', ['website' => 'www.stara.cz']), ['X-Crm-Token' => 'tajne'])
+            ->assertOk()
+            ->assertJson(['fit_score' => 0, 'fit_verdict' => FitVerdict::Unreachable->value, 'status' => CompanyStatus::Parked->value]);
+
+        $this->getJson(route('crm.companies.scout', ['website' => 'nikde.cz']), ['X-Crm-Token' => 'tajne'])->assertNotFound();
     }
 
     public function test_audit_z_claude_code_se_nahraje_pres_api(): void

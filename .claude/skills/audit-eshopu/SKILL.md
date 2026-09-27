@@ -20,13 +20,21 @@ Argument je doména, třeba `melichar.cz`.
 1. **Změř web**
 
    ```bash
-   ./bin/art crm:measure <doména> > /tmp/audit-<doména>.json
+   PAGESPEED_ENABLED=false ./bin/art crm:measure <doména> > /tmp/audit-<doména>.json
    ```
 
    Dostaneš měření (platforma, měřicí kódy, sitemapa, robots.txt, AI roboti,
-   titulky, odkazy z úvodní stránky) a nálezy. PageSpeed se změří, jen když je
-   lokálně v `.env` `PAGESPEED_API_KEY`. Když chybí, spusť PageSpeed přes
-   Playwright (Lighthouse neber), nebo rychlost v auditu vynech a napiš to.
+   titulky, odkazy z úvodní stránky) a nálezy. Lokálně spouštěj s
+   `PAGESPEED_ENABLED=false`, PageSpeed bez klíče stejně skončí na limitu.
+   Když je firma v ostrém CRM, vezmi PageSpeed odtamtud:
+
+   ```bash
+   curl -sS "https://taveo.cz/nastroje/api/companies/scout?website=<doména>" \
+     -H "X-Crm-Token: $(grep '^TAVEO_PROD_CRM_TOKEN=' .env | cut -d= -f2-)"
+   ```
+
+   (`scout.measurements.pagespeed`). Když tam není, rychlost v auditu
+   vynech a napiš to do „Co zvenku nevidíme".
 
 2. **Projdi web v prohlížeči** (Playwright MCP, nebo WebFetch, když je
    prohlížeč obsazený). Úvodní stránka, 2 až 3 kategorie, 2 produkty, košík,

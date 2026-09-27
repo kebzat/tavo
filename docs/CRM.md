@@ -322,7 +322,8 @@ Odpoví `{"created":1,"updated":0,"skipped":0}`.
 ### Firmy k proklepnutí
 
 `POST /nastroje/api/companies/import` — pro automatizaci, která hledá firmy
-jinde. Firmy se jen založí jako nové, posoudí je ranní `crm:scout`.
+jinde (Claude Code, agent). Bez měření se firmy jen založí jako nové
+a posoudí je ranní `crm:scout`.
 
 ```bash
 curl -X POST https://taveo.cz/nastroje/api/companies/import \
@@ -331,8 +332,21 @@ curl -X POST https://taveo.cz/nastroje/api/companies/import \
   -d '{"companies": [{"website": "eshop.cz", "name": "E-shop", "city": "Hradec Králové", "segment": "eshop", "note": "Proč sedí"}]}'
 ```
 
-Odpoví `{"created":1,"skipped":0,"skipped_websites":[]}`. Duplicity se poznají
-podle domény, i proti odloženým a smazaným firmám. Nejvýš 200 firem na požadavek.
+K firmě jde poslat i `measurements` (pole `measurements` z `crm:measure`)
+a `assessment` (`summary`, `adjustment` −20 až 20, `note`, `hook`). Pak se
+skóre spočítá hned, bez dotazu na Claude API, a nevhodná firma se odloží.
+Když v měření chybí PageSpeed, server ho doměří po odeslání odpovědi
+a skóre přepočítá.
+
+Odpoví `{"created":1,"restored":0,"updated":0,"skipped":0,"skipped_websites":[],"pagespeed_pending":0}`.
+Duplicity se poznají podle domény. Známá firma se přeskočí, s měřením se jí
+posouzení přepíše. Smazaná firma se obnoví jako nová. Nejvýš 200 firem na požadavek.
+
+### Skóre firmy
+
+`GET /nastroje/api/companies/scout?website=eshop.cz` vrátí skóre, verdikt,
+stav a celé `scout_data` (měření včetně PageSpeed, nálezy, důvody skóre).
+Skill `/audit-eshopu` si odsud bere PageSpeed.
 
 ### Export pipeline
 

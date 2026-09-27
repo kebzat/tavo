@@ -32,6 +32,20 @@ class ProspectScout
             ? $this->web->measure($url)
             : ['reachable' => false, 'error' => 'Firma nemá vyplněný web.', 'measured_at' => now()->toIso8601String()];
 
+        return $this->record($company, $measurements);
+    }
+
+    /**
+     * Uloží na kartu výsledek měření, které už proběhlo (tady, nebo
+     * v Claude Code přes API). Posudek, který přišel s měřením, se použije
+     * místo dotazu na Clauda; bez něj se Claude zeptá, jen když je $askAi.
+     *
+     * @param  array<string, mixed>  $measurements
+     * @param  array<string, mixed>|null  $assessment  summary, adjustment, note, hook
+     */
+    public function record(Company $company, array $measurements, ?array $assessment = null, bool $askAi = true): Company
+    {
+        $measurements += ['reachable' => false];
         $findings = Findings::from($measurements);
         $fit = FitScorer::score($measurements, $findings, $company->segment);
 
@@ -41,7 +55,7 @@ class ProspectScout
             'passed' => Findings::passed($measurements),
             'reasons' => $fit['reasons'],
             'base_score' => $fit['score'],
-            'ai' => null,
+            'ai' => $assessment,
             'ai_error' => null,
         ];
 
@@ -50,15 +64,15 @@ class ProspectScout
 
         // Claude jen upřesňuje skóre e-shopů. Co e-shop není, neposuzuje,
         // verdikt by stejně nezměnil a dotaz by stál zbytečně.
-        if ($measurements['reachable'] && $verdict !== FitVerdict::Poor && $this->ai->enabled()) {
+        if ($assessment === null && $askAi && $measurements['reachable'] && $verdict !== FitVerdict::Poor && $this->ai->enabled()) {
             $scout['ai'] = $this->ai->judge($company, $scout);
             $scout['ai_error'] = $scout['ai'] === null ? $this->ai->lastError() : null;
+        }
 
-            if ($scout['ai'] !== null) {
-                $scout['ai']['adjustment'] = max(-20, min(20, (int) $scout['ai']['adjustment']));
-                $score = max(0, min(100, $score + $scout['ai']['adjustment']));
-                $verdict = FitVerdict::fromScore($score);
-            }
+        if ($scout['ai'] !== null && $verdict !== FitVerdict::Poor && $measurements['reachable']) {
+            $scout['ai']['adjustment'] = max(-20, min(20, (int) ($scout['ai']['adjustment'] ?? 0)));
+            $score = max(0, min(100, $score + $scout['ai']['adjustment']));
+            $verdict = FitVerdict::fromScore($score);
         }
 
         $company->forceFill([
