@@ -33,6 +33,9 @@ class HomeSettings extends Settings
 
     public ?string $hero_cta_secondary_url;
 
+    // Pruh s čísly pod úvodem: [{value, label}]
+    public array $trust_items;
+
     // Problém
     public ?string $problem_eyebrow;
 

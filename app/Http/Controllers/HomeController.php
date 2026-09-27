@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CaseStudy;
+use App\Models\ClientLogo;
 use App\Models\Founder;
 use App\Models\ProcessStep;
 use App\Models\Service;
@@ -24,6 +25,13 @@ class HomeController extends Controller
             'processSteps' => ProcessStep::ordered()->get(),
             'pricingPlans' => $this->pricingPlans($home),
             'latest' => $this->latestCase($home),
+            'trustItems' => collect($home->trust_items)
+                ->filter(fn (array $item): bool => filled($item['value'] ?? null) && filled($item['label'] ?? null))
+                ->values(),
+            'clientLogos' => ClientLogo::published()->ordered()->with('media')->get()
+                ->map(fn (ClientLogo $logo): ?array => $logo->logoImage())
+                ->filter()
+                ->values(),
             'founders' => $founders,
             // Společná fotka je jedna, ale nahrává se u kteréhokoliv zakladatele —
             // vezmeme první, která existuje.

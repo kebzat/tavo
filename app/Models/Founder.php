@@ -47,6 +47,14 @@ class Founder extends Model implements HasMedia
         return 'tel:'.preg_replace('/[^0-9+]/', '', (string) $this->phone);
     }
 
+    /** Adresa osobního webu bez protokolu a lomítek, jak se píše do odkazu: „tomaskebza.cz". */
+    public function externalHost(): ?string
+    {
+        $host = parse_url((string) $this->external_url, PHP_URL_HOST);
+
+        return $host ? preg_replace('/^www\./', '', $host) : null;
+    }
+
     public function registerMediaCollections(): void
     {
         // useDisk('public') — viz komentář v CaseStudy::registerMediaCollections().

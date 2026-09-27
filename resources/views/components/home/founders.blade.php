@@ -54,6 +54,16 @@
                                     @endforeach
                                 </div>
                             @endif
+
+                            {{-- Osobní web: portfolio a starší projekty, které pod TAVEO nepatří. --}}
+                            @if ($founder->externalHost())
+                                <a href="{{ $founder->external_url }}" target="_blank" rel="noopener"
+                                   class="group mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-ink">
+                                    <span class="text-muted font-medium">{{ text('lide.osobni_web', 'Osobní web', 'Homepage', 'Popisek před odkazem na osobní web Pavla a Toma') }}:</span>
+                                    <span class="border-b-2 border-brick pb-px">{{ $founder->externalHost() }}</span>
+                                    <span aria-hidden="true" class="transition-transform duration-300 ease-tavo group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
+                                </a>
+                            @endif
                         </div>
                     @endforeach
                 </div>

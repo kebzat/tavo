@@ -85,7 +85,7 @@ Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
 
 | Záložka | Ovládá na webu |
 |---|---|
-| **Úvod** | velký nadpis přes tři řádky (odkrývá se po řádcích), perex, obě tlačítka |
+| **Úvod** | velký nadpis přes tři řádky (odkrývá se po řádcích), perex, obě tlačítka a **pruh s čísly** pod úvodem (max. 4 položky „číslo + popisek“; jen čísla, která umíme doložit, prázdný pruh se nezobrazí) |
 | **Problém** | černá sekce „Web je hotový a tím to skončí" — nadpis, perex, očíslované body |
 | **Dvě situace** | dvě velké karty („Potřebujeme nový web" / „Web máme, ale…") |
 | **Služby a reference** | **Nejnovější projekt** za sekcí „Dvě situace“, text vlevo a obrázek vpravo (výběr reference: s blokem „Před a po“ ukáže posuvník, jinak první obrázek z galerie; prázdné = sekce není) a nadpisy sekcí; obsah přichází z Obsah → Služby a Obsah → Reference |
@@ -173,6 +173,16 @@ si berou pozice navzájem.
 Filtry nad výpisem `/reference`. Slug se používá v adrese: `/reference?kategorie=weby`.
 Kategorie bez jediné zveřejněné reference se ve filtru vůbec nenabídne.
 
+## Obsah → Loga klientů
+
+Pás log pod referencemi na homepage („Pro koho jsme stavěli weby a e-shopy“). Pořadí se
+mění tažením, přepínač **Zobrazit na webu** logo schová bez smazání. Nahrávejte SVG, nebo PNG
+s průhledným pozadím, a hlídejte, aby logo bylo čitelné na světlém podkladu: bílá loga pro
+tmavé hlavičky na webu zmizí. Loga zůstávají v barvách značek.
+
+Prvních deset jsou weby, které Tom postavil přímo pro klienty (bez agenturních projektů).
+Text a odkaz vedle nadpisu (na tomaskebza.cz) jsou ve Statických textech.
+
 ## Obsah → Postup spolupráce
 
 Pět kroků v sekci „Jak spolu pracujeme". Přepínač „Zvýraznit" udělá horní linku kroku cihlovou
@@ -182,6 +192,9 @@ Pět kroků v sekci „Jak spolu pracujeme". Přepínač „Zvýraznit" udělá 
 
 Pavel a Tom v sekci „Dva lidé". Společná fotka stačí u prvního z nich — sekce používá jednu
 fotografii a jména vysází jako pilulky přes ni.
+
+Pole **Vlastní web** se pod medailonkem ukáže jako odkaz „Osobní web: …“ (pavelvcelis.cz,
+tomaskebza.cz) a zároveň jde do strukturovaných dat pro vyhledávače jako web zakladatele.
 
 ## Obsah → Statické stránky
 

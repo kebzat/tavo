@@ -518,7 +518,7 @@ class ContentSeeder extends Seeder
                 'WordPress a WooCommerce',
                 'Shoptet a Upgates',
             ],
-            'external_url' => 'https://juliatom.cz/',
+            'external_url' => 'https://tomaskebza.cz/',
         ]);
     }
 

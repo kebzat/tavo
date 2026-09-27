@@ -58,6 +58,21 @@ class ManageHome extends SettingsPage
                             Textarea::make('hero_perex')->label('Perex')->rows(3)->columnSpanFull(),
                         ]),
 
+                    Section::make('Pruh s čísly')
+                        ->description('Hned pod úvodem. Jen čísla, která umíme doložit: když nevíte, pole smažte, pruh se zkrátí.')
+                        ->schema([
+                            Repeater::make('trust_items')
+                                ->hiddenLabel()
+                                ->addActionLabel('Přidat číslo')
+                                ->schema([
+                                    TextInput::make('value')->label('Číslo')->required()->helperText('Např. „8+ let"'),
+                                    TextInput::make('label')->label('Popisek')->required()->helperText('Např. „praxe každého z nás"'),
+                                ])
+                                ->columns(2)
+                                ->itemLabel(fn (array $state): ?string => trim(($state['value'] ?? '').' '.($state['label'] ?? '')) ?: null)
+                                ->maxItems(4),
+                        ]),
+
                     Section::make('Tlačítka')->columns(2)->schema([
                         TextInput::make('hero_cta_primary_label')->label('Hlavní tlačítko — text'),
                         TextInput::make('hero_cta_primary_url')->label('Hlavní tlačítko — odkaz'),
