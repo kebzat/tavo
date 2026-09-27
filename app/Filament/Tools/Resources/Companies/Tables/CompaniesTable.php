@@ -5,12 +5,14 @@ namespace App\Filament\Tools\Resources\Companies\Tables;
 use App\Enums\Crm\CompanySegment;
 use App\Enums\Crm\CompanySource;
 use App\Enums\Crm\CompanyStatus;
+use App\Enums\Crm\FitVerdict;
 use App\Enums\Crm\Priority;
 use App\Filament\Tools\Actions\LogActivityAction;
 use App\Models\Crm\Company;
 use App\Models\Crm\Tag;
 use App\Models\User;
 use App\Support\Crm\CsvExport;
+use App\Support\Crm\Scout\ProspectScout;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -63,6 +65,14 @@ class CompaniesTable
 
                 TextColumn::make('status')->label('Stav')->badge(),
 
+                TextColumn::make('fit_score')
+                    ->label('Skóre')
+                    ->badge()
+                    ->color(fn (Company $record): string => $record->fit_verdict?->getColor() ?? 'gray')
+                    ->tooltip(fn (Company $record): ?string => $record->fit_verdict?->getLabel())
+                    ->placeholder('neproklepnuto')
+                    ->sortable(),
+
                 TextColumn::make('priority')
                     ->label('Priorita')
                     ->badge()
@@ -110,6 +120,7 @@ class CompaniesTable
                 SelectFilter::make('segment')->label('Segment')->options(CompanySegment::class)->multiple(),
                 SelectFilter::make('priority')->label('Priorita')->options(Priority::class)->multiple(),
                 SelectFilter::make('status')->label('Stav')->options(CompanyStatus::class)->multiple(),
+                SelectFilter::make('fit_verdict')->label('Posouzení')->options(FitVerdict::class)->multiple(),
                 SelectFilter::make('source')->label('Zdroj')->options(CompanySource::class)->multiple(),
 
                 SelectFilter::make('owner_id')
@@ -236,6 +247,21 @@ class CompaniesTable
                             $records->each(fn (Company $company) => $company->scheduleFollowUp($when));
 
                             self::done('Follow-up nastaven u '.$records->count().' firem.');
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('scout')
+                        ->label('Proklepnout weby')
+                        ->icon(Heroicon::OutlinedMagnifyingGlassCircle)
+                        ->requiresConfirmation()
+                        ->modalDescription('U každé firmy to trvá pár sekund. Na víc než 20 firem je lepší příkaz crm:scout.')
+                        ->action(function (Collection $records): void {
+                            set_time_limit(600);
+                            $scout = app(ProspectScout::class);
+
+                            $records->take(20)->each(fn (Company $company) => $scout->scout($company));
+
+                            self::done(min(20, $records->count()).' firem proklepnuto.');
                         })
                         ->deselectRecordsAfterCompletion(),
 

@@ -2,11 +2,15 @@
 
 namespace App\Filament\Tools\Resources\Companies\Pages;
 
+use App\Filament\Tools\Actions\CreateAuditAction;
 use App\Filament\Tools\Actions\LogActivityAction;
+use App\Filament\Tools\Actions\ScoutCompanyAction;
 use App\Filament\Tools\Actions\UseTemplateAction;
+use App\Filament\Tools\Resources\Audits\Pages\EditAudit;
 use App\Filament\Tools\Resources\Companies\CompanyResource;
 use App\Models\Crm\Company;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -45,6 +49,24 @@ class EditCompany extends EditRecord
                 ->keyBindings(['n']),
 
             UseTemplateAction::make()->arguments($company),
+
+            Action::make('openAudit')
+                ->label('Otevřít audit')
+                ->icon(Heroicon::OutlinedDocumentText)
+                ->color('gray')
+                ->url(fn (Company $record): ?string => ($audit = CreateAuditAction::latestAudit($record))
+                    ? EditAudit::getUrl(['record' => $audit])
+                    : null)
+                ->visible(fn (Company $record): bool => CreateAuditAction::latestAudit($record) !== null),
+
+            ActionGroup::make([
+                ScoutCompanyAction::make(),
+                CreateAuditAction::make(),
+            ])
+                ->label('Audit')
+                ->icon(Heroicon::OutlinedDocumentMagnifyingGlass)
+                ->button()
+                ->color('gray'),
 
             Action::make('openWebsite')
                 ->label('Otevřít web')

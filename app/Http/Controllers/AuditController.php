@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Audit;
 use App\Models\Checklist;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 /**
  * Sdílený audit klienta. Odkaz chrání jen náhodný token, stejně jako
@@ -12,13 +13,18 @@ use Illuminate\Contracts\View\View;
  */
 class AuditController extends Controller
 {
-    public function __invoke(string $token): View
+    public function __invoke(Request $request, string $token): View
     {
         $audit = Audit::query()
             ->public()
             ->where('public_token', $token)
-            ->with('client')
+            ->with('client.crmCompany')
             ->firstOrFail();
+
+        // Přihlášený správce si audit kontroluje, to otevření klientem není.
+        if ($request->user() === null) {
+            $audit->recordView($request->userAgent());
+        }
 
         $rendered = $audit->rendered();
 
@@ -26,8 +32,11 @@ class AuditController extends Controller
             'audit' => $audit,
             'html' => $rendered['html'],
             'toc' => $rendered['toc'],
+            'locked' => $rendered['locked'],
             'tiles' => $audit->highlightTiles(),
-            'links' => $this->checklistLinks($audit),
+            // Checklist je návod, jak nálezy opravit. V omezeném režimu
+            // by prozradil to, co má zůstat na hovor.
+            'links' => $audit->is_teaser ? [] : $this->checklistLinks($audit),
         ]);
     }
 

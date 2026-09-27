@@ -10,6 +10,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -86,6 +87,21 @@ class AuditForm
                     Toggle::make('is_public')
                         ->label('Zpřístupnit přes odkaz')
                         ->default(true),
+
+                    Toggle::make('is_teaser')
+                        ->label('Omezený režim')
+                        ->helperText('Klient uvidí jen text nad řádkem „'.Audit::LOCK_MARKER.'“. Z kapitol pod ním jen nadpisy, '
+                            .'pod nimi výzvu k hovoru. Checklist se v omezeném režimu neukazuje. Až se domluvíte, vypněte ho a klient uvidí všechno.')
+                        ->default(false),
+
+                    TextEntry::make('views')
+                        ->label('Otevřeno')
+                        ->visible(fn ($operation): bool => $operation === 'edit')
+                        ->state(fn (?Audit $record): string => match (true) {
+                            $record === null || $record->view_count === 0 => 'Klient audit zatím neotevřel.',
+                            default => $record->view_count.'× · poprvé '.$record->first_viewed_at->format('j. n. Y H:i')
+                                .', naposledy '.$record->last_viewed_at->format('j. n. Y H:i'),
+                        }),
 
                     TextInput::make('public_token')
                         ->label('Odkaz pro klienta')

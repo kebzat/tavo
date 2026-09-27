@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Founder;
 use App\Settings\ContactSettings;
 use App\Settings\SiteSettings;
+use App\Support\Crm\Ai\ClaudeProspectAi;
+use App\Support\Crm\Ai\NullProspectAi;
+use App\Support\Crm\Ai\ProspectAi;
 use App\Support\EshopOffers;
 use App\Support\ImageDerivatives;
 use Illuminate\Support\Facades\URL;
@@ -15,7 +18,11 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Claude jen s klíčem. Bez něj proklepnutí webu a audit jedou
+        // z měření a nic se nerozbije.
+        $this->app->bind(ProspectAi::class, fn (): ProspectAi => filled(config('services.anthropic.key'))
+            ? new ClaudeProspectAi(config('services.anthropic.key'), config('services.anthropic.model'))
+            : new NullProspectAi);
     }
 
     public function boot(): void

@@ -6,7 +6,9 @@ use App\Enums\Crm\ActivityType;
 use App\Enums\Crm\CompanySegment;
 use App\Enums\Crm\CompanySource;
 use App\Enums\Crm\CompanyStatus;
+use App\Enums\Crm\FitVerdict;
 use App\Enums\Crm\Priority;
+use App\Models\Client;
 use App\Models\User;
 use App\Support\Crm\Domain;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
@@ -59,6 +62,15 @@ class Company extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Klient v nástroji checklistů. Vzniká s prvním auditem z CRM
+     * a drží audit i checklist úkolů.
+     */
+    public function client(): HasOne
+    {
+        return $this->hasOne(Client::class, 'crm_company_id');
     }
 
     public function tags(): BelongsToMany
@@ -119,6 +131,17 @@ class Company extends Model
                 ->orWhere('last_activity_at', '<', $threshold));
     }
 
+    /**
+     * Fronta k oslovení: nejdřív firmy, které podle proklepnutí sedí nejlíp.
+     * Neproklepnuté jdou až za ně, v pořadí podle priority z rešerše.
+     */
+    public function scopeBestFitFirst(Builder $query): Builder
+    {
+        return $query->orderByRaw('fit_score is null')
+            ->orderByDesc('fit_score')
+            ->orderBy('priority');
+    }
+
     /** Pořadí pracovního seznamu: nejdřív termín, pak priorita. */
     public function scopeWorkOrder(Builder $query): Builder
     {
@@ -138,6 +161,27 @@ class Company extends Model
         return $this->next_action_at !== null
             && $this->next_action_at->lt(now()->startOfDay())
             && ! $this->status->isClosed();
+    }
+
+    /**
+     * Měřicí a reklamní kódy nalezené na webu při proklepnutí.
+     * Podle nich poznáme, jestli firma do marketingu dává peníze.
+     *
+     * @return list<string>
+     */
+    public function trackingLabels(): array
+    {
+        $tracking = $this->scout_data['measurements']['tracking'] ?? [];
+
+        return collect([
+            'ga4' => 'GA4',
+            'gtm' => 'GTM',
+            'meta_pixel' => 'Meta pixel',
+            'google_ads' => 'Google Ads',
+            'sklik' => 'Sklik',
+            'heureka' => 'Heureka',
+            'zbozi' => 'Zboží.cz',
+        ])->filter(fn (string $label, string $key): bool => $tracking[$key] ?? false)->values()->all();
     }
 
     public function websiteUrl(): ?string
@@ -253,6 +297,9 @@ class Company extends Model
             'status' => CompanyStatus::class,
             'priority' => Priority::class,
             'source' => CompanySource::class,
+            'fit_verdict' => FitVerdict::class,
+            'scout_data' => 'array',
+            'scouted_at' => 'datetime',
             'next_action_at' => 'datetime',
             'last_activity_at' => 'datetime',
         ];

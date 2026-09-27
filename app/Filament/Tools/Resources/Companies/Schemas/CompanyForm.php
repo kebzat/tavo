@@ -13,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,16 @@ class CompanyForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+            // Jen na kartě existující firmy. Při zakládání není co posuzovat.
+            Section::make('Posouzení')
+                ->description('Jak firma sedí pro Taveo podle proklepnutí webu.')
+                ->icon(Heroicon::OutlinedScale)
+                ->collapsible()
+                ->visibleOn('edit')
+                ->schema([
+                    View::make('filament.tools.partials.company-fit'),
+                ]),
+
             Section::make('Firma')
                 ->columns(2)
                 ->schema([

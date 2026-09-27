@@ -34,6 +34,20 @@ class AuditsTable
                     ->label('Sdíleno')
                     ->boolean(),
 
+                IconColumn::make('is_teaser')
+                    ->label('Omezený')
+                    ->boolean()
+                    ->trueIcon(Heroicon::OutlinedLockClosed)
+                    ->falseIcon(Heroicon::OutlinedLockOpen)
+                    ->trueColor('warning')
+                    ->falseColor('gray'),
+
+                TextColumn::make('view_count')
+                    ->label('Otevřeno')
+                    ->formatStateUsing(fn (int $state): string => $state > 0 ? $state.'×' : 'ne')
+                    ->description(fn (Audit $record): ?string => $record->last_viewed_at?->diffForHumans())
+                    ->sortable(),
+
                 TextColumn::make('updated_at')
                     ->label('Upraveno')
                     ->dateTime('j. n. Y H:i')

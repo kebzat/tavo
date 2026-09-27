@@ -53,12 +53,12 @@ class Today extends Page
     }
 
     /**
-     * Fronta k prvnímu oslovení, seřazená podle priority. Áčka nahoře,
-     * ať se začíná tam, kde to nejspíš vyjde.
+     * Fronta k prvnímu oslovení. Nahoře firmy s nejvyšším skóre
+     * z proklepnutí webu, ať se začíná tam, kde to nejspíš vyjde.
      */
     public function untouched(): Collection
     {
-        return $this->companies(fn ($query) => $query->untouched()->orderBy('priority'), limit: 15);
+        return $this->companies(fn ($query) => $query->untouched()->bestFitFirst(), limit: 15);
     }
 
     /** Kolik firem čeká na první oslovení celkem, ne jen na obrazovce. */

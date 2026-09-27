@@ -45,4 +45,18 @@ return [
         ],
     ],
 
+    // Úsudek nad prospekty v CRM a shrnutí auditu. Bez klíče se proklepnutí
+    // webu obejde jen s měřením, viz App\Support\Crm\Ai\ProspectAi.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-5'),
+    ],
+
+    // Google PageSpeed při proklepnutí webu. Klíč je nepovinný, bez něj
+    // má Google nízký limit a měření občas selže. Audit se pak obejde bez něj.
+    'pagespeed' => [
+        'enabled' => env('PAGESPEED_ENABLED', true),
+        'key' => env('PAGESPEED_API_KEY'),
+    ],
+
 ];

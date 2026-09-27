@@ -2,13 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Crm\Company;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
     protected $guarded = [];
+
+    /** Firma v CRM, pro kterou jsme klienta založili kvůli auditu. */
+    public function crmCompany(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'crm_company_id');
+    }
 
     public function checklists(): HasMany
     {

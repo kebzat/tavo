@@ -15,3 +15,17 @@ Schedule::command('crm:daily-digest')
     ->at('07:00')
     ->timezone('Europe/Prague')
     ->onOneServer();
+
+// Posouzení firem, které přibyly importem, přes API nebo ručně. Ráno před
+// souhrnem, ať fronta k oslovení v 7:00 už stojí na skóre. Odkládá jen
+// nevhodné firmy z rešerše, viz ProspectScout::parkIfRejected().
+Schedule::command('crm:scout --unscored --park --limit=60')
+    ->dailyAt('05:30')
+    ->timezone('Europe/Prague')
+    ->onOneServer();
+
+// Jednou týdně nové firmy k oslovení. Bez ANTHROPIC_API_KEY příkaz nic nedělá.
+Schedule::command('crm:discover')
+    ->weeklyOn(1, '05:00')
+    ->timezone('Europe/Prague')
+    ->onOneServer();

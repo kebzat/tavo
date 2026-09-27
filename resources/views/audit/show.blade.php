@@ -100,9 +100,45 @@
                 </nav>
             @endif
 
-            <article data-audit-body class="prose-audit min-w-0">
-                {!! $html !!}
-            </article>
+            <div class="min-w-0">
+                <article data-audit-body class="prose-audit">
+                    {!! $html !!}
+                </article>
+
+                @if ($locked)
+                    {{-- Omezený režim: ze zbytku auditu jen nadpisy kapitol. --}}
+                    <div class="mt-12 rounded-card border border-ink/14 p-6 menu:p-9">
+                        <p class="text-xs font-bold tracking-[.14em] text-muted uppercase">
+                            {{ text('audit.locked_eyebrow', 'Ve zbytku auditu') }}
+                        </p>
+
+                        <ol class="mt-5 flex flex-col divide-y divide-ink/10">
+                            @foreach ($locked as $chapter)
+                                <li class="flex items-center gap-3 py-3.5 text-body">
+                                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" class="size-4 shrink-0 text-brick">
+                                        <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="font-semibold">{{ $chapter }}</span>
+                                </li>
+                            @endforeach
+                        </ol>
+
+                        <p class="mt-5 max-w-[60ch] text-sm leading-relaxed text-muted">
+                            {{ text('audit.locked_note', 'Postup oprav, pořadí a odhad práce projdeme spolu. Úvodní hovor trvá 15 minut a je zdarma.') }}
+                        </p>
+                    </div>
+                @endif
+            </div>
         </div>
     </section>
+
+    @if ($locked)
+        <x-cta-band
+            id="kontakt"
+            :eyebrow="text('audit.cta_eyebrow', 'Pokračování')"
+            :title="text('audit.cta_title', 'Projdeme zbytek spolu?')"
+            :perex="text('audit.cta_perex', 'Napište nebo zavolejte. Za 15 minut vám ukážeme, co opravit nejdřív a kolik to zabere. Když zjistíme, že vám nepomůžeme, řekneme to.')"
+            :form="true"
+        />
+    @endif
 </x-layout.document>

@@ -29,12 +29,20 @@
                 {{ $company->status->getLabel() }}
             </x-filament::badge>
 
+            @if ($company->fit_verdict)
+                <x-filament::badge :color="$company->fit_verdict->getColor()" size="sm" :tooltip="$company->fit_verdict->getLabel()">
+                    {{ $company->fit_score }} b.
+                </x-filament::badge>
+            @endif
+
             @if ($company->owner)
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ $company->owner->name }}</span>
             @endif
         </div>
 
-        @if ($activity)
+        @if ($company->status === \App\Enums\Crm\CompanyStatus::New && $company->pain)
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ \Illuminate\Support\Str::limit($company->pain, 140) }}</p>
+        @elseif ($activity)
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 <span class="font-medium">{{ $activity->type->getLabel() }}</span>
                 <span aria-hidden="true">·</span>

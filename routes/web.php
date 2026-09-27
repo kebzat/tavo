@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
+use App\Http\Controllers\Crm\CandidateImportController;
 use App\Http\Controllers\Crm\DemandImportController;
 use App\Http\Controllers\Crm\PipelineExportController;
 use App\Http\Controllers\EmailSignatureController;
@@ -54,6 +55,10 @@ Route::prefix('nastroje/api')
         Route::post('/demands/import', DemandImportController::class)
             ->middleware('throttle:60,1')
             ->name('crm.demands.import');
+
+        Route::post('/companies/import', CandidateImportController::class)
+            ->middleware('throttle:60,1')
+            ->name('crm.companies.import');
 
         Route::get('/export/pipeline', PipelineExportController::class)
             ->middleware('throttle:60,1')

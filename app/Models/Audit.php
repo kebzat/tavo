@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Crm\ActivityType;
+use App\Enums\Crm\CompanyStatus;
 use App\Support\AuditMarkdown;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +16,17 @@ use Illuminate\Support\Str;
  */
 class Audit extends Model
 {
+    /**
+     * Řádek, od kterého je text v omezeném režimu zamčený. Klient vidí,
+     * co je nad ním, a z kapitol pod ním jen nadpisy s výzvou k hovoru.
+     */
+    public const LOCK_MARKER = '::: zámek';
+
+    private const LOCK_PATTERN = '/^:::[ \t]*zámek[ \t]*$/mu';
+
+    /** Náhledy odkazů z e-mailu a chatu otevření nejsou. */
+    private const BOT_PATTERN = '/bot|crawl|spider|preview|facebookexternalhit|whatsapp|telegram|skype|slack|discord|curl|wget|python|headless|lighthouse/i';
+
     protected $guarded = [];
 
     public function client(): BelongsTo
@@ -39,11 +52,67 @@ class Audit extends Model
     /**
      * Text převedený do HTML a obsah pro boční navigaci.
      *
-     * @return array{html: string, toc: list<array{id: string, title: string}>}
+     * V omezeném režimu jen část nad značkou zámku. Kapitoly pod ní
+     * se vrátí jako `locked`, stránka z nich ukáže jen nadpisy.
+     * Bez omezeného režimu značka z textu zmizí a klient vidí všechno.
+     *
+     * @return array{html: string, toc: list<array{id: string, title: string}>, locked: list<string>}
      */
     public function rendered(): array
     {
-        return AuditMarkdown::render((string) $this->body);
+        $parts = preg_split(self::LOCK_PATTERN, (string) $this->body, 2);
+
+        if (! $this->is_teaser || count($parts) < 2) {
+            return AuditMarkdown::render(implode("\n", $parts)) + ['locked' => []];
+        }
+
+        return AuditMarkdown::render($parts[0]) + [
+            'locked' => array_column(AuditMarkdown::render($parts[1])['toc'], 'title'),
+        ];
+    }
+
+    public function hasLockMarker(): bool
+    {
+        return (bool) preg_match(self::LOCK_PATTERN, (string) $this->body);
+    }
+
+    /**
+     * Zapíše otevření odkazu. První otevření (a další po půl dni ticha)
+     * se propíše do CRM jako aktivita s follow-upem na příští pracovní
+     * den, protože právě tehdy má smysl zavolat.
+     *
+     * Roboti a náhledy odkazů se nepočítají, správce si audit otevírá
+     * přihlášený a ten volající nepředá.
+     */
+    public function recordView(?string $userAgent): void
+    {
+        if (blank($userAgent) || preg_match(self::BOT_PATTERN, $userAgent)) {
+            return;
+        }
+
+        $worthLogging = $this->last_viewed_at === null || $this->last_viewed_at->lt(now()->subHours(12));
+
+        $this->forceFill([
+            'view_count' => $this->view_count + 1,
+            'first_viewed_at' => $this->first_viewed_at ?? now(),
+            'last_viewed_at' => now(),
+        ])->saveQuietly();
+
+        $company = $this->client?->crmCompany;
+
+        if (! $worthLogging || $company === null) {
+            return;
+        }
+
+        $closed = in_array($company->status, [CompanyStatus::Won, CompanyStatus::Lost], true);
+
+        $company->activities()->create([
+            'type' => ActivityType::Note,
+            'subject' => $this->view_count === 1 ? 'Otevřeli audit poprvé' : 'Znovu otevřeli audit',
+            'body' => $this->title.' · otevřeno '.$this->view_count.'×',
+            'happened_at' => now(),
+            'follow_up_at' => $closed ? null : now()->nextWeekday()->setTime(9, 0),
+        ]);
     }
 
     /**
@@ -73,6 +142,14 @@ class Audit extends Model
                 $audit->public_token = Str::random(40);
             }
         });
+
+        // Checklist z auditu vzniká skrytý, v omezeném režimu by prozradil
+        // postup oprav. Jakmile klient dostane plnou verzi, dostane i jej.
+        static::saved(function (self $audit): void {
+            if ($audit->is_public && ! $audit->is_teaser && $audit->wasChanged('is_teaser') && $audit->client) {
+                $audit->client->checklists()->forClients()->where('is_public', false)->update(['is_public' => true]);
+            }
+        });
     }
 
     protected function casts(): array
@@ -81,6 +158,9 @@ class Audit extends Model
             'audited_at' => 'date',
             'highlights' => 'array',
             'is_public' => 'boolean',
+            'is_teaser' => 'boolean',
+            'first_viewed_at' => 'datetime',
+            'last_viewed_at' => 'datetime',
         ];
     }
 }

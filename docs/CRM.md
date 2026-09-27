@@ -56,7 +56,7 @@ ostrá data bydlí jen na produkci.
 
 | Stránka | K čemu je |
 |---|---|
-| **Dnes** | Po termínu, dnes, zbytek týdne, fronta k oslovení, nové poptávky, firmy bez pohybu. U každého řádku „Hotovo" a odklad o 3 nebo 7 dní |
+| **Dnes** | Po termínu, dnes, zbytek týdne, fronta k oslovení (nahoře nejvyšší skóre), nové poptávky, firmy bez pohybu. U každého řádku „Hotovo" a odklad o 3 nebo 7 dní |
 | **Přehled** | Týdenní čísla proti cílům, graf za 8 týdnů, rozpad podle zdroje a segmentu |
 | **Firmy** | Seznam s hledáním a filtry, karta firmy s kontakty, obchody a časovou osou |
 | **Pipeline** | Kanban obchodů, přetahování karet mezi fázemi |
@@ -88,6 +88,113 @@ na aktivitách (`Company::recalculateNextAction()`):
 
 Díky tomu propásnutý follow-up zůstane viset v bloku „Po termínu", dokud se s firmou
 opravdu něco neudělá. Odklad (`+3`, `+7`) posouvá původní follow-up, nezakládá další.
+
+## Posouzení firem a audit jako prodejní argument
+
+Rešerše plnila CRM ručně a bez filtru, takže se do fronty dostali elektrikáři
+vedle zavedených e-shopů. Každá firma se proto **proklepne**: změří se veřejná
+část webu, z toho vzniknou nálezy a skóre 0–100 a z nálezů jde jedním
+tlačítkem udělat audit s checklistem pro klienta.
+
+### Proklepnutí webu
+
+Karta firmy → **Audit → Proklepnout web**, v seznamu firem hromadná akce,
+nebo příkaz:
+
+```bash
+php artisan crm:scout 141 melichar.cz      # konkrétní firmy (ID nebo doména)
+php artisan crm:scout --new --park         # celá fronta, nevhodné odložit
+php artisan crm:scout --unscored           # jen dosud neproklepnuté
+php artisan crm:scout --older-than=60      # přeměřit starší než 60 dní
+```
+
+Co se měří (`App\Support\Crm\Scout\WebScout`): odpověď serveru, HTTPS
+a přesměrování, platforma, titulek, popisek, H1, viewport, kanonická adresa,
+strukturovaná data, rok v patičce, měřicí a reklamní kódy (GA4, GTM, Meta pixel,
+Google Ads, Sklik, Heureka, Zboží), robots.txt, sitemapa (i zabalená `.gz`),
+přístup robotů GPTBot, ClaudeBot a PerplexityBot a Google PageSpeed pro mobil.
+Z webu se zároveň vezme e-mail a telefon, když firma kontakt nemá, a platforma
+a bolest, když chybí. Co někdo vyplnil ručně, zůstane.
+
+**Skóre** (`FitScorer`) vychází z kapitol 4.1 a 4.3 v
+[BRAND-STRATEGY.md](BRAND-STRATEGY.md):
+
+| Kritérium | Body |
+|---|---|
+| e-shop / web služeb | +25 / +5 |
+| platforma, na které umíme dodat (Shoptet, Upgates, Shopify, WooCommerce, WordPress, PrestaShop) | +15 |
+| stavebnice (Webnode, Wix, Eshop-rychle…) | −10 |
+| Meta pixel | +10 |
+| Google Ads nebo Sklik | +10 |
+| GA4 nebo GTM | +5 |
+| Heureka nebo Zboží.cz | +5 |
+| 100+ adres v sitemapě / 30+ / pod 10 u webu služeb | +10 / +5 / −10 |
+| patička letos či loni / 5+ let stará | +5 / −5 |
+| 2+ závažné nálezy / 1 | +10 / +5 |
+
+Verdikt: 60+ **Silný kandidát**, 40–59 **Zvážit**, pod 40 **Nehodí se**,
+nedostupný web **Web nejde načíst**. Agentura je vždy **Partner**, skóre
+jejího webu nic neříká.
+
+**Claude** (s `ANTHROPIC_API_KEY`) si přečte měření a text úvodní stránky,
+napíše, co firma prodává, a posune skóre nejvýš o ±20 bodů. Postřeh k oslovení
+uloží jako bolest. Bez klíče všechno běží jen z měření.
+
+**Automatické odkládání** (`--park`) odloží jen firmu ze zdroje *Rešerše*
+ve stavu *Nová* s verdiktem *Nehodí se* nebo *Web nejde načíst* a zapíše
+k ní poznámku s důvody. Poptávky, doporučení a rozjednané firmy nechává být.
+Vrátit jde změnou stavu.
+
+### Audit z karty firmy
+
+**Audit → Vytvořit audit** (`App\Support\Crm\AuditFromCompany`):
+
+1. firma dostane klienta v nástroji checklistů (`clients.crm_company_id`),
+2. vznikne audit: dlaždice s čísly, shrnutí, stav podle oblastí, nejzávažnější
+   nález, pak řádek `::: zámek` a pod ním pořadí úkolů, všechny nálezy
+   a kapitola *Co zvenku nevidíme*,
+3. vznikne checklist úkolů: kategorie podle oblasti, priorita podle závažnosti.
+
+Audit je **neveřejný a v omezeném režimu**. Než odkaz odejde, Tom nebo Pavel
+ho přečte, upraví a zapne *Zpřístupnit přes odkaz*. Každé číslo v textu
+pochází z měření. Claude smí napsat jen úvodní odstavec.
+
+**Omezený režim** (`audits.is_teaser`): klient vidí text nad `::: zámek`,
+z kapitol pod ním jen nadpisy se zámkem a pod nimi cihlový pruh s výzvou
+k hovoru a formulářem poptávky. Checklist se neukazuje. Po vypnutí omezeného
+režimu se zpřístupní celý text i checklisty klienta.
+
+**Otevření auditu** se počítá (`view_count`, `first_viewed_at`,
+`last_viewed_at`). První otevření, a další po 12 hodinách ticha, se zapíše
+k firmě jako poznámka *Otevřeli audit* s follow-upem na příští pracovní den
+v 9:00. Nepočítá se přihlášený správce ani náhledy odkazů a roboti.
+
+### Hledání nových firem
+
+```bash
+php artisan crm:discover                         # výchozí zadání: e-shopy s reklamou
+php artisan crm:discover --brief="…" --count=20
+php artisan crm:discover --dry-run               # jen vypíše návrhy
+```
+
+Claude přes webové vyhledávání navrhne firmy, každá se hned proklepne.
+Nevhodné se založí rovnou odložené, ať je další hledání nenavrhne znovu.
+
+### Plánovač
+
+| Kdy | Příkaz |
+|---|---|
+| denně 5:30 | `crm:scout --unscored --park --limit=60` — posoudí, co přibylo importem nebo přes API |
+| pondělí 5:00 | `crm:discover` — bez `ANTHROPIC_API_KEY` nic nedělá |
+
+### Proměnné prostředí
+
+```dotenv
+ANTHROPIC_API_KEY=          # úsudek, shrnutí auditu, hledání firem
+ANTHROPIC_MODEL=claude-opus-5
+PAGESPEED_API_KEY=          # bez klíče Google PageSpeed narazí na sdílený limit
+PAGESPEED_ENABLED=true
+```
 
 ## Import firem z CSV
 
@@ -183,6 +290,21 @@ Odpoví `{"created":1,"updated":0,"skipped":0}`.
   `notes`). Ten patří nám, ne portálu.
 - Nejvýš 500 poptávek na požadavek, limit 60 požadavků za minutu.
 
+### Firmy k proklepnutí
+
+`POST /nastroje/api/companies/import` — pro automatizaci, která hledá firmy
+jinde. Firmy se jen založí jako nové, posoudí je ranní `crm:scout`.
+
+```bash
+curl -X POST https://taveo.cz/nastroje/api/companies/import \
+  -H "Content-Type: application/json" \
+  -H "X-Crm-Token: $CRM_IMPORT_TOKEN" \
+  -d '{"companies": [{"website": "eshop.cz", "name": "E-shop", "city": "Hradec Králové", "segment": "eshop", "note": "Proč sedí"}]}'
+```
+
+Odpoví `{"created":1,"skipped":0,"skipped_websites":[]}`. Duplicity se poznají
+podle domény, i proti odloženým a smazaným firmám. Nejvýš 200 firem na požadavek.
+
 ### Export pipeline
 
 `GET /nastroje/api/export/pipeline` — firmy, obchody a aktivity za posledních 30 dní.
@@ -228,6 +350,7 @@ Přidání hodnoty je tedy změna v PHP, ne migrace tabulky.
 | `Priority` | `A`, `B`, `C` |
 | `CompanySegment` | `local`, `dental_health`, `svj`, `conference`, `eshop`, `agency`, `former_client`, `other` |
 | `CompanyStatus` | `new`, `contacted`, `follow_up`, `replied`, `call`, `proposal`, `won`, `lost`, `parked` |
+| `FitVerdict` | `strong`, `maybe`, `poor`, `partner`, `unreachable` |
 | `CompanySource` | `research`, `shoptet_demands`, `webtrh`, `navolnenoze`, `upgates`, `referral`, `inbound_form`, `linkedin`, `other` |
 | `DealPackage` | `migration_shoptet`, `integration_pohoda_carrier`, `measurement_audit`, `new_website`, `eshop_redesign`, `retainer`, `subcontracting`, `other` |
 | `DealStage` | `lead`, `contacted`, `replied`, `call`, `proposal_sent`, `negotiation`, `won`, `lost` |
@@ -267,14 +390,16 @@ nebo pro všechny instance další migrací.
 
 ```
 app/
-├─ Console/Commands/           CrmUser, CrmDailyDigest
+├─ Console/Commands/           CrmUser, CrmDailyDigest, CrmScout, CrmDiscover
 ├─ Enums/Crm/                  číselníky (viz tabulka výš)
 ├─ Filament/Tools/
-│  ├─ Actions/                 LogActivityAction, UseTemplateAction
+│  ├─ Actions/                 LogActivityAction, UseTemplateAction,
+│  │                          ScoutCompanyAction, CreateAuditAction
 │  ├─ Pages/                   Today, Overview, Pipeline, ImportCompanies,
 │  │                          ImportDemands, ManageCrm
 │  └─ Resources/               Companies, Deals, Demands, MessageTemplates, Tags
-├─ Http/Controllers/Crm/       DemandImportController, PipelineExportController
+├─ Http/Controllers/Crm/       DemandImportController, CandidateImportController,
+│                              PipelineExportController
 ├─ Http/Middleware/            VerifyCrmToken
 ├─ Mail/CrmDailyDigest
 ├─ Models/Crm/                 Company, Contact, Deal, Activity, Demand,
@@ -289,7 +414,11 @@ app/
    ├─ TemplateRenderer         dosazení do šablon
    ├─ WeeklyKpi                týdenní čísla
    ├─ ChannelBreakdown         výkon kanálů a segmentů
-   └─ CsvExport                stahování CSV
+   ├─ CsvExport                stahování CSV
+   ├─ AuditFromCompany         audit a checklist z proklepnuté firmy
+   ├─ Scout/                   WebScout (měření), Findings (nálezy),
+   │                          FitScorer (skóre), ProspectScout (vše dohromady)
+   └─ Ai/                      ProspectAi, ClaudeProspectAi, NullProspectAi
 
 database/
 ├─ migrations/
@@ -304,4 +433,4 @@ Panel nástrojů má vlastní téma (`resources/css/filament/tools/theme.css`). 
 dodává jen ty utility, které používá sám, a stránky CRM stojí na vlastním rozvržení.
 Po zásahu do jejich šablon je proto potřeba `npm run build`.
 
-Testy: `tests/Feature/CrmTest.php`, `CrmImportTest.php`, `CrmDigestTest.php`.
+Testy: `tests/Feature/CrmTest.php`, `CrmImportTest.php`, `CrmDigestTest.php`, `CrmScoutTest.php`.
