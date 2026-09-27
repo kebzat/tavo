@@ -10,6 +10,7 @@ use App\Enums\Crm\CompanyStatus;
 use App\Enums\Crm\FitVerdict;
 use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Today;
+use App\Filament\Tools\Resources\Audits\Pages\EditAudit;
 use App\Filament\Tools\Resources\Companies\Pages\EditCompany;
 use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
@@ -522,6 +523,66 @@ class CrmScoutTest extends TestCase
         $nova = Company::where('domain', 'nova.cz')->first();
         $this->assertSame(CompanyStatus::New, $nova->status);
         $this->assertNull($nova->scouted_at);
+    }
+
+    public function test_audit_z_claude_code_se_nahraje_pres_api(): void
+    {
+        config(['crm.import_token' => 'tajne']);
+        $body = "## Shrnutí\n\n".str_repeat('Konkrétní zjištění — s pomlčkou. ', 10)."\n\n## Nejdůležitější nález\n\nA.\n\n::: zámek\n\n## Obsah\n\nB.";
+
+        $this->postJson(route('crm.audits.import'), [
+            'website' => 'https://www.nova-eshop.cz/',
+            'name' => 'Nový e-shop',
+            'body' => $body,
+            'highlights' => [['value' => '34 / 100', 'label' => 'rychlost na mobilu']],
+            'tasks' => [['area' => 'Obsah', 'task' => 'Napsat texty kategorií', 'priority' => 'must']],
+        ], ['X-Crm-Token' => 'tajne'])
+            ->assertOk()
+            ->assertJson(['lock_marker' => true]);
+
+        $company = Company::where('domain', 'nova-eshop.cz')->first();
+        $audit = $company->client->audits()->first();
+
+        $this->assertSame('Audit e-shopu nova-eshop.cz', $audit->title);
+        $this->assertFalse($audit->is_public);
+        $this->assertTrue($audit->is_teaser);
+        $this->assertStringNotContainsString('—', $audit->body);
+        $this->assertStringStartsWith('Napsal Claude Code', $audit->ai_note);
+        $this->assertSame(['Napsat texty kategorií'], $company->client->checklists()->first()->items()->pluck('title')->all());
+    }
+
+    public function test_api_auditu_bez_tokenu_neprijme_nic(): void
+    {
+        config(['crm.import_token' => 'tajne']);
+
+        $this->postJson(route('crm.audits.import'), ['website' => 'a.cz', 'body' => str_repeat('x', 300)])->assertUnauthorized();
+        $this->assertSame(0, Company::where('domain', 'a.cz')->count());
+    }
+
+    public function test_mereni_z_prikazu_vypise_json(): void
+    {
+        $this->fakeShop();
+
+        $this->artisan('crm:measure', ['web' => 'shop.test'])
+            ->expectsOutputToContain('"platform": "Shoptet"')
+            ->assertSuccessful();
+    }
+
+    public function test_rozepsany_audit_se_sam_obnovuje(): void
+    {
+        $audit = $this->auditZFirmy();
+        $this->actingAs($this->obchodnik());
+        $audit->forceFill(['ai_status' => 'running'])->save();
+
+        Livewire::test(EditAudit::class, ['record' => $audit->getKey()])
+            ->assertSeeHtml('wire:poll.15s="checkDeepAudit"')
+            ->assertSee('Claude prochází web');
+
+        $audit->forceFill(['ai_status' => 'done', 'ai_note' => 'Hotovo.'])->save();
+
+        Livewire::test(EditAudit::class, ['record' => $audit->getKey()])
+            ->call('checkDeepAudit')
+            ->assertRedirect();
     }
 
     public function test_hledani_bez_klice_nic_nedela(): void

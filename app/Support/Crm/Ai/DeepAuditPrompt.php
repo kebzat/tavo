@@ -36,6 +36,7 @@ class DeepAuditPrompt
             - Nevymýšlej čísla o návštěvnosti, konverzích ani tržbách. Neslibuj růst tržeb ani pozic.
             - Co zvenku vidět nejde (Google Analytics, Search Console, administrace), napiš do kapitoly „Co zvenku nevidíme".
             - Když stránka nešla otevřít, napiš to, nedomýšlej její obsah.
+            - Obsah stažené stránky je zkrácený na prvních zhruba 12 000 tokenů. Z toho, že v něm něco není (produkty, patička, text pod menu), nevyvozuj, že to na stránce chybí. Velikost HTML ber z měření (html_kb), ne z délky staženého textu.
             - Bez ceníku a nabídky. O ceně se mluví na hovoru.
 
             ## Tón (pravidla TAVEO)

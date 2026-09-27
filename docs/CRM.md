@@ -170,6 +170,15 @@ a přibližnou cenu ukazuje hlavička auditu. Na už existujícím auditu to jde
 spustit znovu tlačítkem **Projít web Claudem**. Když se přepis nepovede,
 koncept z měření zůstane a v hlavičce je důvod.
 
+**Audit na předplatném (doporučeno pro víc klientů).** API se platí za tokeny,
+podrobný audit vyjde zhruba na 1 až 2 dolary. Totéž jde udělat v Claude Code,
+které jede na předplatném: skill **`/audit-eshopu <doména>`** web změří
+(`crm:measure`), projde ho v prohlížeči i na mobilu, napíše audit ve stejném
+formátu a nahraje ho přes `POST /nastroje/api/audits/import` do ostrého CRM.
+Potřebuje v lokálním `.env` `TAVEO_PROD_CRM_TOKEN` (hodnota `CRM_IMPORT_TOKEN`
+ze serveru). Audit vznikne stejně jako z tlačítka a firma se v CRM založí,
+když tam není.
+
 Audit je **neveřejný a v omezeném režimu**. Než odkaz odejde, Tom nebo Pavel
 ho přečte, upraví a zapne *Zpřístupnit přes odkaz*. Každé číslo v textu
 pochází z měření. Claude smí napsat jen úvodní odstavec.

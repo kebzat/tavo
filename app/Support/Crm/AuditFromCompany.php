@@ -102,14 +102,55 @@ class AuditFromCompany
     }
 
     /**
+     * Audit napsaný jinde (Claude Code na předplatném) nahraný přes API.
+     * Vzniká stejně jako z tlačítka: neveřejný, v omezeném režimu,
+     * s vlastním checklistem úkolů.
+     *
+     * @param  array{title: string, intro: ?string, body: string, highlights: list<array{value: string, label?: string}>, tasks: list<array{area: string, task: string, fix: string, priority: string}>}  $draft
+     */
+    public function createFromDraft(Company $company, array $draft, string $note): Audit
+    {
+        return DB::transaction(function () use ($company, $draft, $note): Audit {
+            $client = $this->clientFor($company);
+
+            $audit = Audit::create([
+                'client_id' => $client->getKey(),
+                'title' => $draft['title'],
+                'audited_at' => now()->toDateString(),
+                'intro' => $draft['intro'] ?? 'Co jsme zjistili z veřejné části webu, bez přístupu do vašich dat.',
+                'highlights' => $draft['highlights'],
+                'body' => $draft['body'],
+                'is_public' => false,
+                'is_teaser' => true,
+                'ai_status' => 'done',
+                'ai_note' => $note,
+            ]);
+
+            if ($draft['tasks'] !== []) {
+                $checklist = Checklist::create([
+                    'client_id' => $client->getKey(),
+                    'is_template' => false,
+                    'is_public' => false,
+                    'name' => 'Úkoly z auditu '.($company->domain ?: $company->name),
+                    'intro' => 'Kroky, které vyplynuly z auditu. Postupně je odškrtáváme.',
+                ]);
+
+                $this->replaceChecklistTasks($audit, $draft['tasks'], $checklist);
+            }
+
+            return $audit;
+        });
+    }
+
+    /**
      * Úkoly od Clauda místo úkolů z měření. Checklist zůstává tentýž,
      * ať platí odkaz, jen se vymění jeho obsah.
      *
      * @param  list<array{area: string, task: string, fix: string, priority: string}>  $tasks
      */
-    private function replaceChecklistTasks(Audit $audit, array $tasks): void
+    private function replaceChecklistTasks(Audit $audit, array $tasks, ?Checklist $checklist = null): void
     {
-        $checklist = $audit->client->checklists()->forClients()->latest('id')->first()
+        $checklist ??= $audit->client->checklists()->forClients()->latest('id')->first()
             ?? Checklist::create([
                 'client_id' => $audit->client_id,
                 'is_template' => false,

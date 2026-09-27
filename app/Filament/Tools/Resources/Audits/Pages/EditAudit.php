@@ -11,6 +11,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
 
 class EditAudit extends EditRecord
 {
@@ -54,17 +56,36 @@ class EditAudit extends EditRecord
         ];
     }
 
-    /** Rozepsaný audit se neukládá, přepsal by ho Claude a naopak. */
-    public function getSubheading(): ?string
+    /**
+     * Stav přepisu v hlavičce. Dokud Claude píše, stránka se každých
+     * 15 sekund sama zeptá, jestli je hotovo, a po dokončení se načte znovu.
+     */
+    public function getSubheading(): string|Htmlable|null
     {
         /** @var Audit $audit */
         $audit = $this->getRecord();
 
         return match (true) {
-            $audit->isBeingWritten() => 'Claude právě prochází web a píše audit. Obnovte stránku za pár minut, do té doby nic neupravujte.',
+            $audit->isBeingWritten() => new HtmlString(
+                '<span wire:poll.15s="checkDeepAudit">'
+                .e('Claude prochází web a píše audit, běží '.max(1, (int) $audit->updated_at->diffInMinutes(now())).' min. '
+                    .'Obvykle to trvá 3 až 6 minut. Stránka se po dokončení načte sama, nic neupravujte.')
+                .'</span>'
+            ),
             $audit->ai_status === 'done' => $audit->ai_note,
             $audit->ai_status === 'failed' => 'Podrobný audit se nepovedl: '.$audit->ai_note,
             default => null,
         };
+    }
+
+    /** Volá se z wire:poll v hlavičce, jen dokud Claude píše. */
+    public function checkDeepAudit(): void
+    {
+        /** @var Audit $audit */
+        $audit = $this->getRecord()->refresh();
+
+        if (! $audit->isBeingWritten()) {
+            $this->redirect(static::getUrl(['record' => $audit]));
+        }
     }
 }
