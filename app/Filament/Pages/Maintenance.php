@@ -110,9 +110,7 @@ class Maintenance extends Page
             'Odesílání e-mailů' => $this->mailerSummary(),
             'Odesílatel' => (string) config('mail.from.address'),
             'Poptávky chodí na' => $this->recipientSummary(),
-            'Claude API (CRM)' => filled(config('services.anthropic.key'))
-                ? 'klíč načtený, model '.config('services.anthropic.model')
-                : 'klíč chybí — doplňte ANTHROPIC_API_KEY a obnovte cache',
+            'Claude API (CRM)' => $this->claudeSummary(),
             'Google PageSpeed (CRM)' => match (true) {
                 ! config('services.pagespeed.enabled') => 'vypnuto',
                 filled(config('services.pagespeed.key')) => 'klíč načtený',
@@ -217,6 +215,25 @@ class Maintenance extends Page
             ->body('Když nic nedorazí ani do spamu, problém je na straně serveru nebo schránky.')
             ->success()
             ->send();
+    }
+
+    /**
+     * Konec klíče a workspace, ať jde porovnat s konzolí Anthropic, jestli
+     * web vidí ten klíč, který jsme do .env dali. Celý klíč se nevypisuje.
+     */
+    private function claudeSummary(): string
+    {
+        $key = (string) config('services.anthropic.key');
+
+        if ($key === '') {
+            return 'klíč chybí — doplňte ANTHROPIC_API_KEY a obnovte cache';
+        }
+
+        $workspace = (string) config('services.anthropic.workspace_id');
+
+        return 'klíč …'.substr($key, -4)
+            .', model '.config('services.anthropic.model')
+            .', workspace '.($workspace !== '' ? $workspace : 'nenastaven');
     }
 
     /**
