@@ -108,7 +108,7 @@ class WebScout
             + ['https_redirect' => $result['https'] ? $this->redirectsToHttps($finalUrl) : false]
             + ['robots' => $robots]
             + ['ai_bots' => $this->aiBotStatuses($finalUrl, $result['ssl_valid'])]
-            + ['pagespeed' => $this->pageSpeed($finalUrl)]
+            + $this->pageSpeedResult($finalUrl)
             + $this->sitemapFor($origin, $robots['sitemaps'], $result['ssl_valid']);
     }
 
@@ -437,14 +437,15 @@ class WebScout
     /**
      * Google PageSpeed pro mobil. Volitelné: bez klíče má Google přísný
      * limit a měření trvá i půl minuty, takže když selže, audit se bez
-     * něj obejde.
+     * něj obejde. Důvod selhání se ukládá, ať je na kartě firmy vidět,
+     * jestli chybí klíč, nebo ho Google odmítl.
      *
-     * @return array{score: int, lcp_ms: int, cls: float, tbt_ms: int}|null
+     * @return array{pagespeed: array{score: int, lcp_ms: int, cls: float, tbt_ms: int}|null, pagespeed_error: ?string}
      */
-    private function pageSpeed(string $url): ?array
+    public function pageSpeedResult(string $url): array
     {
         if (! config('services.pagespeed.enabled')) {
-            return null;
+            return ['pagespeed' => null, 'pagespeed_error' => 'vypnuto (PAGESPEED_ENABLED)'];
         }
 
         try {
@@ -454,21 +455,26 @@ class WebScout
                 'category' => 'performance',
                 'key' => config('services.pagespeed.key'),
             ]));
-        } catch (ConnectionException) {
-            return null;
+        } catch (ConnectionException $e) {
+            return ['pagespeed' => null, 'pagespeed_error' => $this->shortError($e)];
         }
 
         $lighthouse = $response->json('lighthouseResult');
 
         if (! $response->successful() || ! isset($lighthouse['categories']['performance']['score'])) {
-            return null;
+            $message = (string) ($response->json('error.message') ?? 'Google vrátil '.$response->status());
+
+            return ['pagespeed' => null, 'pagespeed_error' => Str::limit($response->status().': '.$message, 240)];
         }
 
         return [
-            'score' => (int) round($lighthouse['categories']['performance']['score'] * 100),
-            'lcp_ms' => (int) round($lighthouse['audits']['largest-contentful-paint']['numericValue'] ?? 0),
-            'cls' => round((float) ($lighthouse['audits']['cumulative-layout-shift']['numericValue'] ?? 0), 3),
-            'tbt_ms' => (int) round($lighthouse['audits']['total-blocking-time']['numericValue'] ?? 0),
+            'pagespeed' => [
+                'score' => (int) round($lighthouse['categories']['performance']['score'] * 100),
+                'lcp_ms' => (int) round($lighthouse['audits']['largest-contentful-paint']['numericValue'] ?? 0),
+                'cls' => round((float) ($lighthouse['audits']['cumulative-layout-shift']['numericValue'] ?? 0), 3),
+                'tbt_ms' => (int) round($lighthouse['audits']['total-blocking-time']['numericValue'] ?? 0),
+            ],
+            'pagespeed_error' => null,
         ];
     }
 

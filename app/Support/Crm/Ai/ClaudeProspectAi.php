@@ -32,6 +32,8 @@ class ClaudeProspectAi implements ProspectAi
         Nehodí se: malé živnosti bez rozpočtu na marketing, weby na stavebnicích, kde nejde nic upravit, velké firmy s vlastním týmem, firmy bez zjevné poptávky po produktu.
         TXT;
 
+    private ?string $lastError = null;
+
     public function __construct(
         private readonly string $apiKey,
         private readonly string $model,
@@ -40,6 +42,23 @@ class ClaudeProspectAi implements ProspectAi
     public function enabled(): bool
     {
         return true;
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    public function ping(): ?string
+    {
+        $data = $this->json('Odpověz slovem OK.', [
+            'type' => 'object',
+            'properties' => ['answer' => ['type' => 'string']],
+            'required' => ['answer'],
+            'additionalProperties' => false,
+        ], effort: 'low');
+
+        return $data === null ? ($this->lastError ?? 'Claude nevrátil odpověď.') : null;
     }
 
     public function judge(Company $company, array $scout): ?array
@@ -124,6 +143,7 @@ class ClaudeProspectAi implements ProspectAi
                 betas: [self::FALLBACK_BETA],
             );
         } catch (APIException $e) {
+            $this->lastError = Str::limit($e->getMessage(), 300);
             Log::warning('Claude: vyhledání kandidátů selhalo', ['error' => $e->getMessage()]);
 
             return [];
@@ -157,6 +177,8 @@ class ClaudeProspectAi implements ProspectAi
      */
     private function json(string $prompt, array $schema, string $effort): ?array
     {
+        $this->lastError = null;
+
         try {
             $response = $this->client()->beta->messages->create(
                 model: $this->model,
@@ -170,6 +192,7 @@ class ClaudeProspectAi implements ProspectAi
                 betas: [self::FALLBACK_BETA],
             );
         } catch (APIException $e) {
+            $this->lastError = Str::limit($e->getMessage(), 300);
             Log::warning('Claude: dotaz selhal', ['error' => $e->getMessage()]);
 
             return null;
@@ -185,6 +208,7 @@ class ClaudeProspectAi implements ProspectAi
     private function text(BetaMessage $response): ?string
     {
         if (in_array($response->stopReason, ['refusal', 'max_tokens'], true)) {
+            $this->lastError = 'Odpověď bez výsledku: '.$response->stopReason;
             Log::info('Claude: odpověď bez výsledku', ['stop_reason' => $response->stopReason]);
 
             return null;

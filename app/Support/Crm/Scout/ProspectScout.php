@@ -42,6 +42,7 @@ class ProspectScout
             'reasons' => $fit['reasons'],
             'base_score' => $fit['score'],
             'ai' => null,
+            'ai_error' => null,
         ];
 
         $score = $fit['score'];
@@ -50,6 +51,7 @@ class ProspectScout
         // Claude jen upřesňuje. Nedostupný web ani agenturu nepřehodnotí.
         if ($measurements['reachable'] && $this->ai->enabled()) {
             $scout['ai'] = $this->ai->judge($company, $scout);
+            $scout['ai_error'] = $scout['ai'] === null ? $this->ai->lastError() : null;
 
             if ($scout['ai'] !== null) {
                 $scout['ai']['adjustment'] = max(-20, min(20, (int) $scout['ai']['adjustment']));

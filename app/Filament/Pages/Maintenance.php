@@ -4,6 +4,8 @@ namespace App\Filament\Pages;
 
 use App\Filament\Concerns\OnlyForAdmins;
 use App\Settings\ContactSettings;
+use App\Support\Crm\Ai\ProspectAi;
+use App\Support\Crm\Scout\WebScout;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -70,6 +72,16 @@ class Maintenance extends Page
                 ->modalSubmitActionLabel('Odeslat')
                 ->action(fn () => $this->sendTestMail()),
 
+            Action::make('testIntegrations')
+                ->label('Otestovat napojení')
+                ->icon(Heroicon::OutlinedSignal)
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Otestovat Claude API a Google PageSpeed?')
+                ->modalDescription('Pošle jeden krátký dotaz na Claude a změří rychlost úvodní stránky webu. Trvá to do minuty.')
+                ->modalSubmitActionLabel('Otestovat')
+                ->action(fn () => $this->testIntegrations()),
+
             Action::make('storageLink')
                 ->label('Propojit soubory')
                 ->icon(Heroicon::OutlinedLink)
@@ -98,6 +110,14 @@ class Maintenance extends Page
             'Odesílání e-mailů' => $this->mailerSummary(),
             'Odesílatel' => (string) config('mail.from.address'),
             'Poptávky chodí na' => $this->recipientSummary(),
+            'Claude API (CRM)' => filled(config('services.anthropic.key'))
+                ? 'klíč načtený, model '.config('services.anthropic.model')
+                : 'klíč chybí — doplňte ANTHROPIC_API_KEY a obnovte cache',
+            'Google PageSpeed (CRM)' => match (true) {
+                ! config('services.pagespeed.enabled') => 'vypnuto',
+                filled(config('services.pagespeed.key')) => 'klíč načtený',
+                default => 'bez klíče — Google skoro vždy odmítne kvůli limitu',
+            },
         ];
     }
 
@@ -196,6 +216,35 @@ class Maintenance extends Page
             ->title('Odesláno na '.implode(', ', $recipients))
             ->body('Když nic nedorazí ani do spamu, problém je na straně serveru nebo schránky.')
             ->success()
+            ->send();
+    }
+
+    /**
+     * Napojení CRM na Claude a Google PageSpeed. Chybu vypíše celou,
+     * jak přišla, ať je vidět, jestli chybí klíč, nebo ho služba odmítla.
+     */
+    private function testIntegrations(): void
+    {
+        set_time_limit(150);
+
+        $claude = app(ProspectAi::class)->ping();
+        $pagespeed = app(WebScout::class)->pageSpeedResult(config('app.url'));
+
+        $lines = [
+            'Claude: '.($claude === null ? 'funguje' : $claude),
+            'PageSpeed: '.($pagespeed['pagespeed'] !== null
+                ? 'funguje, '.config('app.url').' má na mobilu '.$pagespeed['pagespeed']['score'].' ze 100'
+                : $pagespeed['pagespeed_error']),
+        ];
+
+        $ok = $claude === null && $pagespeed['pagespeed'] !== null;
+
+        Notification::make()
+            ->title($ok ? 'Obě napojení fungují' : 'Něco nefunguje')
+            ->body(implode("\n\n", $lines))
+            ->color($ok ? 'success' : 'danger')
+            ->icon($ok ? Heroicon::OutlinedCheckCircle : Heroicon::OutlinedExclamationTriangle)
+            ->persistent()
             ->send();
     }
 

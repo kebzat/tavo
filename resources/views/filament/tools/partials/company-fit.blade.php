@@ -20,6 +20,10 @@
             <span class="text-xs text-gray-500 dark:text-gray-400">proklepnuto {{ $company->scouted_at->format('j. n. Y H:i') }}</span>
         </div>
 
+        @if (! $ai && ($scout['ai_error'] ?? null))
+            <p class="text-sm text-warning-600 dark:text-warning-400">Claude se nepodařilo zeptat: {{ $scout['ai_error'] }}</p>
+        @endif
+
         @if ($ai)
             <div class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
                 <p><span class="font-semibold">Co dělají:</span> {{ $ai['summary'] }}</p>
@@ -37,7 +41,9 @@
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 dark:text-gray-400">PageSpeed mobil</dt>
-                    <dd class="font-medium text-gray-950 dark:text-white">{{ isset($m['pagespeed']['score']) ? $m['pagespeed']['score'].' / 100' : 'neměřeno' }}</dd>
+                    <dd class="font-medium text-gray-950 dark:text-white" @if ($m['pagespeed_error'] ?? null) title="{{ $m['pagespeed_error'] }}" @endif>
+                        {{ isset($m['pagespeed']['score']) ? $m['pagespeed']['score'].' / 100' : 'neměřeno' }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 dark:text-gray-400">Adres v sitemapě</dt>
@@ -50,6 +56,10 @@
                     </dd>
                 </div>
             </dl>
+        @endif
+
+        @if (($m['reachable'] ?? false) && ($m['pagespeed_error'] ?? null))
+            <p class="text-xs text-gray-500 dark:text-gray-400">PageSpeed: {{ $m['pagespeed_error'] }}</p>
         @endif
 
         <details class="text-sm">

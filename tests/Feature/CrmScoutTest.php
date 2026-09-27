@@ -140,6 +140,16 @@ class CrmScoutTest extends TestCase
         $this->assertSame('Vlastní postřeh', app(ProspectScout::class)->scout($vlastni)->pain);
     }
 
+    public function test_odmitnuty_pagespeed_ulozi_duvod(): void
+    {
+        $this->fakeShop(['www.googleapis.com/*' => Http::response(['error' => ['message' => 'PageSpeed Insights API has not been used in project']], 403)]);
+
+        $m = app(ProspectScout::class)->scout($this->firma())->scout_data['measurements'];
+
+        $this->assertNull($m['pagespeed']);
+        $this->assertSame('403: PageSpeed Insights API has not been used in project', $m['pagespeed_error']);
+    }
+
     public function test_nedostupny_web_dostane_nulu(): void
     {
         Http::fake(fn () => throw new ConnectionException('cURL error 28: Operation timed out'));
@@ -437,6 +447,16 @@ class FakeAi implements ProspectAi
     public function enabled(): bool
     {
         return true;
+    }
+
+    public function lastError(): ?string
+    {
+        return null;
+    }
+
+    public function ping(): ?string
+    {
+        return null;
     }
 
     public function judge(Company $company, array $scout): ?array

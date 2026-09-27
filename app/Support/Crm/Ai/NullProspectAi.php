@@ -12,6 +12,16 @@ class NullProspectAi implements ProspectAi
         return false;
     }
 
+    public function lastError(): ?string
+    {
+        return null;
+    }
+
+    public function ping(): ?string
+    {
+        return 'Chybí ANTHROPIC_API_KEY (nebo se po úpravě .env neobnovila cache).';
+    }
+
     public function judge(Company $company, array $scout): ?array
     {
         return null;

@@ -13,6 +13,12 @@ interface ProspectAi
 {
     public function enabled(): bool;
 
+    /** Proč poslední dotaz nevrátil výsledek. Null, když prošel. */
+    public function lastError(): ?string;
+
+    /** Zkušební dotaz pro Údržbu. Null, když napojení funguje, jinak chyba. */
+    public function ping(): ?string;
+
     /**
      * @param  array<string, mixed>  $scout  měření, nálezy a skóre
      * @return array{summary: string, adjustment: int, note: string, hook: string}|null
