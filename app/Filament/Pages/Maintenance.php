@@ -7,6 +7,7 @@ use App\Settings\ContactSettings;
 use App\Support\Crm\Ai\ProspectAi;
 use App\Support\Crm\Scout\WebScout;
 use BackedEnum;
+use Dotenv\Dotenv;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -58,6 +59,7 @@ class Maintenance extends Page
                 ->modalDescription('Zahodí a znovu vytvoří cache konfigurace, rout a šablon. Použijte, když se změny neprojevují.')
                 ->modalSubmitActionLabel('Obnovit')
                 ->action(function (): void {
+                    $this->forgetLoadedEnv();
                     $this->runArtisan('optimize:clear', [], 'Cache vyčištěna.', notify: false);
                     $this->runArtisan('optimize', [], 'Cache obnovena.');
                 }),
@@ -215,6 +217,29 @@ class Maintenance extends Page
             ->body('Když nic nedorazí ani do spamu, problém je na straně serveru nebo schránky.')
             ->success()
             ->send();
+    }
+
+    /**
+     * Zapomene hodnoty z .env, které už tenhle PHP proces načetl.
+     *
+     * LiteSpeed i PHP-FPM drží proces přes víc požadavků a Laravel si .env
+     * propisuje i do proměnných prostředí. Dotenv je nastavený jen přidávat,
+     * takže `config:cache` spuštěné odsud by si z .env vzal jen nové klíče
+     * a změněné hodnoty by do cache zapsal staré. Po zapomenutí se .env
+     * přečte celý znovu.
+     */
+    private function forgetLoadedEnv(): void
+    {
+        $path = app()->environmentFilePath();
+
+        if (! is_file($path)) {
+            return;
+        }
+
+        foreach (array_keys(Dotenv::parse((string) file_get_contents($path))) as $key) {
+            putenv($key);
+            unset($_ENV[$key], $_SERVER[$key]);
+        }
     }
 
     /**
