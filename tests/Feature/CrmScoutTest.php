@@ -559,6 +559,15 @@ class CrmScoutTest extends TestCase
         $this->assertSame(0, Company::where('domain', 'a.cz')->count());
     }
 
+    public function test_api_vrati_chyby_jako_json_i_bez_hlavicky_accept(): void
+    {
+        config(['crm.import_token' => 'tajne']);
+
+        $this->post(route('crm.audits.import'), [], ['X-Crm-Token' => 'tajne'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['website', 'body']);
+    }
+
     public function test_mereni_z_prikazu_vypise_json(): void
     {
         $this->fakeShop();

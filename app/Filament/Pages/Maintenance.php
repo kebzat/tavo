@@ -62,6 +62,7 @@ class Maintenance extends Page
                     $this->forgetLoadedEnv();
                     $this->runArtisan('optimize:clear', [], 'Cache vyčištěna.', notify: false);
                     $this->runArtisan('optimize', [], 'Cache obnovena.');
+                    $this->forgetCompiledCache();
                 }),
 
             Action::make('testMail')
@@ -239,6 +240,22 @@ class Maintenance extends Page
         foreach (array_keys(Dotenv::parse((string) file_get_contents($path))) as $key) {
             putenv($key);
             unset($_ENV[$key], $_SERVER[$key]);
+        }
+    }
+
+    /**
+     * Cache konfigurace a rout jsou PHP soubory a OPcache si je drží
+     * zkompilované. Bez zneplatnění by web ještě nějakou dobu četl staré
+     * hodnoty, i když soubor na disku už je nový.
+     */
+    private function forgetCompiledCache(): void
+    {
+        if (! function_exists('opcache_invalidate')) {
+            return;
+        }
+
+        foreach (glob(base_path('bootstrap/cache/*.php')) ?: [] as $file) {
+            @opcache_invalidate($file, true);
         }
     }
 
