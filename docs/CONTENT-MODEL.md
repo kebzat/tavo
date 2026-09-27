@@ -175,13 +175,12 @@ Kategorie bez jediné zveřejněné reference se ve filtru vůbec nenabídne.
 
 ## Obsah → Loga klientů
 
-Pás log pod referencemi na homepage („Pro koho jsme stavěli weby a e-shopy“). Pořadí se
-mění tažením, přepínač **Zobrazit na webu** logo schová bez smazání. Nahrávejte SVG, nebo PNG
-s průhledným pozadím, a hlídejte, aby logo bylo čitelné na světlém podkladu: bílá loga pro
-tmavé hlavičky na webu zmizí. Loga zůstávají v barvách značek.
-
-Prvních deset jsou weby, které Tom postavil přímo pro klienty (bez agenturních projektů).
-Text a odkaz vedle nadpisu (na tomaskebza.cz) jsou ve Statických textech.
+Pás „S kým spolupracujeme“ pod referencemi na homepage: klienti, kterým jsme stavěli weby
+a e-shopy (Tom) nebo pro ně děláme kampaně (Pavel). Pořadí se mění tažením, přepínač
+**Zobrazit na webu** logo schová bez smazání. Nahrávejte SVG, nebo PNG s průhledným
+pozadím, a hlídejte, aby logo bylo čitelné na světlém podkladu: bílá loga pro tmavé hlavičky
+na webu zmizí. Loga zůstávají v barvách značek. Nadpis a text vedle něj jsou ve Statických
+textech (klíče `home.spoluprace_*`).
 
 ## Obsah → Postup spolupráce
 

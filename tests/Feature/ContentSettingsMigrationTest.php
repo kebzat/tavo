@@ -86,6 +86,29 @@ class ContentSettingsMigrationTest extends TestCase
         $this->assertSame('co si tam napsal Pavel', $this->value('pokus'));
     }
 
+    public function test_replace_if_untouched_umi_i_pole_z_repeateru(): void
+    {
+        // Databáze vrací položky jako objekty a klíče může přeskládat, shoda
+        // se proto porovnává bez ohledu na pořadí klíčů.
+        $migration = $this->migration();
+        $migration->callAdd(['home.pokus' => [['value' => '8+ let', 'label' => 'praxe']]]);
+
+        $migration->callReplaceIfUntouched('home.pokus', [['value' => '8+ let', 'label' => 'praxe']], [['value' => '9 let', 'label' => 'praxe']]);
+
+        $this->assertEquals([['value' => '9 let', 'label' => 'praxe']], json_decode(json_encode($this->value('pokus')), true));
+    }
+
+    public function test_replace_if_untouched_pole_upravene_spravcem_necha_byt(): void
+    {
+        $migration = $this->migration();
+        $migration->callAdd(['home.pokus' => [['value' => '8+ let', 'label' => 'praxe']]]);
+        $migration->callReplace(['home.pokus' => [['value' => '10 let', 'label' => 'praxe']]]);
+
+        $migration->callReplaceIfUntouched('home.pokus', [['value' => '8+ let', 'label' => 'praxe']], [['value' => '9 let', 'label' => 'praxe']]);
+
+        $this->assertEquals([['value' => '10 let', 'label' => 'praxe']], json_decode(json_encode($this->value('pokus')), true));
+    }
+
     private function value(string $property): mixed
     {
         return app(SettingsRepository::class)

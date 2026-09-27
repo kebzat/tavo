@@ -69,6 +69,36 @@ abstract class ContentSettingsMigration extends SettingsMigration
             return;
         }
 
-        $this->migrator->update($key, fn (mixed $current) => $current === $expected ? $new : $current);
+        $this->migrator->update($key, fn (mixed $current) => $this->same($current, $expected) ? $new : $current);
+    }
+
+    /**
+     * Porovnání uložené hodnoty s očekávanou. U polí (repeatery) nestačí
+     * `===`: databáze vrací položky jako objekty a MySQL si klíče v JSON
+     * seřadí po svém, takže by shoda nenastala nikdy.
+     */
+    private function same(mixed $current, mixed $expected): bool
+    {
+        return $this->normalize($current) === $this->normalize($expected);
+    }
+
+    private function normalize(mixed $value): mixed
+    {
+        $value = json_decode((string) json_encode($value), true);
+
+        return $this->sortKeys($value);
+    }
+
+    private function sortKeys(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return array_map(fn (mixed $item): mixed => $this->sortKeys($item), $value);
     }
 }

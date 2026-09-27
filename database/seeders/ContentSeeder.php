@@ -151,13 +151,13 @@ class ContentSeeder extends Seeder
             'order_column' => 3,
             'number' => '03',
             'title' => 'Reklama a marketing',
-            'excerpt' => 'Kampaně na Facebooku, Instagramu a v Google Ads, práce s nabídkou a měření. Osm let praxe u e-shopů i firem ve službách.',
+            'excerpt' => 'Kampaně na Facebooku, Instagramu a v Google Ads, práce s nabídkou a měření. Devět let praxe u e-shopů i firem ve službách.',
             'has_detail_page' => true,
             'published' => true,
             'hero_eyebrow' => 'Služba 03',
             'hero_headline' => 'Reklama, která přivede',
             'hero_headline_accent' => 'lidi, co koupí.',
-            'hero_perex' => 'Pavel dělá výkonnostní reklamu osm let a prošly mu rukou desítky firemních účtů. Od e-shopů s potravinami a doplňky přes firmy ve službách po nábor lidí do výroby.',
+            'hero_perex' => 'Pavel dělá výkonnostní reklamu devět let a prošly mu rukou desítky firemních účtů. Od e-shopů s potravinami a doplňky přes firmy ve službách po nábor lidí do výroby.',
             'target_group_title' => 'Kdy má smysl nám napsat',
             'target_groups' => [
                 'Reklama vám běží, ale nevíte, co z ní vlastně chodí.',
@@ -182,7 +182,7 @@ class ContentSeeder extends Seeder
                 ['number' => '04', 'title' => 'Ladění', 'text' => 'Vypínáme, co nevydělává, a přiléváme tam, kde to jede.'],
             ],
             'seo_title' => 'Správa reklamy na Facebooku a Google Ads',
-            'seo_description' => 'Nastavíme a spravujeme kampaně na Facebooku, Instagramu a v Google Ads. Osm let praxe u e-shopů i firem ve službách. Hradec Králové a okolí.',
+            'seo_description' => 'Nastavíme a spravujeme kampaně na Facebooku, Instagramu a v Google Ads. Devět let praxe u e-shopů i firem ve službách. Hradec Králové a okolí.',
         ]);
 
         Service::updateOrCreate(['slug' => 'sprava-a-rozvoj-webu'], [
@@ -500,7 +500,7 @@ class ContentSeeder extends Seeder
         Founder::updateOrCreate(['name' => 'Pavel'], [
             'order_column' => 1,
             'role_label' => 'Reklama a marketing',
-            'bio' => 'Osm let dělá výkonnostní marketing. Kampaně na Facebooku a Instagramu, Google Ads, práce s nabídkou a nábor lidí. Prošly mu rukou desítky firemních účtů, od e-shopů s potravinami po výrobní firmy.',
+            'bio' => 'Devět let dělá výkonnostní marketing. Kampaně na Facebooku a Instagramu, Google Ads, práce s nabídkou a nábor lidí. Prošly mu rukou desítky firemních účtů, od e-shopů s potravinami po výrobní firmy.',
             'tags' => [
                 'Facebook a Instagram',
                 'Google Ads',
@@ -512,7 +512,7 @@ class ContentSeeder extends Seeder
         Founder::updateOrCreate(['name' => 'Tom'], [
             'order_column' => 2,
             'role_label' => 'Weby a e-shopy',
-            'bio' => 'Osm let staví weby a e-shopy. Laravel a PHP, WordPress s WooCommerce, Shoptet, Shopify, Upgates. Nejradši má věci, které někomu ušetří ruční přepisování dat.',
+            'bio' => 'Devět let staví weby a e-shopy. Laravel a PHP, WordPress s WooCommerce, Shoptet, Shopify, Upgates. Nejradši má věci, které někomu ušetří ruční přepisování dat.',
             'tags' => [
                 'Laravel a PHP',
                 'WordPress a WooCommerce',

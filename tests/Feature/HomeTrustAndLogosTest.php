@@ -33,7 +33,8 @@ class HomeTrustAndLogosTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSeeInOrder(['8+ let', 'praxe každého z nás', '2 dny', '5 z 5', 'hodnocení Pavla na Googlu']);
+            ->assertSeeInOrder(['9 let', 'zkušeností každého z nás', '2 dny', '5,0 ★', 'hodnocení klientů na Googlu'])
+            ->assertDontSee('hodnocení Pavla');
     }
 
     public function test_bez_cisel_pruh_neni(): void
@@ -78,6 +79,33 @@ class HomeTrustAndLogosTest extends TestCase
         $this->assertSame(10, ClientLogo::count());
         $this->assertSame('Svět Cejlonu', ClientLogo::ordered()->first()->name);
         $this->assertNotNull(ClientLogo::ordered()->first()->logoImage());
+    }
+
+    public function test_pavlova_loga_se_pridaji_a_poradi_se_prostrida(): void
+    {
+        CaseStudy::create(['title' => 'Reference', 'slug' => 'reference', 'published' => true]);
+        (require database_path('migrations/2026_09_27_100100_add_client_logos.php'))->up();
+
+        $migration = require database_path('migrations/2026_09_27_110100_add_pavel_client_logos.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame(21, ClientLogo::count());
+        $this->assertSame(['Fitmin', 'Svět Cejlonu', 'Realimo'], ClientLogo::ordered()->limit(3)->pluck('name')->all());
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('S kým spolupracujeme')
+            ->assertDontSee('Tom postavil');
+    }
+
+    public function test_devet_let_praxe_misto_osmi(): void
+    {
+        DB::table('founders')->update(['bio' => 'Osm let výkonnostního marketingu s přesahem. Řeší obsah.']);
+
+        (require database_path('migrations/2026_09_27_110000_nine_years_of_practice.php'))->up();
+
+        $this->assertSame(['Devět let výkonnostního marketingu s přesahem. Řeší obsah.'], DB::table('founders')->distinct()->pluck('bio')->all());
     }
 
     public function test_osobni_web_se_ukaze_u_zakladatele(): void
