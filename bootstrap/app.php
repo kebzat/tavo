@@ -25,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
          * a odeslání na pozadí nemá co ukázat u polí.
          */
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*')
+            fn (Request $request) => $request->is('api/*', 'nastroje/api/*')
                 || ($request->is('poptavka') && $request->expectsJson()),
         );
     })->create();

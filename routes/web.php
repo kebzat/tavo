@@ -16,7 +16,6 @@ use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\VerifyCrmToken;
 use App\Support\EshopOffers;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -45,7 +44,7 @@ Route::withoutMiddleware([
 // ne prohlížeč — a ověřené sdíleným tokenem z .env. Musí být nad catch-all
 // routou /{slug} níž, i když by ji dvousegmentová adresa stejně minula.
 Route::prefix('nastroje/api')
-    ->middleware([ForceJsonResponse::class, VerifyCrmToken::class])
+    ->middleware(VerifyCrmToken::class)
     ->withoutMiddleware([
         EncryptCookies::class,
         AddQueuedCookiesToResponse::class,
