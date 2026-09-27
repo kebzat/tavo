@@ -3,8 +3,10 @@
 namespace App\Filament\Tools\Actions;
 
 use App\Filament\Tools\Resources\Audits\Pages\EditAudit;
+use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
 use App\Models\Crm\Company;
+use App\Support\Crm\Ai\ProspectAi;
 use App\Support\Crm\AuditFromCompany;
 use App\Support\Crm\Scout\ProspectScout;
 use Filament\Actions\Action;
@@ -51,11 +53,20 @@ class CreateAuditAction
                 }
 
                 $audit = app(AuditFromCompany::class)->create($record);
+                $deep = app(ProspectAi::class)->enabled();
+
+                // Podrobný audit od Clauda doběhne za pár minut na pozadí
+                // a koncept z měření nahradí. Do té doby je vidět koncept.
+                if ($deep) {
+                    WriteDeepAudit::start($audit);
+                }
 
                 Notification::make()
                     ->success()
-                    ->title('Audit je připravený')
-                    ->body('Přečtěte ho, upravte a pak zapněte sdílení.')
+                    ->title($deep ? 'Claude prochází web' : 'Audit je připravený')
+                    ->body($deep
+                        ? 'Zatím vidíte koncept z měření. Podrobný audit bude hotový za 3 až 6 minut, pak obnovte stránku.'
+                        : 'Přečtěte ho, upravte a pak zapněte sdílení.')
                     ->send();
 
                 return redirect(EditAudit::getUrl(['record' => $audit]));

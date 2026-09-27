@@ -160,6 +160,16 @@ Vrátit jde změnou stavu.
    a kapitola *Co zvenku nevidíme*,
 3. vznikne checklist úkolů: kategorie podle oblasti, priorita podle závažnosti.
 
+**Podrobný audit od Clauda.** S `ANTHROPIC_API_KEY` se po vytvoření konceptu
+na pozadí spustí `App\Jobs\WriteDeepAudit`. Claude si nástrojem web_fetch sám
+projde až 12 stránek e-shopu (úvod, kategorie, produkty, košík, kontakt,
+podmínky), spojí to s měřením a napíše audit ve stylu Světa Cejlonu včetně
+dlaždic a úkolů do checklistu (`App\Support\Crm\Ai\DeepAuditPrompt`). Trvá
+3 až 6 minut, běží po odeslání odpovědi (bez fronty). Stav, počet stránek
+a přibližnou cenu ukazuje hlavička auditu. Na už existujícím auditu to jde
+spustit znovu tlačítkem **Projít web Claudem**. Když se přepis nepovede,
+koncept z měření zůstane a v hlavičce je důvod.
+
 Audit je **neveřejný a v omezeném režimu**. Než odkaz odejde, Tom nebo Pavel
 ho přečte, upraví a zapne *Zpřístupnit přes odkaz*. Každé číslo v textu
 pochází z měření. Claude smí napsat jen úvodní odstavec.

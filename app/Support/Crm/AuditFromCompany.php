@@ -60,6 +60,99 @@ class AuditFromCompany
     }
 
     /**
+     * Přepíše koncept auditu podrobným auditem od Clauda, který si sám
+     * projde web. Když se to nepovede, koncept z měření zůstane a u auditu
+     * se ukáže proč.
+     */
+    public function rewriteWithClaude(Audit $audit): bool
+    {
+        $company = $audit->client?->crmCompany;
+
+        if ($company === null || $company->scout_data === null) {
+            $audit->forceFill(['ai_status' => 'failed', 'ai_note' => 'Audit nemá firmu v CRM s proklepnutým webem.'])->save();
+
+            return false;
+        }
+
+        $result = $this->ai->deepAudit($company, $company->scout_data);
+
+        if ($result === null) {
+            $audit->forceFill([
+                'ai_status' => 'failed',
+                'ai_note' => $this->ai->lastError() ?? 'Claude nevrátil audit.',
+            ])->save();
+
+            return false;
+        }
+
+        DB::transaction(function () use ($audit, $result): void {
+            $audit->forceFill([
+                'body' => $result['body'],
+                'highlights' => $result['highlights'] ?: $audit->highlights,
+                'ai_status' => 'done',
+                'ai_note' => 'Claude prošel '.$result['pages'].' stránek, stálo to přibližně $'.number_format($result['cost_usd'], 2).'. Hotovo '.now()->format('j. n. Y H:i').'.',
+            ])->save();
+
+            if ($result['tasks'] !== []) {
+                $this->replaceChecklistTasks($audit, $result['tasks']);
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * Úkoly od Clauda místo úkolů z měření. Checklist zůstává tentýž,
+     * ať platí odkaz, jen se vymění jeho obsah.
+     *
+     * @param  list<array{area: string, task: string, fix: string, priority: string}>  $tasks
+     */
+    private function replaceChecklistTasks(Audit $audit, array $tasks): void
+    {
+        $checklist = $audit->client->checklists()->forClients()->latest('id')->first()
+            ?? Checklist::create([
+                'client_id' => $audit->client_id,
+                'is_template' => false,
+                'is_public' => false,
+                'name' => 'Úkoly z auditu',
+                'intro' => 'Kroky, které vyplynuly z auditu. Postupně je odškrtáváme.',
+            ]);
+
+        $checklist->categories()->delete();
+        $slugs = [];
+
+        foreach (collect($tasks)->groupBy('area')->values() as $order => $group) {
+            $area = $group->first()['area'];
+
+            // Slug musí být v checklistu unikátní, dvě oblasti se mohou
+            // lišit jen velikostí písmen.
+            $slug = $base = Str::slug($area) ?: 'oblast';
+            for ($n = 2; isset($slugs[$slug]); $n++) {
+                $slug = $base.'-'.$n;
+            }
+            $slugs[$slug] = true;
+
+            $category = $checklist->categories()->create([
+                'title' => $area,
+                'slug' => $slug,
+                'order_column' => $order + 1,
+            ]);
+            $section = $category->sections()->create(['title' => $area, 'order_column' => 1]);
+
+            foreach ($group->values() as $i => $task) {
+                $section->items()->create([
+                    'checklist_id' => $checklist->getKey(),
+                    'title' => $task['task'],
+                    'description' => $task['fix'],
+                    'priority' => ChecklistPriority::from($task['priority']),
+                    'status' => ChecklistItemStatus::Todo,
+                    'order_column' => $i + 1,
+                ]);
+            }
+        }
+    }
+
+    /**
      * Klient v nástroji checklistů. Prospekt ho nemá, tak ho založíme
      * a propojíme s firmou. Druhý audit téže firmy použije stejného.
      */

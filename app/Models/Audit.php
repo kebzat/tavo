@@ -71,6 +71,12 @@ class Audit extends Model
         ];
     }
 
+    /** Claude audit právě přepisuje. Po čtvrt hodině se to bere jako zaseknuté. */
+    public function isBeingWritten(): bool
+    {
+        return $this->ai_status === 'running' && $this->updated_at?->gt(now()->subMinutes(15));
+    }
+
     public function hasLockMarker(): bool
     {
         return (bool) preg_match(self::LOCK_PATTERN, (string) $this->body);

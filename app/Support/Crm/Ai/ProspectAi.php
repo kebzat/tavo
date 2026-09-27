@@ -33,6 +33,15 @@ interface ProspectAi
     public function auditSummary(Company $company, array $scout): ?string;
 
     /**
+     * Podrobný audit: Claude si sám projde web (úvod, kategorie, produkt,
+     * košík, kontakt) a napíše audit ve stylu auditu Světa Cejlonu.
+     *
+     * @param  array<string, mixed>  $scout
+     * @return array{body: string, highlights: list<array{value: string, label: string}>, tasks: list<array{area: string, task: string, fix: string, priority: string}>, cost_usd: float, pages: int}|null
+     */
+    public function deepAudit(Company $company, array $scout): ?array;
+
+    /**
      * Nové firmy k proklepnutí z webového vyhledávání.
      *
      * @param  list<string>  $knownDomains  co už v CRM máme, ať to nenavrhuje znovu

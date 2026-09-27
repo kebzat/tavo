@@ -11,15 +11,18 @@ use App\Enums\Crm\FitVerdict;
 use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Today;
 use App\Filament\Tools\Resources\Companies\Pages\EditCompany;
+use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
 use App\Models\Crm\Company;
 use App\Models\User;
+use App\Support\Crm\Ai\DeepAuditPrompt;
 use App\Support\Crm\Ai\ProspectAi;
 use App\Support\Crm\AuditFromCompany;
 use App\Support\Crm\Scout\ProspectScout;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -335,6 +338,106 @@ class CrmScoutTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
+    | Podrobný audit od Clauda
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_odpoved_clauda_se_rozdeli_na_audit_cisla_a_ukoly(): void
+    {
+        $text = "Prošel jsem web.\n".DeepAuditPrompt::OUTPUT_START."\n## Shrnutí\n\nText — s pomlčkou.\n\n## Nejdůležitější nález\n\nA.\n\n## Co udělat nejdřív\n\nB.\n\n## Obsah\n\nC.\n\n"
+            .'```json'."\n".'{"highlights":[{"value":"12","label":"kategorií bez textu"}],"tasks":[{"area":"Obsah","task":"Napsat texty kategorií","fix":"Úvod a otázky.","priority":"must"},{"area":"Obsah","task":"X","priority":"divná"}]}'."\n```";
+
+        $parsed = DeepAuditPrompt::parse($text);
+
+        $this->assertStringStartsWith('## Shrnutí', $parsed['body']);
+        $this->assertStringNotContainsString('—', $parsed['body']);
+        $this->assertStringNotContainsString('```', $parsed['body']);
+        // Zapomenutý zámek se doplní před třetí kapitolu.
+        $this->assertMatchesRegularExpression('/## Nejdůležitější nález\n\nA\.\n\n::: zámek\n\n## Co udělat nejdřív/', $parsed['body']);
+        $this->assertSame([['value' => '12', 'label' => 'kategorií bez textu']], $parsed['highlights']);
+        $this->assertSame('must', $parsed['tasks'][0]['priority']);
+        $this->assertSame('should', $parsed['tasks'][1]['priority']);
+        $this->assertNull(DeepAuditPrompt::parse('Nic.'));
+    }
+
+    public function test_zadani_obsahuje_vzor_bez_ceniku(): void
+    {
+        $system = DeepAuditPrompt::system();
+
+        $this->assertStringContainsString('## Indexace a sitemapa', $system);
+        $this->assertStringNotContainsString('## Cenová nabídka', $system);
+    }
+
+    public function test_claude_prepise_audit_i_checklist(): void
+    {
+        $audit = $this->auditZFirmy();
+        $this->app->instance(ProspectAi::class, new class extends FakeAi
+        {
+            public function deepAudit(Company $company, array $scout): ?array
+            {
+                return [
+                    'body' => "## Shrnutí\n\nPodrobně.\n\n::: zámek\n\n## Obsah\n\nDetail.",
+                    'highlights' => [['value' => '12', 'label' => 'kategorií bez textu']],
+                    'tasks' => [
+                        ['area' => 'Obsah', 'task' => 'Napsat texty kategorií', 'fix' => 'Úvod a otázky.', 'priority' => 'must'],
+                        ['area' => 'Rychlost', 'task' => 'Zmenšit fotky', 'fix' => 'WebP.', 'priority' => 'nice'],
+                    ],
+                    'cost_usd' => 2.4,
+                    'pages' => 9,
+                ];
+            }
+        });
+
+        $this->assertTrue(app(AuditFromCompany::class)->rewriteWithClaude($audit));
+
+        $audit->refresh();
+        $this->assertSame('done', $audit->ai_status);
+        $this->assertStringContainsString('9 stránek', $audit->ai_note);
+        $this->assertStringContainsString('$2.40', $audit->ai_note);
+        $this->assertStringContainsString('Podrobně.', $audit->body);
+        $this->assertSame('12', $audit->highlights[0]['value']);
+
+        $checklist = $audit->client->checklists()->first();
+        $this->assertSame(['Napsat texty kategorií', 'Zmenšit fotky'], $checklist->items()->orderBy('id')->pluck('title')->all());
+        $this->assertSame(['Obsah', 'Rychlost'], $checklist->categories()->orderBy('order_column')->pluck('title')->all());
+    }
+
+    public function test_nepovedeny_prepis_necha_koncept_a_rekne_proc(): void
+    {
+        $audit = $this->auditZFirmy();
+        $body = $audit->body;
+        $this->app->instance(ProspectAi::class, new class extends FakeAi
+        {
+            public function lastError(): ?string
+            {
+                return 'Rate limit';
+            }
+        });
+
+        $this->assertFalse(app(AuditFromCompany::class)->rewriteWithClaude($audit));
+
+        $audit->refresh();
+        $this->assertSame('failed', $audit->ai_status);
+        $this->assertSame('Rate limit', $audit->ai_note);
+        $this->assertSame($body, $audit->body);
+    }
+
+    public function test_vytvoreni_auditu_s_claudem_spusti_podrobny_audit_po_odpovedi(): void
+    {
+        Bus::fake();
+        $this->fakeShop();
+        $this->actingAs($this->obchodnik());
+        $this->app->instance(ProspectAi::class, new FakeAi);
+        $company = app(ProspectScout::class)->scout($this->firma());
+
+        Livewire::test(EditCompany::class, ['record' => $company->getKey()])->callAction('createAudit');
+
+        Bus::assertDispatchedAfterResponse(WriteDeepAudit::class);
+        $this->assertSame('running', Audit::latest('id')->first()->ai_status);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Otevření auditu klientem
     |--------------------------------------------------------------------------
     */
@@ -481,6 +584,11 @@ class FakeAi implements ProspectAi
     }
 
     public function auditSummary(Company $company, array $scout): ?string
+    {
+        return null;
+    }
+
+    public function deepAudit(Company $company, array $scout): ?array
     {
         return null;
     }

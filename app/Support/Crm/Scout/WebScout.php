@@ -105,6 +105,7 @@ class WebScout
 
         return $result
             + $this->analyzeHtml($html)
+            + ['internal_links' => $this->internalLinks($html, $finalUrl)]
             + ['https_redirect' => $result['https'] ? $this->redirectsToHttps($finalUrl) : false]
             + ['robots' => $robots]
             + ['ai_bots' => $this->aiBotStatuses($finalUrl, $result['ssl_valid'])]
@@ -249,6 +250,40 @@ class WebScout
         }
 
         return (string) Str::squish($text);
+    }
+
+    /**
+     * Odkazy z úvodní stránky na stejný web. Podle nich si Claude
+     * u podrobného auditu vybere kategorie, produkt, košík a kontakt.
+     *
+     * @return list<string>
+     */
+    private function internalLinks(string $html, string $baseUrl): array
+    {
+        $host = preg_replace('/^www\./', '', (string) parse_url($baseUrl, PHP_URL_HOST));
+        $origin = $this->origin($baseUrl);
+        $xpath = new \DOMXPath($this->dom($html));
+        $links = [];
+
+        foreach ($xpath->query('//a[@href]') as $a) {
+            $href = trim($a->getAttribute('href'));
+
+            if ($href === '' || preg_match('/^(#|mailto:|tel:|javascript:)/i', $href)) {
+                continue;
+            }
+
+            $url = str_starts_with($href, '//') ? 'https:'.$href : $href;
+            $url = str_starts_with($url, '/') ? $origin.$url : $url;
+            $linkHost = preg_replace('/^www\./', '', (string) parse_url($url, PHP_URL_HOST));
+
+            if ($linkHost !== $host || preg_match('/\.(jpe?g|png|webp|gif|svg|pdf|zip)(\?|$)/i', $url)) {
+                continue;
+            }
+
+            $links[] = Str::before($url, '#');
+        }
+
+        return array_slice(array_values(array_unique($links)), 0, 60);
     }
 
     /** @return list<string> */

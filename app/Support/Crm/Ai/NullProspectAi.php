@@ -32,6 +32,11 @@ class NullProspectAi implements ProspectAi
         return null;
     }
 
+    public function deepAudit(Company $company, array $scout): ?array
+    {
+        return null;
+    }
+
     public function discover(string $brief, int $count, array $knownDomains): array
     {
         return [];

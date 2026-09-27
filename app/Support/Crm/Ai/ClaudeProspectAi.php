@@ -3,6 +3,7 @@
 namespace App\Support\Crm\Ai;
 
 use Anthropic\Beta\Messages\BetaMessage;
+use Anthropic\Beta\Messages\BetaWebFetchTool20260209;
 use Anthropic\Beta\Messages\BetaWebSearchTool20260209;
 use Anthropic\Client;
 use Anthropic\Core\Exceptions\APIException;
@@ -124,6 +125,99 @@ class ClaudeProspectAi implements ProspectAi
         return $paragraph !== '' ? str_replace(' — ', ', ', $paragraph) : null;
     }
 
+    /** Cena za milion tokenů (vstup, výstup) v USD. Neznámý model počítá jako Opus. */
+    private const PRICES = [
+        'claude-opus-5' => [5.0, 25.0],
+        'claude-opus-5-5' => [4.0, 20.0],
+        'claude-sonnet-5' => [2.0, 10.0],
+        'claude-haiku-4-5' => [1.0, 5.0],
+    ];
+
+    public function deepAudit(Company $company, array $scout): ?array
+    {
+        $this->lastError = null;
+        $domain = (string) $company->domain;
+        $system = [['type' => 'text', 'text' => DeepAuditPrompt::system(), 'cacheControl' => ['type' => 'ephemeral']]];
+        $messages = [['role' => 'user', 'content' => DeepAuditPrompt::user($company, $scout)]];
+        $tools = [BetaWebFetchTool20260209::with(
+            allowedDomains: array_values(array_filter([$domain, $domain !== '' ? 'www.'.$domain : null])),
+            maxContentTokens: 12000,
+            maxUses: 12,
+        )];
+
+        $cost = 0.0;
+        $pages = 0;
+        $text = '';
+
+        try {
+            // Server si stránky stahuje sám. Po deseti krocích se zastaví
+            // (pause_turn) a pokračuje, když mu vrátíme dosavadní odpověď.
+            for ($round = 0; $round < 4; $round++) {
+                $response = $this->client()->beta->messages->create(
+                    model: $this->model,
+                    maxTokens: 32000,
+                    system: $system,
+                    messages: $messages,
+                    tools: $tools,
+                    outputConfig: ['effort' => 'high'],
+                    fallbacks: 'default',
+                    betas: [self::FALLBACK_BETA],
+                );
+
+                $cost += $this->costOf($response);
+
+                foreach ($response->content as $block) {
+                    if ($block->type === 'server_tool_use' && $block->name === 'web_fetch') {
+                        $pages++;
+                    }
+                    if ($block->type === 'text') {
+                        $text .= $block->text;
+                    }
+                }
+
+                if ($response->stopReason !== 'pause_turn') {
+                    break;
+                }
+
+                $messages = [$messages[0], ['role' => 'assistant', 'content' => $response->content]];
+            }
+        } catch (APIException $e) {
+            $this->lastError = Str::limit($e->getMessage(), 300);
+            Log::warning('Claude: podrobný audit selhal', ['company' => $company->getKey(), 'error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        if (in_array($response->stopReason, ['refusal', 'max_tokens'], true)) {
+            $this->lastError = 'Odpověď bez výsledku: '.$response->stopReason;
+
+            return null;
+        }
+
+        $parsed = DeepAuditPrompt::parse($text);
+
+        if ($parsed === null) {
+            $this->lastError = 'Claude nevrátil audit v očekávaném tvaru.';
+
+            return null;
+        }
+
+        return $parsed + ['cost_usd' => round($cost, 2), 'pages' => $pages];
+    }
+
+    /** Přibližná cena jedné odpovědi podle spotřeby tokenů. */
+    private function costOf(BetaMessage $response): float
+    {
+        [$in, $out] = self::PRICES[$this->model] ?? self::PRICES['claude-opus-5'];
+        $u = $response->usage;
+
+        $tokensIn = ($u->inputTokens ?? 0)
+            + ($u->cacheCreationInputTokens ?? 0) * 1.25
+            + ($u->cacheReadInputTokens ?? 0) * 0.1;
+
+        return ($tokensIn * $in + ($u->outputTokens ?? 0) * $out) / 1_000_000;
+    }
+
     public function discover(string $brief, int $count, array $knownDomains): array
     {
         $prompt = self::TAVEO."\n\n"
@@ -236,7 +330,7 @@ class ClaudeProspectAi implements ProspectAi
     private function measurementsForPrompt(array $scout): array
     {
         return collect($scout['measurements'] ?? [])
-            ->except(['text_excerpt', 'emails', 'phones', 'input_url', 'measured_at'])
+            ->except(['text_excerpt', 'emails', 'phones', 'input_url', 'measured_at', 'internal_links'])
             ->all();
     }
 
