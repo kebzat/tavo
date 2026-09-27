@@ -21,7 +21,11 @@ class AppServiceProvider extends ServiceProvider
         // Claude jen s klíčem. Bez něj proklepnutí webu a audit jedou
         // z měření a nic se nerozbije.
         $this->app->bind(ProspectAi::class, fn (): ProspectAi => filled(config('services.anthropic.key'))
-            ? new ClaudeProspectAi(config('services.anthropic.key'), config('services.anthropic.model'))
+            ? new ClaudeProspectAi(
+                config('services.anthropic.key'),
+                config('services.anthropic.model'),
+                config('services.anthropic.workspace_id'),
+            )
             : new NullProspectAi);
     }
 

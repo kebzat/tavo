@@ -50,6 +50,9 @@ return [
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-opus-5'),
+        // Jen u klíče, který nepatří žádnému workspace. ID je v konzoli
+        // Anthropic v nastavení workspace (wrkspc_…).
+        'workspace_id' => env('ANTHROPIC_WORKSPACE_ID'),
     ],
 
     // Google PageSpeed při proklepnutí webu. Klíč je nepovinný, bez něj

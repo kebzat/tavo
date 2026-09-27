@@ -189,9 +189,14 @@ Nevhodné se založí rovnou odložené, ať je další hledání nenavrhne znov
 
 ### Proměnné prostředí
 
+Po každé úpravě `.env` na serveru **Nastavení → Údržba → Obnovit cache**,
+nasazení si konfiguraci ukládá. Tamtéž **Otestovat napojení** ověří oba klíče
+a vypíše chybu tak, jak ji služba vrátila.
+
 ```dotenv
 ANTHROPIC_API_KEY=          # úsudek, shrnutí auditu, hledání firem
 ANTHROPIC_MODEL=claude-opus-5
+ANTHROPIC_WORKSPACE_ID=     # jen u klíče mimo workspace (wrkspc_…)
 PAGESPEED_API_KEY=          # bez klíče Google PageSpeed narazí na sdílený limit
 PAGESPEED_ENABLED=true
 ```

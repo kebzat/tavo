@@ -37,6 +37,7 @@ class ClaudeProspectAi implements ProspectAi
     public function __construct(
         private readonly string $apiKey,
         private readonly string $model,
+        private readonly ?string $workspaceId = null,
     ) {}
 
     public function enabled(): bool
@@ -239,8 +240,15 @@ class ClaudeProspectAi implements ProspectAi
             ->all();
     }
 
+    /**
+     * Klíč, který nepatří žádnému workspace, musí workspace uvést
+     * v hlavičce, jinak API vrací 400.
+     */
     private function client(): Client
     {
-        return new Client(apiKey: $this->apiKey, requestOptions: ['timeout' => 300]);
+        return new Client(apiKey: $this->apiKey, requestOptions: array_filter([
+            'timeout' => 300,
+            'extraHeaders' => filled($this->workspaceId) ? ['anthropic-workspace-id' => $this->workspaceId] : null,
+        ]));
     }
 }
