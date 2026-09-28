@@ -25,7 +25,8 @@ jobs:
 
     env:
       SSH_PORT: ${{ secrets.SSH_PORT || 22 }}
-      REMOTE: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+      # Alias z ~/.ssh/config níž. Všechny kroky jedou přes jedno sdílené spojení.
+      REMOTE: produkce
 
     steps:
       - uses: actions/checkout@v4
@@ -60,31 +61,69 @@ jobs:
           npm ci
           npm run build
 
-      - name: Připravit SSH klíč
+      # Server občas utne nové SSH spojení hned při navázání („Connection reset
+      # by peer"), když jich z jedné adresy přijde víc rychle za sebou. Proto
+      # jedno sdílené spojení (ControlMaster) pro všechny kroky, klíč serveru
+      # jedním dotazem a opakované navázání s pauzou.
+      - name: Připravit SSH
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          cat > ~/.ssh/config <<EOF
+          Host produkce
+            HostName $SSH_HOST
+            User $SSH_USER
+            Port $SSH_PORT
+            IdentityFile ~/.ssh/deploy_key
+            ControlMaster auto
+            ControlPath ~/.ssh/cm-%C
+            ControlPersist 15m
+            ConnectTimeout 20
+            ServerAliveInterval 30
+          EOF
+          chmod 600 ~/.ssh/config
+
+          for i in 1 2 3 4 5; do
+            # Nejdřív jen ed25519 (jedno spojení), kdyby ho server neměl, ostatní typy.
+            ssh-keyscan -t ed25519 -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+            [ -s ~/.ssh/known_hosts ] || ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+            [ -s ~/.ssh/known_hosts ] && break
+            echo "Klíč serveru se nenačetl, pokus $i."; sleep $((i * 5))
+          done
+          [ -s ~/.ssh/known_hosts ] || { echo "Klíč serveru se nepodařilo načíst."; exit 1; }
+
+      - name: Navázat spojení se serverem
+        run: |
+          sleep 3
+          for i in 1 2 3 4 5 6; do
+            if ssh -fN "$REMOTE" && ssh -O check "$REMOTE" 2>/dev/null; then
+              echo "Spojení navázané (pokus $i)."; exit 0
+            fi
+            echo "Server spojení odmítl, pokus $i. Další za $((i * 10)) s."
+            sleep $((i * 10))
+          done
+          echo "Spojení se serverem se nepodařilo navázat."; exit 1
 
       - name: Zapnout režim údržby
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$REMOTE" \
+          ssh "$REMOTE" \
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan down --render=errors::503 --retry=15 || true"
 
       - name: Nahrát soubory
         run: |
           rsync -az --delete --human-readable \
             --exclude-from=.github/deploy-exclude.txt \
-            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
+            -e ssh \
             ./ "$REMOTE:${{ secrets.DEPLOY_PATH }}/"
 
       - name: Migrace, cache a nahození webu
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$REMOTE" bash -se <<'REMOTE_SCRIPT'
+          ssh "$REMOTE" bash -se <<'REMOTE_SCRIPT'
             set -euo pipefail
             cd '${{ secrets.DEPLOY_PATH }}'
             PHP='${{ secrets.PHP_BIN }}'
@@ -114,7 +153,7 @@ jobs:
       - name: Nahodit web zpět, když nasazení spadlo
         if: failure()
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$REMOTE" \
+          ssh "$REMOTE" \
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan up || true"
 
       - name: Ověřit, že web běží
@@ -125,3 +164,7 @@ jobs:
             echo "Pokus $i: $code"; sleep 10
           done
           echo "Web po nasazení neodpovídá 200."; exit 1
+
+      - name: Zavřít spojení
+        if: always()
+        run: ssh -O exit "$REMOTE" 2>/dev/null || true
