@@ -34,6 +34,9 @@ class ImportCompanies extends Page
 
     protected static ?int $navigationSort = 60;
 
+    /** Zatím skryté z menu (Tom, 28. 9. 2026). Stránka funguje na /nastroje/import-companies. */
+    protected static bool $shouldRegisterNavigation = false;
+
     protected string $view = 'filament.tools.pages.import-companies';
 
     /** @var array<string, mixed> */

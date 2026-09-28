@@ -15,7 +15,6 @@ use App\Filament\Tools\Resources\Companies\Pages\CreateCompany;
 use App\Models\Crm\Activity;
 use App\Models\Crm\Company;
 use App\Models\Crm\Deal;
-use App\Models\Crm\Demand;
 use App\Models\Crm\MessageTemplate;
 use App\Models\User;
 use App\Support\Crm\Domain;
@@ -396,7 +395,7 @@ class CrmTest extends TestCase
             ->assertDontSee('chybí');
     }
 
-    public function test_tydenni_prehled_secte_nabidky_vyhrane_a_poptavky(): void
+    public function test_tydenni_prehled_secte_nabidky_a_vyhrane(): void
     {
         $monday = Carbon::now()->startOfWeek();
         $company = $this->firma();
@@ -415,15 +414,12 @@ class CrmTest extends TestCase
             'stage' => DealStage::Negotiation,
         ])->update(['stage' => DealStage::Won]);
 
-        Demand::factory()->create(['replied_at' => $monday->copy()->addDay()]);
-
         $kpi = new WeeklyKpi($monday);
         $metrics = $kpi->metrics();
 
         $this->assertSame(1, $metrics['proposals']);
         $this->assertSame(1, $metrics['won']);
         $this->assertSame(60000, $kpi->wonValue());
-        $this->assertSame(1, $metrics['demand_replies']);
     }
 
     public function test_hovor_bez_dovolani_se_do_cisel_nepocita(): void

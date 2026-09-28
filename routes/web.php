@@ -7,7 +7,6 @@ use App\Http\Controllers\ChecklistToggleController;
 use App\Http\Controllers\Crm\AuditImportController;
 use App\Http\Controllers\Crm\CandidateImportController;
 use App\Http\Controllers\Crm\CompanyScoutController;
-use App\Http\Controllers\Crm\DemandImportController;
 use App\Http\Controllers\Crm\PipelineExportController;
 use App\Http\Controllers\EmailSignatureController;
 use App\Http\Controllers\EshopOfferController;
@@ -54,10 +53,6 @@ Route::prefix('nastroje/api')
         PreventRequestForgery::class,
     ])
     ->group(function () {
-        Route::post('/demands/import', DemandImportController::class)
-            ->middleware('throttle:60,1')
-            ->name('crm.demands.import');
-
         Route::post('/audits/import', AuditImportController::class)
             ->middleware('throttle:20,1')
             ->name('crm.audits.import');

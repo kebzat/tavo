@@ -124,7 +124,7 @@
             </div>
         </x-slot>
 
-        <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+        <dl class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             @foreach ($rows as $row)
                 <div>
                     <dt class="text-sm text-gray-500 dark:text-gray-400">{{ $row['label'] }}</dt>

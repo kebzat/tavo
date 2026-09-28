@@ -5,7 +5,6 @@ namespace App\Filament\Tools\Pages;
 use App\Filament\Tools\Actions\LogActivityAction;
 use App\Filament\Tools\Actions\UseTemplateAction;
 use App\Models\Crm\Company;
-use App\Models\Crm\Demand;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -71,12 +70,6 @@ class Today extends Page
     public function stale(): Collection
     {
         return $this->companies(fn ($query) => $query->stale()->orderBy('last_activity_at'), limit: 15);
-    }
-
-    /** Poptávky, na které jsme ještě nereagovali. */
-    public function newDemands(): Collection
-    {
-        return Demand::query()->untouched()->limit(15)->get();
     }
 
     /**

@@ -3,13 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\Crm\CompanySegment;
-use App\Enums\Crm\DemandSource;
-use App\Enums\Crm\DemandStatus;
 use App\Enums\Crm\Priority;
 use App\Models\Crm\Company;
-use App\Models\Crm\Demand;
 use App\Support\Crm\CompanyCsvImporter;
-use App\Support\Crm\DemandCsvImporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -163,12 +159,6 @@ class CrmImportTest extends TestCase
         $this->assertSame(1, Company::where('name', 'Firma s BOM')->count());
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Import poptávek z JSON
-    |--------------------------------------------------------------------------
-    */
-
     private function token(): string
     {
         config()->set('crm.import_token', 'testovaci-token');
@@ -176,179 +166,12 @@ class CrmImportTest extends TestCase
         return 'testovaci-token';
     }
 
-    private function payload(array $overrides = []): array
-    {
-        return array_merge([
-            'source' => 'webtrh',
-            'url' => 'https://www.webtrh.cz/poptavka/1',
-            'title' => 'Úpravy e-shopu',
-            'summary' => 'Potřebují napojit dopravce.',
-            'posted_at' => '2026-09-01',
-            'budget_estimate' => 'do 30 000 Kč',
-            'priority' => 'A',
-        ], $overrides);
-    }
-
-    public function test_import_poptavek_zalozi_a_pak_aktualizuje_podle_url(): void
-    {
-        $token = $this->token();
-
-        $this->postJson('/nastroje/api/demands/import', ['demands' => [$this->payload()]], ['X-Crm-Token' => $token])
-            ->assertOk()
-            ->assertJson(['created' => 1, 'updated' => 0, 'skipped' => 0]);
-
-        $demand = Demand::firstOrFail();
-
-        $this->assertSame(DemandSource::Webtrh, $demand->source);
-        $this->assertSame(Priority::A, $demand->priority);
-        $this->assertSame(DemandStatus::New, $demand->status);
-        $this->assertSame('2026-09-01', $demand->posted_at->toDateString());
-
-        // Náš stav si import nesmí přepsat, patří nám, ne portálu.
-        $demand->update(['status' => DemandStatus::Replied, 'replied_at' => now()]);
-
-        $this->postJson(
-            '/nastroje/api/demands/import',
-            ['demands' => [$this->payload(['title' => 'Úpravy e-shopu (aktualizováno)'])]],
-            ['X-Crm-Token' => $token],
-        )->assertOk()->assertJson(['created' => 0, 'updated' => 1]);
-
-        $demand->refresh();
-
-        $this->assertSame(1, Demand::count());
-        $this->assertSame('Úpravy e-shopu (aktualizováno)', $demand->title);
-        $this->assertSame(DemandStatus::Replied, $demand->status);
-    }
-
-    public function test_import_poptavek_bez_tokenu_neprojde(): void
-    {
-        $this->token();
-
-        $this->postJson('/nastroje/api/demands/import', ['demands' => [$this->payload()]])
-            ->assertStatus(401);
-
-        $this->assertSame(0, Demand::count());
-    }
-
     public function test_bez_nastaveneho_tokenu_endpointy_neexistuji(): void
     {
         config()->set('crm.import_token', null);
 
-        $this->postJson('/nastroje/api/demands/import', ['demands' => [$this->payload()]])->assertNotFound();
+        $this->postJson('/nastroje/api/companies/import', ['companies' => [['website' => 'a.cz']]])->assertNotFound();
         $this->getJson('/nastroje/api/export/pipeline?token=cokoliv')->assertNotFound();
-    }
-
-    public function test_neznamy_zdroj_a_priorita_spadnou_do_vychozich_hodnot(): void
-    {
-        $token = $this->token();
-
-        $this->postJson(
-            '/nastroje/api/demands/import',
-            ['demands' => [$this->payload(['source' => 'nejaky-novy-portal', 'priority' => 'Z', 'posted_at' => 'nesmysl'])]],
-            ['X-Crm-Token' => $token],
-        )->assertOk();
-
-        $demand = Demand::firstOrFail();
-
-        $this->assertSame(DemandSource::Other, $demand->source);
-        $this->assertSame(Priority::B, $demand->priority);
-        $this->assertNull($demand->posted_at);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Import poptávek z CSV
-    |--------------------------------------------------------------------------
-    */
-
-    private const DEMAND_HEADER = 'Priorita,Zdroj,URL,Datum,Co chtějí,Odhad ceny,Stav,Datum reakce,Poznámka';
-
-    public function test_import_poptavek_z_csv_prelozi_ceske_sloupce(): void
-    {
-        $importer = new DemandCsvImporter;
-        $path = $this->csv(self::DEMAND_HEADER."\n"
-            .'A,Shoptet Partneři,https://partneri.shoptet.cz/poptavka/aaa,2026-08-22,"4horse.cz – přebíraný e-shop: struktura, UX",40–80k,Nový,,'."\n"
-            .'C,Webtrh,https://www.webtrh.cz/poptavka/bbb,2026-08-30,Správce e-shopu a webu,2–10k,Nový,,'."\n");
-
-        $parsed = $importer->read($path);
-        $result = $importer->import($parsed['rows'], $importer->guessMapping($parsed['header']));
-
-        $this->assertSame(2, $result['created']);
-
-        $shoptet = Demand::where('url', 'https://partneri.shoptet.cz/poptavka/aaa')->firstOrFail();
-
-        $this->assertSame(DemandSource::ShoptetPartners, $shoptet->source);
-        $this->assertSame(Priority::A, $shoptet->priority);
-        $this->assertSame(DemandStatus::New, $shoptet->status);
-        $this->assertSame('2026-08-22', $shoptet->posted_at->toDateString());
-        $this->assertSame('40–80k', $shoptet->budget_estimate);
-
-        // Popis se dělí na název a shrnutí v místě pomlčky obklopené mezerami.
-        $this->assertSame('4horse.cz', $shoptet->title);
-        $this->assertSame('přebíraný e-shop: struktura, UX', $shoptet->summary);
-
-        // Bez oddělovače zůstane celý text názvem.
-        $webtrh = Demand::where('url', 'https://www.webtrh.cz/poptavka/bbb')->firstOrFail();
-
-        $this->assertSame('Správce e-shopu a webu', $webtrh->title);
-        $this->assertNull($webtrh->summary);
-        $this->assertSame(DemandSource::Webtrh, $webtrh->source);
-    }
-
-    /** Rozsah v ceně ani spřežky se dělit nesmí, pomlčka tam nemá mezery. */
-    public function test_pomlcka_bez_mezer_nazev_nerozdeli(): void
-    {
-        $importer = new DemandCsvImporter;
-        $path = $this->csv(self::DEMAND_HEADER."\n"
-            .'B,Webtrh,https://www.webtrh.cz/poptavka/ccc,2026-09-01,"Správa a rozvoj aplikací (rozpočet 25–50k)",25–50k,Nový,,'."\n");
-
-        $parsed = $importer->read($path);
-        $importer->import($parsed['rows'], $importer->guessMapping($parsed['header']));
-
-        $this->assertSame('Správa a rozvoj aplikací (rozpočet 25–50k)', Demand::firstOrFail()->title);
-    }
-
-    /** Náš stav patří nám. Opakovaný import z tabulky ho nesmí vrátit zpět. */
-    public function test_opakovany_import_neprepise_nas_stav(): void
-    {
-        $importer = new DemandCsvImporter;
-        $csv = self::DEMAND_HEADER."\n"
-            .'A,Webtrh,https://www.webtrh.cz/poptavka/ddd,2026-08-30,Úpravy e-shopu,20–40k,Nový,,'."\n";
-
-        $parsed = $importer->read($this->csv($csv));
-        $mapping = $importer->guessMapping($parsed['header']);
-        $importer->import($parsed['rows'], $mapping);
-
-        Demand::firstOrFail()->update([
-            'status' => DemandStatus::Replied,
-            'notes' => 'Odepsal jsem v pondělí.',
-        ]);
-
-        $result = $importer->import($importer->read($this->csv($csv))['rows'], $mapping);
-
-        $demand = Demand::firstOrFail();
-
-        $this->assertSame(1, $result['updated']);
-        $this->assertSame(1, Demand::count());
-        $this->assertSame(DemandStatus::Replied, $demand->status);
-        $this->assertSame('Odepsal jsem v pondělí.', $demand->notes);
-    }
-
-    /** U nově zakládané poptávky vlastní stav ještě nemáme, tabulka ho doveze. */
-    public function test_nova_poptavka_prevezme_stav_z_tabulky(): void
-    {
-        $importer = new DemandCsvImporter;
-        $path = $this->csv(self::DEMAND_HEADER."\n"
-            .'A,Webtrh,https://www.webtrh.cz/poptavka/eee,2026-08-30,Úpravy e-shopu,20–40k,Reagováno,2026-08-31,Poslána nabídka'."\n");
-
-        $parsed = $importer->read($path);
-        $importer->import($parsed['rows'], $importer->guessMapping($parsed['header']));
-
-        $demand = Demand::firstOrFail();
-
-        $this->assertSame(DemandStatus::Replied, $demand->status);
-        $this->assertSame('2026-08-31', $demand->replied_at->toDateString());
-        $this->assertSame('Poslána nabídka', $demand->notes);
     }
 
     /** Zástupné znaky z ručně psané rešerše nejsou hodnoty. */

@@ -47,23 +47,25 @@ tedy potřeba doplnit dvě věci ručně, zbytek přijede sám:
 |---|---|---|
 | Tabulky a šablony zpráv | samo přes `migrate` | při každém nasazení |
 | Účty Tom a Pavel | `php artisan crm:user …` přes SSH | jednou |
-| Prospekty a poptávky | dva importy v prohlížeči, viz níž | při každé nové rešerši |
+| Prospekty | import v prohlížeči (`/nastroje/import-companies`, v menu skrytý) nebo API | při každé nové rešerši |
 
 Data se mezi prostředími nikdy nepřenášejí. Lokální databáze je pískoviště,
 ostrá data bydlí jen na produkci.
 
 ## Obrazovky
 
+Poptávky z portálů (Shoptet partneři, Webtrh, NaVolnéNoze) z CRM zmizely 28. 9. 2026.
+Tabulka `crm_demands` v databázi zůstala, aplikace ji nepoužívá.
+
+
 | Stránka | K čemu je |
 |---|---|
-| **Dnes** | Po termínu, dnes, zbytek týdne, fronta k oslovení (nahoře nejvyšší skóre), nové poptávky, firmy bez pohybu. U každého řádku „Hotovo" a odklad o 3 nebo 7 dní |
+| **Dnes** | Po termínu, dnes, zbytek týdne, fronta k oslovení (nahoře nejvyšší skóre), firmy bez pohybu. U každého řádku „Hotovo" a odklad o 3 nebo 7 dní |
 | **Přehled** | Čísla za týden, oslovené firmy a jejich reakce, graf za 8 týdnů. Jen informativní, bez cílů |
 | **Firmy** | Seznam s hledáním a filtry, karta firmy s kontakty, obchody a časovou osou |
 | **Pipeline** | Kanban obchodů, přetahování karet mezi fázemi |
 | **Obchody** | Tabulkový pohled na tytéž obchody, součet hodnoty, export |
-| **Poptávky** | Co přiteklo z portálů, rychlé „Reagováno" a „Založit firmu" |
-| **Import firem** | Nahrání tabulky prospektů z rešerše |
-| **Import poptávek** | Nahrání listu s otevřenými poptávkami z portálů |
+| **Import firem** | Nahrání tabulky prospektů z rešerše. V menu skrytý, adresa `/nastroje/import-companies` |
 | **Šablony zpráv** | Texty s dosazovanými údaji firmy |
 | **Nastavení CRM** | Nabídka odkladů, příjemci ranního souhrnu |
 
@@ -259,28 +261,6 @@ náhled prvních pěti řádků a po importu souhrn.
   nebo „přes formulář"), **kontaktní karta se nezaloží** a text se uloží k firmě jako
   poznámka. Informace se neztratí a v kontaktech nezůstane prázdný řádek.
 
-## Import poptávek z CSV
-
-**CRM → Import poptávek.** Druhý list téže tabulky rešerše. Hlavička:
-
-```
-Priorita,Zdroj,URL,Datum,Co chtějí,Odhad ceny,Stav,Datum reakce,Poznámka
-```
-
-- **`URL`** je jediný povinný sloupec a zároveň identita poptávky. Podle něj se
-  pozná, jestli se řádek zakládá, nebo aktualizuje, takže tentýž soubor jde nahrát
-  opakovaně a duplicity nevzniknou.
-- **`Co chtějí`** se dělí na název a shrnutí v místě první pomlčky obklopené
-  mezerami. Z „4horse.cz – přebíraný e-shop" bude název „4horse.cz". Rozsah v ceně
-  („25–50k") zůstane celý, protože tam pomlčka mezery nemá.
-- **`Zdroj`** rozumí názvům „Shoptet Partneři", „Webtrh", „Na volné noze",
-  „Upgates". Neznámý portál spadne do „Jiné".
-- **`Stav`, `Datum reakce` a `Poznámka`** se převezmou **jen u nově zakládané
-  poptávky**. U té, kterou už vedeme, zůstane náš stav beze změny, i kdyby v tabulce
-  bylo něco jiného. Tabulka je vstupní branou, ne zdrojem pravdy o naší práci.
-
-Kdo dává přednost strojové cestě, může místo toho použít endpoint níž. Dělá totéž.
-
 ## Strojové rozhraní
 
 Obojí ověřuje token z `.env`. **Bez nastaveného tokenu endpointy vracejí 404**, aby
@@ -291,40 +271,6 @@ CRM_IMPORT_TOKEN=nahodny-dlouhy-retezec
 ```
 
 Token se posílá hlavičkou `X-Crm-Token`, jako Bearer token, nebo v parametru `?token=`.
-
-### Import poptávek
-
-`POST /nastroje/api/demands/import` — sem tlačí ranní automatizace výpis z portálů.
-
-```bash
-curl -X POST https://taveo.cz/nastroje/api/demands/import \
-  -H "Content-Type: application/json" \
-  -H "X-Crm-Token: $CRM_IMPORT_TOKEN" \
-  -d '{
-    "demands": [
-      {
-        "source": "shoptet_partners",
-        "url": "https://partners.shoptet.cz/poptavky/2481",
-        "title": "Migrace e-shopu s 1 200 produkty na Shoptet",
-        "summary": "Stávající řešení na míru, napojení na Pohodu.",
-        "posted_at": "2026-09-01",
-        "budget_estimate": "80 000 až 120 000 Kč",
-        "priority": "A"
-      }
-    ]
-  }'
-```
-
-Odpoví `{"created":1,"updated":0,"skipped":0}`.
-
-- Identitou poptávky je **`url`**, podle ní se rozhoduje mezi založením a aktualizací.
-  Celý dnešní výpis jde poslat opakovaně, duplicity nevzniknou.
-- Řádek bez `url` se zahodí a započítá do `skipped`.
-- Neznámý `source` spadne do `Jiné`, neznámá `priority` do `B`, nečitelné `posted_at`
-  do prázdné hodnoty. Import kvůli tomu nespadne.
-- **Náš stav poptávky import nikdy nepřepisuje** (`status`, `replied_at`, `company_id`,
-  `notes`). Ten patří nám, ne portálu.
-- Nejvýš 500 poptávek na požadavek, limit 60 požadavků za minutu.
 
 ### Firmy k proklepnutí
 
@@ -365,7 +311,7 @@ curl "https://taveo.cz/nastroje/api/export/pipeline?token=$CRM_IMPORT_TOKEN"
 
 ## Ranní souhrn e-mailem
 
-Follow-upy po termínu, dnešní follow-upy, nové poptávky a firmy bez pohybu.
+Follow-upy po termínu, dnešní follow-upy a firmy bez pohybu.
 
 ```bash
 php artisan crm:daily-digest            # rozešle
@@ -446,21 +392,20 @@ app/
 │  ├─ Actions/                 LogActivityAction, UseTemplateAction,
 │  │                          ScoutCompanyAction, CreateAuditAction
 │  ├─ Pages/                   Today, Overview, Pipeline, ImportCompanies,
-│  │                          ImportDemands, ManageCrm
-│  └─ Resources/               Companies, Deals, Demands, MessageTemplates, Tags
-├─ Http/Controllers/Crm/       DemandImportController, CandidateImportController,
+│  │                          ManageCrm
+│  └─ Resources/               Companies, Deals, MessageTemplates, Tags
+├─ Http/Controllers/Crm/       CandidateImportController, AuditImportController,
+│                              CompanyScoutController,
 │                              PipelineExportController
 ├─ Http/Middleware/            VerifyCrmToken
 ├─ Mail/CrmDailyDigest
-├─ Models/Crm/                 Company, Contact, Deal, Activity, Demand,
+├─ Models/Crm/                 Company, Contact, Deal, Activity,
 │                              MessageTemplate, Tag
 ├─ Observers/Crm/              ActivityObserver, DealObserver
 ├─ Settings/CrmSettings        odklady, příjemci souhrnu
 └─ Support/Crm/
    ├─ Domain                   normalizace webu na doménu
    ├─ CompanyCsvImporter       import prospektů z rešerše
-   ├─ DemandCsvImporter        import poptávek z rešerše
-   ├─ DemandImporter           upsert poptávek podle adresy
    ├─ TemplateRenderer         dosazení do šablon
    ├─ WeeklyKpi                týdenní čísla
    ├─ OutreachLog              oslovené firmy a jejich reakce

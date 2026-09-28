@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Mail\CrmDailyDigest as DigestMail;
 use App\Models\Crm\Company;
-use App\Models\Crm\Demand;
 use App\Models\User;
 use App\Settings\CrmSettings;
 use Illuminate\Console\Command;
@@ -40,7 +39,6 @@ class CrmDailyDigest extends Command
         $overdue = $this->companies(fn ($query) => $query->overdue());
         $dueToday = $this->companies(fn ($query) => $query->dueToday());
         $stale = $this->companies(fn ($query) => $query->stale()->orderBy('last_activity_at'), 10);
-        $demands = Demand::query()->untouched()->limit(10)->get();
 
         foreach ($recipients as $user) {
             if ($this->option('dry-run')) {
@@ -50,7 +48,7 @@ class CrmDailyDigest extends Command
             }
 
             try {
-                Mail::to($user->email)->send(new DigestMail($user, $overdue, $dueToday, $demands, $stale));
+                Mail::to($user->email)->send(new DigestMail($user, $overdue, $dueToday, $stale));
 
                 $this->info("Souhrn odeslán na {$user->email}.");
             } catch (\Throwable $e) {

@@ -8,7 +8,6 @@ use App\Enums\Crm\CompanySource;
 use App\Enums\Crm\CompanyStatus;
 use App\Mail\CrmDailyDigest;
 use App\Models\Crm\Company;
-use App\Models\Crm\Demand;
 use App\Models\User;
 use App\Settings\CrmSettings;
 use Filament\Facades\Filament;
@@ -55,24 +54,21 @@ class CrmDigestTest extends TestCase
         });
     }
 
-    public function test_souhrn_obsahuje_nove_poptavky_a_odkaz_do_crm(): void
+    public function test_souhrn_obsahuje_firmy_a_odkaz_do_crm(): void
     {
         $user = User::factory()->create(['email' => 'tom@taveo.cz']);
         $this->firmaPoTerminu();
-        Demand::factory()->create(['title' => 'Migrace e-shopu na Shoptet']);
 
         $mail = new CrmDailyDigest(
             $user,
             Company::overdue()->get(),
             Company::dueToday()->get(),
-            Demand::untouched()->get(),
             collect(),
         );
 
         $rendered = $mail->render();
 
         $this->assertStringContainsString('Pekárna U Nádraží', $rendered);
-        $this->assertStringContainsString('Migrace e-shopu na Shoptet', $rendered);
         $this->assertStringContainsString('/nastroje/today', $rendered);
         $this->assertStringContainsString('1 follow-upů na dnešek', $mail->envelope()->subject);
     }
@@ -81,7 +77,7 @@ class CrmDigestTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $mail = new CrmDailyDigest($user, collect(), collect(), collect(), collect());
+        $mail = new CrmDailyDigest($user, collect(), collect(), collect());
 
         $this->assertStringContainsString('Dneska tě v CRM nic nečeká', $mail->render());
         $this->assertStringContainsString('žádné follow-upy', $mail->envelope()->subject);

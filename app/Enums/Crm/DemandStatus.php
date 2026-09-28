@@ -5,7 +5,10 @@ namespace App\Enums\Crm;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-/** Jak jsme s poptávkou naložili. */
+/**
+ * Stav poptávky z portálu. Poptávky z CRM zmizely 28. 9. 2026, enum zůstává
+ * jen kvůli migraci, která tabulku crm_demands zakládala.
+ */
 enum DemandStatus: string implements HasColor, HasLabel
 {
     /** Přišla a ještě jsme se na ni nepodívali. */

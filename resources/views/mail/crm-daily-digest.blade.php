@@ -1,7 +1,7 @@
 <x-mail::message>
 # Dobré ráno, {{ $recipient->name }}
 
-@if ($overdue->isEmpty() && $dueToday->isEmpty() && $demands->isEmpty() && $stale->isEmpty())
+@if ($overdue->isEmpty() && $dueToday->isEmpty() && $stale->isEmpty())
 Dneska tě v CRM nic nečeká. Klidný den.
 @endif
 
@@ -18,14 +18,6 @@ Dneska tě v CRM nic nečeká. Klidný den.
 
 @foreach ($dueToday as $company)
 - **{{ $company->name }}**@if ($company->activities->first()) — naposledy {{ $company->activities->first()->type->getLabel() }} {{ $company->activities->first()->happened_at->format('j. n.') }}@endif
-@endforeach
-@endif
-
-@if ($demands->isNotEmpty())
-## Nové poptávky ({{ $demands->count() }})
-
-@foreach ($demands as $demand)
-- [{{ $demand->title }}]({{ $demand->url }}) — {{ $demand->source->getLabel() }}, priorita {{ $demand->priority->short() }}
 @endforeach
 @endif
 

@@ -26,7 +26,6 @@ class CrmDailyDigest extends Mailable
         public User $recipient,
         public Collection $overdue,
         public Collection $dueToday,
-        public Collection $demands,
         public Collection $stale,
     ) {
         $this->todayUrl = Today::getUrl(panel: 'tools');

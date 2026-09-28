@@ -54,11 +54,6 @@ class Company extends Model
         return $this->hasMany(Activity::class);
     }
 
-    public function demands(): HasMany
-    {
-        return $this->hasMany(Demand::class);
-    }
-
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');

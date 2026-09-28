@@ -8,7 +8,6 @@ use App\Enums\Crm\CompanyStatus;
 use App\Models\Crm\Activity;
 use App\Models\Crm\Company;
 use App\Models\Crm\Deal;
-use App\Models\Crm\Demand;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -41,7 +40,6 @@ class WeeklyKpi
             'calls' => 'Hovory a schůzky',
             'proposals' => 'Odeslané nabídky',
             'won' => 'Vyhráno',
-            'demand_replies' => 'Reakce na poptávky',
         ];
     }
 
@@ -61,7 +59,6 @@ class WeeklyKpi
             'calls' => $this->calls(),
             'proposals' => $this->proposals(),
             'won' => $this->wonCount(),
-            'demand_replies' => $this->demandReplies(),
         ];
     }
 
@@ -166,13 +163,6 @@ class WeeklyKpi
         return (int) Deal::query()
             ->whereBetween('won_at', [$this->from, $this->to])
             ->sum('value_czk');
-    }
-
-    private function demandReplies(): int
-    {
-        return Demand::query()
-            ->whereBetween('replied_at', [$this->from, $this->to])
-            ->count();
     }
 
     /**

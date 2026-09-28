@@ -9,11 +9,9 @@ use App\Enums\Crm\CompanySource;
 use App\Enums\Crm\CompanyStatus;
 use App\Enums\Crm\DealPackage;
 use App\Enums\Crm\DealStage;
-use App\Enums\Crm\DemandSource;
 use App\Enums\Crm\Priority;
 use App\Enums\UserRole;
 use App\Models\Crm\Company;
-use App\Models\Crm\Demand;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -124,46 +122,7 @@ class CrmSeeder extends Seeder
             }
         }
 
-        Demand::insert([
-            [
-                'source' => DemandSource::ShoptetPartners->value,
-                'url' => 'https://partners.shoptet.cz/poptavky/2481',
-                'title' => 'Migrace e-shopu s 1 200 produkty na Shoptet',
-                'summary' => 'Stávající řešení na míru, potřeba přenést produkty, kategorie a objednávky. Napojení na Pohodu.',
-                'posted_at' => now()->subDay()->toDateString(),
-                'budget_estimate' => '80 000 až 120 000 Kč',
-                'priority' => Priority::A->value,
-                'status' => 'new',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'source' => DemandSource::Webtrh->value,
-                'url' => 'https://www.webtrh.cz/poptavka/48120',
-                'title' => 'Úpravy WooCommerce a zrychlení webu',
-                'summary' => 'Web se načítá přes pět sekund, potřeba projít šablonu a pluginy.',
-                'posted_at' => now()->subDays(2)->toDateString(),
-                'budget_estimate' => 'do 30 000 Kč',
-                'priority' => Priority::B->value,
-                'status' => 'new',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'source' => DemandSource::NaVolneNoze->value,
-                'url' => 'https://www.navolnenoze.cz/poptavky/9931',
-                'title' => 'Nový web pro zubní ordinaci',
-                'summary' => 'Pět podstránek, objednávkový formulář, texty dodá zadavatel.',
-                'posted_at' => now()->subDays(4)->toDateString(),
-                'budget_estimate' => 'neuvedeno',
-                'priority' => Priority::C->value,
-                'status' => 'new',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
-
-        $this->command?->info('Založeno 10 ukázkových firem a 3 poptávky.');
+        $this->command?->info('Založeno 10 ukázkových firem.');
     }
 
     /**
