@@ -19,6 +19,7 @@ use App\Models\Crm\Demand;
 use App\Models\Crm\MessageTemplate;
 use App\Models\User;
 use App\Support\Crm\Domain;
+use App\Support\Crm\MoneyForecast;
 use App\Support\Crm\OutreachLog;
 use App\Support\Crm\WeeklyKpi;
 use Filament\Facades\Filament;
@@ -337,6 +338,35 @@ class CrmTest extends TestCase
         $this->assertSame(1, $metrics['outreach']);
         $this->assertSame(1, $metrics['follow_ups']);
         $this->assertSame(1, $metrics['replies']);
+    }
+
+    public function test_prehled_spocita_jiste_pravdepodobne_a_potencial(): void
+    {
+        $company = $this->firma();
+        $company->deals()->create(['title' => 'Redesign', 'package' => 'eshop_redesign', 'stage' => DealStage::Call, 'value_czk' => 100000]);
+        $company->deals()->create(['title' => 'Správa', 'package' => 'retainer', 'stage' => DealStage::ProposalSent, 'value_czk' => 40000, 'expected_close_at' => now()->addMonth()]);
+        $company->deals()->create(['title' => 'Migrace', 'package' => 'migration_shoptet', 'stage' => DealStage::Won, 'value_czk' => 60000, 'won_at' => now()]);
+        $company->deals()->create(['title' => 'Nic', 'package' => 'other', 'stage' => DealStage::Lost, 'value_czk' => 500000]);
+
+        $forecast = new MoneyForecast;
+
+        $this->assertSame(
+            ['won_month' => 60000, 'won_year' => 60000, 'weighted' => 60000, 'potential' => 140000, 'open_count' => 2],
+            $forecast->summary(),
+        );
+
+        $months = $forecast->months();
+        $current = $months->firstWhere('current', true);
+        $next = $months->firstWhere('label', $months[6]['label']);
+        $this->assertSame(['won' => 60000, 'weighted' => 40000, 'potential' => 100000], array_intersect_key($current, array_flip(['won', 'weighted', 'potential'])));
+        $this->assertSame(20000, $next['weighted']);
+
+        $this->actingAs($this->obchodnik())
+            ->get('/nastroje/overview')
+            ->assertOk()
+            ->assertSee('Peníze v obchodech')
+            ->assertSee('60 000 Kč')
+            ->assertSee('140 000 Kč');
     }
 
     public function test_prehled_ukaze_oslovene_firmy_a_reakci_bez_cilu(): void

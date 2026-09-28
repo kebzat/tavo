@@ -3,6 +3,7 @@
 namespace App\Filament\Tools\Pages;
 
 use App\Support\Crm\CsvExport;
+use App\Support\Crm\MoneyForecast;
 use App\Support\Crm\OutreachLog;
 use App\Support\Crm\WeeklyKpi;
 use BackedEnum;
@@ -83,6 +84,72 @@ class Overview extends Page
                 ? number_format($kpi->wonValue(), 0, ',', ' ').' Kč'
                 : null,
         ])->values();
+    }
+
+    /**
+     * Tři čísla o penězích: jisté, pravděpodobné a celý potenciál.
+     *
+     * @return array{won_month: string, won_year: string, weighted: string, potential: string, open_count: int, has_deals: bool}
+     */
+    public function money(): array
+    {
+        $sum = (new MoneyForecast)->summary();
+
+        return [
+            'won_month' => MoneyForecast::czk($sum['won_month']),
+            'won_year' => MoneyForecast::czk($sum['won_year']),
+            'weighted' => MoneyForecast::czk($sum['weighted']),
+            'potential' => MoneyForecast::czk($sum['potential']),
+            'open_count' => $sum['open_count'],
+            'has_deals' => $sum['open_count'] > 0 || $sum['won_year'] > 0,
+        ];
+    }
+
+    /**
+     * Rozjednané obchody po fázích. Šířky pruhů jsou v procentech
+     * největší fáze, vážená část leží uvnitř celé částky.
+     *
+     * @return Collection<int, array{label: string, count: int, probability: int, total: string, weighted: string, total_width: float, weighted_width: float}>
+     */
+    public function moneyStages(): Collection
+    {
+        $stages = (new MoneyForecast)->byStage();
+        $max = max(1, (int) $stages->max('total'));
+
+        return $stages->map(fn (array $stage): array => [
+            'label' => $stage['label'],
+            'count' => $stage['count'],
+            'probability' => $stage['probability'],
+            'total' => MoneyForecast::czk($stage['total']),
+            'weighted' => MoneyForecast::czk($stage['weighted']),
+            'total_width' => round($stage['total'] / $max * 100, 1),
+            'weighted_width' => round($stage['weighted'] / $max * 100, 1),
+        ]);
+    }
+
+    /**
+     * Měsíční sloupce: vyhráno, očekávané a zbytek potenciálu nad sebou.
+     * Výšky jsou v procentech nejvyššího sloupce.
+     *
+     * @return Collection<int, array{label: string, current: bool, future: bool, won: string, weighted: string, potential: string, top: string, won_height: float, weighted_height: float, rest_height: float}>
+     */
+    public function moneyMonths(): Collection
+    {
+        $months = (new MoneyForecast)->months();
+        $max = max(1, (int) $months->max(fn (array $m): int => $m['won'] + $m['potential']));
+
+        return $months->map(fn (array $m): array => [
+            'label' => $m['label'],
+            'current' => $m['current'],
+            'future' => $m['future'],
+            'won' => MoneyForecast::czk($m['won']),
+            'weighted' => MoneyForecast::czk($m['weighted']),
+            'potential' => MoneyForecast::czk($m['potential']),
+            'top' => $m['won'] + $m['potential'] > 0 ? MoneyForecast::short($m['won'] + $m['weighted']) : '',
+            'won_height' => round($m['won'] / $max * 100, 1),
+            'weighted_height' => round($m['weighted'] / $max * 100, 1),
+            'rest_height' => round(($m['potential'] - $m['weighted']) / $max * 100, 1),
+        ]);
     }
 
     /** Oslovené firmy a jejich reakce, od posledního oslovení. */

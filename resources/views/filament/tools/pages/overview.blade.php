@@ -5,7 +5,103 @@
         $chart = $this->chart();
         $chartMax = $this->chartMax();
         $log = $this->outreachLog();
+        $money = $this->money();
+        $moneyMonths = $this->moneyMonths();
+        $moneyStages = $this->moneyStages();
     @endphp
+
+    <x-filament::section>
+        <x-slot name="heading">Peníze v obchodech</x-slot>
+        <x-slot name="description">Jisté je to, co je vyhrané. Pravděpodobné je částka obchodu krát šance podle fáze. Potenciál je součet všeho rozjednaného, kdyby vyšlo úplně všechno.</x-slot>
+
+        <div class="grid gap-4 md:grid-cols-3">
+            <div class="rounded-xl border-l-4 border-success-500 bg-success-50 p-5 dark:bg-success-500/10">
+                <p class="text-sm font-medium text-success-700 dark:text-success-400">Jisté, vyhráno tento měsíc</p>
+                <p class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">{{ $money['won_month'] }}</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Letos celkem {{ $money['won_year'] }}</p>
+            </div>
+
+            <div class="rounded-xl border-l-4 border-primary-500 bg-primary-50 p-5 dark:bg-primary-500/10">
+                <p class="text-sm font-medium text-primary-700 dark:text-primary-400">Pravděpodobně přijde</p>
+                <p class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">{{ $money['weighted'] }}</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Z rozjednaných obchodů: {{ $money['open_count'] }}</p>
+            </div>
+
+            <div class="rounded-xl border-l-4 border-gray-300 bg-gray-50 p-5 dark:border-white/20 dark:bg-white/5">
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Když vyjde všechno</p>
+                <p class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">{{ $money['potential'] }}</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Součet všech rozjednaných obchodů</p>
+            </div>
+        </div>
+
+        @if ($money['has_deals'])
+            <div class="mt-8 grid gap-10 lg:grid-cols-5">
+                <div class="lg:col-span-3">
+                    <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Po měsících</h3>
+
+                    <div class="mt-4 flex items-end gap-2 sm:gap-3">
+                        @foreach ($moneyMonths as $month)
+                            <div class="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                                <span class="hidden h-4 whitespace-nowrap text-xs font-semibold text-gray-950 sm:block dark:text-white">{{ $month['top'] }}</span>
+
+                                {{-- Výšky jsou poměr k nejvyššímu sloupci, proto inline styl. --}}
+                                <div
+                                    class="flex h-48 w-full max-w-14 flex-col justify-end overflow-hidden rounded-t-md"
+                                    title="Vyhráno {{ $month['won'] }} · pravděpodobně {{ $month['weighted'] }} · potenciál {{ $month['potential'] }}"
+                                >
+                                    <div class="w-full bg-primary-200 dark:bg-primary-500/30" style="height: {{ $month['rest_height'] }}%"></div>
+                                    <div class="w-full bg-primary-500" style="height: {{ $month['weighted_height'] }}%"></div>
+                                    <div class="w-full bg-success-500" style="height: {{ $month['won_height'] }}%"></div>
+                                </div>
+
+                                <span @class([
+                                    'text-xs',
+                                    'font-semibold text-gray-950 dark:text-white' => $month['current'],
+                                    'text-gray-500 dark:text-gray-400' => ! $month['current'],
+                                ])>{{ $month['label'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
+                        <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-success-500"></span> Vyhráno</span>
+                        <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-primary-500"></span> Pravděpodobně přijde</span>
+                        <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-primary-200 dark:bg-primary-500/30"></span> Zbytek potenciálu</span>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Číslo nad sloupcem je vyhráno plus pravděpodobně. Rozjednané obchody padají do měsíce podle očekávaného data uzavření, bez data do tohoto měsíce.</p>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Rozjednané podle fáze</h3>
+
+                    <ul class="mt-4 space-y-4">
+                        @foreach ($moneyStages as $stage)
+                            <li>
+                                <div class="flex items-baseline justify-between gap-3 text-sm">
+                                    <span class="text-gray-950 dark:text-white">
+                                        {{ $stage['label'] }}
+                                        <span class="text-gray-500 dark:text-gray-400">· {{ $stage['count'] }} · šance {{ $stage['probability'] }} %</span>
+                                    </span>
+                                    <span class="shrink-0 font-semibold text-gray-950 dark:text-white">{{ $stage['weighted'] }}</span>
+                                </div>
+
+                                <div class="relative mt-1.5 h-2.5 rounded-full bg-gray-100 dark:bg-white/5" title="Celkem {{ $stage['total'] }}, pravděpodobně {{ $stage['weighted'] }}">
+                                    <div class="absolute inset-y-0 left-0 rounded-full bg-primary-200 dark:bg-primary-500/30" style="width: {{ $stage['total_width'] }}%"></div>
+                                    <div class="absolute inset-y-0 left-0 rounded-full bg-primary-500" style="width: {{ $stage['weighted_width'] }}%"></div>
+                                </div>
+
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">celkem {{ $stage['total'] }}</p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        @else
+            <p class="mt-6 text-sm text-gray-500 dark:text-gray-400">
+                Zatím tu není žádný obchod. Když u firmy založíte obchod s částkou a fází, ukáže se tady, kolik z něj nejspíš přijde.
+            </p>
+        @endif
+    </x-filament::section>
 
     <x-filament::section>
         <x-slot name="heading">
