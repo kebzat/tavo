@@ -12,6 +12,8 @@ use App\Enums\Crm\TemplateChannel;
 use App\Enums\UserRole;
 use App\Filament\Tools\Actions\LogActivityAction;
 use App\Filament\Tools\Resources\Companies\Pages\CreateCompany;
+use App\Filament\Tools\Resources\Companies\Pages\EditCompany;
+use App\Filament\Tools\Resources\Companies\RelationManagers\DealsRelationManager;
 use App\Models\Crm\Activity;
 use App\Models\Crm\Company;
 use App\Models\Crm\Deal;
@@ -337,6 +339,23 @@ class CrmTest extends TestCase
         $this->assertSame(1, $metrics['outreach']);
         $this->assertSame(1, $metrics['follow_ups']);
         $this->assertSame(1, $metrics['replies']);
+    }
+
+    public function test_obchod_jde_pridat_primo_z_karty_firmy(): void
+    {
+        $this->actingAs($this->obchodnik());
+        $company = $this->firma();
+
+        Livewire::test(DealsRelationManager::class, ['ownerRecord' => $company, 'pageClass' => EditCompany::class])
+            ->mountTableAction('create')
+            ->assertHasNoTableActionErrors()
+            ->setTableActionData(['title' => 'Redesign', 'package' => 'eshop_redesign', 'stage' => 'call', 'value_czk' => 80000])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $deal = $company->deals()->first();
+        $this->assertSame(80000, $deal->value_czk);
+        $this->assertSame(40, $deal->probability);
     }
 
     public function test_prehled_spocita_jiste_pravdepodobne_a_potencial(): void

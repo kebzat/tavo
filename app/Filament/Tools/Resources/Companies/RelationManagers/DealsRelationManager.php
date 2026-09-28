@@ -64,7 +64,7 @@ class DealsRelationManager extends RelationManager
                 ->suffix('%')
                 // Předvyplní se podle fáze, ale zůstává přepsatelná — u konkrétního
                 // obchodu víme víc než tabulka výchozích hodnot.
-                ->placeholder(fn ($get): string => (string) (DealStage::tryFrom((string) $get('stage'))?->defaultProbability() ?? 5))
+                ->placeholder(fn ($get): string => (string) (DealStage::tryFrom((string) self::stageValue($get('stage')))?->defaultProbability() ?? 5))
                 ->helperText('Prázdné = podle fáze.'),
 
             DatePicker::make('expected_close_at')->label('Očekávané uzavření'),
@@ -78,7 +78,7 @@ class DealsRelationManager extends RelationManager
             TextInput::make('lost_reason')
                 ->label('Důvod prohry')
                 ->maxLength(255)
-                ->visible(fn ($get): bool => ($get('stage') instanceof DealStage ? $get('stage')->value : $get('stage')) === DealStage::Lost->value),
+                ->visible(fn ($get): bool => self::stageValue($get('stage')) === DealStage::Lost->value),
 
             Textarea::make('notes')->label('Poznámky')->rows(3)->columnSpanFull(),
         ]);
@@ -125,5 +125,11 @@ class DealsRelationManager extends RelationManager
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])])
             ->emptyStateHeading('Žádný obchod')
             ->emptyStateDescription('Až se rozjede konkrétní příležitost, založ obchod — objeví se v pipeline.');
+    }
+
+    /** Fáze z formuláře: výchozí hodnota je enum, po výběru v selectu text. */
+    private static function stageValue(mixed $stage): ?string
+    {
+        return $stage instanceof DealStage ? $stage->value : (is_string($stage) ? $stage : null);
     }
 }
