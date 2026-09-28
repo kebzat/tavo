@@ -12,6 +12,7 @@ use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Today;
 use App\Filament\Tools\Resources\Audits\Pages\EditAudit;
 use App\Filament\Tools\Resources\Companies\Pages\EditCompany;
+use App\Filament\Tools\Resources\Companies\Pages\ListCompanies;
 use App\Jobs\CompletePageSpeed;
 use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
@@ -265,6 +266,17 @@ class CrmScoutTest extends TestCase
         $names = (new Today)->untouched()->pluck('name')->all();
 
         $this->assertSame(['Silná', 'Slabá', 'Neproklepnutá'], $names);
+    }
+
+    public function test_seznam_firem_radi_od_nejvyssiho_skore(): void
+    {
+        $this->actingAs($this->obchodnik());
+        $slaba = $this->firma(['name' => 'Slabá', 'website' => 'a.test', 'fit_score' => 30]);
+        $silna = $this->firma(['name' => 'Silná', 'website' => 'b.test', 'fit_score' => 80]);
+        $nic = $this->firma(['name' => 'Neproklepnutá', 'website' => 'c.test']);
+
+        Livewire::test(ListCompanies::class)
+            ->assertCanSeeTableRecords([$silna, $slaba, $nic], inOrder: true);
     }
 
     /*

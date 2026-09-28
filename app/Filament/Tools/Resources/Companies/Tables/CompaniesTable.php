@@ -37,8 +37,9 @@ class CompaniesTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['owner', 'tags']))
-            // Pořadí pracovního seznamu: co má termín, a z toho nejdřív áčka.
-            ->defaultSort(fn (Builder $query) => $query->workOrder())
+            // Nejdřív nejvyšší skóre (Tom, 28. 9. 2026), neproklepnuté na konec.
+            // Co je na řadě podle termínu, ukazuje stránka Dnes.
+            ->defaultSort(fn (Builder $query) => $query->bestFitFirst()->orderBy('name'))
             ->persistFiltersInSession()
             ->columns([
                 TextColumn::make('name')
