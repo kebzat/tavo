@@ -349,6 +349,7 @@ class CrmTest extends TestCase
         Livewire::test(DealsRelationManager::class, ['ownerRecord' => $company, 'pageClass' => EditCompany::class])
             ->mountTableAction('create')
             ->assertHasNoTableActionErrors()
+            ->assertTableActionDataSet(['title' => $company->name])
             ->setTableActionData(['title' => 'Redesign', 'package' => 'eshop_redesign', 'stage' => 'call', 'value_czk' => 80000])
             ->callMountedTableAction()
             ->assertHasNoTableActionErrors();

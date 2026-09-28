@@ -24,6 +24,10 @@ class ContactsRelationManager extends RelationManager
 
     protected static ?string $title = 'Kontakty';
 
+    protected static ?string $modelLabel = 'kontakt';
+
+    protected static ?string $pluralModelLabel = 'kontakty';
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([

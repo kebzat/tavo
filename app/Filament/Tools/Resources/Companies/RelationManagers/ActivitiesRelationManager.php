@@ -33,6 +33,10 @@ class ActivitiesRelationManager extends RelationManager
 
     protected static ?string $title = 'Časová osa';
 
+    protected static ?string $modelLabel = 'aktivitu';
+
+    protected static ?string $pluralModelLabel = 'aktivity';
+
     /**
      * Editační formulář je proti rychlému zápisu bohatší o navázání na obchod
      * a kontakt. Do rychlé akce ta pole nepatří — zdržovala by u devíti

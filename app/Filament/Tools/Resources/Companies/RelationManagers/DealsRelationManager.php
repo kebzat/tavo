@@ -26,11 +26,17 @@ class DealsRelationManager extends RelationManager
 
     protected static ?string $title = 'Obchody';
 
+    protected static ?string $modelLabel = 'obchod';
+
+    protected static ?string $pluralModelLabel = 'obchody';
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([
             TextInput::make('title')
                 ->label('Název')
+                // Předvyplněný firmou, psát ho u každé příležitosti ručně zdržuje.
+                ->default(fn (): string => $this->getOwnerRecord()->name)
                 ->required()
                 ->maxLength(255)
                 ->columnSpanFull(),
