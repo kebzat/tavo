@@ -57,7 +57,7 @@ ostrá data bydlí jen na produkci.
 | Stránka | K čemu je |
 |---|---|
 | **Dnes** | Po termínu, dnes, zbytek týdne, fronta k oslovení (nahoře nejvyšší skóre), nové poptávky, firmy bez pohybu. U každého řádku „Hotovo" a odklad o 3 nebo 7 dní |
-| **Přehled** | Týdenní čísla proti cílům, graf za 8 týdnů, rozpad podle zdroje a segmentu |
+| **Přehled** | Čísla za týden, oslovené firmy a jejich reakce, graf za 8 týdnů. Jen informativní, bez cílů |
 | **Firmy** | Seznam s hledáním a filtry, karta firmy s kontakty, obchody a časovou osou |
 | **Pipeline** | Kanban obchodů, přetahování karet mezi fázemi |
 | **Obchody** | Tabulkový pohled na tytéž obchody, součet hodnoty, export |
@@ -65,7 +65,7 @@ ostrá data bydlí jen na produkci.
 | **Import firem** | Nahrání tabulky prospektů z rešerše |
 | **Import poptávek** | Nahrání listu s otevřenými poptávkami z portálů |
 | **Šablony zpráv** | Texty s dosazovanými údaji firmy |
-| **Nastavení CRM** | Týdenní cíle, nabídka odkladů, příjemci ranního souhrnu |
+| **Nastavení CRM** | Nabídka odkladů, příjemci ranního souhrnu |
 
 ### Karta firmy
 
@@ -455,7 +455,7 @@ app/
 ├─ Models/Crm/                 Company, Contact, Deal, Activity, Demand,
 │                              MessageTemplate, Tag
 ├─ Observers/Crm/              ActivityObserver, DealObserver
-├─ Settings/CrmSettings        týdenní cíle, odklady, příjemci souhrnu
+├─ Settings/CrmSettings        odklady, příjemci souhrnu
 └─ Support/Crm/
    ├─ Domain                   normalizace webu na doménu
    ├─ CompanyCsvImporter       import prospektů z rešerše
@@ -463,7 +463,7 @@ app/
    ├─ DemandImporter           upsert poptávek podle adresy
    ├─ TemplateRenderer         dosazení do šablon
    ├─ WeeklyKpi                týdenní čísla
-   ├─ ChannelBreakdown         výkon kanálů a segmentů
+   ├─ OutreachLog              oslovené firmy a jejich reakce
    ├─ CsvExport                stahování CSV
    ├─ AuditFromCompany         audit a checklist z proklepnuté firmy
    ├─ Scout/                   WebScout (měření), Findings (nálezy),

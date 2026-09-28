@@ -4,6 +4,7 @@
         $rows = $this->rows();
         $chart = $this->chart();
         $chartMax = $this->chartMax();
+        $log = $this->outreachLog();
     @endphp
 
     <x-filament::section>
@@ -27,44 +28,58 @@
             </div>
         </x-slot>
 
+        <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+            @foreach ($rows as $row)
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">{{ $row['label'] }}</dt>
+                    <dd class="text-2xl font-semibold text-gray-950 dark:text-white">{{ $row['value'] }}</dd>
+                    @if ($row['note'])
+                        <dd class="text-xs text-gray-500 dark:text-gray-400">{{ $row['note'] }}</dd>
+                    @endif
+                </div>
+            @endforeach
+        </dl>
+    </x-filament::section>
+
+    <x-filament::section>
+        <x-slot name="heading">Oslovené firmy ({{ $log->count() }})</x-slot>
+        <x-slot name="description">Od posledního oslovení. Reakce je z výsledku zapsané aktivity, jinak ze stavu firmy.</x-slot>
+
         <div class="overflow-x-auto">
             <table class="w-full min-w-max text-left text-sm">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-white/10">
-                        <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">Ukazatel</th>
-                        <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Skutečnost</th>
-                        <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Cíl</th>
+                        <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">Firma</th>
+                        <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">Osloveno</th>
+                        <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">Naposledy</th>
+                        <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Kontaktů</th>
+                        <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">Reakce</th>
                         <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">Stav</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($rows as $row)
+                    @forelse ($log as $line)
                         <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
-                            <td class="px-3 py-2 text-gray-950 dark:text-white">
-                                {{ $row['label'] }}
-                                @if ($row['note'])
-                                    <span class="text-gray-500 dark:text-gray-400">· {{ $row['note'] }}</span>
-                                @endif
+                            <td class="px-3 py-2">
+                                <a href="{{ $line['url'] }}" class="font-medium text-gray-950 hover:underline dark:text-white">{{ $line['name'] }}</a>
                             </td>
-                            <td class="px-3 py-2 text-right text-lg font-semibold text-gray-950 dark:text-white">
-                                {{ $row['value'] }}
-                            </td>
-                            <td class="px-3 py-2 text-right text-gray-500 dark:text-gray-400">
-                                {{ $row['goal'] ?? '—' }}
+                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ $line['first_at']->format('j. n. Y') }}</td>
+                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ $line['last_at']->format('j. n.') }} · {{ $line['channel'] }}</td>
+                            <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ $line['touches'] }}</td>
+                            <td class="px-3 py-2">
+                                <x-filament::badge :color="$line['reaction_color']" size="sm">{{ $line['reaction'] }}</x-filament::badge>
                             </td>
                             <td class="px-3 py-2">
-                                @if ($row['met'] === null)
-                                    <span class="text-gray-400 dark:text-gray-500">bez cíle</span>
-                                @elseif ($row['met'])
-                                    <x-filament::badge color="success" size="sm">splněno</x-filament::badge>
-                                @else
-                                    <x-filament::badge color="danger" size="sm">
-                                        chybí {{ $row['goal'] - $row['value'] }}
-                                    </x-filament::badge>
-                                @endif
+                                <x-filament::badge :color="$line['status_color']" size="sm">{{ $line['status'] }}</x-filament::badge>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-3 py-4 text-gray-500 dark:text-gray-400">
+                                Zatím jsme nikoho neoslovili. Oslovení se sem propíše, jakmile ho zapíšete u firmy.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -111,46 +126,4 @@
             <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-warning-500"></span> Nabídky</span>
         </div>
     </x-filament::section>
-
-    <div class="grid gap-6 lg:grid-cols-2">
-        @foreach ([['Podle zdroje', $this->bySource()], ['Podle segmentu', $this->bySegment()]] as [$heading, $breakdown])
-            <x-filament::section>
-                <x-slot name="heading">{{ $heading }}</x-slot>
-                <x-slot name="description">Za celou dobu — konverze kanálu se z jednoho týdne poznat nedá.</x-slot>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="border-b border-gray-200 dark:border-white/10">
-                                <th class="px-3 py-2 font-semibold text-gray-950 dark:text-white">&nbsp;</th>
-                                <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Firem</th>
-                                <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Odpovědí</th>
-                                <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Vyhráno</th>
-                                <th class="px-3 py-2 text-right font-semibold text-gray-950 dark:text-white">Odezva</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($breakdown as $line)
-                                <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
-                                    <td class="px-3 py-2 text-gray-950 dark:text-white">{{ $line['label'] }}</td>
-                                    <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ $line['companies'] }}</td>
-                                    <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ $line['replies'] }}</td>
-                                    <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ $line['won'] }}</td>
-                                    <td class="px-3 py-2 text-right font-medium text-gray-950 dark:text-white">
-                                        {{ number_format($line['rate'], 1, ',', ' ') }} %
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="px-3 py-4 text-gray-500 dark:text-gray-400">
-                                        Zatím není co počítat — přidej první firmy.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </x-filament::section>
-        @endforeach
-    </div>
 </x-filament-panels::page>

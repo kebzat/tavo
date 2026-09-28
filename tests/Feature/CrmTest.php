@@ -19,6 +19,7 @@ use App\Models\Crm\Demand;
 use App\Models\Crm\MessageTemplate;
 use App\Models\User;
 use App\Support\Crm\Domain;
+use App\Support\Crm\OutreachLog;
 use App\Support\Crm\WeeklyKpi;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -336,6 +337,33 @@ class CrmTest extends TestCase
         $this->assertSame(1, $metrics['outreach']);
         $this->assertSame(1, $metrics['follow_ups']);
         $this->assertSame(1, $metrics['replies']);
+    }
+
+    public function test_prehled_ukaze_oslovene_firmy_a_reakci_bez_cilu(): void
+    {
+        $zajem = $this->firma(['name' => 'Firma se zájmem']);
+        $zajem->activities()->create(['type' => ActivityType::Email, 'subject' => 'Oslovení', 'happened_at' => now()->subDays(6)]);
+        $zajem->activities()->create(['type' => ActivityType::Call, 'subject' => 'Hovor', 'happened_at' => now()->subDays(2), 'outcome' => ActivityOutcome::Positive]);
+
+        $ticho = $this->firma(['name' => 'Firma bez reakce']);
+        $ticho->activities()->create(['type' => ActivityType::Email, 'subject' => 'Oslovení', 'happened_at' => now()->subDays(8)]);
+
+        $this->firma(['name' => 'Neoslovená firma']);
+
+        $rows = OutreachLog::rows();
+
+        $this->assertSame(['Firma se zájmem', 'Firma bez reakce'], $rows->pluck('name')->all());
+        $this->assertSame(2, $rows[0]['touches']);
+        $this->assertSame('Zájem', $rows[0]['reaction']);
+        $this->assertSame('Bez reakce (8 dní)', $rows[1]['reaction']);
+
+        $this->actingAs($this->obchodnik())
+            ->get('/nastroje/overview')
+            ->assertOk()
+            ->assertSee('Oslovené firmy (2)')
+            ->assertSee('Firma bez reakce')
+            ->assertDontSee('Neoslovená firma')
+            ->assertDontSee('chybí');
     }
 
     public function test_tydenni_prehled_secte_nabidky_vyhrane_a_poptavky(): void

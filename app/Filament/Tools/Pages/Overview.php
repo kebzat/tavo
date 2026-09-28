@@ -2,9 +2,8 @@
 
 namespace App\Filament\Tools\Pages;
 
-use App\Settings\CrmSettings;
-use App\Support\Crm\ChannelBreakdown;
 use App\Support\Crm\CsvExport;
+use App\Support\Crm\OutreachLog;
 use App\Support\Crm\WeeklyKpi;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -15,11 +14,9 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
 
 /**
- * Týdenní obchodní přehled.
- *
- * Odpovídá na jedinou otázku: děláme toho tenhle týden dost? Proto se čísla
- * ukazují vždy proti cíli, ne samostatně — dvanáct oslovení je dobrá zpráva
- * jen do chvíle, než se ví, že cíl je dvacet.
+ * Obchodní přehled. Jen informativní: co se za týden stalo, koho jsme
+ * oslovili a jak zareagoval. Cíle ani kvóty tu nejsou (rozhodnutí Toma
+ * z 28. 9. 2026).
  */
 class Overview extends Page
 {
@@ -27,7 +24,7 @@ class Overview extends Page
 
     protected static ?string $navigationLabel = 'Přehled';
 
-    protected static ?string $title = 'Týdenní přehled';
+    protected static ?string $title = 'Přehled';
 
     protected static string|\UnitEnum|null $navigationGroup = 'CRM';
 
@@ -70,33 +67,28 @@ class Overview extends Page
     }
 
     /**
-     * Řádky tabulky: kolik jsme udělali, kolik jsme chtěli a jestli to stačí.
+     * Čísla za zobrazený týden.
      *
-     * @return Collection<int, array{key: string, label: string, value: int, goal: ?int, met: ?bool, note: ?string}>
+     * @return Collection<int, array{label: string, value: int, note: ?string}>
      */
     public function rows(): Collection
     {
         $kpi = $this->kpi();
         $metrics = $kpi->metrics();
-        $goals = app(CrmSettings::class)->goals();
 
-        return collect(WeeklyKpi::labels())->map(function (string $label, string $key) use ($metrics, $goals, $kpi): array {
-            $goal = $goals[$key] ?? null;
-            $value = $metrics[$key] ?? 0;
+        return collect(WeeklyKpi::labels())->map(fn (string $label, string $key): array => [
+            'label' => $label,
+            'value' => $metrics[$key] ?? 0,
+            'note' => $key === 'won' && $kpi->wonValue() > 0
+                ? number_format($kpi->wonValue(), 0, ',', ' ').' Kč'
+                : null,
+        ])->values();
+    }
 
-            return [
-                'key' => $key,
-                'label' => $label,
-                'value' => $value,
-                'goal' => $goal,
-                // U vyhraných obchodů cíl nemáme — vyhrává se, když to vyjde,
-                // ne když se snažíme víc.
-                'met' => $goal !== null ? $value >= $goal : null,
-                'note' => $key === 'won' && $kpi->wonValue() > 0
-                    ? number_format($kpi->wonValue(), 0, ',', ' ').' Kč'
-                    : null,
-            ];
-        })->values();
+    /** Oslovené firmy a jejich reakce, od posledního oslovení. */
+    public function outreachLog(): Collection
+    {
+        return OutreachLog::rows();
     }
 
     /** Osm týdnů zpět pro sloupcový graf. */
@@ -113,16 +105,6 @@ class Overview extends Page
         ])->max());
     }
 
-    public function bySource(): Collection
-    {
-        return ChannelBreakdown::bySource();
-    }
-
-    public function bySegment(): Collection
-    {
-        return ChannelBreakdown::bySegment();
-    }
-
     protected function getHeaderActions(): array
     {
         return [
@@ -136,14 +118,12 @@ class Overview extends Page
                     $rows = $this->rows()->map(fn (array $row): array => [
                         $row['label'],
                         $row['value'],
-                        $row['goal'] ?? '—',
-                        $row['goal'] === null ? '' : ($row['met'] ? 'splněno' : 'nesplněno'),
                         $row['note'] ?? '',
                     ]);
 
                     return CsvExport::download(
                         'prehled-'.$kpi->from->format('Y-m-d').'.csv',
-                        ['ukazatel', 'skutecnost', 'cil', 'stav', 'poznamka'],
+                        ['ukazatel', 'pocet', 'poznamka'],
                         $rows,
                     );
                 }),

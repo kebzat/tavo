@@ -5,7 +5,6 @@ namespace App\Filament\Tools\Pages;
 use App\Settings\CrmSettings;
 use BackedEnum;
 use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Pages\SettingsPage;
 use Filament\Schemas\Components\Section;
@@ -13,8 +12,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
 /**
- * Nastavení CRM. Týdenní cíle a chování follow-upů — tedy to, co se v průběhu
- * roku mění podle toho, kolik máme kapacity.
+ * Nastavení CRM: nabídka odkladů u follow-upů a příjemci ranního souhrnu.
  */
 class ManageCrm extends SettingsPage
 {
@@ -33,18 +31,6 @@ class ManageCrm extends SettingsPage
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Týdenní cíle')
-                ->description('Proti těmhle číslům se porovnává týdenní přehled.')
-                ->columns(3)
-                ->schema([
-                    TextInput::make('goal_outreach')->label('Nová oslovení')->numeric()->minValue(0)->required(),
-                    TextInput::make('goal_follow_ups')->label('Follow-upy')->numeric()->minValue(0)->required(),
-                    TextInput::make('goal_replies')->label('Odpovědi')->numeric()->minValue(0)->required(),
-                    TextInput::make('goal_calls')->label('Hovory a schůzky')->numeric()->minValue(0)->required(),
-                    TextInput::make('goal_proposals')->label('Odeslané nabídky')->numeric()->minValue(0)->required(),
-                    TextInput::make('goal_demand_replies')->label('Reakce na poptávky')->numeric()->minValue(0)->required(),
-                ]),
-
             Section::make('Follow-upy')
                 ->schema([
                     TagsInput::make('follow_up_days')
