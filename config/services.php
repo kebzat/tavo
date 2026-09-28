@@ -48,6 +48,10 @@ return [
     // Úsudek nad prospekty v CRM a shrnutí auditu. Bez klíče se proklepnutí
     // webu obejde jen s měřením, viz App\Support\Crm\Ai\ProspectAi.
     'anthropic' => [
+        // Vypínač všech placených volání z CRM (podrobný audit, úsudek při
+        // proklepnutí, hledání firem). Vypnuto, dokud ho Tom výslovně nezapne:
+        // audity se píšou v Claude Code na předplatném.
+        'enabled' => (bool) env('ANTHROPIC_ENABLED', false),
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-opus-5'),
         // Jen u klíče, který nepatří žádnému workspace. ID je v konzoli

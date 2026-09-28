@@ -217,7 +217,14 @@ Po každé úpravě `.env` na serveru **Nastavení → Údržba → Obnovit cach
 nasazení si konfiguraci ukládá. Tamtéž **Otestovat napojení** ověří oba klíče
 a vypíše chybu tak, jak ji služba vrátila.
 
+Placené volání Clauda z CRM je ve výchozím stavu **vypnuté**, i když je klíč
+vyplněný. Bez `ANTHROPIC_ENABLED=true` se nezobrazí „Projít web Claudem“,
+vytvoření auditu nespustí podrobný audit, proklepnutí jede jen z měření
+a `crm:discover` nic nedělá. Audity se píšou v Claude Code na předplatném
+(`/audit-eshopu`).
+
 ```dotenv
+ANTHROPIC_ENABLED=false     # true = CRM smí volat placené Claude API
 ANTHROPIC_API_KEY=          # úsudek, shrnutí auditu, hledání firem
 ANTHROPIC_MODEL=claude-opus-5
 ANTHROPIC_WORKSPACE_ID=     # jen u klíče mimo workspace (wrkspc_…)

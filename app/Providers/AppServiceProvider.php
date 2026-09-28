@@ -18,9 +18,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Claude jen s klíčem. Bez něj proklepnutí webu a audit jedou
-        // z měření a nic se nerozbije.
-        $this->app->bind(ProspectAi::class, fn (): ProspectAi => filled(config('services.anthropic.key'))
+        // Claude jen s klíčem a zapnutým ANTHROPIC_ENABLED. Jinak proklepnutí
+        // webu a audit jedou z měření, nic se nerozbije a nic se neplatí.
+        $this->app->bind(ProspectAi::class, fn (): ProspectAi => config('services.anthropic.enabled') && filled(config('services.anthropic.key'))
             ? new ClaudeProspectAi(
                 config('services.anthropic.key'),
                 config('services.anthropic.model'),

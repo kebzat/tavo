@@ -17,7 +17,9 @@ use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
 use App\Models\Crm\Company;
 use App\Models\User;
+use App\Support\Crm\Ai\ClaudeProspectAi;
 use App\Support\Crm\Ai\DeepAuditPrompt;
+use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
 use App\Support\Crm\AuditFromCompany;
 use App\Support\Crm\Scout\ProspectScout;
@@ -670,6 +672,22 @@ class CrmScoutTest extends TestCase
         Livewire::test(EditAudit::class, ['record' => $audit->getKey()])
             ->call('checkDeepAudit')
             ->assertRedirect();
+    }
+
+    public function test_claude_je_bez_vypinace_vypnuty_i_s_klicem(): void
+    {
+        config(['services.anthropic.key' => 'sk-ant-test', 'services.anthropic.enabled' => false]);
+        $this->assertInstanceOf(NullProspectAi::class, app(ProspectAi::class));
+        $this->assertFalse(app(ProspectAi::class)->enabled());
+
+        $audit = $this->auditZFirmy();
+
+        Livewire::actingAs($this->obchodnik())
+            ->test(EditAudit::class, ['record' => $audit->getKey()])
+            ->assertActionHidden('deepAudit');
+
+        config(['services.anthropic.enabled' => true]);
+        $this->assertInstanceOf(ClaudeProspectAi::class, app(ProspectAi::class));
     }
 
     public function test_hledani_bez_klice_nic_nedela(): void

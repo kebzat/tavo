@@ -267,6 +267,10 @@ class Maintenance extends Page
     {
         $key = (string) config('services.anthropic.key');
 
+        if (! config('services.anthropic.enabled')) {
+            return 'vypnuto (ANTHROPIC_ENABLED), CRM Clauda nevolá a nic neutrácí';
+        }
+
         if ($key === '') {
             return 'klíč chybí — doplňte ANTHROPIC_API_KEY a obnovte cache';
         }
