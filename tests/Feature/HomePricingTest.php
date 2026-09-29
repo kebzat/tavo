@@ -31,6 +31,24 @@ class HomePricingTest extends TestCase
             ->assertSeeInOrder(['Strategická konzultace', '2 000 Kč', 'Jednorázová spolupráce', '1 000 Kč', 'Pravidelná spolupráce', 'od 8 900 Kč']);
     }
 
+    public function test_pod_cenami_je_uvodni_konzultace_zdarma(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSeeInOrder(['od 8 900 Kč', 'Úvodní konzultace zdarma', 'Domluvit konzultaci']);
+    }
+
+    public function test_uvodni_konzultace_bez_nadpisu_se_nezobrazi(): void
+    {
+        $home = app(HomeSettings::class);
+        $home->pricing_free_title = null;
+        $home->save();
+
+        $this->get('/')
+            ->assertOk()
+            ->assertDontSee('Domluvit konzultaci');
+    }
+
     public function test_karta_bez_ceny_se_vynecha_a_chybejici_klice_nevadi(): void
     {
         $this->setPlans([

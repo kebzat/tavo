@@ -45,5 +45,21 @@
                 </div>
             @endforeach
         </div>
+
+        {{-- Úvodní konzultace zdarma: pod cenami, aby ceník nikoho neodradil
+             od prvního kroku. Tlačítko vede na formulář na konci stránky. --}}
+        @if ($home->pricing_free_title)
+            <div data-reveal class="mt-[clamp(28px,3vw,44px)] flex flex-col gap-5 border-t border-cream/15 pt-[clamp(28px,3vw,44px)] loop:flex-row loop:items-center loop:gap-10">
+                <h3 class="text-h3-sm m-0 shrink-0 font-extrabold tracking-[-.01em]">{{ $home->pricing_free_title }}</h3>
+
+                @if ($home->pricing_free_text)
+                    <p class="m-0 max-w-[60ch] text-[17px] leading-[1.5] text-brick loop:flex-1">{{ $home->pricing_free_text }}</p>
+                @endif
+
+                @if ($home->pricing_free_cta_label)
+                    <x-btn href="#kontakt" variant="primary" class="shrink-0 self-start loop:self-auto">{{ $home->pricing_free_cta_label }}</x-btn>
+                @endif
+            </div>
+        @endif
     </div>
 </section>

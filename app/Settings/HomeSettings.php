@@ -94,6 +94,13 @@ class HomeSettings extends Settings
 
     public array $pricing_plans;
 
+    // Pruh pod kartami ceníku: úvodní konzultace zdarma
+    public ?string $pricing_free_title;
+
+    public ?string $pricing_free_text;
+
+    public ?string $pricing_free_cta_label;
+
     // Závěrečné CTA
     public ?string $cta_eyebrow;
 

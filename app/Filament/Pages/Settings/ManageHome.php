@@ -214,6 +214,14 @@ class ManageHome extends SettingsPage
                                 ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
                                 ->maxItems(3),
                         ]),
+
+                    Section::make('Úvodní konzultace zdarma')
+                        ->description('Pruh pod kartami ceníku, ať se lidé nebojí ozvat. Bez nadpisu se nezobrazí. Tlačítko vede na formulář na konci stránky.')
+                        ->schema([
+                            TextInput::make('pricing_free_title')->label('Nadpis'),
+                            Textarea::make('pricing_free_text')->label('Text')->rows(2),
+                            TextInput::make('pricing_free_cta_label')->label('Popisek tlačítka')->helperText('Prázdné pole tlačítko skryje.'),
+                        ]),
                 ]),
 
                 Tab::make('Závěrečné CTA')->schema([

@@ -34,11 +34,18 @@ class FounderForm
                     ->defaultItems(0),
             ]),
 
-            Section::make('Fotka')
-                ->description('Použije se v sekci „Lidé" na homepage. Stačí jedna společná fotka u prvního zakladatele.')
+            Section::make('Fotky')
+                ->columns(2)
                 ->schema([
+                    ImageUpload::media('portrait')
+                        ->label('Profilová fotka')
+                        ->helperText('Kroužek v úvodu homepage. Ořízne se na čtverec podle středu, hlava by tedy měla být uprostřed. Doladit jde tlačítkem úprav.')
+                        ->collection(Founder::MEDIA_PORTRAIT)
+                        ->imageEditor()
+                        ->imageEditorAspectRatios(['1:1']),
                     ImageUpload::media('photo')
-                        ->label('Fotka')
+                        ->label('Společná fotka')
+                        ->helperText('Sekce „Lidé" na homepage. Stačí jedna u prvního zakladatele.')
                         ->collection(Founder::MEDIA_PHOTO)
                         ->imageEditor(),
                 ]),

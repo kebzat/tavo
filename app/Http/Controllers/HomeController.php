@@ -33,6 +33,11 @@ class HomeController extends Controller
                 ->filter()
                 ->values(),
             'founders' => $founders,
+            // Kroužky s Pavlem a Tomem v úvodu. Kdo fotku nemá, v úvodu chybí.
+            'heroPortraits' => $founders
+                ->map(fn (Founder $founder): ?array => $founder->portraitImage())
+                ->filter()
+                ->values(),
             // Společná fotka je jedna, ale nahrává se u kteréhokoliv zakladatele —
             // vezmeme první, která existuje.
             'foundersPhoto' => $founders

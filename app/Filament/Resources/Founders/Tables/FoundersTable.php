@@ -18,9 +18,9 @@ class FoundersTable
             ->defaultSort('order_column')
             ->reorderable('order_column')
             ->columns([
-                SpatieMediaLibraryImageColumn::make('photo')
+                SpatieMediaLibraryImageColumn::make('portrait')
                     ->label('')
-                    ->collection(Founder::MEDIA_PHOTO)
+                    ->collection(Founder::MEDIA_PORTRAIT)
                     ->circular(),
                 TextColumn::make('name')->label('Jméno')->weight('bold')->searchable(),
                 TextColumn::make('role_label')->label('Role'),

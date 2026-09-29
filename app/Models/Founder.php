@@ -12,7 +12,11 @@ class Founder extends Model implements HasMedia
 {
     use InteractsWithMedia;
 
+    /** Společná fotka do sekce „Lidé“. Stačí u jednoho zakladatele. */
     public const MEDIA_PHOTO = 'photo';
+
+    /** Profilová fotka do kroužku v úvodu homepage. */
+    public const MEDIA_PORTRAIT = 'portrait';
 
     protected $guarded = [];
 
@@ -59,6 +63,7 @@ class Founder extends Model implements HasMedia
     {
         // useDisk('public') — viz komentář v CaseStudy::registerMediaCollections().
         $this->addMediaCollection(self::MEDIA_PHOTO)->singleFile()->useDisk('public');
+        $this->addMediaCollection(self::MEDIA_PORTRAIT)->singleFile()->useDisk('public');
     }
 
     /**
@@ -75,5 +80,21 @@ class Founder extends Model implements HasMedia
         }
 
         return ResponsiveImage::make($media->getPathRelativeToRoot(), $alt);
+    }
+
+    /**
+     * Profilová fotka s alt textem podle jména.
+     *
+     * @return array{src: string, srcset: ?string, width: ?int, height: ?int, alt: string}|null
+     */
+    public function portraitImage(): ?array
+    {
+        $media = $this->getFirstMedia(self::MEDIA_PORTRAIT);
+
+        if (! $media) {
+            return null;
+        }
+
+        return ResponsiveImage::make($media->getPathRelativeToRoot(), (string) $this->name);
     }
 }

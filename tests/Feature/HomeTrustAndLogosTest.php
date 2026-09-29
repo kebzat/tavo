@@ -118,6 +118,19 @@ class HomeTrustAndLogosTest extends TestCase
             ->assertSee('pavelvcelis.cz');
     }
 
+    public function test_profilove_fotky_se_ukazou_v_uvodu(): void
+    {
+        $this->get('/')->assertOk()->assertDontSee('pavel-portret', false);
+
+        $pavel = Founder::query()->ordered()->first();
+        $pavel->addMedia(UploadedFile::fake()->image('pavel-portret.jpg', 600, 600))->toMediaCollection(Founder::MEDIA_PORTRAIT);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('pavel-portret', false)
+            ->assertSee('alt="'.$pavel->name.'"', false);
+    }
+
     public function test_stara_tomova_adresa_se_opravi(): void
     {
         DB::table('founders')->update(['external_url' => 'https://juliatom.cz/']);

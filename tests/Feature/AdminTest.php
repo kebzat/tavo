@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Founder;
 use App\Models\User;
 use App\Settings\ContactSettings;
 use App\Settings\HomeSettings;
@@ -23,6 +24,16 @@ class AdminTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get('/admin')
             ->assertOk();
+    }
+
+    public function test_karta_zakladatele_se_otevre(): void
+    {
+        $this->seed(ContentSeeder::class);
+
+        $this->actingAs(User::factory()->create())
+            ->get('/admin/founders/'.Founder::query()->value('id').'/edit')
+            ->assertOk()
+            ->assertSee('Profilová fotka');
     }
 
     /**

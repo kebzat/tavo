@@ -53,7 +53,7 @@ Velikosti jsou fluidní `clamp()` tokeny, ne pevné hodnoty:
 
 | Token | Hodnota | Použití |
 |---|---|---|
-| `text-hero` | `clamp(42px, 7.6vw, 124px)` | H1 na homepage |
+| `text-hero` | `clamp(42px, min(7.6vw, 9vh), 124px)` | H1 na homepage; na nízkém okně se zmenší i podle výšky, ať se úvod vejde celý |
 | `text-page-title` | `clamp(40px, 7vw, 110px)` | H1 na podstránkách |
 | `text-case-title` | `clamp(38px, 6.2vw, 96px)` | H1 detailu reference |
 | `text-cta` / `text-cta-sm` | `clamp(34px, 6.4vw, 96px)` / `clamp(30px, 5.4vw, 80px)` | nadpis v cihlovém pruhu |

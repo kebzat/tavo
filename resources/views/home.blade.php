@@ -1,5 +1,5 @@
 <x-layout.app>
-    <x-home.hero :home="$home" />
+    <x-home.hero :home="$home" :portraits="$heroPortraits" />
 
     @if ($trustItems->isNotEmpty())
         <x-home.trust-bar :items="$trustItems" />

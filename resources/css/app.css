@@ -35,7 +35,7 @@
     --color-sand-600: #bfb69f;
 
     /* Fluidní typografie */
-    --text-hero: clamp(42px, 7.6vw, 124px);
+    --text-hero: clamp(42px, min(7.6vw, 9vh), 124px);
     --text-hero--line-height: 0.94;
     --text-page-title: clamp(40px, 7vw, 110px);
     --text-page-title--line-height: 0.94;
