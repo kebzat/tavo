@@ -22,7 +22,8 @@
             </div>
         @endif
 
-        <x-eyebrow data-reveal :rule="true" class="mb-[30px]">{{ $home->hero_eyebrow }}</x-eyebrow>
+        {{-- Na mobilu bez čárky: vycentrovaný text by s ní vypadal posunutý doprava. --}}
+        <x-eyebrow data-reveal rule="desktop" class="mb-[30px]">{{ $home->hero_eyebrow }}</x-eyebrow>
 
         <h1 class="text-hero m-0 max-w-[16ch] font-extrabold tracking-[-.03em]">
             <span data-line><span>{{ $home->hero_line_1 }}</span></span>

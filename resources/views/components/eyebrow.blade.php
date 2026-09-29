@@ -1,5 +1,5 @@
 @props([
-    'rule' => false,     // vodorovná čárka před textem (hero)
+    'rule' => false,     // vodorovná čárka před textem (hero); 'desktop' = jen od `menu:`
     'tone' => 'brick',   // brick | ink | cream
 ])
 
@@ -13,7 +13,7 @@
 
 <div {{ $attributes->class(['inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[.16em] uppercase', $tones[$tone] ?? $tones['brick']]) }}>
     @if ($rule)
-        <span class="h-0.5 w-[26px] bg-current"></span>
+        <span @class(['h-0.5 w-[26px] bg-current', 'hidden menu:block' => $rule === 'desktop'])></span>
     @endif
     {{ $slot }}
 </div>
