@@ -31,7 +31,7 @@ class ProposalController extends Controller
             'proposal' => $proposal,
             'tiles' => $proposal->highlightTiles(),
             'timeline' => $proposal->timelineItems(),
-            'findings' => $proposal->findingItems(),
+            'findings' => $proposal->findingGroups(),
             'recommendations' => $proposal->recommendationItems(),
             'steps' => $proposal->stepGroups(),
             'examples' => $proposal->examplesByPlacement(),

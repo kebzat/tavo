@@ -228,6 +228,46 @@ class ProposalTest extends TestCase
         $this->assertNotEmpty($examples['after_principles']);
     }
 
+    public function test_nalezy_se_seskupi_podle_nalehavosti(): void
+    {
+        $proposal = $this->proposal(['findings' => [
+            ['priority' => 'later', 'title' => 'Dárkový rádce'],
+            ['title' => 'Bez naléhavosti'],
+            ['priority' => 'urgent', 'title' => 'Letní banner'],
+            ['priority' => 'urgent', 'title' => 'Cizí odznak'],
+        ]]);
+
+        $groups = $proposal->findingGroups();
+        $this->assertSame([null, 'Urgentní', 'Až bude čas'], array_column($groups, 'label'));
+        $this->assertSame(['Letní banner', 'Cizí odznak'], array_column($groups[1]['items'], 'title'));
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertOk()
+            ->assertSeeInOrder(['Bez naléhavosti', 'Urgentní', 'Letní banner', 'Cizí odznak', 'Až bude čas', 'Dárkový rádce'])
+            ->assertDontSee('Důležité');
+    }
+
+    public function test_nalezy_bez_nalehavosti_zustanou_v_jednom_seznamu(): void
+    {
+        $groups = $this->proposal()->findingGroups();
+
+        $this->assertCount(1, $groups);
+        $this->assertNull($groups[0]['label']);
+    }
+
+    public function test_le_chocolat_z_migrace_ma_obsah(): void
+    {
+        $proposal = Proposal::firstWhere('slug', 'le-chocolat');
+
+        $this->assertNotNull($proposal);
+        $this->assertFalse($proposal->is_public);
+        $this->assertSame(['3 z 5'], array_column($proposal->highlightTiles(), 'value'));
+        $this->assertSame(['Urgentní', 'Důležité', 'Až bude čas'], array_column($proposal->findingGroups(), 'label'));
+        $this->assertSame(['Kdysi', 'Dnes', 'S námi'], array_column($proposal->timelineItems(), 'title'));
+        $this->assertCount(6, $proposal->examplesByPlacement()['after_principles'][0]['items']);
+        $this->assertNotEmpty($proposal->stepGroups()['later']);
+    }
+
     public function test_migrace_neprepise_co_spravce_upravil(): void
     {
         $proposal = Proposal::firstWhere('slug', 'iq-hracky');

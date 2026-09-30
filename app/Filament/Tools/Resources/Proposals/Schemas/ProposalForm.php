@@ -91,13 +91,13 @@ class ProposalForm
             ]),
 
             Section::make('Čísla pod úvodem')
-                ->description('Až čtyři dlaždice. Jen čísla, která jde doložit. Bez nich se řádek nezobrazí.')
+                ->description('Až čtyři dlaždice. Jen čísla, která jde doložit. Dlaždice bez čísla se nezobrazí, takže ji jde připravit a doplnit později.')
                 ->collapsible()
                 ->schema([
                     Repeater::make('highlights')
                         ->hiddenLabel()
                         ->schema([
-                            TextInput::make('value')->label('Číslo')->required()->placeholder('5 / 5'),
+                            TextInput::make('value')->label('Číslo')->placeholder('5 / 5'),
                             TextInput::make('label')->label('Popisek')->placeholder('hodnocení obchodu na Heurece'),
                         ])
                         ->columns(2)
@@ -158,7 +158,12 @@ class ProposalForm
                         ->label('Štítek')
                         ->options(collect(Proposal::FINDING_TONES)->map(fn (array $tone): string => $tone['label'])->all())
                         ->placeholder('Bez štítku'),
-                    TextInput::make('title')->label('Nadpis')->required(),
+                    Select::make('priority')
+                        ->label('Naléhavost')
+                        ->options(Proposal::FINDING_PRIORITIES)
+                        ->placeholder('Neurčeno')
+                        ->helperText('Na stránce se nálezy seskupí pod nadpisy Urgentní, Důležité a Až bude čas.'),
+                    TextInput::make('title')->label('Nadpis')->required()->columnSpanFull(),
                     Textarea::make('body')->label('Text')->rows(3)->columnSpanFull(),
                 ])
                 ->columns(2)

@@ -38,6 +38,16 @@ class Proposal extends Model
         'strength' => ['label' => 'Silná stránka', 'class' => 'audit-tag--good'],
     ];
 
+    /**
+     * Naléhavost nálezu. Nálezy se podle ní na stránce seskupí pod nadpisy,
+     * v tomhle pořadí. Bez vyplněné naléhavosti zůstane jeden souvislý seznam.
+     */
+    public const FINDING_PRIORITIES = [
+        'urgent' => 'Urgentní',
+        'important' => 'Důležité',
+        'later' => 'Až bude čas',
+    ];
+
     protected $guarded = [];
 
     public function client(): BelongsTo
@@ -108,6 +118,39 @@ class Proposal extends Model
                 'tag' => self::FINDING_TONES[$row['tone'] ?? ''] ?? null,
             ])
             ->all();
+    }
+
+    /**
+     * Nálezy seskupené podle naléhavosti. Nálezy bez ní jdou na začátek bez
+     * nadpisu, takže stránka bez vyplněné naléhavosti vypadá jako dřív.
+     *
+     * @return list<array{label: ?string, items: list<array{title: string, body: string, tag: ?array{label: string, class: string}}>}>
+     */
+    public function findingGroups(): array
+    {
+        $rows = $this->rows('findings');
+        $items = $this->findingItems();
+
+        return collect([null, ...array_keys(self::FINDING_PRIORITIES)])
+            ->map(fn (?string $priority): array => [
+                'label' => $priority ? self::FINDING_PRIORITIES[$priority] : null,
+                'items' => $rows->keys()
+                    ->filter(fn (int $i): bool => self::priorityOf($rows[$i]) === $priority)
+                    ->map(fn (int $i): array => $items[$i])
+                    ->values()
+                    ->all(),
+            ])
+            ->filter(fn (array $group): bool => $group['items'] !== [])
+            ->values()
+            ->all();
+    }
+
+    /** @param  array<string, mixed>  $row */
+    private static function priorityOf(array $row): ?string
+    {
+        $priority = $row['priority'] ?? null;
+
+        return isset(self::FINDING_PRIORITIES[$priority]) ? $priority : null;
     }
 
     /** @return list<array{title: string, body: string, who: string}> */

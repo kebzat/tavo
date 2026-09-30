@@ -89,19 +89,32 @@
                     @endif
                 </div>
 
-                <ol class="border-b border-ink/14">
-                    @foreach ($findings as $finding)
-                        <li data-reveal class="border-t border-ink/14 py-7 menu:py-9">
-                            @if ($finding['tag'])
-                                <span class="audit-tag {{ $finding['tag']['class'] }}">{{ $finding['tag']['label'] }}</span>
+                {{-- Skupiny podle naléhavosti. Bez vyplněné naléhavosti je tu jedna skupina bez nadpisu. --}}
+                <div class="grid gap-12 menu:gap-16">
+                    @foreach ($findings as $group)
+                        <div>
+                            @if ($group['label'])
+                                <p data-reveal class="mb-4 flex items-center gap-3 text-sm font-bold tracking-[.14em] text-brick uppercase">
+                                    {{ $group['label'] }}
+                                    <span class="text-muted tabular-nums">{{ count($group['items']) }}</span>
+                                </p>
                             @endif
-                            <h3 class="mt-3 text-step font-extrabold tracking-[-.01em] text-ink">{{ $finding['title'] }}</h3>
-                            @if ($finding['body'])
-                                <p class="mt-3 max-w-[62ch] whitespace-pre-line text-body-lg text-body">{{ $finding['body'] }}</p>
-                            @endif
-                        </li>
+                            <ol class="border-b border-ink/14">
+                                @foreach ($group['items'] as $finding)
+                                    <li data-reveal class="border-t border-ink/14 py-7 menu:py-9">
+                                        @if ($finding['tag'])
+                                            <span class="audit-tag {{ $finding['tag']['class'] }}">{{ $finding['tag']['label'] }}</span>
+                                        @endif
+                                        <h3 class="mt-3 text-step font-extrabold tracking-[-.01em] text-ink">{{ $finding['title'] }}</h3>
+                                        @if ($finding['body'])
+                                            <p class="mt-3 max-w-[62ch] whitespace-pre-line text-body-lg text-body">{{ $finding['body'] }}</p>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
                     @endforeach
-                </ol>
+                </div>
             </div>
         </section>
     @endif
