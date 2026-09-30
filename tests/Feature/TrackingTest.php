@@ -32,7 +32,7 @@ class TrackingTest extends TestCase
             ->assertOk()
             ->assertDontSee('__tavoTracking', false)
             ->assertDontSee('Nastavení cookies', false)
-            ->assertDontSee('Přijmout vše', false);
+            ->assertDontSee('Souhlasím', false);
     }
 
     public function test_merici_kody_se_predaji_do_js_a_google_zacina_na_zamitnuto(): void
@@ -45,7 +45,7 @@ class TrackingTest extends TestCase
             ->assertSee('"ga4":"G-ABC123"', false)
             ->assertSee('"clarity":"yql4xqp3ev"', false)
             ->assertSee('"metaPixel":"3060467497620222"', false)
-            ->assertSee('Přijmout vše', false)
+            ->assertSee('Souhlasím', false)
             ->assertSee('Odmítnout', false)
             ->assertSee('Analytické', false)
             ->assertSee('Marketingové', false)

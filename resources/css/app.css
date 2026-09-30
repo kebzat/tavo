@@ -23,6 +23,9 @@
     --color-brick-dark: #c23e1a;
     /* Jediná „dobrá“ barva: štítky „v pořádku“ v auditech klientů. */
     --color-moss: #4f6b3a;
+    /* Souhlas v cookie liště. Tmavší zelená, aby krémový text držel kontrast 4,5 : 1. */
+    --color-go: #1e7a38;
+    --color-go-dark: #18652e;
     --color-body: #3a362e;
     --color-muted: #6b6459;
 

@@ -2,9 +2,10 @@
     Cookie lišta a podrobné nastavení souhlasu. Stav drží Alpine store
     `consent` z resources/js/consent.js, odtamtud se taky načítají měřicí kódy.
 
-    „Odmítnout" stojí hned vedle „Přijmout vše" a má stejnou váhu. Úřad pro
-    ochranu osobních údajů to vyžaduje: odmítnout musí jít stejně snadno
-    jako souhlasit.
+    Souhlas je výrazné zelené tlačítko vpravo (na mobilu blíž k palci),
+    „Odmítnout" a „Nastavení" jsou menší odkazy vlevo. Odmítnutí ale musí
+    zůstat v první vrstvě lišty, jedním kliknutím. Schovat ho jen do
+    nastavení by byl přesně ten vzor, za který dozorové úřady pokutují.
 
     Nastavení se dá kdykoliv znovu otevřít odkazem „Nastavení cookies"
     v patičce.
@@ -25,18 +26,21 @@
             <a href="{{ url('/cookies') }}" class="text-cream underline underline-offset-2 hover:text-brick">{{ text('cookies.lista_odkaz', 'Víc o cookies', 'Cookie lišta', 'Odkaz na stránku Cookies') }}</a>
         </p>
 
-        <div class="mt-5 flex flex-wrap items-center gap-3">
+        <div class="mt-5 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-[13px] text-cream/55">
+                <button type="button" @click="$store.consent.rejectAll()"
+                        class="py-2 underline underline-offset-4 transition hover:text-cream">
+                    {{ text('cookies.odmitnout', 'Odmítnout', 'Cookie lišta', 'Odkaz pro jen nezbytné cookies') }}
+                </button>
+                <span aria-hidden="true">·</span>
+                <button type="button" @click="$store.consent.openSettings()"
+                        class="py-2 underline underline-offset-4 transition hover:text-cream">
+                    {{ text('cookies.nastaveni', 'Nastavení', 'Cookie lišta', 'Odkaz, který otevře výběr kategorií') }}
+                </button>
+            </div>
             <button type="button" @click="$store.consent.acceptAll()"
-                    class="rounded-pill bg-brick px-6 py-3 text-[14px] font-bold text-cream transition hover:bg-brick-dark">
-                {{ text('cookies.prijmout_vse', 'Přijmout vše', 'Cookie lišta', 'Tlačítko souhlasu se vším') }}
-            </button>
-            <button type="button" @click="$store.consent.rejectAll()"
-                    class="rounded-pill bg-cream px-6 py-3 text-[14px] font-bold text-ink transition hover:bg-sand-100">
-                {{ text('cookies.odmitnout', 'Odmítnout', 'Cookie lišta', 'Tlačítko pro jen nezbytné cookies') }}
-            </button>
-            <button type="button" @click="$store.consent.openSettings()"
-                    class="py-3 text-[14px] font-bold text-cream/80 sm:px-2 underline underline-offset-4 transition hover:text-cream">
-                {{ text('cookies.nastaveni', 'Nastavení', 'Cookie lišta', 'Tlačítko, které otevře výběr kategorií') }}
+                    class="shrink-0 rounded-pill bg-go px-8 py-3.5 text-[15px] font-bold text-cream shadow-[0_10px_24px_-10px_rgba(30,122,56,.8)] transition hover:-translate-y-0.5 hover:bg-go-dark">
+                {{ text('cookies.souhlasim', 'Souhlasím', 'Cookie lišta', 'Hlavní tlačítko souhlasu se vším') }}
             </button>
         </div>
     </div>
@@ -104,14 +108,14 @@
                 <a href="{{ url('/cookies') }}" class="font-bold underline underline-offset-2">{{ text('cookies.lista_odkaz', 'Víc o cookies', 'Cookie lišta', 'Odkaz na stránku Cookies') }}</a>
             </p>
 
-            <div class="mt-6 flex flex-wrap gap-3">
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <button type="button" @click="$store.consent.saveSelection()"
-                        class="rounded-pill bg-ink px-6 py-3 text-[14px] font-bold text-cream transition hover:bg-ink-lift">
+                        class="rounded-pill border-[1.5px] border-ink/25 px-5 py-2.5 text-[14px] font-bold text-ink transition hover:border-ink">
                     {{ text('cookies.ulozit', 'Uložit výběr', 'Cookie lišta', 'Tlačítko v okně nastavení') }}
                 </button>
                 <button type="button" @click="$store.consent.acceptAll()"
-                        class="rounded-pill bg-brick px-6 py-3 text-[14px] font-bold text-cream transition hover:bg-brick-dark">
-                    {{ text('cookies.prijmout_vse', 'Přijmout vše', 'Cookie lišta', 'Tlačítko souhlasu se vším') }}
+                        class="rounded-pill bg-go px-8 py-3.5 text-[15px] font-bold text-cream transition hover:bg-go-dark">
+                    {{ text('cookies.prijmout_vse', 'Přijmout vše', 'Cookie lišta', 'Tlačítko souhlasu se vším v okně nastavení') }}
                 </button>
             </div>
         </div>
