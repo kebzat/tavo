@@ -8,6 +8,7 @@ use App\Enums\Ads\PrimaryGoal;
 use App\Enums\Ads\ReportStatus;
 use App\Enums\Ads\ReportType;
 use App\Enums\UserRole;
+use App\Filament\Tools\Pages\Ads\AdsClient;
 use App\Mail\AdReportMail;
 use App\Mail\AdsDailyDigest;
 use App\Models\Ads\AdAccount;
@@ -15,9 +16,11 @@ use App\Models\Ads\AdAlert;
 use App\Models\Ads\AdCampaign;
 use App\Models\Ads\AdDailyStat;
 use App\Models\Ads\AdReport;
+use App\Models\Ads\AdSyncRun;
 use App\Models\Ads\AnalyticsDailyStat;
 use App\Models\Client;
 use App\Models\User;
+use App\Support\Ads\AccountDirectory;
 use App\Support\Ads\AccountSync;
 use App\Support\Ads\AlertEngine;
 use App\Support\Ads\Billing;
@@ -25,16 +28,21 @@ use App\Support\Ads\ClientPerformance;
 use App\Support\Ads\Metrics;
 use App\Support\Ads\PerformanceView;
 use App\Support\Ads\Period;
+use App\Support\Ads\Platforms\ApiGuard;
 use App\Support\Ads\Platforms\DemoAds;
 use App\Support\Ads\Platforms\DemoCatalog;
 use App\Support\Ads\Platforms\GoogleAds;
 use App\Support\Ads\Platforms\MetaAds;
 use App\Support\Ads\ReportBuilder;
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdsTest extends TestCase
@@ -177,6 +185,106 @@ class AdsTest extends TestCase
         $this->artisan('ads:sync')->assertSuccessful();
 
         Http::assertNothingSent();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ochrana před přetížením API
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_omezeni_od_mety_se_neopakuje_a_pozastavi_stahovani_do_zitra(): void
+    {
+        $account = $this->klient()->adAccounts->first();
+        Http::fake([
+            'graph.facebook.com/*/insights*' => Http::response(['error' => ['message' => 'User request limit reached', 'code' => 17]], 400),
+            'graph.facebook.com/*' => Http::response(['account_id' => '1', 'name' => 'Účet', 'currency' => 'CZK', 'account_status' => 1]),
+        ]);
+
+        $first = app(AccountSync::class)->sync($account, Period::between('2026-09-23', '2026-09-29'));
+        $second = app(AccountSync::class)->sync($account, Period::between('2026-09-23', '2026-09-29'));
+
+        // Účet + insights, bez jediného opakování. Druhý běh už na Metu nesáhne.
+        Http::assertSentCount(2);
+        $this->assertSame('failed', $first->status);
+        $this->assertStringContainsString('pozastavené', $second->error);
+        $this->assertNotNull(ApiGuard::for('meta')->pausedUntil());
+    }
+
+    public function test_vysoke_vytizeni_podle_hlavicek_mety_pozastavi_stahovani(): void
+    {
+        $account = $this->klient()->adAccounts->first();
+        Http::fake(['graph.facebook.com/*' => Http::response(
+            ['account_id' => '1', 'name' => 'Účet', 'currency' => 'CZK', 'account_status' => 1, 'data' => []],
+            200,
+            ['X-Business-Use-Case-Usage' => json_encode(['1' => [['type' => 'ads_insights', 'call_count' => 82, 'total_cputime' => 10, 'total_time' => 12, 'estimated_time_to_regain_access' => 0]]])],
+        )]);
+
+        app(AccountSync::class)->sync($account, Period::between('2026-09-23', '2026-09-29'));
+
+        $this->assertNotNull(ApiGuard::for('meta')->pausedUntil());
+    }
+
+    public function test_denni_strop_dotazu_zastavi_dalsi_volani(): void
+    {
+        config(['ads.meta.daily_call_limit' => 3]);
+        $account = $this->klient()->adAccounts->first();
+        $this->fakeMeta([]);
+
+        app(AccountSync::class)->sync($account, Period::between('2026-09-23', '2026-09-29'));
+        $run = app(AccountSync::class)->sync($account, Period::between('2026-09-23', '2026-09-29'));
+
+        Http::assertSentCount(3);
+        $this->assertStringContainsString('strop 3 dotazů', $run->error);
+    }
+
+    public function test_jeden_ucet_se_nestahuje_dvakrat_soucasne(): void
+    {
+        $account = $this->klient()->adAccounts->first();
+        Http::fake();
+        $lock = Cache::lock('ads.sync.account.'.$account->id, 600);
+        $lock->get();
+
+        $run = app(AccountSync::class)->sync($account, Period::between('2026-09-23', '2026-09-29'));
+
+        $this->assertSame('skipped', $run->status);
+        Http::assertNothingSent();
+        $lock->release();
+    }
+
+    public function test_chyba_pri_nacteni_seznamu_uctu_se_pamatuje(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['error' => ['message' => 'Invalid token', 'code' => 190]], 400)]);
+        $directory = app(AccountDirectory::class);
+
+        $directory->options(AdPlatform::Meta);
+        $directory->options(AdPlatform::Meta);
+        $problem = $directory->problem(AdPlatform::Meta);
+
+        Http::assertSentCount(1);
+        $this->assertStringContainsString('Token Meta je neplatný', $problem);
+    }
+
+    public function test_rucni_nacteni_ma_pauzu(): void
+    {
+        $client = Client::create(['name' => 'Demo', 'slug' => 'demo']);
+        $client->adAccounts()->create(['platform' => AdPlatform::Demo, 'external_id' => 'demo_listek_meta', 'name' => 'Demo']);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
+        Filament::setCurrentPanel('tools');
+
+        Livewire::test(AdsClient::class, ['client' => $client])->callAction('sync');
+        Livewire::test(AdsClient::class, ['client' => $client])->callAction('sync');
+
+        $this->assertSame(1, AdSyncRun::query()->count());
+    }
+
+    public function test_automaticky_se_stahuje_jen_jednou_denne(): void
+    {
+        $events = collect(app(Schedule::class)->events())
+            ->filter(fn ($event): bool => str_contains($event->command ?? '', 'ads:sync'));
+
+        $this->assertCount(1, $events);
+        $this->assertSame('0 6 * * *', $events->first()->expression);
     }
 
     /*

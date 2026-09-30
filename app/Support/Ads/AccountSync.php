@@ -14,6 +14,7 @@ use App\Support\Ads\Platforms\DailyStat;
 use App\Support\Ads\Platforms\Platforms;
 use App\Support\Ads\Platforms\TrafficStat;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -30,6 +31,30 @@ class AccountSync
     public function __construct(private readonly Platforms $platforms) {}
 
     public function sync(AdAccount $account, Period $period): AdSyncRun
+    {
+        // Jeden účet se nikdy nestahuje dvakrát současně (ranní běh a tlačítko,
+        // dvojklik). Druhý pokus se jen zapíše jako přeskočený.
+        $lock = Cache::lock('ads.sync.account.'.$account->getKey(), 600);
+
+        if (! $lock->get()) {
+            return $account->syncRuns()->create([
+                'date_from' => $period->from,
+                'date_to' => $period->to,
+                'status' => 'skipped',
+                'error' => 'Účet se právě stahuje, druhé stažení přeskočeno.',
+                'started_at' => now(),
+                'finished_at' => now(),
+            ]);
+        }
+
+        try {
+            return $this->run($account, $period);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function run(AdAccount $account, Period $period): AdSyncRun
     {
         $run = $account->syncRuns()->create([
             'date_from' => $period->from,

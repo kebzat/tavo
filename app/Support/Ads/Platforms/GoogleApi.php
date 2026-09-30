@@ -4,6 +4,7 @@ namespace App\Support\Ads\Platforms;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -19,6 +20,9 @@ trait GoogleApi
 
     /** Klíč cache pro přístupový token. */
     abstract protected function tokenCacheKey(): string;
+
+    /** Klíč platformy pro ApiGuard a config (google_ads, ga4). */
+    abstract protected function guardKey(): string;
 
     /**
      * Získá nový přístupový token. Vrací tělo odpovědi token endpointu.
@@ -49,8 +53,18 @@ trait GoogleApi
      */
     protected function google(callable $call): array
     {
+        $guard = ApiGuard::for($this->guardKey());
+        $guard->before();
+
         try {
-            $response = $call(Http::acceptJson()->timeout(60)->retry(2, 1000, throw: false)->withToken($this->accessToken()));
+            // Znovu jen při výpadku spojení nebo chybě serveru, nikdy po „moc dotazů“.
+            $response = $call(Http::acceptJson()->timeout(60)->retry(
+                2,
+                2000,
+                fn (\Throwable $e): bool => $e instanceof ConnectionException
+                    || ($e instanceof RequestException && $e->response->serverError()),
+                throw: false,
+            )->withToken($this->accessToken()));
         } catch (ConnectionException $e) {
             throw new AdsApiException($this->serviceName().' neodpovídá: '.$e->getMessage());
         }
@@ -68,11 +82,15 @@ trait GoogleApi
             Cache::forget($this->tokenCacheKey());
         }
 
+        if ($status === 'RESOURCE_EXHAUSTED' || $response->status() === 429) {
+            $guard->pauseUntilTomorrow($this->serviceName().' omezil počet dotazů: '.$message);
+        }
+
         throw new AdsApiException(
             match (true) {
                 $status === 'UNAUTHENTICATED' || $response->status() === 401 => $this->serviceName().': neplatné přihlášení ('.$message.')',
                 $status === 'PERMISSION_DENIED' || $response->status() === 403 => $this->serviceName().': k účtu nemáme přístup. Nasdílel ho klient Taveo? ('.$message.')',
-                $status === 'RESOURCE_EXHAUSTED' || $response->status() === 429 => $this->serviceName().' omezil počet dotazů, zkusíme to příště ('.$message.')',
+                $status === 'RESOURCE_EXHAUSTED' || $response->status() === 429 => $this->serviceName().' omezil počet dotazů. Stahování je pozastavené do zítřejšího rána ('.$message.')',
                 default => $this->serviceName().' vrátil chybu: '.$message,
             },
             authFailed: $status === 'UNAUTHENTICATED',

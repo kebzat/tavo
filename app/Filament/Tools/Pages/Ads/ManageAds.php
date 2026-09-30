@@ -7,6 +7,7 @@ use App\Models\Ads\AdSyncRun;
 use App\Settings\AdsSettings;
 use App\Support\Ads\AccountDirectory;
 use App\Support\Ads\Platforms\AdsApiException;
+use App\Support\Ads\Platforms\ApiGuard;
 use App\Support\Ads\Platforms\Ga4;
 use App\Support\Ads\Platforms\Platforms;
 use BackedEnum;
@@ -20,6 +21,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
 /**
@@ -52,6 +54,23 @@ class ManageAds extends SettingsPage
                     ->label($platform->getLabel())
                     ->state(fn (): string => $this->platformState($platform))
                     ->color(fn (): string => app(Platforms::class)->for($platform)->isConfigured() ? 'success' : ($platform->isDemo() ? 'gray' : 'danger')))
+                    ->all()),
+
+            Section::make('Ochrana před přetížením')
+                ->description('Čísla se stahují jednou denně v 6:00, dva dotazy na účet. Ruční načtení u klienta má pauzu 30 minut. Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
+                ->columns(3)
+                ->schema(collect(['meta' => 'Meta', 'google_ads' => 'Google Ads', 'ga4' => 'GA4'])->map(fn (string $label, string $key): TextEntry => TextEntry::make('guard_'.$key)
+                    ->label($label)
+                    ->state(function () use ($key): string {
+                        $guard = ApiGuard::for($key);
+                        $until = $guard->pausedUntil();
+
+                        return $until
+                            ? 'Pozastaveno do '.$until->format('j. n. H:i')
+                            : 'Dnes '.$guard->callsToday().' dotazů z bezpečnostního stropu '.$guard->dailyLimit();
+                    })
+                    ->color(fn (): string => ApiGuard::for($key)->pausedUntil() ? 'danger' : 'gray'))
+                    ->values()
                     ->all()),
 
             Section::make('Ranní souhrn')
@@ -97,6 +116,13 @@ class ManageAds extends SettingsPage
                 ->icon(Heroicon::OutlinedSignal)
                 ->color('gray')
                 ->action(function (Platforms $platforms, AccountDirectory $directory): void {
+                    // Test se ptá každé platformy na seznam účtů. Jednou za pět minut stačí.
+                    if (! Cache::add('ads.connection-test', true, now()->addMinutes(5))) {
+                        Notification::make()->warning()->title('Spojení se testovalo před chvílí')->body('Zkuste to znovu za pár minut.')->send();
+
+                        return;
+                    }
+
                     $lines = [];
                     $failed = false;
 
@@ -143,7 +169,9 @@ class ManageAds extends SettingsPage
 
         $rows = $runs->map(fn (AdSyncRun $run): string => '<li class="flex flex-wrap justify-between gap-2 py-1.5">'
             .'<span>'.e($run->account?->client?->name.' · '.$run->account?->name).'</span>'
-            .'<span class="'.($run->status === 'ok' ? 'text-success-600' : 'text-danger-600').'">'
+            .'<span class="'.match ($run->status) {
+                'ok' => 'text-success-600', 'skipped' => 'text-gray-500', default => 'text-danger-600'
+            }.'">'
             .e($run->started_at->format('j. n. H:i').' · '.($run->status === 'ok' ? $run->rows.' řádků' : ($run->error ?? $run->status)))
             .'</span></li>')->implode('');
 

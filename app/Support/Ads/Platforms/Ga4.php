@@ -45,8 +45,13 @@ class Ga4 implements AnalyticsPlatform
     {
         $accounts = collect();
         $pageToken = null;
+        $pages = 0;
 
         do {
+            if (++$pages > 20) {
+                throw new AdsApiException('Google Analytics vrací nečekaně mnoho stránek, stahování přerušeno.');
+            }
+
             $body = $this->google(fn (PendingRequest $http): Response => $http->get(
                 'https://analyticsadmin.googleapis.com/v1beta/accountSummaries',
                 array_filter(['pageSize' => 200, 'pageToken' => $pageToken]),
@@ -146,6 +151,11 @@ class Ga4 implements AnalyticsPlatform
     protected function serviceName(): string
     {
         return 'Google Analytics';
+    }
+
+    protected function guardKey(): string
+    {
+        return 'ga4';
     }
 
     protected function tokenCacheKey(): string

@@ -7,6 +7,7 @@ use App\Models\Ads\AdAccount;
 use App\Support\Ads\Period;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -55,6 +56,15 @@ class MetaAds implements AdsPlatform
 
     /** Delší období se stahuje po kusech, jedna odpověď by byla zbytečně velká. */
     private const CHUNK_DAYS = 31;
+
+    /**
+     * Strop stránek jednoho výsledku. Malý účet má jednu stránku, 90 dní
+     * u účtu se dvaceti kampaněmi čtyři. Víc znamená chybu, ne data.
+     */
+    private const MAX_PAGES = 20;
+
+    /** Kódy chyb Mety, které znamenají „moc dotazů“. Po nich se do zítřka nevolá. */
+    private const RATE_LIMIT_CODES = [4, 17, 32, 613, 80000, 80003, 80004, 80014];
 
     public function platform(): AdPlatform
     {
@@ -182,8 +192,13 @@ class MetaAds implements AdsPlatform
     {
         $body = $this->request($path, $params);
         $rows = collect($body['data'] ?? []);
+        $pages = 1;
 
         while ($next = $body['paging']['next'] ?? null) {
+            if (++$pages > self::MAX_PAGES) {
+                throw new AdsApiException('Meta vrací nečekaně mnoho stránek výsledku, stahování přerušeno.');
+            }
+
             $body = $this->send(fn (PendingRequest $http): Response => $http->get($next));
             $rows = $rows->concat($body['data'] ?? []);
         }
@@ -212,11 +227,24 @@ class MetaAds implements AdsPlatform
             throw new AdsApiException('Chybí META_SYSTEM_USER_TOKEN v .env.', authFailed: true);
         }
 
+        $guard = ApiGuard::for('meta');
+        $guard->before();
+
         try {
-            $response = $call(Http::acceptJson()->timeout(60)->retry(2, 1000, throw: false));
+            // Znovu se zkouší jen výpadek spojení nebo chyba na straně Mety (5xx).
+            // Odpověď „moc dotazů“ se nikdy neopakuje, jen by zátěž násobila.
+            $response = $call(Http::acceptJson()->timeout(60)->retry(
+                2,
+                2000,
+                fn (\Throwable $e): bool => $e instanceof ConnectionException
+                    || ($e instanceof RequestException && $e->response->serverError()),
+                throw: false,
+            ));
         } catch (ConnectionException $e) {
             throw new AdsApiException('Meta neodpovídá: '.$e->getMessage());
         }
+
+        $guard->inspectMetaUsage($response->headers());
 
         if ($response->successful()) {
             return $response->json() ?? [];
@@ -225,11 +253,16 @@ class MetaAds implements AdsPlatform
         $error = $response->json('error') ?? [];
         $code = (int) ($error['code'] ?? 0);
         $message = (string) ($error['error_user_msg'] ?? $error['message'] ?? 'HTTP '.$response->status());
+        $rateLimited = in_array($code, self::RATE_LIMIT_CODES, true) || $response->status() === 429;
+
+        if ($rateLimited) {
+            $guard->pauseUntilTomorrow('Meta omezila počet dotazů: '.$message);
+        }
 
         throw new AdsApiException(
             match (true) {
                 $code === 190 => 'Token Meta je neplatný nebo mu chybí oprávnění ('.$message.')',
-                in_array($code, [4, 17, 32, 613, 80004], true) => 'Meta omezila počet dotazů, zkusíme to příště ('.$message.')',
+                $rateLimited => 'Meta omezila počet dotazů. Stahování je pozastavené do zítřejšího rána ('.$message.')',
                 in_array($code, [10, 200], true) || $response->status() === 403 => 'K účtu nemáme přístup. Nasdílel ho klient Business Manageru Taveo? ('.$message.')',
                 default => 'Meta vrátila chybu: '.$message,
             },

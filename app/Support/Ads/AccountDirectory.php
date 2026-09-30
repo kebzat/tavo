@@ -78,12 +78,23 @@ class AccountDirectory
     private function all(AdPlatform $platform): Collection
     {
         // Cache smí držet jen prostá pole, objekty by se zpátky nerozbalily
-        // (cache.serializable_classes).
+        // (cache.serializable_classes). Pamatuje se i chyba: formulář se
+        // překresluje při každé změně a bez toho by se Mety ptal pořád dokola.
         $rows = Cache::remember(
             $this->cacheKey($platform),
             now()->addMinutes(5),
-            fn (): array => $this->platforms->for($platform)->accounts()->map(fn (AccountInfo $account): array => (array) $account)->all(),
+            function () use ($platform): array {
+                try {
+                    return $this->platforms->for($platform)->accounts()->map(fn (AccountInfo $account): array => (array) $account)->all();
+                } catch (AdsApiException $e) {
+                    return ['error' => $e->getMessage()];
+                }
+            },
         );
+
+        if (isset($rows['error'])) {
+            throw new AdsApiException($rows['error']);
+        }
 
         return collect($rows)->map(fn (array $row): AccountInfo => new AccountInfo(...$row));
     }

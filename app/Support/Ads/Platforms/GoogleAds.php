@@ -127,8 +127,13 @@ class GoogleAds implements AdsPlatform
         $url = 'https://googleads.googleapis.com/'.config('ads.google_ads.api_version').'/customers/'.$customerId.'/googleAds:search';
         $rows = collect();
         $pageToken = null;
+        $pages = 0;
 
         do {
+            if (++$pages > 20) {
+                throw new AdsApiException('Google Ads vrací nečekaně mnoho stránek výsledku, stahování přerušeno.');
+            }
+
             $body = $this->google(fn (PendingRequest $http): Response => $http
                 ->withHeaders(array_filter([
                     'developer-token' => config('ads.google_ads.developer_token'),
@@ -157,6 +162,11 @@ class GoogleAds implements AdsPlatform
     protected function serviceName(): string
     {
         return 'Google Ads';
+    }
+
+    protected function guardKey(): string
+    {
+        return 'google_ads';
     }
 
     protected function tokenCacheKey(): string

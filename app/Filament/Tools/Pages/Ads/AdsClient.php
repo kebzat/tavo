@@ -40,6 +40,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
@@ -252,10 +253,10 @@ class AdsClient extends Page
     {
         return [
             $this->createReportAction(),
+            $this->syncAction(),
             $this->logTimeAction(),
             $this->settingsAction(),
             ActionGroup::make([
-                $this->syncAction(),
                 ConnectAdAccountAction::make($this->client),
                 $this->adviceAction(),
                 Action::make('accounts')
@@ -406,12 +407,37 @@ class AdsClient extends Page
             });
     }
 
+    /** Pauza mezi ručními načteními u jednoho klienta, v minutách. */
+    public const MANUAL_SYNC_COOLDOWN = 30;
+
+    /**
+     * Ruční načtení čísel. Čísla se stahují samy každé ráno. Tlačítko je pro
+     * chvíle, kdy je potřeba dnešní stav hned, a má pauzu, aby se na něj
+     * nedalo klikat dokola.
+     */
     private function syncAction(): Action
     {
         return Action::make('sync')
-            ->label('Stáhnout čísla teď')
+            ->label(fn (): string => ($wait = $this->manualSyncWait()) ? "Znovu za {$wait} min" : 'Načíst čísla znovu')
             ->icon(Heroicon::OutlinedArrowPath)
+            ->color('gray')
+            ->disabled(fn (): bool => $this->manualSyncWait() !== null)
+            ->tooltip(fn (): ?string => ($synced = $this->client->adAccounts()->max('last_synced_at'))
+                ? 'Naposledy staženo '.Carbon::parse($synced)->format('j. n. H:i')
+                : null)
+            ->requiresConfirmation()
+            ->modalHeading('Načíst čísla znovu?')
+            ->modalDescription('Čísla se stahují samy každé ráno v 6:00. Ručně je načtěte, jen když potřebujete aktuální stav hned. '
+                .'Stáhne se posledních '.config('ads.sync_days').' dní, jeden až dva dotazy na účet. Další ruční načtení půjde za '.self::MANUAL_SYNC_COOLDOWN.' minut.')
+            ->modalSubmitActionLabel('Načíst')
             ->action(function (AccountSync $sync): void {
+                // Cache::add projde jen jednou za pauzu, i při dvojkliku nebo ve dvou oknech.
+                if (! Cache::add($this->manualSyncKey(), now()->timestamp, now()->addMinutes(self::MANUAL_SYNC_COOLDOWN))) {
+                    Notification::make()->warning()->title('Čísla se načítala před chvílí')->body('Znovu to půjde za '.$this->manualSyncWait().' min.')->send();
+
+                    return;
+                }
+
                 $days = (int) config('ads.sync_days');
                 $period = Period::between(now()->subDays($days), now()->subDay());
                 $errors = [];
@@ -419,15 +445,34 @@ class AdsClient extends Page
                 foreach ($this->client->adAccounts()->active()->get() as $account) {
                     $run = $sync->sync($account, $period);
 
-                    if ($run->status !== 'ok') {
+                    if ($run->status === 'failed') {
                         $errors[] = "{$account->name}: {$run->error}";
                     }
                 }
 
                 $errors
-                    ? Notification::make()->danger()->title('Něco se nestáhlo')->body(implode("\n", $errors))->persistent()->send()
-                    : Notification::make()->success()->title('Čísla za posledních '.$days.' dní jsou stažená')->send();
+                    ? Notification::make()->danger()->title('Něco se nenačetlo')->body(implode("\n", $errors))->persistent()->send()
+                    : Notification::make()->success()->title('Čísla za posledních '.$days.' dní jsou načtená')->send();
             });
+    }
+
+    /** Za kolik minut půjde další ruční načtení. Null = hned. */
+    public function manualSyncWait(): ?int
+    {
+        $at = Cache::get($this->manualSyncKey());
+
+        if (! $at) {
+            return null;
+        }
+
+        $left = (int) ceil(($at + self::MANUAL_SYNC_COOLDOWN * 60 - now()->timestamp) / 60);
+
+        return $left > 0 ? $left : null;
+    }
+
+    private function manualSyncKey(): string
+    {
+        return 'ads.manual-sync.client.'.$this->client->getKey();
     }
 
     private function adviceAction(): Action

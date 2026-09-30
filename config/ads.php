@@ -30,6 +30,13 @@ return [
         'api_version' => env('META_API_VERSION', 'v25.0'),
 
         'base_url' => 'https://graph.facebook.com',
+
+        /*
+         * Pojistka: nejvýš tolik dotazů na Metu za den (App\Support\Ads\Platforms\ApiGuard).
+         * Ranní synchronizace dělá dva dotazy na účet, 20 klientů = asi 40 dotazů.
+         * Strop je jen pro případ chyby, běžně se k němu nepřiblížíme.
+         */
+        'daily_call_limit' => (int) env('META_DAILY_CALL_LIMIT', 200),
     ],
 
     'google_ads' => [
@@ -52,6 +59,8 @@ return [
         'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
 
         'api_version' => env('GOOGLE_ADS_API_VERSION', 'v24'),
+
+        'daily_call_limit' => (int) env('GOOGLE_ADS_DAILY_CALL_LIMIT', 200),
     ],
 
     'ga4' => [
@@ -61,6 +70,8 @@ return [
          * property jako čtenáře.
          */
         'credentials' => env('GA4_CREDENTIALS'),
+
+        'daily_call_limit' => (int) env('GA4_DAILY_CALL_LIMIT', 200),
     ],
 
     /*

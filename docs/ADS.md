@@ -104,6 +104,31 @@ web“: návštěvy, nákupy a tržby ze všech zdrojů a rozpad podle kanálů.
 kolik si nákupů připsaly reklamy. Rozdíl je normální, reklamní systémy si konverze
 připisují samy a často dvakrát.
 
+## Ochrana před přetížením API
+
+Čísla čteme oficiálním Marketing API a pouze pro čtení (`ads_read`): nic v účtech
+neměníme a žádné AI ani MCP do účtů nesahá. Claude u „Návrhu úprav“ dostává jen
+čísla z naší databáze. Aby Meta ani Google nikdy nevyhodnotily provoz jako
+nadměrný:
+
+| Pojistka | Jak funguje |
+|---|---|
+| Jednou denně | `ads:sync` běží jen v 6:00. Na účet jde jeden dotaz na stav účtu a jeden na čísla za 7 dní, u 20 klientů zhruba 40 dotazů denně. |
+| Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. |
+| Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |
+| Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána (ruční tlačítko také). |
+| Denní strop | Nejvýš 200 dotazů na platformu za den (`META_DAILY_CALL_LIMIT`). Běžný provoz je pětina. Strop chytí chybu v kódu dřív než Meta. |
+| Bez souběhu | Jeden účet se nikdy nestahuje dvakrát současně (zámek). |
+| Strop stránek | Nejvýš 20 stránek výsledku na dotaz, víc znamená chybu. |
+| Seznam účtů | Nabídka při propojování se drží 5 minut v paměti, i když skončí chybou. Test spojení jde jednou za 5 minut. |
+
+Stav je v Nastavení reklam → Ochrana před přetížením: kolik dotazů dnes odešlo
+a jestli je některá platforma pozastavená. Implementace:
+`App\Support\Ads\Platforms\ApiGuard`.
+
+Přístup je přes systémového uživatele Business Manageru Taveo, ne přes osobní
+facebookový profil Pavla ani Toma.
+
 ## Plánované běhy
 
 | Čas | Příkaz | Co dělá |

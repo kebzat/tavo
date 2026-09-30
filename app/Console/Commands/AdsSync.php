@@ -49,6 +49,8 @@ class AdsSync extends Command
 
             if ($run->status === 'ok') {
                 $this->info("{$account->client->name} · {$account->name}: {$run->rows} řádků ({$period->label()}).");
+            } elseif ($run->status === 'skipped') {
+                $this->line("{$account->client->name} · {$account->name}: {$run->error}");
             } else {
                 $failed++;
                 $this->error("{$account->client->name} · {$account->name}: {$run->error}");
