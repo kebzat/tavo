@@ -36,19 +36,11 @@
                 ])>{{ $example['body'] }}</p>
             @endif
 
-            @if ($example['link_url'] || ($example['image'] && $example['scroll']))
+            {{-- U mřížky ukázek stojí odkaz až pod ní, viz konec komponenty. --}}
+            @if (($example['link_url'] && ! $example['items']) || ($example['image'] && $example['scroll']))
                 <div class="mt-8 flex flex-wrap gap-3">
-                    @if ($example['link_url'])
-                        {{-- Na světlém pruhu by krémové tlačítko splynulo s pozadím. --}}
-                        <a href="{{ $example['link_url'] }}" target="_blank" rel="noopener"
-                           @class([
-                               'group inline-flex items-center gap-2 rounded-pill px-5 py-3 text-sm font-bold transition duration-300 ease-tavo hover:-translate-y-0.5 hover:bg-brick hover:text-cream',
-                               'bg-cream text-ink' => ! $light,
-                               'bg-ink text-cream' => $light,
-                           ])>
-                            {{ $example['link_label'] }}
-                            <span aria-hidden="true" class="transition-transform duration-300 ease-tavo group-hover:translate-x-0.5">↗</span>
-                        </a>
+                    @if ($example['link_url'] && ! $example['items'])
+                        <x-proposal.example-link :example="$example" :light="$light" />
                     @endif
 
                     @if ($example['image'] && $example['scroll'])
@@ -157,6 +149,13 @@
                     </li>
                 @endforeach
             </ul>
+
+            {{-- Odkaz na další ukázky (třeba /pro-klienty) až za těmi, které čtenář právě viděl. --}}
+            @if ($example['link_url'])
+                <div data-reveal class="flex justify-center">
+                    <x-proposal.example-link :example="$example" :light="$light" />
+                </div>
+            @endif
         @endif
     </div>
 </section>
