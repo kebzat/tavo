@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Audit;
 use App\Models\Checklist;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 /**
  * Sdílený checklist klienta. Odkaz chrání jen náhodný token, takže
@@ -13,9 +14,14 @@ use Illuminate\Contracts\View\View;
 class ChecklistController extends Controller
 {
     /** Rozcestník s kartami kategorií. */
-    public function show(string $token): View
+    public function show(string $key): View|RedirectResponse
     {
-        $checklist = $this->najdi($token);
+        $checklist = $this->najdi($key);
+
+        // Starý odkaz s tokenem přesměrujeme na čitelnou adresu.
+        if ($key !== $checklist->shareKey()) {
+            return redirect()->route('checklist.show', $checklist->shareKey(), 301);
+        }
 
         return view('checklist.show', [
             'checklist' => $checklist,
@@ -25,9 +31,13 @@ class ChecklistController extends Controller
     }
 
     /** Jedna kategorie: tabulka položek rozdělená sekcemi. */
-    public function category(string $token, string $slug): View
+    public function category(string $key, string $slug): View|RedirectResponse
     {
-        $checklist = $this->najdi($token);
+        $checklist = $this->najdi($key);
+
+        if ($key !== $checklist->shareKey()) {
+            return redirect()->route('checklist.category', [$checklist->shareKey(), $slug], 301);
+        }
 
         $category = $checklist->categories->firstWhere('slug', $slug)
             ?? abort(404);
@@ -69,10 +79,10 @@ class ChecklistController extends Controller
      * Načte checklist i s celou strukturou. Sloupec internal_note ve výběru
      * schválně chybí, do pohledu se tedy nemá jak dostat.
      */
-    private function najdi(string $token): Checklist
+    private function najdi(string $key): Checklist
     {
         return Checklist::query()
-            ->where('public_token', $token)
+            ->sharedAs($key)
             ->where('is_public', true)
             ->where('is_template', false)
             ->with([

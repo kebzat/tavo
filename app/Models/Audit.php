@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Enums\Crm\ActivityType;
-use App\Enums\Crm\CompanyStatus;
+use App\Models\Concerns\TracksClientViews;
 use App\Support\AuditMarkdown;
+use App\Support\UniqueSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +16,8 @@ use Illuminate\Support\Str;
  */
 class Audit extends Model
 {
+    use TracksClientViews;
+
     /**
      * Řádek, od kterého je text v omezeném režimu zamčený. Klient vidí,
      * co je nad ním, a z kapitol pod ním jen nadpisy s výzvou k hovoru.
@@ -23,9 +25,6 @@ class Audit extends Model
     public const LOCK_MARKER = '::: zámek';
 
     private const LOCK_PATTERN = '/^:::[ \t]*zámek[ \t]*$/mu';
-
-    /** Náhledy odkazů z e-mailu a chatu otevření nejsou. */
-    private const BOT_PATTERN = '/bot|crawl|spider|preview|facebookexternalhit|whatsapp|telegram|skype|slack|discord|curl|wget|python|headless|lighthouse/i';
 
     protected $guarded = [];
 
@@ -39,6 +38,15 @@ class Audit extends Model
         return $query->where('is_public', true)->whereNotNull('public_token');
     }
 
+    /**
+     * Najde audit podle adresy. Odkazy rozeslané před zavedením slugů
+     * nesou náhodný token, ty musí fungovat dál.
+     */
+    public function scopeSharedAs(Builder $query, string $key): Builder
+    {
+        return $query->where(fn (Builder $query) => $query->where('slug', $key)->orWhere('public_token', $key));
+    }
+
     /** Odkaz pro klienta. Null, dokud sdílení nezapneme. */
     public function publicUrl(): ?string
     {
@@ -46,13 +54,15 @@ class Audit extends Model
             return null;
         }
 
-        return route('audit.show', $this->public_token);
+        return $this->previewUrl();
     }
 
     /** Náhled pro přihlášeného správce. Funguje i u auditu, který ještě nesdílíme. */
     public function previewUrl(): ?string
     {
-        return $this->public_token ? route('audit.show', $this->public_token) : null;
+        $key = $this->slug ?: $this->public_token;
+
+        return $key ? route('audit.show', $key) : null;
     }
 
     /**
@@ -88,43 +98,9 @@ class Audit extends Model
         return (bool) preg_match(self::LOCK_PATTERN, (string) $this->body);
     }
 
-    /**
-     * Zapíše otevření odkazu. První otevření (a další po půl dni ticha)
-     * se propíše do CRM jako aktivita s follow-upem na příští pracovní
-     * den, protože právě tehdy má smysl zavolat.
-     *
-     * Roboti a náhledy odkazů se nepočítají, správce si audit otevírá
-     * přihlášený a ten volající nepředá.
-     */
-    public function recordView(?string $userAgent): void
+    protected function viewActivitySubject(bool $first): string
     {
-        if (blank($userAgent) || preg_match(self::BOT_PATTERN, $userAgent)) {
-            return;
-        }
-
-        $worthLogging = $this->last_viewed_at === null || $this->last_viewed_at->lt(now()->subHours(12));
-
-        $this->forceFill([
-            'view_count' => $this->view_count + 1,
-            'first_viewed_at' => $this->first_viewed_at ?? now(),
-            'last_viewed_at' => now(),
-        ])->saveQuietly();
-
-        $company = $this->client?->crmCompany;
-
-        if (! $worthLogging || $company === null) {
-            return;
-        }
-
-        $closed = in_array($company->status, [CompanyStatus::Won, CompanyStatus::Lost], true);
-
-        $company->activities()->create([
-            'type' => ActivityType::Note,
-            'subject' => $this->view_count === 1 ? 'Otevřeli audit poprvé' : 'Znovu otevřeli audit',
-            'body' => $this->title.' · otevřeno '.$this->view_count.'×',
-            'happened_at' => now(),
-            'follow_up_at' => $closed ? null : now()->nextWeekday()->setTime(9, 0),
-        ]);
+        return $first ? 'Otevřeli audit poprvé' : 'Znovu otevřeli audit';
     }
 
     /**
@@ -152,6 +128,11 @@ class Audit extends Model
         static::saving(function (self $audit): void {
             if (! $audit->public_token) {
                 $audit->public_token = Str::random(40);
+            }
+
+            // Čitelná adresa podle klienta: /audit/svet-cejlonu.
+            if (! $audit->slug && UniqueSlug::supported($audit)) {
+                $audit->slug = UniqueSlug::for($audit, $audit->client?->name ?? $audit->title, 'audit');
             }
         });
 

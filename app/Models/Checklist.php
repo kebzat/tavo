@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ChecklistItemStatus;
+use App\Support\UniqueSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -157,6 +158,21 @@ class Checklist extends Model
         });
     }
 
+    /**
+     * Najde checklist podle adresy. Odkazy rozeslané před zavedením slugů
+     * nesou náhodný token, ty musí fungovat dál.
+     */
+    public function scopeSharedAs(Builder $query, string $key): Builder
+    {
+        return $query->where(fn (Builder $query) => $query->where('slug', $key)->orWhere('public_token', $key));
+    }
+
+    /** Část adresy za /checklist/. Slug, u starších záznamů bez něj token. */
+    public function shareKey(): string
+    {
+        return $this->slug ?: $this->public_token;
+    }
+
     /** Odkaz pro klienta. Null, dokud sdílení nezapneme, a u šablony vždy. */
     public function publicUrl(): ?string
     {
@@ -164,7 +180,7 @@ class Checklist extends Model
             return null;
         }
 
-        return route('checklist.show', $this->public_token);
+        return route('checklist.show', $this->shareKey());
     }
 
     protected static function booted(): void
@@ -174,6 +190,11 @@ class Checklist extends Model
             // dřív, než ho někdo zapne.
             if (! $checklist->public_token) {
                 $checklist->public_token = Str::random(40);
+            }
+
+            // Čitelná adresa podle klienta: /checklist/svet-cejlonu.
+            if (! $checklist->slug && UniqueSlug::supported($checklist)) {
+                $checklist->slug = UniqueSlug::for($checklist, $checklist->client?->name ?? $checklist->name, 'checklist');
             }
 
             // Šablona je interní podklad. Kdyby se u ní sdílení omylem zaplo,

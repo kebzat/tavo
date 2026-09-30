@@ -62,6 +62,16 @@ class ChecklistForm
                         ->default(true)
                         ->helperText('Odkaz se vygeneruje hned při uložení.'),
 
+                    // Slug vznikne sám z názvu klienta, tady se dá jen přepsat.
+                    TextInput::make('slug')
+                        ->label('Adresa')
+                        ->prefix('/checklist/')
+                        ->required()
+                        ->alphaDash()
+                        ->unique(ignoreRecord: true)
+                        ->visible(fn ($operation): bool => $operation === 'edit')
+                        ->helperText('Po změně přestane fungovat odkaz, který už klient má.'),
+
                     // Na zakládací obrazovce ještě není co ukázat, odkaz
                     // vznikne až se záznamem.
                     TextInput::make('public_token')

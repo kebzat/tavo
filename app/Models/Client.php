@@ -28,6 +28,11 @@ class Client extends Model
         return $this->hasMany(Audit::class);
     }
 
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(Proposal::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_archived', false);

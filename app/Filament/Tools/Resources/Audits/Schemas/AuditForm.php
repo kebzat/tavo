@@ -97,11 +97,17 @@ class AuditForm
                     TextEntry::make('views')
                         ->label('Otevřeno')
                         ->visible(fn ($operation): bool => $operation === 'edit')
-                        ->state(fn (?Audit $record): string => match (true) {
-                            $record === null || $record->view_count === 0 => 'Klient audit zatím neotevřel.',
-                            default => $record->view_count.'× · poprvé '.$record->first_viewed_at->format('j. n. Y H:i')
-                                .', naposledy '.$record->last_viewed_at->format('j. n. Y H:i'),
-                        }),
+                        ->state(fn (?Audit $record): string => $record?->viewSummary('Klient audit zatím neotevřel.') ?? ''),
+
+                    // Slug vznikne sám z názvu klienta, tady se dá jen přepsat.
+                    TextInput::make('slug')
+                        ->label('Adresa')
+                        ->prefix('/audit/')
+                        ->required()
+                        ->alphaDash()
+                        ->unique(ignoreRecord: true)
+                        ->visible(fn ($operation): bool => $operation === 'edit')
+                        ->helperText('Po změně přestane fungovat odkaz, který už klient má.'),
 
                     TextInput::make('public_token')
                         ->label('Odkaz pro klienta')

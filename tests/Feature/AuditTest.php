@@ -22,7 +22,7 @@ class AuditTest extends TestCase
 
     private function klient(): Client
     {
-        return Client::create(['name' => 'Čajovna Zkouška', 'slug' => 'cajovna-zkouska']);
+        return Client::firstOrCreate(['slug' => 'cajovna-zkouska'], ['name' => 'Čajovna Zkouška']);
     }
 
     private function audit(array $attributes = []): Audit
@@ -156,7 +156,28 @@ class AuditTest extends TestCase
 
         $this->get($checklist->publicUrl())
             ->assertOk()
-            ->assertDontSee($audit->public_token);
+            ->assertDontSee($audit->previewUrl(), false);
+    }
+
+    public function test_audit_ma_citelnou_adresu_podle_klienta(): void
+    {
+        $audit = $this->audit();
+        $druhy = $this->audit(['client_id' => $audit->client_id]);
+
+        $this->assertSame('cajovna-zkouska', $audit->slug);
+        $this->assertSame('cajovna-zkouska-2', $druhy->slug);
+        $this->assertSame(url('/audit/cajovna-zkouska'), $audit->publicUrl());
+        $this->get('/audit/cajovna-zkouska')->assertOk()->assertSee('SEO audit e-shopu');
+    }
+
+    /** Odkazy rozeslané před zavedením slugů musí dál fungovat. */
+    public function test_stary_odkaz_s_tokenem_presmeruje_na_slug(): void
+    {
+        $audit = $this->audit();
+
+        $this->get('/audit/'.$audit->public_token)
+            ->assertMovedPermanently()
+            ->assertRedirect('/audit/cajovna-zkouska');
     }
 
     public function test_robots_zakazuje_audity(): void

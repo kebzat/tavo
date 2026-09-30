@@ -273,7 +273,7 @@ class ChecklistTest extends TestCase
     {
         $checklist = $this->sdilenyChecklist();
 
-        $this->get(route('checklist.category', [$checklist->public_token, 'mereni-a-data']))
+        $this->get(route('checklist.category', [$checklist->shareKey(), 'mereni-a-data']))
             ->assertOk()
             ->assertSee('Nástroje')
             ->assertSee('Nasadit GTM')
@@ -284,7 +284,7 @@ class ChecklistTest extends TestCase
     {
         $checklist = $this->sdilenyChecklist();
 
-        $this->get(route('checklist.category', [$checklist->public_token, 'takova-neni']))
+        $this->get(route('checklist.category', [$checklist->shareKey(), 'takova-neni']))
             ->assertNotFound();
     }
 
@@ -296,7 +296,7 @@ class ChecklistTest extends TestCase
         // že ji duplicateFor() zahodí.
         $checklist->items()->first()->update(['internal_note' => 'Interní: klient platí pozdě.']);
 
-        $this->get(route('checklist.category', [$checklist->public_token, 'mereni-a-data']))
+        $this->get(route('checklist.category', [$checklist->shareKey(), 'mereni-a-data']))
             ->assertOk()
             ->assertDontSee('Interní: klient platí pozdě.');
     }
@@ -315,6 +315,25 @@ class ChecklistTest extends TestCase
 
         $this->get(route('checklist.show', $copy->public_token))->assertNotFound();
         $this->get(route('checklist.category', [$copy->public_token, 'mereni-a-data']))->assertNotFound();
+    }
+
+    public function test_checklist_ma_citelnou_adresu_a_stary_odkaz_presmeruje(): void
+    {
+        $checklist = $this->sdilenyChecklist();
+
+        $this->assertSame(route('checklist.show', $checklist->slug), $checklist->publicUrl());
+        $this->assertStringNotContainsString($checklist->public_token, $checklist->publicUrl());
+
+        $this->get($checklist->publicUrl())->assertOk();
+        $this->get(route('checklist.show', $checklist->public_token))
+            ->assertMovedPermanently()
+            ->assertRedirect($checklist->publicUrl());
+        $this->get(route('checklist.category', [$checklist->public_token, 'mereni-a-data']))
+            ->assertRedirect(route('checklist.category', [$checklist->slug, 'mereni-a-data']));
+
+        // Odškrtávání v už otevřené stránce se starou adresou funguje dál.
+        $this->post(route('checklist.toggle', [$checklist->public_token, $checklist->items()->first()]))
+            ->assertRedirect();
     }
 
     public function test_neplatny_token_vraci_404(): void

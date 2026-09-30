@@ -325,7 +325,7 @@ class CrmScoutTest extends TestCase
         $audit = $this->auditZFirmy();
         $audit->update(['is_public' => true]);
 
-        $this->get(route('audit.show', $audit->public_token))
+        $this->get(route('audit.show', $audit->slug))
             ->assertOk()
             ->assertSee('Nejdůležitější nález')
             ->assertSee('Na mobilu se web načítá pomalu')
@@ -361,7 +361,7 @@ class CrmScoutTest extends TestCase
 
         $this->assertTrue($audit->client->checklists()->first()->is_public);
 
-        $this->get(route('audit.show', $audit->public_token))
+        $this->get(route('audit.show', $audit->slug))
             ->assertOk()
             ->assertSee('Zkusili jsme web otevřít jako roboti')
             ->assertSee('Checklist úkolů')
@@ -482,7 +482,7 @@ class CrmScoutTest extends TestCase
         $company = Company::first();
 
         $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone) Safari/605.1')
-            ->get(route('audit.show', $audit->public_token))->assertOk();
+            ->get(route('audit.show', $audit->slug))->assertOk();
 
         $audit->refresh();
         $this->assertSame(1, $audit->view_count);
@@ -494,7 +494,7 @@ class CrmScoutTest extends TestCase
 
         // Hned druhé otevření se počítá, ale novou aktivitu nezakládá.
         $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone) Safari/605.1')
-            ->get(route('audit.show', $audit->public_token));
+            ->get(route('audit.show', $audit->slug));
 
         $this->assertSame(2, $audit->fresh()->view_count);
         $this->assertSame(1, $company->activities()->where('subject', 'like', 'Otevřeli%')->count());
@@ -505,10 +505,10 @@ class CrmScoutTest extends TestCase
         $audit = $this->auditZFirmy();
         $audit->update(['is_public' => true]);
 
-        $this->withHeader('User-Agent', 'facebookexternalhit/1.1')->get(route('audit.show', $audit->public_token));
+        $this->withHeader('User-Agent', 'facebookexternalhit/1.1')->get(route('audit.show', $audit->slug));
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))
             ->withHeader('User-Agent', 'Mozilla/5.0 Safari')
-            ->get(route('audit.show', $audit->public_token));
+            ->get(route('audit.show', $audit->slug));
 
         $this->assertSame(0, $audit->fresh()->view_count);
     }

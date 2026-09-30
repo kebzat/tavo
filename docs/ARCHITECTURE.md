@@ -63,10 +63,11 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/sitemap.xml` | `SitemapController@sitemap` | `sitemap` |
 | GET | `/robots.txt` | `SitemapController@robots` | — |
 | POST | `/poptavka` | `LeadController` | přesměruje na `/#kontakt` |
-| GET | `/checklist/{token}` | `ChecklistController@show` | `checklist/show` |
-| POST | `/checklist/{token}/polozka/{item}` | `ChecklistToggleController` | JSON nebo návrat zpět |
-| GET | `/checklist/{token}/{slug}` | `ChecklistController@category` | `checklist/category` |
-| GET | `/audit/{token}` | `AuditController` | `audit/show` |
+| GET | `/checklist/{key}` | `ChecklistController@show` | `checklist/show` |
+| POST | `/checklist/{key}/polozka/{item}` | `ChecklistToggleController` | JSON nebo návrat zpět |
+| GET | `/checklist/{key}/{slug}` | `ChecklistController@category` | `checklist/category` |
+| GET | `/audit/{key}` | `AuditController` | `audit/show` |
+| GET | `/potencialni-spoluprace/{slug}` | `ProposalController` | `proposal/show` |
 | GET | `/{slug}` | `PageController@show` | `pages/show` |
 
 > Poslední routa chytá volný slug pro statické stránky — **musí zůstat na konci** souboru
@@ -88,7 +89,7 @@ Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 Panel `tools` drží interní nástroje, které se správou obsahu webu nesouvisí. Zatím
 v něm žijí **technické checklisty klientských webů**: jedna univerzální šablona
 (`is_template`), z ní se klonuje checklist pro každou zakázku a ten se dá zpřístupnit
-klientovi odkazem `/checklist/{token}`.
+klientovi odkazem `/checklist/{slug}`.
 
 Dvě věci, na kterých to stojí:
 
@@ -124,10 +125,34 @@ aby se u sto položek nečekalo na překreslení stránky.
 Interní poznámky se do pohledu vůbec nenačítají, `ChecklistController` je vynechává
 už ve výběru sloupců.
 
+### Adresy sdílených dokumentů
+
+Audity, checklisty i nabídky spolupráce mají čitelný slug podle klienta
+(`/audit/svet-cejlonu`). Vzniká sám při uložení přes `App\Support\UniqueSlug`
+a u druhého dokumentu téhož klienta dostane pořadové číslo. V administraci
+se dá přepsat v sekci Sdílení.
+
+Audity a checklisty dřív měly v adrese náhodný token. Token zůstal v databázi:
+`{key}` v routě přijme slug i token a starý odkaz přesměruje (301) na slug,
+takže nic rozeslaného nepřestalo fungovat. Slug je uhodnutelný, stránky proto
+dál chrání `noindex` a `robots.txt`, ne tajná adresa.
+
+### Potenciální spolupráce
+
+Dopadová stránka pro firmu, kterou chceme získat (Checklisty → Potenciální
+spolupráce). Sekce jdou v pořadí co jsme objevili → co doporučujeme → akční
+kroky → jak přemýšlíme, mezi ně se vkládají ukázky (tmavé pruhy s návrhem webu,
+fotkami nebo videem). Každá sekce je JSON pole z repeateru na modelu `Proposal`,
+prázdná se nezobrazí. Nadpisy sekcí jsou statické texty `spoluprace.*`.
+
+Nová stránka vzniká nesdílená, přihlášený správce ji vidí přes Náhled. Otevření
+klientem se počítá a u propojeného klienta zapíše do CRM stejně jako u auditu
+(`App\Models\Concerns\TracksClientViews`).
+
 ### Audity
 
 Vedle checklistu může mít klient **audit**: dlouhý dokument s nálezy, který dostane
-odkazem `/audit/{token}` a může se k němu vracet. Spravuje se v panelu nástrojů
+odkazem `/audit/{slug}` a může se k němu vracet. Spravuje se v panelu nástrojů
 (Checklisty → Audity). Sdílené audity a checklisty téhož klienta na sebe odkazují
 tlačítkem v tmavé hlavičce.
 

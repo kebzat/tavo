@@ -9,7 +9,7 @@
     <section class="section-x section-y-sm">
         <div class="container-tavo grid gap-5 sm:grid-cols-2">
             @foreach ($checklist->categories as $category)
-                <a href="{{ route('checklist.category', [$checklist->public_token, $category->slug]) }}"
+                <a href="{{ route('checklist.category', [$checklist->shareKey(), $category->slug]) }}"
                    data-reveal
                    class="group flex flex-col rounded-card border border-ink/14 bg-cream p-7 transition duration-300 ease-tavo hover:-translate-y-1 hover:border-ink/30 menu:p-9">
 

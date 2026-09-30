@@ -14,6 +14,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\VerifyCrmToken;
@@ -93,17 +94,21 @@ Route::post('/poptavka', LeadController::class)
     ->middleware('throttle:5,1')
     ->name('lead.store');
 
-// Sdílený technický checklist klienta. Chráněný jen náhodným tokenem —
-// obsah není citlivý, ale do vyhledávačů nepatří (noindex + robots.txt).
+// Sdílený technický checklist klienta. Adresa je čitelný slug klienta,
+// starší odkazy s náhodným tokenem se na něj přesměrují. Obsah není citlivý,
+// ale do vyhledávačů nepatří (noindex + robots.txt).
 // Odškrtávat smí každý, kdo zná odkaz, viz ChecklistToggleController.
-Route::get('/checklist/{token}', [ChecklistController::class, 'show'])->name('checklist.show');
-Route::post('/checklist/{token}/polozka/{item}', ChecklistToggleController::class)
+Route::get('/checklist/{key}', [ChecklistController::class, 'show'])->name('checklist.show');
+Route::post('/checklist/{key}/polozka/{item}', ChecklistToggleController::class)
     ->middleware('throttle:120,1')
     ->name('checklist.toggle');
-Route::get('/checklist/{token}/{slug}', [ChecklistController::class, 'category'])->name('checklist.category');
+Route::get('/checklist/{key}/{slug}', [ChecklistController::class, 'category'])->name('checklist.category');
 
 // Audit klientského webu. Sdílí se stejně jako checklist a oba na sebe odkazují.
-Route::get('/audit/{token}', AuditController::class)->name('audit.show');
+Route::get('/audit/{key}', AuditController::class)->name('audit.show');
+
+// Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
+Route::get('/potencialni-spoluprace/{slug}', ProposalController::class)->name('proposal.show');
 
 // Náhled e-mailového podpisu. Jen lokálně, na ostrém webu nemá co dělat.
 if (app()->isLocal()) {

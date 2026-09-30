@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Audit;
 use App\Models\Checklist;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
@@ -13,15 +14,20 @@ use Illuminate\Http\Request;
  */
 class AuditController extends Controller
 {
-    public function __invoke(Request $request, string $token): View
+    public function __invoke(Request $request, string $key): View|RedirectResponse
     {
         // Přihlášený správce otevře i audit, který ještě nesdílíme, aby ho
         // mohl před odesláním zkontrolovat přesně tak, jak ho uvidí klient.
         $audit = Audit::query()
             ->when($request->user() === null, fn ($query) => $query->public())
-            ->where('public_token', $token)
+            ->sharedAs($key)
             ->with('client.crmCompany')
             ->firstOrFail();
+
+        // Starý odkaz s tokenem přesměrujeme na čitelnou adresu.
+        if ($audit->slug && $key !== $audit->slug) {
+            return redirect()->route('audit.show', $audit->slug, 301);
+        }
 
         // Přihlášený správce si audit kontroluje, to otevření klientem není.
         if ($request->user() === null) {

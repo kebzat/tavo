@@ -17,15 +17,15 @@ use Illuminate\Http\Request;
  */
 class ChecklistToggleController extends Controller
 {
-    public function __invoke(Request $request, string $token, ChecklistItem $item): JsonResponse|RedirectResponse
+    public function __invoke(Request $request, string $key, ChecklistItem $item): JsonResponse|RedirectResponse
     {
         $checklist = Checklist::query()
-            ->where('public_token', $token)
+            ->sharedAs($key)
             ->where('is_public', true)
             ->where('is_template', false)
             ->firstOrFail();
 
-        // Bez tohohle by šlo cizím tokenem přepnout položku odjinud.
+        // Bez tohohle by šlo cizí adresou přepnout položku odjinud.
         abort_unless($item->checklist_id === $checklist->getKey(), 404);
 
         $status = $item->toggleDone();

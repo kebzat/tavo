@@ -16,7 +16,7 @@
                 <ul class="flex w-max gap-2">
                     @foreach ($checklist->categories as $polozkaMenu)
                         <li>
-                            <a href="{{ route('checklist.category', [$checklist->public_token, $polozkaMenu->slug]) }}"
+                            <a href="{{ route('checklist.category', [$checklist->shareKey(), $polozkaMenu->slug]) }}"
                                @class([
                                    'block rounded-pill px-4 py-2 text-sm font-bold transition duration-300 ease-tavo',
                                    'bg-ink text-cream' => $polozkaMenu->is($category),
@@ -53,7 +53,7 @@
 
                         <ul class="divide-y divide-ink/10 border-y border-ink/10">
                             @foreach ($section->items as $item)
-                                <x-checklist.item :item="$item" :token="$checklist->public_token" />
+                                <x-checklist.item :item="$item" :token="$checklist->shareKey()" />
                             @endforeach
                         </ul>
                     </section>
@@ -61,7 +61,7 @@
             </div>
 
             <p class="mt-12">
-                <a href="{{ route('checklist.show', $checklist->public_token) }}"
+                <a href="{{ route('checklist.show', $checklist->shareKey()) }}"
                    class="text-sm font-bold text-body transition-colors duration-300 ease-tavo hover:text-brick">
                     ← Zpět na přehled
                 </a>
