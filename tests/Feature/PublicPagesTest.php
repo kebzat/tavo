@@ -116,7 +116,7 @@ class PublicPagesTest extends TestCase
         $response->assertSee('/reference/chrudimlab', false);
         $response->assertSee('/sluzby/tvorba-eshopu', false);
 
-        foreach (Page::published()->pluck('slug') as $slug) {
+        foreach (Page::published()->indexable()->pluck('slug') as $slug) {
             $response->assertSee('/'.$slug, false);
         }
     }

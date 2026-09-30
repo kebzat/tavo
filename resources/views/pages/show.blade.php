@@ -1,6 +1,7 @@
 <x-layout.app
     :title="$page->seo_title ?: $page->title"
-    :description="$page->seo_description ?: $page->perex">
+    :description="$page->seo_description ?: $page->perex"
+    :indexable="$page->indexable">
 
     {{-- Bez bloků končí stránka hned pod perexem, pak si odsazení nad patičkou musí vzít hlavička. --}}
     <header class="section-x pt-[150px] {{ $blocks->isEmpty() ? 'pb-[clamp(70px,9vw,120px)]' : 'pb-10' }}">

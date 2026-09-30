@@ -32,6 +32,7 @@ final class PageMeta
         ?string $image = null,
         ?string $imageAlt = null,
         array $schema = [],
+        bool $indexable = true,
     ): array {
         $seo = app(SeoSettings::class);
 
@@ -42,7 +43,7 @@ final class PageMeta
             'title' => ($title ?: $seo->default_title).$seo->title_suffix,
             'description' => $description ?: $seo->default_description,
             'canonical' => url()->current(),
-            'robots' => self::robots($seo),
+            'robots' => $indexable ? self::robots($seo) : 'noindex, follow',
             'image' => $imageUrl,
             'imageWidth' => $imageWidth,
             'imageHeight' => $imageHeight,

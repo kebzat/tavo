@@ -44,7 +44,7 @@ class SitemapController extends Controller
             ];
         }
 
-        foreach (Page::published()->get() as $page) {
+        foreach (Page::published()->indexable()->get() as $page) {
             $urls[] = [
                 'loc' => route('pages.show', $page->slug),
                 'lastmod' => $page->updated_at?->toAtomString(),

@@ -66,6 +66,11 @@ class PageForm
             Section::make('SEO')->columns(2)->columnSpanFull()->collapsed()->schema([
                 TextInput::make('seo_title')->label('Titulek stránky'),
                 Textarea::make('seo_description')->label('Popisek pro vyhledávače')->rows(2),
+
+                Toggle::make('indexable')
+                    ->label('Zobrazovat ve vyhledávačích')
+                    ->default(true)
+                    ->helperText('Vypněte u stránek pro klienty. Dostanou noindex a vypadnou z mapy webu, odkaz dál funguje.'),
             ]),
         ]);
     }

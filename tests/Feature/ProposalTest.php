@@ -105,6 +105,29 @@ class ProposalTest extends TestCase
             ->assertDontSee('Obecné doporučení');
     }
 
+    public function test_iq_hracky_maji_vybrane_tipy_a_zbytek_je_na_strance_pro_klienty(): void
+    {
+        $tips = collect(Proposal::firstWhere('slug', 'iq-hracky')->examples)
+            ->firstWhere('title', 'Jak to vypadá, když je to zvládnuté');
+
+        $this->assertSame([
+            'Horní lišta: Venira.cz',
+            'Video v galerii produktu: Venira.cz',
+            'Popis produktu: běžný a prémiový (Alza.cz)',
+            'Stavová lišta: Sparkys.cz',
+            'Košík: Pompo.cz',
+            'Košík, který prodává: Rybizak.cz',
+        ], array_column($tips['items'], 'title'));
+        $this->assertSame(route('pages.show', 'pro-klienty'), $tips['link_url']);
+
+        $this->get('/pro-klienty')
+            ->assertOk()
+            ->assertSee('<meta name="robots" content="noindex, follow">', false)
+            ->assertSeeInOrder(['Dárek k objednávce', 'Pop-up za kontakt', 'Stránka o dopravě a platbě', 'Chytré vyhledávání', 'Nejčastěji kupováno společně', 'Drobnosti, které se vyplatí']);
+
+        $this->get('/sitemap.xml')->assertOk()->assertDontSee('pro-klienty');
+    }
+
     public function test_prazdna_sekce_se_nezobrazi(): void
     {
         $this->proposal(['findings' => [], 'principles' => null, 'examples' => [], 'timeline' => null]);

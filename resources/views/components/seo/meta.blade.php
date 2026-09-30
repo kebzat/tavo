@@ -4,9 +4,10 @@
     'ogImage' => null,
     'ogImageAlt' => null,
     'schema' => [],
+    'indexable' => true,
 ])
 
-@php($meta = App\Support\PageMeta::build($title, $description, $ogImage, $ogImageAlt, $schema))
+@php($meta = App\Support\PageMeta::build($title, $description, $ogImage, $ogImageAlt, $schema, $indexable))
 
 <title>{{ $meta['title'] }}</title>
 @if ($meta['description'])

@@ -14,6 +14,7 @@ class Page extends Model
 
     protected $casts = [
         'published' => 'boolean',
+        'indexable' => 'boolean',
         'hero_cta' => 'boolean',
         'blocks' => 'array',
     ];
@@ -21,6 +22,12 @@ class Page extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('published', true);
+    }
+
+    /** Stránky, které patří do mapy webu. Ty pro klienty ne. */
+    public function scopeIndexable(Builder $query): Builder
+    {
+        return $query->where('indexable', true);
     }
 
     /**
