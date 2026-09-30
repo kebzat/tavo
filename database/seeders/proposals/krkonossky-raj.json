@@ -1,0 +1,233 @@
+{
+    "company_name": "Krkonošský ráj",
+    "slug": "krkonossky-raj",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop jako zákazník, na počítači i v mobilu, od úvodní stránky přes dárkové bedýnky a pečené čaje až po košík. V bodech jsme sepsali, co bychom na webu upravili ještě před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Krkonošského ráje za osm let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Nápis Krkonošský ráj, České výrobky z hor, a hlavní banner s fotkou vašeho stánku s horkými lázeňskými oplatkami. Na první pohled bylo jasné, odkud jste a co děláte.",
+            "image": "spoluprace/krkonossky-raj-web-2018.jpg",
+            "label": "2018",
+            "title": "Kdysi",
+            "image_alt": "E-shop Krkonošský ráj v roce 2018"
+        },
+        {
+            "body": "Mnohem širší sortiment na Shoptetu. Hlavní banner ale patří indickým čajům Vahdam, pod ním zůstává prázdné místo a Krkonoše přijdou na řadu až ve druhém pásu produktů.",
+            "image": "spoluprace/krkonossky-raj-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Krkonošský ráj"
+        },
+        {
+            "body": "Dřevěná bedýnka s dobrotami z Krkonoš nahoře, bedýnka poskládaná online s cenou, adventní kalendář z pečených čajů a lidé od jarmarečního stánku. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/krkonossky-raj-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Krkonošský ráj"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Hlavní banner nabízí indické čaje Vahdam a mezi prvními novinkami je Bercoff a Mistral. Speciality z Krkonoš jsou až ve druhém pásu. Chybí větička, kdo jste a proč nakoupit právě u vás. Kdo přijde kvůli Krkonoším, na úvodní stránce je hledá.",
+            "tone": "problem",
+            "title": "Úvodní stránka neříká, že jste z Krkonoš",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na úvodní stránce o Vánocích nic není. Přitom máte dárek, který jinde nekoupí: dřevěnou bedýnku s medovinou, pečeným čajem, oplatkami a medem. V popisu píšete, že si ji zákazník může poskládat sám. Online to ale nejde, musí vám napsat, co chce. Hotové bedýnky M, L a XL jsou skladem po jednom kuse.",
+            "tone": "opportunity",
+            "title": "Bedýnku na míru si online poskládat nejde",
+            "priority": "urgent"
+        },
+        {
+            "body": "Kolekce 24 mini Babiččiných čajů za 559 Kč a 24 mini pečených čajů za 849 Kč. Čtyřiadvacet kousků je přesně adventní kalendář, jen se tak zatím nejmenuje. Stačí mu dát jméno a místo na úvodní stránce. Prodávat se musí od začátku listopadu.",
+            "tone": "opportunity",
+            "title": "Kolekce 24 pečených čajů je hotový adventní kalendář",
+            "priority": "important"
+        },
+        {
+            "body": "Stránka O nás je jeden dlouhý odstavec o sortimentu, bez jména a bez fotky. Showroom v Trutnově má jen adresu. Přitom máte příběh, který jiní nemají: začínali jste oplatkami od paní Boženy Jílkové a horké oplatky prodáváte na jarmarcích. V roce 2018 byla fotka stánku přímo v hlavním banneru. U regionálních dobrot lidé kupují i ty lidi a to místo.",
+            "tone": "problem",
+            "title": "Na webu nejsou vidět lidé ani příběh",
+            "priority": "important"
+        },
+        {
+            "body": "Mezi doporučenými produkty na úvodní stránce jsou preclíky s cedulkou „Prošlá min. trvanlivost“. Výprodej je dobrý nápad, jen patří do své kategorie. V postranním Top 5 a mezi nejprodávanějšími regionálními produkty jsou karetky pro destičkové tkaní. Nový zákazník z toho těžko pozná, že jste obchod s dobrotami z hor.",
+            "tone": "problem",
+            "title": "Na úvodní stránce se míchá výprodej a tkaní",
+            "priority": "important"
+        },
+        {
+            "body": "Tlačítko Do košíku je na celém webu šedé, takže vypadá neaktivně. Na produktech navíc svítí kód zboží a měrná cena dřív než popis. Jsou to drobnosti, ale opakují se u každého produktu na webu.",
+            "tone": "problem",
+            "title": "Šedé tlačítko Do košíku vypadá jako vypnuté",
+            "priority": "later"
+        },
+        {
+            "body": "Lahve na polenech, bedýnka v trávě se žlutou mašlí, hrnky na zahradě. Tohle jsou skutečné fotky, které působí jako z hor, a na webu vás odlišují od velkých e-shopů. Na nich se dá stavět celá úvodní stránka.",
+            "tone": "strength",
+            "title": "Fotky na dřevě a v trávě působí poctivě",
+            "priority": "important"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Bedýnka z Krkonoš a vánoční dárky místo banneru na indický čaj, jedna věta o tom, kdo jste, výprodej do vlastní kategorie a výraznější tlačítko Do košíku. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Zákazník vybere velikost bedýnky, naskládá do ní produkty a hned vidí cenu. Objednávka vám přijde se seznamem, žádné dopisování e-mailem. Na Shoptetu to jde doplňkem nebo vlastním skriptem, rozsah a cenu řekneme po prohlídce administrace.",
+            "title": "Dárková bedýnka poskládaná online"
+        },
+        {
+            "who": "Tom",
+            "body": "Z kolekce 24 čajů uděláme adventní kalendář s vlastní stránkou a místem na úvodní stránce. K tomu vánoční dárky podle rozpočtu a nabídka bedýnek pro firmy s vypáleným logem.",
+            "title": "Adventní kalendář a vánoční dárky do začátku listopadu"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Pár fotek u stánku na jarmarku, ve showroomu a při plnění bedýnek. K tomu krátký příběh na úvodní stránku a přepsaná stránka O nás.",
+            "title": "Příběh a lidé za Krkonošským rájem"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co se prodávalo, a podle toho web upravujeme dál. Třeba úvodní stránka, která se mění s ročním obdobím: v létě limonády a sirupy, v zimě pečený čaj.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Bedýnka a Vánoce nahoře, jasná věta o tom, kdo jste, výprodej stranou, výraznější tlačítko do košíku.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Úvodní stránka z Krkonoš"
+        },
+        {
+            "body": "Kolekce 24 čajů jako adventní kalendář, dárky podle rozpočtu.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Adventní kalendář a vánoční dárky"
+        },
+        {
+            "body": "Výběr velikosti, produkty, cena. Včetně varianty pro firmy s logem.",
+            "when": "2.–4. týden",
+            "later": false,
+            "title": "Bedýnka poskládaná online"
+        },
+        {
+            "body": "Fotky ze stánku a showroomu, krátký příběh na úvodní stránce.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Lidé a příběh"
+        },
+        {
+            "body": "Úvodní stránka podle ročního období a podle toho, co se prodává.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Sezonní úvodní stránka"
+        },
+        {
+            "body": "Ladíme podle dat z objednávek.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Rozvoj webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Bedýnka z Krkonoš nahoře, adventní kalendář z pečených čajů, bedýnka poskládaná online s cenou, dárky podle rozpočtu a příběh od jarmarečního stánku. Místa pro fotky vás a zákazníků jsou zatím prázdná, ty nafotíme s vámi. Finální podobu doladíme podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/krkonossky-raj-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Krkonošský ráj",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co u vás chybí, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás bedýnky na míru, Balíkovna za 59 Kč obvykle druhý den a před Vánoci poslední termín, kdy dárek dorazí pod stromeček.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "U ceny máte jen Skladem a počet kusů. Věta „U vás v pátek“ nebo „Na Balíkovně zítra“ odpoví na to, co před Vánoci zajímá nejvíc.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "K medovině nabídne oplatky, k pečenému čaji hrnek Krkonoše. S tlačítkem do košíku u každé položky, takže z jedné lahve je malý dárkový balíček.",
+                    "image": "spoluprace/ukazka-cross-sell-alza.jpg",
+                    "title": "Nejčastěji kupováno společně: Alza.cz",
+                    "image_alt": "Blok Nejčastěji zakoupeno společně na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "U vás se po vložení do košíku jen tiše změní číslo v rohu. Vysouvací košík ukáže, co v něm je, a nabídne, co se k tomu hodí. Po přidání bedýnky třeba mašli nebo přání, protože stuha v ceně není.",
+                    "image": "spoluprace/ukazka-kosik-pompo.jpg",
+                    "title": "Vysouvací košík: Pompo.cz",
+                    "image_alt": "Vysouvací košík na Pompo.cz s doporučenými produkty a lištou do dopravy zdarma",
+                    "video_url": null
+                },
+                {
+                    "body": "Stránka dopravy s cenami a termíny v přehledné tabulce. Tu vaši tvoří dlouhé odrážky, ve kterých se cena a rychlost doručení snadno ztratí.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba přehledně: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb s cenami a termíny na Rybizak.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: bedýnky, adventní kalendář a vánoční dárky na úvodní stránce. Větší změny stavíme na datech ze sezony.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má jasný důvod: buď pomůže zákazníkovi rychleji k dárku, nebo mu dá důvod nakoupit právě u vás.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Dobroty z hor ale nejlíp prodají skutečné fotky z jarmarku, ze showroomu a od zákazníků.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

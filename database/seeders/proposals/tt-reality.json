@@ -1,0 +1,176 @@
+{
+    "company_name": "TTreality",
+    "slug": "tt-reality",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web očima dvou lidí: majitele, který zvažuje, komu svěří prodej bytu, a zájemce, který prochází nabídku. V bodech jsme sepsali, co bychom opravili hned a co vám může přivést víc nemovitostí do prodeje.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web TTreality za deset let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Oranžové menu vlevo, slogan „…vaše správná trefa!“ a nabídka na hlavní stránce. V menu jste měli i „Chcete dobře prodat?“ a „Zadejte poptávku“.",
+            "image": "spoluprace/tt-reality-web-2016.jpg",
+            "label": "2016",
+            "title": "Kdysi",
+            "image_alt": "Web TTreality v roce 2016"
+        },
+        {
+            "body": "Čistý vzhled, Milan na první fotce a „Již 24 let s respektem ke každému domu“. Majitel, který chce prodat, ale na celém webu nenajde formulář, kam by nechal kontakt.",
+            "image": "spoluprace/tt-reality-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní úvodní stránka webu TTreality"
+        },
+        {
+            "body": "Úvod mluví hlavně k těm, kdo chtějí prodat. Posouzení ceny hned nahoře, postup prodeje, prodané nemovitosti jako důkaz, nabídka s cenou na první pohled a recenze se správnými jmény.",
+            "image": "spoluprace/tt-reality-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové úvodní stránky webu TTreality"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako návštěvník webu. Nevíme, kolik zakázek vám dnes web přivede, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Sekce „Klienti o nás říkají“ má čtyři recenze a každých 15 vteřin se sama přepne. Mění se text i fotka, jméno ale zůstává „MDDr. Martin Mikula“. Recenze manželů Kocábkových, Bauerových i ta z Mapy.cz se tak zobrazí pod cizím jménem. V textech navíc chybí mezery („v roce 2013s výběrem bytu“). Oprava zabere zhruba hodinu.",
+            "tone": "problem",
+            "title": "Všechny recenze se po chvíli podepíšou jedním jménem",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na webu není jediný formulář: ani na úvodní stránce, ani u služeb, u inzerátu nebo v kontaktech. Kdo klikne na „Chci prodat“, přečte si postup a může jen zavolat nebo napsat e-mail. Hodně lidí se o prodeji rozhoduje večer a volat se jim nechce. Krátký formulář na posouzení ceny, kterou jako službu nabízíte, by jim dal důvod nechat kontakt hned. Na webu z roku 2016 jste v menu „Zadejte poptávku“ měli.",
+            "tone": "opportunity",
+            "title": "Kdo chce prodat, nemá kde nechat kontakt",
+            "priority": "urgent"
+        },
+        {
+            "body": "Po kliknutí na Nemovitosti se otevřou byty: 69 inzerátů, z toho 18 s nálepkou Prodáno, 41 Pronajato a 3 Rezervováno. Aktuálních je sedm. Na mobilu se kvůli tomu nabídka posouvá desítky obrazovek. Pro zájemce je to šum. Pro majitele, který vybírá makléře, je to přitom váš nejlepší důkaz, jen by měl mít vlastní sekci „Prodali jsme“.",
+            "tone": "opportunity",
+            "title": "Prodané byty jsou schované mezi aktuální nabídkou",
+            "priority": "important"
+        },
+        {
+            "body": "Na počítači ukazuje karta inzerátu jen fotku a typ, třeba „Prodej bytu 4+kk“. Cenu, lokalitu a plochu uvidí zájemce až po najetí myší, a to místo fotky. Porovnat tři byty vedle sebe tak nejde. Na mobilu se údaje ukazují hned, tam je to v pořádku.",
+            "tone": "problem",
+            "title": "Cena a lokalita se ukážou až po najetí myší",
+            "priority": "important"
+        },
+        {
+            "body": "Milan je na webu vidět: skutečné fotky, osobní příběh od roku 2002 a to, že se nechcete rozrůstat za okolí Hradce. Prodej hlídá advokátní kancelář ARROWS s úschovou. Popisy nemovitostí jsou poctivé a konkrétní, u bytu v Medium Parku píšete o sazbě D57d, klimatizaci i počtu kamer. A fotky nemovitostí včetně záběrů z dronu jsou profesionální.",
+            "tone": "strength",
+            "title": "Osobní přístup a kvalitní inzeráty",
+            "priority": "important"
+        },
+        {
+            "body": "U inzerátu, třeba u bytu 4+kk v Medium Parku, je jako kontakt Tereza Říhová s kreslenou postavičkou místo fotky. Milan má přitom profesionální fotky. Kdo zvažuje, komu svěří byt za několik milionů, chce vidět, s kým bude jednat.",
+            "tone": "problem",
+            "title": "Makléřka má u inzerátů kreslený avatar",
+            "priority": "important"
+        },
+        {
+            "body": "Všechny detaily inzerátů mají v záhlaví stejný název „reality | TTreality“ a chybí jim popis i náhledová fotka pro sdílení. Když někdo pošle inzerát na Facebooku nebo ve WhatsAppu, zobrazí se bez fotky a bez názvu nemovitosti. Ve výsledcích vyhledávání vypadá stejně každý byt.",
+            "tone": "problem",
+            "title": "Sdílený inzerát nemá fotku ani název",
+            "priority": "important"
+        },
+        {
+            "body": "Soubor robots.txt vyhledávačům zakazuje stránku Kontakt a mapa webu (sitemap.xml) neexistuje. Web navíc chrání ochrana proti robotům. Když jsme se na web podívali s označením robota Seznamu, dostali jsme místo obsahu ověřovací stránku. Skutečný robot Seznamu to může mít jinak, ověříme to v nástrojích pro webmastery.",
+            "tone": "problem",
+            "title": "Vyhledávače mají k webu zbytečně ztížený přístup",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co vám nejdřív může přivést novou nemovitost do prodeje. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Recenze se správnými jmény a mezerami, krátký formulář na posouzení ceny na úvodní stránce a u služeb, u inzerátů název a fotka pro sdílení, kontakt zpřístupněný vyhledávačům. Přesný rozsah potvrdíme po prohlídce administrace webu.",
+            "title": "Opravit to hlavní do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Nabídka ve výchozím stavu jen s aktuálními nemovitostmi, filtr prodej a pronájem, cena a lokalita přímo na kartě. Prodané a pronajaté přesuneme do samostatné sekce, kde budou pracovat pro vás.",
+            "title": "Nabídka, ve které je vidět, co je volné"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Jedna stránka pro ty, kdo zvažují prodej: jak to u vás probíhá, home staging před a po, advokátní úschova, prodané nemovitosti a recenze. Nafotíme Terezu a dvě tři zakázky před a po home stagingu. Texty napíšeme s Milanem, ať zní jako on.",
+            "title": "Stránka pro majitele, kteří chtějí prodat"
+        },
+        {
+            "who": "Tom",
+            "body": "Mapa webu, kontrola v Google Search Console a Seznam Webmasteru, nastavení ochrany proti robotům tak, aby vyhledávače pouštěla. Ať se inzeráty najdou i podle lokality a dispozice.",
+            "title": "Web, který vyhledávače najdou"
+        }
+    ],
+    "steps_intro": "Nejdřív opravy, které stojí málo a hned pomáhají. Pak úpravy, které mají přivést víc majitelů, kteří chtějí prodat.",
+    "steps": [
+        {
+            "body": "Recenze se správnými jmény, formulář na posouzení ceny, kontakt pro vyhledávače.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Rychlé opravy"
+        },
+        {
+            "body": "Jen aktuální nemovitosti, filtr, cena a lokalita na kartě, náhledy pro sdílení.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Nabídka a inzeráty"
+        },
+        {
+            "body": "Postup, home staging, prodané nemovitosti a recenze na jednom místě.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Stránka pro prodávající a nová úvodní"
+        },
+        {
+            "body": "Fotka Terezy a zakázky před a po home stagingu.",
+            "when": "4. týden",
+            "later": false,
+            "title": "Focení"
+        },
+        {
+            "body": "Sledujeme, odkud chodí poptávky, a podle toho doplňujeme prodané nemovitosti a články.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Rozvoj webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek, textů a inzerátů, abyste viděli směr dřív, než cokoliv zaplatíte. Úvod mluví k těm, kdo chtějí prodat: posouzení ceny hned nahoře, postup prodeje, prodané nemovitosti, nabídka s cenou na kartě a recenze se správnými jmény. Místa pro fotku Terezy a pro home staging před a po jsou zatím prázdná, ty nafotíme s vámi. Finální podobu doladíme spolu.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/tt-reality-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat úvodní stránka",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové úvodní stránky webu TTreality",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, aby majitel, který zvažuje prodej, mohl nechat kontakt a hned viděl, co už jste prodali. Nový vzhled přijde až potom, pokud bude potřeba.",
+            "title": "Nejdřív poptávky, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má přivést nemovitost do prodeje nebo ušetřit čas vám a Tereze. Obsah jen pro obsah dělat nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U realit ale rozhodují skutečné fotky nemovitostí a skutečné tváře makléřů, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

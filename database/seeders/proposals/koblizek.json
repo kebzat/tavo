@@ -1,0 +1,232 @@
+{
+    "company_name": "Koblížek",
+    "slug": "koblizek",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes detail mikiny až po košík. V bodech najdete, co bychom opravili hned, co stihnout před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "4 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Úvodní stránka Koblížka před dvěma lety a dnes. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "V prosinci 2024 patřila celá úvodní stránka vánoční kolekci Perníček a Stromečky. Velká fotka dětí v kolekci a dvě tlačítka rovnou do předobjednávky.",
+            "image": "spoluprace/koblizek-web-2024.jpg",
+            "label": "2024",
+            "title": "Kdysi",
+            "image_alt": "E-shop Koblížek v prosinci 2024 s vánoční kolekcí Perníček"
+        },
+        {
+            "body": "Víc sortimentu, recenze s fotkami a chytrý košík. Hlavní banner ale nabízí kšiltovku a z Vánoc zbyl doprodej loňské kolekce schovaný v menu.",
+            "image": "spoluprace/koblizek-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Koblížek"
+        },
+        {
+            "body": "Nová barva Kakao a rostoucí střih nahoře, výběr podle věku dítěte, vánoční dárky s balením a voucherem, recenze s fotkami a lidé z dílny v Hlinsku. Na Shopify, bez migrace.",
+            "image": "spoluprace/koblizek-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Koblížek"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Na telefonu se po načtení přes celou obrazovku otevře okno s přihláškou do Koblížek KLUBU. Po jeho zavření vyskočí cookie lišta a ve spodní části zůstane plovoucí recenze s tlačítkem chatu. Na detailu mikiny tahle dvojice zakrývá výběr velikosti. Než zákaznice uvidí první soupravu, musí zavřít tři věci.",
+            "tone": "problem",
+            "title": "Na mobilu se přes obsah překrývají tři okna",
+            "priority": "urgent"
+        },
+        {
+            "body": "Kolekce Vánoce je v menu a obsahuje deset kousků s popiskem „Doprodej loňské kolekce Perníček a Stromečky“, horní obrázek kolekce je prázdný. Na úvodní stránce o Vánocích nic není. Přitom máte hotové dárky: MEGA sety, voucher od 1 000 do 5 000 Kč, vánoční balení za 89 Kč a dámské mikiny do páru. Stačí je dát na jedno místo s termínem, do kdy objednat.",
+            "tone": "opportunity",
+            "title": "Vánoční dárky máte, jen nejsou vidět",
+            "priority": "urgent"
+        },
+        {
+            "body": "Hlavní banner ukazuje kšiltovku Snapback a Trucker. Nová barva Kakao, kterou jste přidali v polovině září, a teplákové soupravy, ve kterých jste podle vlastních slov specialisté, jsou až níž. Na mobilu se navíc text banneru „Stylový kousek pro tvého Koblížka“ překrývá s nápisem v obrázku. Fotky tepláků a čepic v bestsellerech jsou pořád s jarními tulipány.",
+            "tone": "problem",
+            "title": "Na první obrazovce je kšiltovka, soupravy až níž",
+            "priority": "important"
+        },
+        {
+            "body": "U Mikiny Longo Čokoláda je vedle ceny červeně „Brzy na skladě“. O kus níž stojí „Skladem, ihned k odeslání do 2 prac. dnů“ a v častých dotazech „Všechny kousky na e-shopu jsou skladem“. Zákaznice neví, kdy balík přijde. Před Vánoci je to otázka, podle které se rozhoduje, jestli objedná.",
+            "tone": "problem",
+            "title": "Detail produktu si odporuje v tom, kdy zboží dorazí",
+            "priority": "important"
+        },
+        {
+            "body": "Skutečné děti venku i ve studiu, recenze 4,97 z 5 od 106 zákaznic, často i s fotkou, a Denisa s telefonem přímo u produktu. Tohle je přesně to, co u dětského oblečení prodává, a spousta e-shopů to nemá. Na tom se dá stavět.",
+            "tone": "strength",
+            "title": "Opravdové děti, opravdové recenze a majitelka na telefonu",
+            "priority": "important"
+        },
+        {
+            "body": "V košíku je ukazatel, kolik zbývá do dárku pro maminku a do dopravy zdarma, nabídka vánočního balení za 89 Kč a přednostního odeslání za 49 Kč. Na detailu produktu si zákaznice složí set se slevou až 13 %. Tohle funguje, jen to chce ukázat dřív než v košíku.",
+            "tone": "strength",
+            "title": "Košík a skládání setů děláte lépe než většina",
+            "priority": "later"
+        },
+        {
+            "body": "Úvodní stránka má v Googlu titulek „koblizekstore.cz“ a popis „Šijeme stylové kousky pro děti.“ Když někdo hledá dětské teplákové soupravy, z výsledku nepozná, co u vás najde. Titulek a popis se na Shopify mění v nastavení za pár minut.",
+            "tone": "problem",
+            "title": "V Googlu se úvodní stránka jmenuje jen koblizekstore.cz",
+            "priority": "important"
+        },
+        {
+            "body": "Fotky Elišky u šicího stroje a Míši ve skladu jsou jen na stránce O nás a to, že jste od května 2025 dílnou na chráněném trhu práce, je jen drobně v patičce. Tohle jsou důvody, proč zaplatit víc než v řetězci.",
+            "tone": "opportunity",
+            "title": "Lidé z dílny jsou schovaní",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Okno s KLUBEM až po chvíli nebo při odchodu, plovoucí recenze na mobilu pryč, podzimní banner se soupravou Kakao, jedna jasná informace o dostupnosti a titulek pro Google. Na Shopify, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Jedna stránka s dárky podle věku dítěte: MEGA sety, voucher, dámské mikiny do páru, vánoční balení a termín, do kdy objednat pod stromeček. Hotové do začátku listopadu a odkaz na ni rovnou z úvodní stránky.",
+            "title": "Vánoční stránka, na které se dárek vybere za minutu"
+        },
+        {
+            "who": "Tom",
+            "body": "Nahoru cena, velikost a kdy balík dorazí. Pod to v pár bodech materiál, jak roste s dítětem a péče. Dlouhý příběh může zůstat, jen níž. Na mobilu se pak k tlačítku do košíku dostane zákaznice bez dlouhého posouvání.",
+            "title": "Přehlednější detail produktu na mobilu"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Na úvodní stránku přeneseme fotky z dílny a krátký příběh Denisy, Elišky a Míši. Pomůžeme s texty, ať jsou krátké a zní jako vy.",
+            "title": "Lidé z dílny na úvodní stránce"
+        },
+        {
+            "who": "Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Vyhledávání s návrhy, filtr podle věku a lepší stránka dopravy přijdou na řadu podle priorit.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Okna na mobilu, banner se soupravou Kakao, dostupnost na produktu, titulek pro Google.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Refresh problémových míst"
+        },
+        {
+            "body": "Sety, voucher, mikiny do páru a balení na jednom místě. S termínem doručení pod stromeček.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Vánoční stránka s dárky"
+        },
+        {
+            "body": "Cena, velikost a doručení nahoře, podstatné informace v bodech.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Úprava detailu produktu"
+        },
+        {
+            "body": "Výběr podle věku, fotky z dílny a recenze s fotkami výš.",
+            "when": "4. týden",
+            "later": false,
+            "title": "Nová úvodní stránka"
+        },
+        {
+            "body": "Podle dat ze sezony. Vyhledávání, filtry a stránka dopravy.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Ladění webu"
+        },
+        {
+            "body": "Každá nová barva dostane na webu své místo v den spuštění.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Nové kolekce"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Nahoře nová barva Kakao a rostoucí střih, pod tím výběr podle věku dítěte, vánoční dárky s balením a voucherem, recenze s fotkami od zákaznic a dílna v Hlinsku. Ceny a texty jsou z vašeho webu. Finální podobu doladíme s vámi podle toho, co Shopify šablona umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/koblizek-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Koblížek",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme jen to, co u vás zatím chybí, v pořadí, jak jimi prochází zákaznice: od hledání přes detail produktu po dopravu. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Po kliknutí na lupu hned nabídne oblíbené kategorie a nejprodávanější produkty. U vás se dnes otevře jen prázdné pole. Stačilo by tam ukázat soupravy, novou barvu a velikosti podle věku.",
+                    "image": "spoluprace/ukazka-vyhledavani-rybizak.jpg",
+                    "title": "Vyhledávání s návrhy: Rybizak.cz",
+                    "image_alt": "Vyhledávání na Rybizak.cz s populárními kategoriemi a bestsellery",
+                    "video_url": null
+                },
+                {
+                    "body": "Nahoře krátce „v kostce“, pod tím fotky při použití a pro koho to je. Vaše popisy jsou dlouhé a milé, jen podstatné věci jako materiál a velikosti zapadnou na mobilu hluboko pod textem.",
+                    "image": "spoluprace/ukazka-popis-produktu.jpg",
+                    "title": "Popis produktu v kostce: Alza.cz",
+                    "image_alt": "Srovnání běžného a prémiového popisu produktu na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá na otázku „kdy to budu mít doma“. Vyřeší zmatek mezi „Brzy na skladě“ a „Skladem“ a před Vánoci ukáže, jestli souprava stihne Ježíška.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Přehledná tabulka dopravců s cenou a termínem doručení. U vás jsou ceny dopravy uprostřed textu o balení a platební bráně, termíny najde zákaznice až v častých dotazech na úvodní stránce.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb na Rybizak.cz s cenami a termíny",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: úvodní stránka pro podzim, vánoční dárky a jasná informace o doručení. Větší změny stavíme na datech ze sezony, ať vycházejí z toho, co vaše zákaznice opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava webu buď pomůže prodat hned, nebo posílí důvěru ve značku. Nic jen proto, že je to zrovna v módě.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Dětské oblečení ale prodávají skutečné děti a skutečné ruce v dílně, ne obrázky z AI. Ty už máte.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

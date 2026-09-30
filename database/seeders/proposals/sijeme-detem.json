@@ -1,0 +1,221 @@
+{
+    "company_name": "Šijeme dětem",
+    "slug": "sijeme-detem",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes látky a hotové oblečení až po košík. V bodech najdete, co bychom opravili hned, co by vám nový e-shop přinesl a v jakém pořadí to udělat, ať nepřijdete o sezonu.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "2 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "E-shop Šijeme dětem v roce 2014 a dnes. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Stejná hlavička s ručně psaným logem, stejné menu vlevo a stejný úvodní text. Tehdy čtyři kategorie a 215 látek a doplňků.",
+            "image": "spoluprace/sijeme-detem-web-2014.jpg",
+            "label": "2014",
+            "title": "Kdysi",
+            "image_alt": "E-shop Šijeme dětem v roce 2014"
+        },
+        {
+            "body": "Sortiment se od té doby víc než zdvojnásobil, web zůstal skoro stejný. Na mobilu se zobrazí zmenšená verze pro počítač a v postranním panelu visí spamové komentáře.",
+            "image": "spoluprace/sijeme-detem-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Šijeme dětem"
+        },
+        {
+            "body": "Tři jasné cesty (šiju sama, nešiju, začínám s plenkami), látky s cenou za metr a barvami, hotové oblečení, průvodce plenkami a vaše poradna u každé látky. Nový e-shop, který funguje i na mobilu.",
+            "image": "spoluprace/sijeme-detem-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Šijeme dětem"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani do administrace jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "V pravém sloupci na každé stránce je blok Poslední komentáře. Dnes v něm svítí „casino“, „xxxiii olematusse conviven sestdienas“ a další spam, hned vedle skutečných dotazů zákaznic na náplet. Kdo přijde poprvé, působí to jako opuštěný web. Stačí blok skrýt, spam smazat a komentáře pouštět až po schválení.",
+            "tone": "problem",
+            "title": "Na úvodní stránce visí spamové komentáře",
+            "priority": "urgent"
+        },
+        {
+            "body": "Web nemá mobilní verzi. Na telefonu se zobrazí celá stránka pro počítač zmenšená na šířku displeje, menu i ceny jsou drobným písmem a pro výběr barvy je potřeba přibližovat prsty. Kdo přijde z telefonu, nejspíš odejde dřív, než najde látku.",
+            "tone": "problem",
+            "title": "Na mobilu se e-shop nedá pohodlně používat",
+            "priority": "urgent"
+        },
+        {
+            "body": "Podle veřejně dostupného souboru běží e-shop na Drupalu 6.37 ze srpna 2015 s modulem Ubercart. Drupal 6 přestal dostávat bezpečnostní opravy v únoru 2016. Web tedy deset let běží bez záplat a s ním i objednávky a údaje zákazníků. Tohle se nedá vyřešit úpravou, jen přechodem na nový systém.",
+            "tone": "problem",
+            "title": "Systém e-shopu je deset let bez bezpečnostních oprav",
+            "priority": "urgent"
+        },
+        {
+            "body": "Web nemá vyhledávání, takže ze 462 látek se hledá jen proklikáním menu. Návod k nákupu upozorňuje, že bez zapnutého JavaScriptu nejde objednávku dokončit a že počet položek v košíku ve skutečnosti znamená metry. Platit jde převodem, PayPalem nebo na dobírku, kartou online ne. Každý z těchto kroků někoho cestou ztratí.",
+            "tone": "problem",
+            "title": "Hledání a dokončení objednávky je zbytečně těžké",
+            "priority": "important"
+        },
+        {
+            "body": "Pod látkami odpovídá Terka nebo Gabča na dotazy o pružnosti, certifikaci GOTS nebo ladícím napletu, někdy i s fotkou. Popisy mají složení, šíři a gramáž. Máte vlastní potisky ŠD, barevně rostlou biobavlnu a dílnu v Liberci. Tohle je odbornost, kterou velké e-shopy s látkami nemají, a do nového webu ji přeneseme celou.",
+            "tone": "strength",
+            "title": "Osobní poradna u každé látky",
+            "priority": "important"
+        },
+        {
+            "body": "Látky jsou nafocené položené na sobě, hotové oblečení na černém pozadí a náhledy mají 192 pixelů. Nikde není dítě v pyžamku, ani co zákaznice z vaší látky ušily. Příběh „šiji pro naše děti“ je schovaný na stránce O nás, stejně jako to, pro koho jsou látky vhodné, třeba při atopickém ekzému. Hodnocení zákazníků jsme na webu nenašli.",
+            "tone": "opportunity",
+            "title": "Chybí děti v oblečení a hodnocení zákaznic",
+            "priority": "important"
+        },
+        {
+            "body": "Kdo šije dárky pod stromeček, objednává látky v říjnu a listopadu. Na webu o tom dnes nic není, poslední vydání věstníku zmiňuje bavlnu na Vánoce, ale na úvodní stránce ani v nabídce ji nenajdete. Stačí jeden blok s látkami a hotovými dárky a termínem, do kdy objednat.",
+            "tone": "opportunity",
+            "title": "Vánoce se u látek rozhodují teď",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co je potřeba udělat hned a co přinese víc dlouhodobě. Velká změna přijde až po sezoně, ať vás nepřipraví o Vánoce.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Skrýt blok Poslední komentáře, smazat spam, komentáře schvalovat ručně a udělat zálohu celého webu a databáze. Na starém Drupalu jde jen o úklid a pojistku, jeho bezpečnost to nevyřeší. Hotové do 14 dní.",
+            "title": "Uklidit a zazálohovat web do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Přechod na moderní e-shop, třeba Shoptet nebo WooCommerce, podle toho, jak moc chcete web měnit sami. Převedeme látky i s variantami barev, hotové výrobky, zákazníky a hlavně komentáře s vašimi odpověďmi. Staré adresy přesměrujeme, ať nepřijdete o pozice v Googlu. Přesný rozsah a cenu řekneme po prohlídce dat.",
+            "title": "Nový e-shop, který funguje na mobilu"
+        },
+        {
+            "who": "Tom",
+            "body": "Vyhledávání, filtry podle materiálu a použití, platba kartou, výběr výdejních míst a košík, který počítá metry jako metry. U každé látky poradna jako dnes, jen přehlednější.",
+            "title": "Nákup látek bez návodu"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Pomůžeme s fotkami dětí v oblečení a s tím, co zákaznice z vašich látek ušily. Na úvodní stránku dáme tři cesty podle toho, kdo přichází: šiju sama, nešiju, začínám s plenkami.",
+            "title": "Fotky a texty pro nový web"
+        }
+    ],
+    "steps_intro": "Nejdřív pojistka a úklid, pak příprava nového e-shopu tak, aby se spouštěl mimo sezonu. Staré stránky mezitím normálně prodávají.",
+    "steps": [
+        {
+            "body": "Spam pryč, komentáře po schválení, záloha webu a databáze.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Úklid a záloha"
+        },
+        {
+            "body": "Projdeme data, vybereme platformu a spočítáme cenu.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Výběr platformy"
+        },
+        {
+            "body": "Dočasný blok s látkami na dárky a termínem objednání na stávajícím webu.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Vánoční blok"
+        },
+        {
+            "body": "Převod produktů, variant a komentářů. Návrh vzhledu podle vašich připomínek.",
+            "when": "4.–8. týden",
+            "later": false,
+            "title": "Stavba nového e-shopu"
+        },
+        {
+            "body": "Nový e-shop naostro, přesměrování starých adres, kontrola objednávek.",
+            "when": "Leden",
+            "later": true,
+            "title": "Spuštění po Vánocích"
+        },
+        {
+            "body": "Fotky dětí a zákaznických výrobků, hodnocení, další úpravy podle dat.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Ladění"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Nahoře tři cesty podle toho, kdo přichází, pod tím látky s cenou za metr a barvami, hotové oblečení z biobavlny, vánoční tipy, průvodce látkovými plenkami a vaše poradna u látek. Ceny a citace jsou z vašeho webu k 1. 10. 2026. Místa pro fotky z dílny jsou zatím prázdná, ty nafotíme s vámi. Finální podobu doladíme podle toho, jakou platformu vybereme.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/sijeme-detem-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage nového e-shopu",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Šijeme dětem",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co by se hodilo do nového e-shopu s látkami, v pořadí, jak jimi prochází zákaznice: od hledání přes detail látky po košík a dopravu. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Po kliknutí na lupu hned nabídne oblíbené kategorie a nejprodávanější produkty. U vás vyhledávání chybí úplně. S návrhy by zákaznice našla biobavlněný úplet nebo náplet dřív, než dopíše slovo.",
+                    "image": "spoluprace/ukazka-vyhledavani-rybizak.jpg",
+                    "title": "Vyhledávání s návrhy: Rybizak.cz",
+                    "image_alt": "Vyhledávání na Rybizak.cz s populárními kategoriemi a bestsellery",
+                    "video_url": null
+                },
+                {
+                    "body": "K teplákovině nabídne ladící náplet, k úpletu nitě a patentky. Na přesně tohle se u vás zákaznice ptají v komentářích. S tlačítkem do košíku u každé položky.",
+                    "image": "spoluprace/ukazka-cross-sell-alza.jpg",
+                    "title": "Nejčastěji kupováno společně: Alza.cz",
+                    "image_alt": "Blok Nejčastěji zakoupeno společně na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Košík ukáže, kolik zbývá do levnějšího poštovného. Vy ho máte od 1 000 a od 3 000 Kč, jenže se to zákaznice dozví až v návodu k nákupu.",
+                    "image": "spoluprace/ukazka-kosik-rybizak.jpg",
+                    "title": "Košík s ukazatelem dopravy: Rybizak.cz",
+                    "image_alt": "Košík na Rybizak.cz s ukazatelem dopravy zdarma, dárkem a doporučenými produkty",
+                    "video_url": null
+                },
+                {
+                    "body": "Přehledná tabulka dopravců s cenou a termínem. U vás jsou ceny poštovného uprostřed dlouhého textu o nakupování, obchodních podmínkách a změnách objednávek.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb na Rybizak.cz s cenami a termíny",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Nejdřív úklid a záloha, aby starý web vydržel sezonu. Nový e-shop spustíme až po Vánocích, ať změna nepřijde v nejhorší chvíli. Hezké věci přijdou, až bude fungovat nákup na mobilu.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava webu buď pomůže prodat, nebo ochrání to, co máte. Nic jen proto, že je to zrovna v módě.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy, převod dat a analýzy ano. Přírodní látky ale prodává skutečná látka v ruce, dítě v pyžamku a vaše odpovědi pod látkou. To AI nenahradí.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

@@ -1,0 +1,225 @@
+{
+    "company_name": "Hračkolka",
+    "slug": "hrackolka",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes kategorie a produkty až po košík. V bodech najdete, co opravit hned, co stihnout před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Starší podoby webu se v archivu nedochovaly tak, aby se daly ukázat, takže jen dnešek a návrh. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Banner s Makedo, pás s osmi novinkami, loga značek a pod nimi dlouhý text o hračkách pro kluky a holky. Co vás odlišuje, je schované v malých dlaždicích.",
+            "image": "spoluprace/hrackolka-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Hračkolka"
+        },
+        {
+            "body": "HRAČKOLKA edu nahoře, Vánoce a advent v menu, vlastní vstup pro školky, 100 % doporučení na očích a Kamishibai s vašimi kartami. Na Upgates, bez migrace.",
+            "image": "spoluprace/hrackolka-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Hračkolka"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Zkoušeli jsme tři produkty (Kamishibai divadlo, Nádobku na hmyz a Ice Cream Play Set) a na telefonu je každá stránka široká 549 px místo 390 px. Příčinou je nadpis produktu, který přetéká přes okraj. Stránka se pak dá posouvat do stran a působí rozbitě přesně tam, kde se rozhoduje o nákupu. Oprava je na pár řádků stylu.",
+            "tone": "problem",
+            "title": "Na mobilu jsou stránky produktů širší než displej",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na stránce O nás je veřejně vidět věta „Proč je stránka O nás důležitá? Posiluje důvěru, transparentnost a E‑E‑A‑T, což je zásadní pro SEO i AEO.“ Kdo ji přečte, pozná, že text psal nástroj pro vyhledávače. A nikde na stránce není, kdo za Hračkolkou stojí, žádné jméno ani fotka.",
+            "tone": "problem",
+            "title": "Na stránce O nás zůstala poznámka pro SEO",
+            "priority": "urgent"
+        },
+        {
+            "body": "Kategorie Vánoce na webu existuje, ale v menu není. Adventní kalendář Grapat 2026 (29 kusů skladem) je v kategorii Podzim a nahoře v menu jsou Podzim a Čáry máry. Adventní kalendáře se kupují do konce listopadu a vánoční dárky se začnou shánět během října.",
+            "tone": "opportunity",
+            "title": "Vánoce a advent jsou schované",
+            "priority": "urgent"
+        },
+        {
+            "body": "Hračky používáte s dětmi ve vlastním centru a výběr pro děti se specifickými potřebami konzultujete se speciálními centry. Tohle velká hračkářství nemají. Na úvodní stránce z toho zbyla jedna dlaždice s jednou větou a fotky z centra na webu skoro nejsou.",
+            "tone": "strength",
+            "title": "HRAČKOLKA edu je váš největší trumf, na webu je to jedna věta",
+            "priority": "important"
+        },
+        {
+            "body": "Heureka u vás ukazuje 100 % doporučení z 376 recenzí a certifikát Ověřeno zákazníky. Na počítači se to objeví až po najetí na žlutý proužek u levého okraje, na mobilu vůbec. Stránka Recenze obchodu a produktů žádné recenze neukazuje, jen vysvětluje, kdo je smí psát.",
+            "tone": "strength",
+            "title": "100 % doporučení je schované v bočním proužku",
+            "priority": "important"
+        },
+        {
+            "body": "Prodáváte i školkám a školám: máte obchodní podmínky pro firmy, poptávku, stránku Spolupráce a kategorie jako Tuff tray a vybavení tříd nebo Snoezelen. Úvodní stránka k nim ale nemluví. Místo toho je tam dlouhý text o „malých princeznách“ a „malých dobrodruzích“, který by mohl stát na kterémkoli e-shopu s hračkami.",
+            "tone": "opportunity",
+            "title": "Úvodní stránka mluví obecně a školky na ní nemají vstup",
+            "priority": "important"
+        },
+        {
+            "body": "Divadlo za 1 890 Kč je mezi bestsellery a karty O veliké řepě, O třech prasátkách nebo O žluťáskovi jsou vaše vlastní. Na fotkách divadla je ale jen prázdná dřevěná skříňka. Fotka dětí, které před ním sedí a poslouchají, ho prodá líp než popis.",
+            "tone": "opportunity",
+            "title": "Kamishibai ukázané jako prázdná překližka",
+            "priority": "important"
+        },
+        {
+            "body": "Banner s Makedo je na telefonu obrázek z počítače zmenšený na úzký proužek a tlačítko Objevit Makedo v něm skoro nejde přečíst. Pro mobil stačí vlastní verze banneru.",
+            "tone": "problem",
+            "title": "Hlavní banner na mobilu je zmenšený obrázek",
+            "priority": "later"
+        },
+        {
+            "body": "Ukazuje, kolik zbývá do dopravy zdarma a do dárku, nabízí senzorickou krajinu Jellystone a k divadlu doporučí karty. U produktu píšete, že odesíláte nejpozději druhý pracovní den. Tohle je nad průměrem a měnit se na tom nemusí skoro nic.",
+            "tone": "strength",
+            "title": "Košík, který opravdu prodává",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Stránky produktů na mobilu na šířku displeje, banner pro mobil, 100 % doporučení z Heureky do hlavičky a na mobil, Vánoce do menu a pryč s poznámkou pro SEO na O nás. Na Upgates, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Vánoční nabídka nahoře na úvodní stránce, adventní kalendáře pohromadě a výběr dárku podle věku. Kategorie Od 2 let až Od 6 let+ už máte, jen jsou v menu schované pod Hrami.",
+            "title": "Vánoce a advent na úvodní stránce"
+        },
+        {
+            "who": "Tom",
+            "body": "Samostatný vstup z úvodní stránky: vybavení tříd, Kamishibai, světelné stoly, nákup na IČO a krátká poptávka. Obchodní podmínky pro firmy už máte, chybí jen cesta, kterou učitelka najde.",
+            "title": "Stránka pro školky a školy"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Nová stránka O nás se jmény a fotkami, HRAČKOLKA edu na úvodní stránce a fotky z centra k nejprodávanějším hračkám. Začneme u Kamishibai divadla a světelného programu.",
+            "title": "Lidé a HRAČKOLKA edu na webu"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Když se ukáže, že to má smysl, připravíme celý redesign úvodní stránky.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Šířka produktů na mobilu, banner pro mobil, poznámka pro SEO pryč.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Opravy na mobilu"
+        },
+        {
+            "body": "Vánoce v menu, advent pohromadě, hodnocení z Heureky nahoře.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Vánoční nabídka"
+        },
+        {
+            "body": "Nová stránka O nás a HRAČKOLKA edu na úvodní stránce.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Kdo jste"
+        },
+        {
+            "body": "Stránka pro učitelky s vybavením tříd a poptávkou.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Vstup pro školky a školy"
+        },
+        {
+            "body": "Fotky z hraní k bestsellerům, úvodní stránka bez obecného textu. Podle dat ze sezony případně redesign.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Ladění webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. HRAČKOLKA edu nahoře, Vánoce a advent, dva vstupy pro rodiče a pro školky, 100 % doporučení na očích a Kamishibai s vašimi kartami. Místa pro fotky z centra, lidí a recenze jsou zatím prázdná, ty doplníme s vámi. Finální podobu doladíme podle toho, co Upgates umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/hrackolka-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Hračkolka",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co u vás chybí, v pořadí, jak jimi prochází zákazník: od vyhledávání přes detail produktu po dopravu. Košík a horní lištu s dárkem vynecháváme, ty máte dobře. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Po kliknutí do vyhledávání hned ukáže oblíbené kategorie a bestsellery. U vás se našeptávač objeví až po napsání slova. Kdo neví, jak se Tuff tray nebo Kamishibai jmenuje, by tak dostal nápovědu dřív, než začne psát.",
+                    "image": "spoluprace/ukazka-vyhledavani-rybizak.jpg",
+                    "title": "Vyhledávání: Rybizak.cz",
+                    "image_alt": "Vyhledávání s populárními kategoriemi a bestsellery na Rybizak.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Krátké video jako první položka galerie. U světelných stolů, svítících stavebnic Connetix nebo Kamishibai řekne pár vteřin záběru víc než pět fotek. Ve čtyřech produktech, které jsme prošli, video není.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Video jako první položka v galerii produktu na Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá na otázku „kdy to budu mít doma“. Vy už píšete, že odesíláte nejpozději druhý pracovní den. Konkrétní datum doručení je před Vánoci ještě silnější.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Stavová lišta: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Všechny dopravy s cenami a termíny na jedné stránce. U vás je stránka Doprava a ceník dopravy rozcestník na tři podstránky a ceny jsou až v nich.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb s cenami a termíny na Rybizak.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: mobil, vánoční nabídka a hodnocení na očích. Větší změny vzhledu stavíme na datech ze sezony, ať vycházejí z toho, co vaši zákazníci opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď podpoří prodej hned, nebo vám posílí pozici na trhu. Obsah jen pro obsah točit nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Texty pro zákazníky ale musí znít jako vy a fotky musí být z vašeho centra, ne z generátoru.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

@@ -1,0 +1,187 @@
+{
+    "company_name": "Rovex",
+    "slug": "rovex",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web jako někdo, kdo chce zasklít terasu nebo lodžii: úvod, produkty, reference, jak objednat i kontakty, na počítači i na mobilu. V bodech jsme sepsali, co bychom opravili hned, co vám může přinést víc poptávek a co počká.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "2 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Rovexu za deset let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Rozcestník tří firem pod značkou ROVEX: zasklívací systémy, výroba zdvihacích zařízení a jejich montáž a servis. Telefon velkým písmem hned v hlavičce.",
+            "image": "spoluprace/rovex-web-2016.jpg",
+            "label": "2016",
+            "title": "Kdysi",
+            "image_alt": "Web ROVEX v roce 2016"
+        },
+        {
+            "body": "Výrazná značka s limetkovou barvou a video přes celou šířku. Hned pod ním ale pořád visí letní celofiremní dovolená a na mobilu se web zobrazuje jako zmenšená verze pro počítač.",
+            "image": "spoluprace/rovex-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage webu Rovex"
+        },
+        {
+            "body": "Skutečné realizace místo ilustračních obrázků, čísla výroby a pět let záruky na očích, poptávka s rozměrem a fotkou, show-room a příběh firmy od roku 1998.",
+            "image": "spoluprace/rovex-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage webu Rovex"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do návštěvnosti webu ani počtu poptávek jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Hned pod úvodním videem je velký černý pruh „Celofiremní dovolená od 27. 7. do 9. 8. 2026 (show-room uzavřen)“. Je říjen a první konkrétní informace, kterou návštěvník dostane, je, že máte zavřeno. Na to místo patří otevírací doba show-roomu nebo nabídka, která se hodí na podzim.",
+            "tone": "problem",
+            "title": "Na úvodní stránce pořád visí letní dovolená",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na telefonu se web zobrazí jako zmenšená verze pro počítač, široká 980 px. Menu, texty u produktů i patička jsou tak malé, že se bez přibližování nedají číst. Kdo hledá zasklení balkonu večer na gauči v mobilu, odejde k webu, který se mu čte pohodlněji.",
+            "tone": "problem",
+            "title": "Na mobilu drobné písmo a zmenšená verze pro počítač",
+            "priority": "urgent"
+        },
+        {
+            "body": "Tlačítko Poptávka otevře prázdné okno chatu „Napište zprávu…“. Zákazník neví, co napsat, a vy pak musíte rozměry, fotku i telefon dohledávat dalšími zprávami. Přitom na stránce Jak objednat máte přesně sepsané, co potřebujete vědět: co má zasklení řešit, co bude posuvné, jestli bude prostor vytápěný a přibližný rozměr otvoru. Z toho je hotový formulář.",
+            "tone": "problem",
+            "title": "Poptávka je jen prázdný chat",
+            "priority": "important"
+        },
+        {
+            "body": "Telefonní čísla na webu nejsou odkazy, a to ani na stránce Kontakt. Na mobilu je zákazník musí opsat nebo kopírovat. U zakázek, kde lidé rádi nejdřív zavolají a zeptají se na cenu, je to zbytečná překážka.",
+            "tone": "problem",
+            "title": "Na telefon se nedá kliknout",
+            "priority": "important"
+        },
+        {
+            "body": "Na úvodní stránce jsou u produktů ilustrační obrázky: posuvné dveře s horskou loukou, pergola v lese, zábradlí nad golfovým hřištěm. Působí jako vizualizace nebo fotky z fotobanky. Na stránce Reference přitom máte desítky vlastních fotek zimních zahrad, posuvných stěn a zasklených lodžií. Ty prodají víc.",
+            "tone": "opportunity",
+            "title": "Produkty ukazují ilustrační obrázky místo vaší práce",
+            "priority": "important"
+        },
+        {
+            "body": "Od roku 1998, vlastní vývoj a nová výrobní hala, zhruba 2 000 zasklívacích systémů a 1 500 zábradlí ročně, pět let záruky na systém, show-room a fotka celého týmu. Na stránce Společnost je i pěkný příběh o studentovi, který odpověděl na inzerát. Tohle vás odlišuje od prodejců, kteří jen přeprodávají. Na úvodní stránce z toho není nic.",
+            "tone": "strength",
+            "title": "Silný příběh a čísla, ale schované na podstránkách",
+            "priority": "important"
+        },
+        {
+            "body": "Sekce Novinky na úvodní stránce má jediný článek, odkaz na iDnes z 29. 3. 2023. Kdo ji uvidí, může si myslet, že se o web nikdo nestará. Buď ji pravidelně doplňovat, nebo ji nahradit posledními realizacemi.",
+            "tone": "problem",
+            "title": "Poslední novinka je z jara 2023",
+            "priority": "later"
+        },
+        {
+            "body": "Reference jsou dvě velké galerie fotek, rodinné domy a obytné domy. U žádné fotky není napsané, jaký systém to je ani kde stojí. Zákazník nepozná Clearlux od Framelux a neví, jestli jste dělali něco v jeho okolí. Krátký popisek s produktem a obcí to změní.",
+            "tone": "opportunity",
+            "title": "Reference bez popisu produktu a místa",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co může přivést poptávky nejdřív. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Letní dovolenou pryč, klikací telefony, poptávkový formulář s rozměrem a fotkou místo prázdného chatu a vlastní fotky u produktů. Všechno jde udělat ve Wixu, bez přechodu jinam.",
+            "title": "Opravit úvodní stránku a poptávku do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Ve Wixu se dá mobilní zobrazení upravit, jen je to práce na každou stránku zvlášť. Začneme úvodem, poptávkou, kontaktem a produkty, kam chodí nejvíc lidí. Když se ukáže, že Wix na mobil nestačí, řekneme vám to a spočítáme nový web.",
+            "title": "Web, který se na mobilu dá číst"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Čísla výroby, záruku, show-room a příběh od roku 1998 dostaneme na úvodní stránku. Použijeme fotky, které už máte: tým, výrobní halu a montáže.",
+            "title": "Ukázat výrobce, kterým jste"
+        },
+        {
+            "who": "Tom",
+            "body": "Ke každé realizaci systém a obec, filtr podle produktu a na úvodní stránce pět posledních realizací místo zastaralých novinek.",
+            "title": "Reference, ve kterých se zákazník najde"
+        },
+        {
+            "who": "Tom",
+            "body": "Nová homepage podle návrhu níž a postupně i podstránky produktů ve stejném stylu. Rozsah a platformu doladíme podle toho, jak se osvědčí první úpravy.",
+            "title": "Nová homepage a rozvoj webu"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, aby web nikoho neodradil a aby z poptávky rovnou vzniklo něco, s čím se dá pracovat. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Pryč letní dovolená, klikací telefony, poptávkový formulář.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Rychlé opravy úvodní stránky"
+        },
+        {
+            "body": "Úvod, poptávka, kontakt a produkty tak, aby se na telefonu daly číst.",
+            "when": "1.–3. týden",
+            "later": false,
+            "title": "Mobilní zobrazení"
+        },
+        {
+            "body": "Vlastní fotky u produktů, čísla výroby, záruka a show-room na úvodní stránce.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Úvodní stránka o vás"
+        },
+        {
+            "body": "Podle návrhu, s posledními realizacemi.",
+            "when": "4. týden",
+            "later": false,
+            "title": "Nová homepage"
+        },
+        {
+            "body": "Popisky s produktem a obcí, filtr podle systému.",
+            "when": "Přes zimu",
+            "later": true,
+            "title": "Reference s popisem"
+        },
+        {
+            "body": "Podstránky produktů a případně nový web podle toho, co se osvědčí.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Rozvoj webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a textů, abyste viděli směr dřív, než cokoliv zaplatíte. Vlastní realizace místo ilustračních obrázků, čísla výroby a záruka hned nahoře, poptávka podle toho, co máte sepsané v Jak objednat, show-room a příběh firmy. Popisky realizací s obcí jsou zatím prázdné, ty doplníme s vámi. Finální podobu doladíme podle toho, co Wix umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/rovex-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage výrobce ze Slatiňan",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage webu Rovex",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co může přivést víc poptávek hned: aktuální úvodní stránka, čitelný mobil a formulář, ze kterého se dá rovnou počítat nabídka. Větší změny vzhledu přijdou až potom.",
+            "title": "Nejdřív poptávky, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má buď přivést poptávku, nebo pomoct zákazníkovi vybrat si vás místo prodejce, který jen přeprodává. Nic jen pro hezčí vzhled.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Zimní zahradu ale prodají fotky z vaší haly, vašich montáží a hotových zakázek, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

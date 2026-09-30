@@ -1,0 +1,180 @@
+{
+    "company_name": "Zubař Pardubice",
+    "slug": "zubar-pardubice",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web jako člověk, který hledá nového zubaře v Pardubicích: úvod, služby, ceník, tým, fotogalerii i popis cesty, na počítači i na mobilu. Díváme se jen na web, ne na péči. V bodech jsme sepsali, co bychom upravili hned, co vám může přivést víc nových pacientů a co počká.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "2 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web ordinace dnes a jak by mohl vypadat. Úvodní stránka má od roku 2015 stejné fotky, starší podoby se v internetovém archivu nezobrazují celé. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Velká fotka modelky z fotobanky, nadpis Zubař Pardubice a šedé tlačítko Kontakt. To nejdůležitější, že přijímáte nové pacienty, je malým písmem v patičce.",
+            "image": "spoluprace/zubar-pardubice-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage webu Zubař Pardubice"
+        },
+        {
+            "body": "Přijímáme nové pacienty hned nahoře, telefon na klepnutí, péče s orientačními cenami, skutečný tým a ordinace, navigace na GPS a formulář Zavoláme vám.",
+            "image": "spoluprace/zubar-pardubice-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage webu Zubař Pardubice"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako nový pacient, a jen na web. Do návštěvnosti ani počtu objednávek jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "„Aktuálně přijímáme nové pacienty“ je na webu jen malým šedým písmem v patičce, pod dvanácti fotkami. Pro člověka, který shání zubaře, je to první otázka. Patří to do první obrazovky, velkým písmem a s telefonem vedle.",
+            "tone": "opportunity",
+            "title": "Že přijímáte nové pacienty, je schované v patičce",
+            "priority": "urgent"
+        },
+        {
+            "body": "Služby jsou na úvodní stránce jako dvanáct fotek bez popisků. Názvy se objeví až po najetí myší, na mobilu tedy vůbec. Návštěvník z telefonu vidí sérii usmívajících se modelek, zubní kartáček a obrázek s anglickým nápisem „Contact Us“ a neví, na co kliká. Soubory mají v názvu shutterstock, jsou to fotky z fotobanky z roku 2015.",
+            "tone": "problem",
+            "title": "Služby bez nadpisů a z fotobanky",
+            "priority": "urgent"
+        },
+        {
+            "body": "Telefon 603 567 905 nejde nikde na webu vytočit klepnutím, je to jen text. Formulář ani jiný způsob, jak se objednat mimo provozní dobu recepce, na webu není. Kdo se nedovolá nebo hledá zubaře večer, nemá kde nechat kontakt. Klikací telefon a krátký formulář Zavoláme vám to vyřeší.",
+            "tone": "problem",
+            "title": "Telefon nejde vytočit a objednat se jde jen voláním",
+            "priority": "important"
+        },
+        {
+            "body": "Na stránce O nás máte fotky celého týmu se jmény a životopis MDDr. Šabaty. Ve fotogalerii je budova s parkovištěm, recepce, ordinace a dentální mikroskop. Úvodní stránka ale neukazuje nic z toho, jen cizí tváře z fotobanky. Skutečná ordinace a lidé, kteří pacienta ošetří, jsou pro nového pacienta to nejdůležitější.",
+            "tone": "strength",
+            "title": "Skutečný tým a ordinace jsou až na podstránkách",
+            "priority": "important"
+        },
+        {
+            "body": "Že ordinace nemá smlouvy se zdravotními pojišťovnami, se návštěvník dozví až na stránce Ceník. Kdo hledá ošetření hrazené pojišťovnou, zavolá na recepci zbytečně. Kdo hledá právě takovou péči, to z úvodní stránky nepozná. Stačí jedna věta nahoře a odkaz na ceník.",
+            "tone": "opportunity",
+            "title": "Informace o pojišťovnách je až v ceníku",
+            "priority": "important"
+        },
+        {
+            "body": "Máte zveřejněné ceny hlavních výkonů, objednací lhůtu 3 až 6 týdnů, ošetření akutních potíží většinou do 24 hodin a parkování zdarma. Přesně tohle nový pacient potřebuje vědět. Ceník je ale vložený jako snímek obrazovky, na mobilu je tabulka drobná a vyhledávač ji nepřečte.",
+            "tone": "strength",
+            "title": "Otevřený ceník a jasné lhůty, jen ceník je obrázek",
+            "priority": "later"
+        },
+        {
+            "body": "Na stránce Kontakty sami píšete, že většina nových pacientů má problém ordinaci najít, protože Doubravice 51 navigace často nezná. Adresa v patičce přitom vede do Google Map právě na hledání „Doubravice 51“. Tlačítko Navigovat rovnou na souřadnice by ušetřilo bloudění i telefonáty.",
+            "tone": "opportunity",
+            "title": "Odkaz na mapu vede na adresu, kterou navigace nenajdou",
+            "priority": "later"
+        },
+        {
+            "body": "Nejnovější článek na blogu je „Opatření v době pandemie COVID-19“ z března 2020. Ve fotogalerii stojí, že fotogalerii výkonů připravujete. Obojí působí, jako by se o web nikdo nestaral. Blog buď doplnit, nebo z menu schovat.",
+            "tone": "problem",
+            "title": "Poslední článek je o covidu z roku 2020",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co může přivést nové pacienty nejdřív. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Přijímáme nové pacienty nahoru, klikací telefon, nadpisy u služeb viditelné i na mobilu a věta o pojišťovnách s odkazem na ceník. Na současném WordPressu, bez nového webu a bez výpadku.",
+            "title": "Opravit úvodní stránku do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Krátký formulář: jméno, telefon, jestli jste u nás poprvé a co potřebujete. Recepce zavolá zpátky v provozní době. Ceník přepíšeme z obrázku do textu, aby se dal číst na mobilu.",
+            "title": "Formulář Zavoláme vám a čitelný ceník"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Fotky týmu a ordinace, které už máte, dostaneme na úvodní stránku místo fotobanky. Když bude chuť, doplníme je pár novými z provozu a krátkým textem o tom, jak probíhá první návštěva.",
+            "title": "Skutečné fotky a texty místo fotobanky"
+        },
+        {
+            "who": "Tom",
+            "body": "Tlačítko Navigovat na GPS souřadnice, pár fotek cesty přímo na úvodní stránce a na mobilu dosažitelné jedním klepnutím.",
+            "title": "Cesta k ordinaci bez bloudění"
+        },
+        {
+            "who": "Tom",
+            "body": "Nová homepage podle návrhu níž. Pak podle toho, co se osvědčí, stránky jednotlivých služeb, úklid blogu a názvů stránek pro vyhledávače.",
+            "title": "Nová homepage a postupně celý web"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, aby nový pacient hned viděl, že ho přijmete, a snadno se objednal. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Přijímáme nové pacienty nahoře, klikací telefon, nadpisy služeb, věta o pojišťovnách.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Rychlé opravy úvodní stránky"
+        },
+        {
+            "body": "Formulář Zavoláme vám a ceník jako text.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Snazší objednání"
+        },
+        {
+            "body": "Tým, ordinace a tlačítko Navigovat na GPS.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Skutečné fotky a cesta k vám"
+        },
+        {
+            "body": "Podle návrhu, s vaším týmem a orientačními cenami.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Nová homepage"
+        },
+        {
+            "body": "Stránky služeb, úklid blogu a fotogalerie.",
+            "when": "Přes zimu",
+            "later": true,
+            "title": "Podstránky v novém stylu"
+        },
+        {
+            "body": "Aktuální ceník, lhůty a změny v týmu.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Údržba webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek, textů a ceníku, abyste viděli směr dřív, než cokoliv zaplatíte. Přijímáme nové pacienty hned nahoře, péče s orientačními cenami z vašeho ceníku, skutečný tým a ordinace, cesta k vám přes GPS a formulář Zavoláme vám. Všechny fotky a údaje jsou z vašeho webu. Finální podobu doladíme společně.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/zubar-pardubice-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage pro nové pacienty",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage webu Zubař Pardubice",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co pomůže novým pacientům hned: že je přijímáte, jak se objednat a kde vás najdou. Vzhled a nové stránky přijdou až potom.",
+            "title": "Nejdřív pacienti, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má buď pomoct pacientovi objednat se, nebo ušetřit práci recepci. Nic jen pro hezčí vzhled.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Ordinaci ale představí vaše skutečné fotky a váš tým, ne obrázky z AI ani z fotobanky.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

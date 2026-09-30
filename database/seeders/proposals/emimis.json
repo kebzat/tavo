@@ -1,0 +1,226 @@
+{
+    "company_name": "Emimis",
+    "slug": "emimis",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes kategorie a produkty až po košík. V bodech najdete, co opravit hned, co stihnout před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "2 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Emimis za devět let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Žluto-fialový e-shop s menu vlevo: látkové pleny, plavky, dřevěné hračky. Poštovné zdarma nad 1 700 Kč. Archiv se nenačetl celý, obrázky se místy překrývají.",
+            "image": "spoluprace/emimis-web-2017.jpg",
+            "label": "2017",
+            "title": "Kdysi",
+            "image_alt": "E-shop Emimis v roce 2017"
+        },
+        {
+            "body": "Menu vlevo zůstalo, přibyl banner a šestnáct dlaždic s kategoriemi. V hlavním menu je v říjnu Jaro a na úvodní stránce není jediný produkt.",
+            "image": "spoluprace/emimis-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Emimis"
+        },
+        {
+            "body": "Vánoce nahoře, vánoční tipy skladem, Poličky Kontinenty a výhradní značky na očích, příběh od roku 2016 a místo pro hodnocení. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/emimis-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Emimis"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Třetí položka hlavního menu je Jaro a vede na Jaro a Velikonoce. Kategorie Zima a Vánoce se 77 položkami je skoro na konci bočního menu a mezi bannery na úvodní stránce žádný vánoční není. Vánoční dárky se začnou shánět během října a zákazník by je měl najít na první pohled.",
+            "tone": "problem",
+            "title": "V hlavním menu je v říjnu Jaro, Vánoce jsou dole v boku",
+            "priority": "urgent"
+        },
+        {
+            "body": "Úvodní stránka je banner, šestnáct dlaždic s kategoriemi a jedna věta o první české specialce na open-ended hračky. Žádný produkt, cena ani důvod, proč nakoupit právě tady. Kdo přijde poprvé, musí proklikávat, aby vůbec zjistil, co stojí Grapat nebo Grimm's.",
+            "tone": "problem",
+            "title": "Na úvodní stránce není jediný produkt",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na webu jsme nenašli hodnocení obchodu ani produktů, stránka /hodnoceni-obchodu/ neexistuje a produkty, které jsme prošli, mají jen záložku Popis. U e-shopu, který funguje od roku 2016, je to škoda. Nový zákazník nemá čím si ověřit, že tu nakupovat je bezpečné, a u hraček za několik tisíc to rozhoduje.",
+            "tone": "problem",
+            "title": "Nikde není vidět, co říkají zákazníci",
+            "priority": "important"
+        },
+        {
+            "body": "E-shop vznikl v roce 2016 pro vaše děti domškoláky, podepisují se pod něj Alena, Eliška, Barča a Míša a pro Kingdom Playroom, MNTL a Magbrix jste výhradní distributoři. Tohle velké e-shopy nemají. Stránka Náš tým / O nás je ale jen text bez fotky a odkaz na ni je schovaný v rozbalovacím menu.",
+            "tone": "strength",
+            "title": "Máte silný příběh, jen ho skoro nikdo nenajde",
+            "priority": "important"
+        },
+        {
+            "body": "Kategorie Open ended toys má 650 položek. Nahoře je 64 textových odkazů na značky, pod nimi desítky dlaždic se značkami (u Bauspiel, Abel blocks a Ambrosius se obrázek nenačte) a produkty jsou až potom, seřazené od nejlevnějšího. První tři jsou polokoule za 39 Kč, umělá dýně a placka. Kdo přišel pro Grimm's, musí dlouho scrollovat.",
+            "tone": "problem",
+            "title": "Hlavní kategorie začíná umělou dýní za 49 Kč",
+            "priority": "important"
+        },
+        {
+            "body": "U Poliček Kontinenty je popis ukázkový: proč jsou jiné než ostatní, pro jaká zvířátka se hodí, jak se věší a fotky z dětských pokojů. U ostatních produktů je to jinak. Zimní jiskry od Grapat mají dvě věty („Sada obsahuje dřevěné prvky Grapat viz foto“) a Zimní sada Hello Winter čtyři, bez obsahu balení a věku.",
+            "tone": "opportunity",
+            "title": "Popisy produktů na pár řádků",
+            "priority": "important"
+        },
+        {
+            "body": "Poličky jsou váš vlastní produkt a jejich stránka dělá všechno, co má: vysvětlí rozdíl proti levnějším poličkám, ukáže je v reálném pokoji a doporučí zvířátka a stromy, které k nim koupit. Stačí ji dostat na úvodní stránku a stejně pojmout pár dalších bestsellerů.",
+            "tone": "strength",
+            "title": "Poličky Kontinenty jsou vzor, jak prodávat",
+            "priority": "later"
+        },
+        {
+            "body": "V kategorii Oblíbené je mezi tipy „Doplatek za zboží - Surtaxe“ za 404 Kč bez obrázku a u tří značek v Open ended toys se nenačte obrázek. Každá drobnost zvlášť nevadí, spolu s jarem v menu ale web působí, že se o něj nikdo nestará.",
+            "tone": "problem",
+            "title": "Pár míst, která působí zanedbaně",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Jaro z menu pryč a Vánoce na jeho místo, vánoční banner, vánoční tipy a bestsellery na úvodní stránku, výhody pod banner, opravené obrázky značek a technické položky mimo Oblíbené. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Zapnout hodnocení obchodu a produktů v Shoptetu a po nákupu zákazníky o hodnocení požádat. Jakmile jich bude pár desítek, ukážeme je na úvodní stránce, u produktů a v košíku.",
+            "title": "Začít sbírat a ukazovat hodnocení"
+        },
+        {
+            "who": "Tom",
+            "body": "V Open ended toys produkty hned nahoru, značky do jedné kompaktní řady a výchozí řazení podle oblíbenosti. Stejně projdeme Sensory play a Magnetické stavebnice.",
+            "title": "Kategorie, které vedou k nákupu"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Náš tým / O nás do hlavního menu a do patičky, fotky týmu a příběh od roku 2016 na úvodní stránku. Popisy vánočních a nejprodávanějších produktů přepíšeme podle vzoru Poliček Kontinenty.",
+            "title": "Příběh, lidé a lepší popisy"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo. Šablona s menu vlevo už je hodně stará, takže pak dává smysl nový vzhled na Shoptetu, bez stěhování jinam.",
+            "title": "Nový vzhled po Vánocích"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Vánoce místo jara, produkty a výhody na úvodní stránce.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Vánoční úvodní stránka"
+        },
+        {
+            "body": "Hodnocení obchodu a produktů zapnuté, první prosby o hodnocení po nákupu.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Hodnocení"
+        },
+        {
+            "body": "Open ended toys a další velké kategorie s produkty nahoře, opravené obrázky.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Kategorie"
+        },
+        {
+            "body": "O nás na očích a nové popisy u vánočních a nejprodávanějších produktů.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Příběh a popisy"
+        },
+        {
+            "body": "Nová šablona a úvodní stránka podle dat ze sezony.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Nový vzhled"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Vánoce nahoře, vánoční tipy skladem, dřevěné ozdoby Grapat, Poličky Kontinenty, výhradní značky a příběh od roku 2016. Místa pro fotky týmu a hodnocení zákazníků jsou zatím prázdná, ty doplníme s vámi. Finální podobu doladíme podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/emimis-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Emimis",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co u vás chybí, v pořadí, jak jimi prochází zákazník: od detailu produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Fotky při hraní, pro koho a od kolika let je hračka a v kostce, co umí. Přesně to máte u Poliček Kontinenty a chybí to u Grapat, Grimm's nebo MNTL, kde zákazník platí stovky až tisíce korun.",
+                    "image": "spoluprace/ukazka-popis-produktu.jpg",
+                    "title": "Popis produktu, který prodává: Alza.cz",
+                    "image_alt": "Srovnání běžného a prémiového popisu produktu na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá na otázku „kdy to budu mít doma“. U vás je u produktu jen Skladem nebo „dodání 1–3 týdny“. Před Vánoci je konkrétní datum mnohem silnější.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Stavová lišta: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Po přidání do košíku se vysune panel s obsahem, lištou do dopravy zdarma a doporučenými produkty. U vás košík ukáže, kolik zbývá do dopravy zdarma, ale nic dalšího nenabídne. K ozdobám Grapat se přitom hodí další sada, k poličkám zvířátka.",
+                    "image": "spoluprace/ukazka-kosik-pompo.jpg",
+                    "title": "Vysouvací košík: Pompo.cz",
+                    "image_alt": "Vysouvací košík s doporučenými produkty a lištou do dopravy zdarma na Pompo.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Pod košíkem ukáže, kolik zbývá do dárku. S hranicí dopravy zdarma 3 500 Kč by menší dárek po cestě, třeba ozdoba Grapat, pomohl zákazníkovi objednávku dorovnat.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: Vánoce na úvodní stránce, produkty místo samotných dlaždic a hodnocení. Větší změny vzhledu stavíme na datech ze sezony, ať vycházejí z toho, co vaši zákazníci opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď podpoří prodej hned, nebo vám posílí pozici na trhu. Obsah jen pro obsah točit nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U hraček, které vybíráte pro vlastní děti, ale prodávají skutečné fotky z hraní a skutečný tým, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

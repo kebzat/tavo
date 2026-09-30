@@ -1,0 +1,213 @@
+{
+    "company_name": "DOKiDO",
+    "slug": "dokido",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes detail kalendáře až po pokladnu. V bodech najdete, co bychom opravili hned, co stihnout před adventem a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "4 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Starší verze e-shopu se v internetovém archivu nenačítají i s obrázky, proto ukazujeme jen dnešek a návrh. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Silný hlavní banner „Méně dohadování, více pohody doma“ a pod ním výhody a kategorie podle počtu dětí. Adventní kalendář ani Vánoce na úvodní stránce zatím nejsou.",
+            "image": "spoluprace/dokido-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu DOKiDO"
+        },
+        {
+            "body": "Výběr kalendáře podle počtu dětí a věku, hotové sady s magnetkami, adventní kalendář s termínem a skutečné rodiny u kalendáře. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/dokido-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu DOKiDO"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Stránka Doprava a platba má tabulku s dopravou zdarma od 1 800 Kč. Košík ale při 990 Kč píše, že do dopravy zdarma zbývá 1 010 Kč, a v pokladně jsme při nákupu za 1 980 Kč platili 79 Kč za PPL. Podobně web slibuje „Dárek ke každé objednávce“, košík ho dává až od 1 000 Kč. Kdo si to přepočítá, cítí se podvedený, i když jde jen o starý obrázek.",
+            "tone": "problem",
+            "title": "Doprava zdarma: web říká 1 800 Kč, pokladna 2 000 Kč",
+            "priority": "urgent"
+        },
+        {
+            "body": "Adventní kalendář za 790 Kč s krásnou fotkou holčičky u lednice najdete jen v nabídce kalendářů. K tomu máte magnetky do adventního kalendáře za 390 Kč, vánoční sadu a poukazy od 500 Kč. Na úvodní stránce o adventu nic není. Adventní kalendář se kupuje v říjnu a listopadu, 1. prosince už je pozdě.",
+            "tone": "opportunity",
+            "title": "Adventní kalendář je schovaný, a teď je jeho sezona",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na hlavní fotce kalendáře Náš týden je plno barevných magnetek. Že nejsou součástí, se zákazník dočte až hluboko v popisu, kde doporučujete aspoň 20 magnetek na dítě. Magnetky pak skládá po 32 Kč nebo ze sad v jiné kategorii. Hotovou sadu kalendář plus magnetky máte jen u Malého a Velkého médi. Sada na jedno kliknutí ušetří rodiči práci a zvedne hodnotu objednávky.",
+            "tone": "problem",
+            "title": "Na fotce jsou magnetky, v krabici ne",
+            "priority": "important"
+        },
+        {
+            "body": "U kalendáře pro dvě děti je „od 1 290 Kč“, kód, termín doručení i tlačítko do košíku čekají na „Zvolte variantu“. Že verze v rámu stojí 1 690 Kč a samostatná na lednici 1 290 Kč, zjistíte až po rozkliknutí seznamu. Dvě tlačítka s fotkou a cenou by rozhodování zkrátila, hlavně na mobilu.",
+            "tone": "problem",
+            "title": "Varianta se vybírá naslepo",
+            "priority": "important"
+        },
+        {
+            "body": "„Méně dohadování, více pohody doma“ neprodává magnetku za 32 Kč. Prodává klidné ráno. K tomu příběh Veroniky s fotkou na úvodní stránce, článek s dětskou psycholožkou, kategorie pro děti s ADHD a PAS a hodnocení 5,0 od 388 zákazníků. Přesně tak se prodává řešení, ne produkt.",
+            "tone": "strength",
+            "title": "Prodáváte klidnější rána, ne magnetky",
+            "priority": "important"
+        },
+        {
+            "body": "Většina produktových fotek jsou vizualizace: kalendář opřený o zeď nebo na lednici bez lidí. Skutečné dítě u kalendáře je jen u pár produktů, třeba u adventního nebo u Malého médi. Recenze jsou bez fotek. Pár fotek od zákaznic, jak kalendář visí u nich doma, by přesvědčilo víc než další vizualizace.",
+            "tone": "opportunity",
+            "title": "Chybí fotky skutečných rodin",
+            "priority": "important"
+        },
+        {
+            "body": "Jen v kategorii Pro 1 dítě je přes dvacet kalendářů a tabulek s podobnými názvy: Můj týden, Můj týdenní plán, Můj kalendář, Moje úkoly. Dlaždice podle počtu dětí na úvodní stránce pomáhají, ale rodič pořád neví, který z nich je pro jeho pětileté dítě. Stačí dvě otázky: kolik dětí a kolik jim je.",
+            "tone": "opportunity",
+            "title": "Z desítek kalendářů se těžko vybírá",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Sjednotit dopravu zdarma a dárek na webu s tím, co počítá košík, přidat horní lištu s adventem a dopravou a varianty jako tlačítka s cenou. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Blok s adventním kalendářem, magnetkami do něj, vánoční sadou a poukazy na úvodní stránku. S termínem, do kdy objednat, aby kalendář visel na lednici 1. prosince. Hotové do poloviny října.",
+            "title": "Advent na úvodní stránku hned teď"
+        },
+        {
+            "who": "Tom",
+            "body": "Ke každému velkému kalendáři jedna nebo dvě hotové sady s magnetkami a jasně napsané, co je v balení. Technicky jako set na Shoptetu, složení a cenu určíte vy.",
+            "title": "Hotové sady kalendář plus magnetky"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Pomůžeme posbírat fotky od zákaznic, jak kalendář visí u nich doma, a krátké video, jak dítě posouvá magnetky. Dáme je k produktům, recenzím i na úvodní stránku.",
+            "title": "Fotky a video ze skutečných domácností"
+        },
+        {
+            "who": "Tom",
+            "body": "Dvě otázky, kolik dětí a kolik jim je, a web ukáže jen kalendáře, které sedí. Na Shoptetu jde udělat doplňkem nebo vlastním skriptem, rozsah řekneme po prohlídce administrace.",
+            "title": "Rádce výběru kalendáře"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před adventem. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Doprava zdarma a dárek sjednocené, horní lišta, advent na úvodní stránce.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Rychlé opravy a advent"
+        },
+        {
+            "body": "Varianty jako tlačítka s cenou, jasně co je v balení.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Detail kalendáře"
+        },
+        {
+            "body": "Sady k největším kalendářům a nabídka magnetek hned po přidání do košíku.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Hotové sady s magnetkami"
+        },
+        {
+            "body": "Výběr podle dětí, sady, fotky rodin a recenze.",
+            "when": "4. týden",
+            "later": false,
+            "title": "Nová úvodní stránka"
+        },
+        {
+            "body": "Rádce výběru, fotky a video od zákaznic, další úpravy podle dat ze sezony.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Ladění webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Nahoře vaše sdělení o klidnějších dnech, pod ním výběr podle počtu dětí a věku, hotové sady s magnetkami, adventní kalendář a příběh Veroniky. Místa pro fotky od zákaznic jsou zatím prázdná. Ceny jsou z vašeho webu k 1. 10. 2026. Finální podobu doladíme s vámi podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/dokido-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před adventem",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu DOKiDO",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme jen to, co u vás zatím chybí, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes vyhledávání po detail produktu. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás by tam teď patřil adventní kalendář a do kdy objednat, aby visel na lednici 1. prosince. A jedna jasná částka pro dopravu zdarma.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Po kliknutí na lupu hned nabídne oblíbené kategorie a nejprodávanější produkty. U vás se na mobilu po kliknutí do vyhledávání nic nenabídne. Stačilo by tam dát kalendáře podle počtu dětí a nejprodávanější sady magnetek.",
+                    "image": "spoluprace/ukazka-vyhledavani-rybizak.jpg",
+                    "title": "Vyhledávání s návrhy: Rybizak.cz",
+                    "image_alt": "Vyhledávání na Rybizak.cz s populárními kategoriemi a bestsellery",
+                    "video_url": null
+                },
+                {
+                    "body": "Video jako první položka v galerii. Deset vteřin, jak dítě ráno samo posune magnetku a odškrtne si zuby, prodá kalendář líp než odstavec textu. U kalendáře pro dvě děti video máte, u Denního režimu ani Malého médi ne.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Detail produktu na Venira.cz s videem jako první položkou galerie",
+                    "video_url": null
+                },
+                {
+                    "body": "Nahoře krátce „v kostce“: co je v balení, pro jaký věk, jak velké a kam se hodí. U vás je dobře napsaný návod, jen to, že magnetky nejsou součástí, zapadne hluboko v textu.",
+                    "image": "spoluprace/ukazka-popis-produktu.jpg",
+                    "title": "Popis produktu v kostce: Alza.cz",
+                    "image_alt": "Srovnání běžného a prémiového popisu produktu na Alza.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: advent, jasná doprava a hotové sady. Větší změny stavíme na datech ze sezony, ať vycházejí z toho, co rodiče opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava webu buď pomůže prodat hned, nebo posílí důvěru ve značku. Nic jen proto, že je to zrovna v módě.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Kalendář pro děti ale prodává skutečná lednice s magnetkami a dítě, které se ráno samo oblékne. To AI nevyfotí.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

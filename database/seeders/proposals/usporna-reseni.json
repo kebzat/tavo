@@ -1,0 +1,180 @@
+{
+    "company_name": "Úsporná řešení",
+    "slug": "usporna-reseni",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web jako někdo, kdo zvažuje tepelné čerpadlo nebo fotovoltaiku: úvod, jednotlivé služby, reference, dotace, kontakt i poptávku, na počítači i na mobilu. V bodech jsme sepsali, co bychom opravili hned, co vám může přinést víc poptávek a co počká.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Úsporných řešení dnes a jak by mohl vypadat. Starší podoby webu internetový archiv nezachytil v použitelné kvalitě. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Moderní web na WordPressu s výrazným modrým tlačítkem Poptávka. Úvodní stránka je ale hlavně dlouhý obecný text. Telefon, město ani hodnocení zákazníků na ní nenajdete.",
+            "image": "spoluprace/usporna-reseni-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage webu Úsporná řešení"
+        },
+        {
+            "body": "Jičín, telefon a hodnocení 4,9 hned nahoře, služby s cenou od které se dá začít, dotace krok po kroku, skutečné realizace a poptávka, která se zeptá na to podstatné.",
+            "image": "spoluprace/usporna-reseni-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage webu Úsporná řešení"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do návštěvnosti webu ani počtu poptávek jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Na úvodní stránce není telefon, e-mail ani adresa, a to ani v patičce. Že sídlíte v Jičíně, se návštěvník dozví až na stránce Kontakt. Tepelné čerpadlo nebo fotovoltaiku si lidé rádi objednají od firmy z okolí, které můžou zavolat. Číslo 732 211 714 a Jičín patří do hlavičky a na mobilu na tlačítko Zavolat.",
+            "tone": "problem",
+            "title": "Na úvodní stránce chybí telefon i město",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na Firmy.cz máte hodnocení 4,9 z 12 recenzí. Zákazníci chválí rychlou realizaci, přístup pana Ulipa a to, že za ně vyřídíte dotaci. Na webu je ale najde jen ten, kdo otevře menu Ostatní a v něm Reference. Na úvodní stránce o nich není ani zmínka.",
+            "tone": "strength",
+            "title": "Hodnocení 4,9 je schované pod menu Ostatní",
+            "priority": "important"
+        },
+        {
+            "body": "U první klimatizace na stránce, Midea Breezeless E, je cena od 192 184 do 322 477 Kč. Ostatní jednotky podobného výkonu na stejné stránce stojí zhruba 21 až 51 tisíc. Nejspíš je to překlep o jednu číslici. Zákazník to ale nepozná a kvůli klimatizaci za dvě stě tisíc stránku zavře.",
+            "tone": "problem",
+            "title": "Klimatizace za 192 tisíc",
+            "priority": "important"
+        },
+        {
+            "body": "Na stránce Fotovoltaika máte hotové sestavy s cenou: 5,4 kWp s baterií od 190 000 Kč s dotací až 140 000 Kč nebo fotovoltaický ohřev vody od 45 000 Kč. To je přesně to, co člověk na začátku hledá. Na úvodní stránce ale žádné číslo není, jen obecné popisy technologií.",
+            "tone": "opportunity",
+            "title": "Hotové sestavy s cenou jsou jen na podstránce",
+            "priority": "important"
+        },
+        {
+            "body": "Web opakuje, že jste rodinná firma, ale nikde není jméno ani fotka nikoho z vás. V recenzích přitom zákazníci píšou o panu Ulipovi, který se jim věnoval a zařídil dotaci. Když návštěvník uvidí, kdo k němu přijede, poptávku pošle snáz.",
+            "tone": "opportunity",
+            "title": "Rodinná firma bez tváře",
+            "priority": "important"
+        },
+        {
+            "body": "Úvodní stránka je dlouhý text o chytrých a ekologických technologiích. Odstavec o kompletní realizaci na klíč a seznam dokumentace, dotací a servisu jsou na ní dvakrát. Na mobilu má stránka skoro 9 000 px. Kdo chce jen zjistit, jestli se mu čerpadlo vyplatí a kolik zhruba stojí, musí to hledat jinde.",
+            "tone": "problem",
+            "title": "Úvodní stránka je dlouhá a obecná",
+            "priority": "important"
+        },
+        {
+            "body": "Stránka Reference má 94 fotek z vašich zakázek, čerpadla, panely na střechách, klimatizace v obývácích. Jsou to ale malé kulaté náhledy bez jediného popisku. Pět vybraných realizací s tím, co jste instalovali, kde a jaká byla dotace, udělá víc než celá galerie.",
+            "tone": "opportunity",
+            "title": "94 fotek realizací bez popisu",
+            "priority": "later"
+        },
+        {
+            "body": "Poptávkový formulář chce jméno, telefon, e-mail, adresu a volný text. Neptá se, o co má zákazník zájem, jaký má dům ani jak teď topí. Pár kliknutí na hotové volby by vám ušetřilo první telefonát a zákazníkovi přemýšlení, co napsat.",
+            "tone": "opportunity",
+            "title": "Poptávka neví, o co zákazník stojí",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co může přivést poptávky nejdřív. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Telefon a Jičín do hlavičky, tlačítko Zavolat na mobilu, hodnocení 4,9 z Firmy.cz na úvodní stránku, oprava ceny klimatizace. Na WordPressu a Elementoru, bez nového webu a bez výpadku.",
+            "title": "Opravit kontakt, hodnocení a ceny do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Tepelné čerpadlo, fotovoltaika, klimatizace a ohřev vody jako čtyři jasné volby. U každé cena, od které se dá začít, a dotace, na kterou zákazník dosáhne. Čísla už máte na podstránkách, jen je dáme tam, kde je lidé hledají.",
+            "title": "Úvodní stránka, která odpoví na cenu a dotaci"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Fotka pana Ulipa a týmu z montáže, krátký text o tom, kdo jste, a úvodní stránka zkrácená na to podstatné. Z 94 fotek realizací vybereme ty nejlepší a doplníme k nim popis.",
+            "title": "Fotky a texty, které ukážou, kdo k zákazníkovi přijede"
+        },
+        {
+            "who": "Tom",
+            "body": "Formulář s volbami: o co máte zájem, jaký máte dům, jak teď topíte. Dotaz rovnou dorazí s tím, co potřebujete na první hovor.",
+            "title": "Poptávka, která se zeptá na to podstatné"
+        },
+        {
+            "who": "Tom",
+            "body": "Nová homepage podle návrhu níž a postupně podstránky služeb ve stejném stylu, s realizacemi a hodnoceními ke každé službě.",
+            "title": "Nová homepage a rozvoj webu"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, aby se vám ozvalo víc lidí z těch, kdo už na web chodí. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Telefon a Jičín nahoře, tlačítko Zavolat, hodnocení na úvodní stránce, oprava ceny klimatizace.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Rychlé opravy webu"
+        },
+        {
+            "body": "S volbami podle služby, typu domu a vytápění.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Nový poptávkový formulář"
+        },
+        {
+            "body": "Vy a váš tým, vybrané realizace s popisem.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Fotky a texty"
+        },
+        {
+            "body": "Podle návrhu, se sestavami, cenami a dotacemi.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Nová homepage"
+        },
+        {
+            "body": "Tepelná čerpadla, fotovoltaika, klimatizace a ohřev vody ve stejném stylu, s realizacemi a hodnoceními.",
+            "when": "Přes zimu",
+            "later": true,
+            "title": "Podstránky služeb"
+        },
+        {
+            "body": "Nové realizace s popisem a nová hodnocení na web.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Doplňování referencí"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek, textů a cen, abyste viděli směr dřív, než cokoliv zaplatíte. Jičín, telefon a hodnocení 4,9 hned nahoře, čtyři služby s cenou, dotace krok po kroku, skutečné recenze z Firmy.cz a poptávka s volbami. Místo pro fotku vás a popisky realizací jsou zatím prázdné, ty doplníme s vámi. Finální podobu doladíme společně.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/usporna-reseni-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage, ze které se lidé ozvou",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage webu Úsporná řešení",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co může přivést víc poptávek hned: telefon na očích, hodnocení nahoře a ceny, které už máte. Větší změny vzhledu stavíme až na tom, na co lidé na webu opravdu reagují.",
+            "title": "Nejdřív poptávky, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má buď přivést poptávku, nebo pomoct zákazníkovi rozhodnout se pro vás. Text jen pro text psát nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Tepelné čerpadlo na desítky let ale prodají fotky vašich montáží a lidé, kteří k zákazníkovi přijedou, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

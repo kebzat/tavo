@@ -1,0 +1,239 @@
+{
+    "company_name": "I am Hank",
+    "slug": "i-am-hank",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop od úvodní stránky přes kategorie a detail produktu až po košík, na počítači i na mobilu. V bodech jsme sepsali, co opravit ještě před Vánoci, na čem se dá v sezoně vydělat a co může počkat.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Hanku za osm let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Lesní fotka v hlavičce, velké dlaždice Dámské a Pánské s kolekcí Podzim 2017 a pod nimi doporučené produkty s cenou. Hlavní slider se v archivu nedochoval, proto na obrázku chybí.",
+            "image": "spoluprace/i-am-hank-web-2018.jpg",
+            "label": "2018",
+            "title": "Kdysi",
+            "image_alt": "E-shop Hank v roce 2018"
+        },
+        {
+            "body": "Světlejší a čistší, s ručně psaným „Vymyšleno v lese, vyrobeno v Česku“. Hlavní banner je ale letní a produkty ani ceny na úvodní stránce nejsou.",
+            "image": "spoluprace/i-am-hank-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Hank"
+        },
+        {
+            "body": "Vánoční termín v liště, dárek a poukazy hned nahoře, produkty s cenou, konfigurátor a recenze zákaznic. Na vašem PrestaShopu, bez migrace.",
+            "image": "spoluprace/i-am-hank-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Hank"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Jediný banner je fotka z letního pole s nápisem „I believe in unicorns“. Pod ním dvě tlačítka a tři ikonky, žádný produkt ani cena. Kdo přijde na úvodní stránku, musí nejdřív kliknout do kategorie, aby zjistil, co prodáváte a za kolik.",
+            "tone": "problem",
+            "title": "Na úvodní stránce je léto a žádný produkt",
+            "priority": "urgent"
+        },
+        {
+            "body": "U produktů píšete „Doručení 1–3 týdny“, v častých dotazech 2–3 týdny. Termín, do kdy objednat pod stromeček, zatím nikde není. V prosinci 2019 jste ho měli v liště nad webem: „Objednávky doručené po 2. 12. vám dorazí až po Novém roce.“ Letos by měl být vidět už v listopadu, na úvodní stránce i u každého produktu.",
+            "tone": "opportunity",
+            "title": "Vánoce bez termínu, přitom šijete na objednávku",
+            "priority": "urgent"
+        },
+        {
+            "body": "Dárkové poukazy za 800, 1 500 a 3 000 Kč mají hezkou vánoční fotku a rodinný set máma a dítě stojí 1 550 Kč. Obojí je hotový dárek, jenže na úvodní stránce o nich nic není. Poukaz navíc řeší největší obavu u oblečení jako dárku: jakou velikost vzít.",
+            "tone": "opportunity",
+            "title": "Poukazy a rodinné sety jsou jen v menu",
+            "priority": "important"
+        },
+        {
+            "body": "Hanka a Klára, čtyři švadlenky, ruční sítotisk v liberecké dílně spojené s prodejnou a přes 30 vlastních potisků, každý se svým příběhem. K tomu konfigurátor, ve kterém si zákazník složí vlastní kousek. Tohle žádný řetězec nemá. Na webu je to ale rozházené: O nás je dlouhý starší rozhovor a na úvodní stránce zbyly tři krátké věty pod ikonkami.",
+            "tone": "strength",
+            "title": "Příběh a ruční výroba, které se nedají okopírovat",
+            "priority": "important"
+        },
+        {
+            "body": "Čtyři pochvaly od zákaznic (Eva V., Hana V., Štěpánka P., Irena Č.) jsou obrázky s textem mezi fotkami v Galerii. Na úvodní stránce, u produktu ani v košíku žádné hodnocení není. U oblečení za 900 až 2 800 Kč od menší značky přitom zákazník chce vědět hlavně to, jestli sedí a vydrží praní. Přesně o tom ty recenze jsou.",
+            "tone": "problem",
+            "title": "Recenze jsou schované jako obrázky v galerii",
+            "priority": "important"
+        },
+        {
+            "body": "Kategorie Dámské má 54 produktů pod sebou po jednom, bez filtru velikosti nebo barvy. Na telefonu je to přes 26 000 pixelů posouvání. V detailu produktu je cena s tlačítkem do košíku až pod popisem a konfigurátorem, zhruba po dvou obrazovkách. Na PrestaShopu jde obojí zkrátit: dva produkty vedle sebe, filtr a cena hned pod fotkou.",
+            "tone": "problem",
+            "title": "Na mobilu dlouhá cesta k ceně i do košíku",
+            "priority": "important"
+        },
+        {
+            "body": "V častých dotazech je prodejna jednou „v centru Liberce (ulice Hrazená)“ a o dva body níž „v ulici 1. máje 76/10“. Cena dopravy se objeví až v košíku a samostatná stránka s dopravou a platbou chybí. Když se na zboží čeká 1–3 týdny, jasná informace o doručení zákazníka uklidní.",
+            "tone": "problem",
+            "title": "Doručení a prodejna ve dvou verzích",
+            "priority": "important"
+        },
+        {
+            "body": "Produkty fotíte čistě ve studiu a to je v pořádku. Fotky z běžného dne (máma s dítětem doma, potisky na zádech u cihlové zdi, holky na lehátkách) jsou ale jen v Galerii a u pár produktů. Fotky od zákazníků na webu nejsou vůbec. Na úvodní stránce a v kategoriích by ukázaly, jak Hank vypadá mimo ateliér.",
+            "tone": "opportunity",
+            "title": "Fotky ze života máte, jen nejsou vidět",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Vánoční banner a termín pod stromeček místo letní fotky, mřížka produktů s cenou, poukazy a rodinné sety na očích a recenze zákaznic. Na vašem PrestaShopu, bez migrace a bez výpadku.",
+            "title": "Úvodní stránka připravená na Vánoce do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Dva produkty vedle sebe, filtr podle velikosti, barvy a střihu a cena s tlačítkem hned pod fotkou. Konfigurátor zůstane, jen o kus níž.",
+            "title": "Rychlejší nákup na mobilu"
+        },
+        {
+            "who": "Tom",
+            "body": "Stránka Doprava a platba s cenami a termíny, vánoční uzávěrka u každého produktu i v košíku a jedna adresa prodejny všude stejně.",
+            "title": "Jasné doručení a jedna adresa"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Zkrátíme O nás do příběhu Hanky a Kláry a dáme ho na úvodní stránku. K tomu pár fotek z dílny a od švadlenek. Po nákupu budeme sbírat recenze i s fotkou a ukážeme je u produktů.",
+            "title": "Texty a fotky s příběhem"
+        },
+        {
+            "who": "Tom",
+            "body": "Galerie přes 30 potisků s příběhy je dnes samostatná stránka. Z každého potisku by mělo jít rovnou vybrat, na co ho chcete, a v konfigurátoru hned vidět náhled. Přesný rozsah řekneme po prohlídce administrace.",
+            "title": "Potisky jako hlavní tahák"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Vánoční banner, produkty s cenou, poukazy, rodinné sety a recenze.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Refresh úvodní stránky"
+        },
+        {
+            "body": "Termín pod stromeček v liště, u produktů i v košíku. Stránka s dopravou a jedna adresa prodejny.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Vánoční uzávěrka a doprava"
+        },
+        {
+            "body": "Dva produkty vedle sebe, filtry, cena a košík hned pod fotkou.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Kategorie a detail produktu na mobilu"
+        },
+        {
+            "body": "Po nákupu poprosíme o pár slov a fotku a ukážeme je u produktů.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Recenze od zákazníků"
+        },
+        {
+            "body": "Propojení potisků s konfigurátorem, příběh na úvodní stránce a nové fotky z dílny.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Potisky, příběh a fotky"
+        },
+        {
+            "body": "Podle toho, co se v sezoně prodávalo a kde lidé z webu odcházeli.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Ladění webu podle dat"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Vánoční termín v liště, dárek a poukazy nahoře, produkty s cenou, konfigurátor, rodinné sety a recenze zákaznic. Místa pro fotky z dílny a od zákaznic jsou zatím prázdná, ty nafotíme s vámi. Finální podobu doladíme spolu podle toho, co PrestaShop umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/i-am-hank-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Hank",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co se hodí k oblečení šitému na objednávku před Vánoci, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík a dopravu. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás termín, do kdy objednat pod stromeček, protože šijete na objednávku. Po Vánocích tam může být třeba výměna velikosti.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Krátké video jako první v galerii ukáže, jak mikina nebo manšestrová šatovka padne v pohybu a jak vypadá látka. U kousků za 2 000 Kč a víc to z velké části nahradí zkoušení v prodejně.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Detail produktu na Venira.cz s videem jako první položkou galerie",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá, kdy bude zboží doma. U vás místo obecných 1–3 týdnů konkrétní datum, a hlavně jistota, že dárek stihne Vánoce.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Vysouvací košík ukáže celý obsah i kousky, které se k němu hodí. K dámskému triku dětské se stejným potiskem, k mikině tepláky. Dnes je váš košík jen tabulka s cenou.",
+                    "image": "spoluprace/ukazka-kosik-pompo.jpg",
+                    "title": "Košík s doporučením: Pompo.cz",
+                    "image_alt": "Vysouvací košík na Pompo.cz s obsahem, doporučenými produkty a lištou do dopravy zdarma",
+                    "video_url": null
+                },
+                {
+                    "body": "Jedna stránka s cenami a termíny všech doprav. U vás by tam patřila Zásilkovna, Česká pošta, osobní odběr v Liberci a vánoční uzávěrka.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb na Rybizak.cz s cenami a termíny doručení",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co může prodat ještě před Vánoci: termín pod stromeček, dárky a poukazy na úvodní stránce a rychlejší nákup z mobilu. Větší změny vzhledu stavíme až na tom, co se v sezoně opravdu prodávalo.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď pomůže prodat hned, nebo posílí to, čím se lišíte. Úpravy jen pro efekt dělat nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U oblečení šitého v Liberci ale prodávají skutečné fotky Hanky, Kláry a švadlenek, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

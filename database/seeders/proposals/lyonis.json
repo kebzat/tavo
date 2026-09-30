@@ -1,0 +1,219 @@
+{
+    "company_name": "Lyonis",
+    "slug": "lyonis",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop od úvodní stránky přes kategorie a detail kalendáře až po košík, na počítači i na mobilu. V bodech jsme sepsali, co připravit ještě před Vánoci, na čem se dá v sezoně vydělat a co může počkat.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "4 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Lyonis dnes a jak by mohl vypadat před Vánoci. Starší verze se v internetovém archivu uložily bez vzhledu, proto tu chybí. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Pěkné fotky dětí u kalendářů, hodnocení a výhody hned pod bannerem. Nabídka na úvodní stránce je ale pořád školní a hlavní banner má text vložený v obrázku.",
+            "image": "spoluprace/lyonis-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Lyonis"
+        },
+        {
+            "body": "Vánoční dárky a termín nahoře, rádce podle věku, sady a poukazy pro dárce a vlastní nadpis rovnou u produktu. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/lyonis-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Lyonis"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Úvodní stránka pořád nabízí „Už jsem školák! Back to school“ a „Školku s přehledem“. O Vánocích tam nic není. Přitom v roce 2020 jste v liště psali o „ohromném každoročním zájmu“ a v menu měli Vánoční objednávky. Personalizované kousky odesíláte do 10 dní (v košíku píšete max. 7 pracovních dní), takže termín pro Vánoce musí být vidět dřív než u běžného e-shopu.",
+            "tone": "opportunity",
+            "title": "Na webu je pořád září, Vánoce zatím nikde",
+            "priority": "urgent"
+        },
+        {
+            "body": "Sami píšete, že kalendáře lidé často vybírají jako dárek, a v recenzích se objevuje i kalendář od babičky. Dárkové poukazy od 500 do 3 000 Kč jsou ale schované v Příslušenství, zvýhodněné sady (třeba sada pro 2 děti za 2 200 Kč místo 2 960 Kč) ve Výhodných sadách a dárkové balení za 99 Kč se ukáže až v košíku. Na úvodní stránku patří jedno místo s hotovými dárky.",
+            "tone": "opportunity",
+            "title": "Hotový dárek se hledá těžko",
+            "priority": "important"
+        },
+        {
+            "body": "Hodnocení obchodu 5,0, z 479 hodnocení je 475 za plných pět hvězdiček. Na webu jsou fotky dětí, které s kalendáři opravdu pracují, Adéla a Roman se třemi dětmi a výroba v Jeseníku. Košík hlídá dopravu zdarma od 2 000 Kč, nabízí dárek a ukazuje datum doručení. Tohle většina e-shopů nemá a stavěli bychom na tom.",
+            "tone": "strength",
+            "title": "5,0 od 479 zákazníků a skutečné rodiny na fotkách",
+            "priority": "important"
+        },
+        {
+            "body": "U kalendáře Chodím do školky je cena s tlačítkem do košíku na počítači až pod první obrazovkou a na telefonu zhruba po dvou a půl obrazovkách. Před ní je několik odstavců o jazycích, balení, materiálu a výrobě. Nahoru patří cena, výběr nadpisu a košík s pár body v kostce, zbytek textu pod fotky.",
+            "tone": "problem",
+            "title": "V detailu produktu je cena až za dlouhým textem",
+            "priority": "important"
+        },
+        {
+            "body": "Příběh „Jsme Adéla & Roman“ i hlavní banner mají text vložený přímo v obrázku. Na telefonu se obrázek zmenší a text u příběhu se nedá přečíst. Produkty jsou na mobilu v posuvných pásech po dvou a šipky zakrývají fotky i názvy.",
+            "tone": "problem",
+            "title": "Na mobilu se text v bannerech zmenší do nečitelna",
+            "priority": "important"
+        },
+        {
+            "body": "Můj kalendář, Můj týdenní plán, Malý týdenní plán, To-Do tabulka, Checklist, rutiny, černobílá edice. Kdo přijde poprvé, těžko pozná, co se hodí právě jeho dítěti. Kategorie Podle věku je jen v menu. Krátký rádce na úvodní stránce se dvěma otázkami (věk a co chcete vyřešit) by pomohl hlavně dárcům, kteří dítě doma nemají.",
+            "tone": "opportunity",
+            "title": "Který plánovač vybrat? Web se zatím neptá",
+            "priority": "important"
+        },
+        {
+            "body": "Kdo zvolí vlastní nadpis za 150 Kč, musí jeho znění napsat do poznámky pod cenou. Když na to zapomene, košík objednávku pustí dál bez textu (ověřeno 1. 10. 2026) a nadpis se pak řeší dodatečně. Povinné políčko přímo u varianty ušetří jedno kolo dotazů zákazníkovi i vám.",
+            "tone": "problem",
+            "title": "Vlastní nadpis se píše do poznámky",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Vánoční banner s termínem pro personalizované kousky, místo s dárky a poukazy, texty v bannerech jako skutečný text a na mobilu mřížka produktů místo posuvných pásů. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Vánoční úvodní stránka do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Cena, výběr nadpisu s povinným políčkem a košík hned vedle fotky, pod tím pár bodů v kostce. Dlouhý popis zůstane, jen o kus níž.",
+            "title": "Detail produktu s cenou a nadpisem nahoře"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Sady, poukazy a dárkové balení na jednom místě, s textem pro toho, kdo dítě doma nemá. K tomu fotky rozbaleného balíčku, které zákazníci v recenzích chválí snad nejčastěji.",
+            "title": "Dárková stránka pro rodinu a prarodiče"
+        },
+        {
+            "who": "Tom",
+            "body": "Dvě otázky na úvodní stránce a výsledek z vašich stávajících kategorií podle věku. Na Shoptetu jde udělat vlastním skriptem, přesný rozsah řekneme po prohlídce administrace.",
+            "title": "Rádce: plánovač podle věku a situace"
+        },
+        {
+            "who": "Tom",
+            "body": "Po Vánocích se podíváme, kde lidé z detailu produktu a z košíku odcházejí, a podle toho web upravujeme dál.",
+            "title": "Ladění podle dat ze sezony"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Banner s termínem, dárky a poukazy, čitelné texty a mřížka produktů na mobilu.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Vánoční úvodní stránka"
+        },
+        {
+            "body": "Termín pro personalizované kousky v liště, u produktu i v košíku. Jedna doba odeslání všude.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Vánoční uzávěrka"
+        },
+        {
+            "body": "Cena, nadpis a košík nahoru, povinné políčko pro vlastní nadpis.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Detail produktu"
+        },
+        {
+            "body": "Sady, poukazy a dárkové balení pro ty, kdo kupují dárek.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Dárková stránka"
+        },
+        {
+            "body": "Dvě otázky a doporučený plánovač podle věku a situace.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Rádce na úvodní stránce"
+        },
+        {
+            "body": "Podle toho, co se v sezoně prodávalo a kde lidé z webu odcházeli.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Ladění webu podle dat"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Vánoční dárky a termín nahoře, hodnocení 5,0 na očích, rádce podle věku, poukazy a sady pro dárce a vlastní nadpis rovnou u produktu. Finální podobu doladíme spolu podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/lyonis-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Lyonis",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Košík máte zvládnutý, takže jsme vybrali hlavně to, co se týká úvodní stránky a detailu produktu, v pořadí, jak jimi prochází zákazník. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Černou lištu nahoře už máte. Před Vánoci do ní místo obecných čísel patří to, co právě platí: do kdy objednat kalendář s vlastním nadpisem a doprava zdarma od 2 000 Kč.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Běžný a prémiový popis vedle sebe. Nahoře pár bodů v kostce a fotky při používání, dlouhý text až pod tím. U vašich kalendářů by to posunulo cenu a košík o dvě obrazovky výš.",
+                    "image": "spoluprace/ukazka-popis-produktu.jpg",
+                    "title": "Popis produktu v kostce: Alza.cz",
+                    "image_alt": "Srovnání běžného a prémiového popisu produktu na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Video ke kalendáři máte, jen v záložce hluboko pod popisem. Jako první položka v galerii ukáže, jak dítě magnetky přesouvá, dřív než rodič přečte jediný odstavec.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Detail produktu na Venira.cz s videem jako první položkou galerie",
+                    "video_url": null
+                },
+                {
+                    "body": "V košíku už datum doručení ukazujete. Rovnou u ceny by pomohlo hlavně u personalizovaných kousků, kde se čeká déle a zákazník řeší, jestli to stihne pod stromeček.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co může prodat ještě před Vánoci: termín pro personalizované kousky, dárky na úvodní stránce a rychlejší cesta ke košíku v detailu produktu. Větší změny stavíme na tom, co se v sezoně opravdu prodávalo.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď pomůže prodat hned, nebo posílí to, čím se lišíte. Úpravy jen pro efekt dělat nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U kalendářů, které testují vaše tři děti, ale prodávají skutečné fotky dětí a rodin, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

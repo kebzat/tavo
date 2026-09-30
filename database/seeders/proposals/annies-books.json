@@ -1,0 +1,237 @@
+{
+    "company_name": "Annie's Books",
+    "slug": "annies-books",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes kategorie a produkty až po košík. V bodech najdete, co opravit hned, co stihnout před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Starší podoby webu se v archivu nedochovaly tak, aby se daly ukázat, takže jen dnešek a návrh. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Podzimní banner s Annie, osm dlaždic s kategoriemi a pod nimi výhody obchodu. Na počítači hezké a aktuální. Na mobilu se ale nic z toho neukáže.",
+            "image": "spoluprace/annies-books-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Annie's Books"
+        },
+        {
+            "body": "Vánoce a adventní kalendáře nahoře, dárky podle věku, hodnocení 5,0 z 5 na očích, fotky z hraní a Annie, která poradí. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/annies-books-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Annie's Books"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Na počítači zákazníka přivítá banner Podzim s Annie, osm dlaždic s kategoriemi a čtyři výhody obchodu. Na mobilu web všechno tohle schová a stránka začíná nadpisem TIP a dvěma knížkami. Kdo přijde poprvé z telefonu, nepozná, že prodáváte hlavně dřevěné a magnetické hračky, ani proč nakoupit právě u vás.",
+            "tone": "problem",
+            "title": "Na mobilu úvodní stránka začíná rovnou produkty",
+            "priority": "urgent"
+        },
+        {
+            "body": "Vánoční zboží je v menu schované pod Hračky dle tématu jako „Zima, sníh a vánoce“. Adventní kalendář Grapat 2026 za 2 169 Kč jinak najdete jen mezi 1 192 dřevěnými hračkami. Adventní kalendáře se kupují do konce listopadu a vánoční dárky se začnou shánět během října. Na úvodní stránce i v hlavním menu by Vánoce měly být vidět co nejdřív.",
+            "tone": "opportunity",
+            "title": "Vánoce a advent se zatím musí hledat",
+            "priority": "urgent"
+        },
+        {
+            "body": "Z 359 hodnocení obchodu je 356 za pět hvězdiček a zákazníci v nich chválí hlavně osobní přístup. Na úvodní stránce ale nejsou, jsou tam jen čtyři poslední hodnocení produktů. U produktů svítí „Neohodnoceno“, třeba u Grapat Mushroom Grove, které je první v TOP 10. Číslo 5,0 z 5 patří do hlavičky, k produktům a do košíku.",
+            "tone": "strength",
+            "title": "5,0 z 5 od 359 zákazníků, ale jen na podstránce",
+            "priority": "important"
+        },
+        {
+            "body": "Zákaznice v hodnoceních píšou o Aničce, která „sežene i modré z nebe“, a o paní majitelce, která radí. Stránka O nás na webu není (v roce 2022 ještě v menu byla) a Annie s fotkou se ukáže až v košíku. Přitom právě tohle vás odlišuje od velkých hračkářství.",
+            "tone": "opportunity",
+            "title": "Annie na webu skoro není vidět",
+            "priority": "important"
+        },
+        {
+            "body": "Plovoucí štítek se slevou za odběr novinek je na mobilu přes pravý okraj tlačítka Přidat do košíku a na úvodní stránce přes karty produktů. Sleva 100 Kč za e-mail je dobrý nápad, jen nesmí stát v cestě nákupu. Stačí štítek na mobilu posunout nebo ho ukázat až po chvíli.",
+            "tone": "problem",
+            "title": "Štítek „Chcete slevu?“ překrývá košík na mobilu",
+            "priority": "important"
+        },
+        {
+            "body": "Ve výpisech i na úvodní stránce jsou hračky skoro vždy na bílém pozadí. Fotky z hraní přitom máte: u Grapat Mushroom Grove je v galerii dítě u krabičky s houbičkami a na Instagramu si děti hrají se stavebnicemi. Na webu jsou ale až v galerii produktu nebo v pásu s Instagramem dole. U open-ended hraček rodič často neví, co s nimi dítě bude dělat, a fotka z hraní mu to ukáže nejrychleji.",
+            "tone": "opportunity",
+            "title": "Hračky ukázané bez dětí a bez hraní",
+            "priority": "important"
+        },
+        {
+            "body": "Hodně zboží je „Na objednání (dodání 2–3 týdny)“ nebo „Výroba na objednávku (4–6 týdnů)“. V Jak nakupovat sami píšete, že před Vánoci se dodání od dodavatelů prodlužuje. U produktu je ale jen stav skladu, žádný poslední termín pro objednávku na Vánoce. V prosinci je to první, co zákazník hledá.",
+            "tone": "problem",
+            "title": "U produktu chybí, jestli dorazí do Vánoc",
+            "priority": "important"
+        },
+        {
+            "body": "V kategorii Dřevěné hračky je 1 192 položek na 100 stránkách a filtrovat jde jen podle ceny, skladu a značky. Věk máte jako samostatnou kategorii Hračky dle věku, ve výpisu ale chybí. Kdo hledá dárek pro tříleté dítě, musí proklikávat stránku po stránce.",
+            "tone": "opportunity",
+            "title": "Ve výpisu se nedá vybírat podle věku",
+            "priority": "later"
+        },
+        {
+            "body": "Banner Podzim s Annie odpovídá tomu, co je venku, a blog píšete průběžně. V košíku ukazujete, kolik zbývá do dopravy zdarma od 2 500 Kč, a vedle je Annie s telefonem a e-mailem. Tohle spousta e-shopů nemá a dá se na tom stavět.",
+            "tone": "strength",
+            "title": "Aktuální sezóna a košík s lidskou tváří",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Banner, kategorie a výhody i na mobilu, hodnocení 5,0 z 5 v hlavičce a u produktů, štítek se slevou mimo tlačítko do košíku a Vánoce v hlavním menu. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Vánoční nabídka nahoře na úvodní stránce, adventní kalendáře a lucerny pohromadě a rychlý výběr dárku podle věku a rozpočtu. Hotové do poloviny října, než se začnou shánět dárky.",
+            "title": "Vánoce a advent na úvodní stránce"
+        },
+        {
+            "who": "Tom",
+            "body": "U každého produktu věta typu „Objednejte do 10. 12., dorazí do Vánoc“, spočítaná podle toho, jestli je zboží skladem, u dodavatele, nebo na objednání. Termíny určíte vy podle dodavatelů, na Shoptetu to uděláme doplňkem nebo vlastním skriptem.",
+            "title": "Poslední termín na Vánoce u každého produktu"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Stránka o tom, kdo je Annie a jak vybírá hračky, pár fotek z balení v Holicích a fotky z hraní k nejprodávanějším hračkám. Hodně jich už máte na Instagramu, jen je dostaneme na web.",
+            "title": "Kdo je Annie a fotky z hraní"
+        },
+        {
+            "who": "Tom",
+            "body": "Věk jako parametr, podle kterého jde filtrovat v každé kategorii. Je to hlavně práce s daty: věk dnes stojí jen v textu popisu, takže ho doplníme postupně, od nejprodávanějších produktů.",
+            "title": "Filtr podle věku ve výpisech"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Když se ukáže, že to má smysl, připravíme celý redesign.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Úvodní stránka na mobilu, hodnocení nahoře, štítek se slevou mimo košík.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Refresh problémových míst"
+        },
+        {
+            "body": "Vánoce v menu i na úvodní stránce, adventní kalendáře pohromadě, dárky podle věku.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Vánoční nabídka"
+        },
+        {
+            "body": "Poslední termín objednávky na Vánoce u každého produktu.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Termíny doručení"
+        },
+        {
+            "body": "Stránka o Annie a první fotky z hraní u bestsellerů.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Kdo je Annie"
+        },
+        {
+            "body": "Filtr podle věku a fotky z hraní k dalším produktům. Podle dat ze sezony případně redesign.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Ladění webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Vánoce a advent nahoře, dárek podle věku, hodnocení 5,0 z 5 na očích, fotky z hraní a Annie, která poradí. Místa pro fotky z balení a od zákaznic jsou zatím prázdná, ty doplníme s vámi. Finální podobu doladíme podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/annies-books-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Annie's Books",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co se hodí k hračkám a knížkám před Vánoci, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás doprava zdarma od 2 500 Kč, hodnocení 5,0 z 5 a před Vánoci to, že odesíláte každý den včetně soboty. Ukáže se i na mobilu, kde teď banner chybí.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Fotky při hraní, pro koho a od kolika let je hračka a v kostce, co umí. Váš popis má dobré technické informace a péči o dřevo, chybí mu ale to, co rodiči řekne, jestli hračka sedne právě jeho dítěti.",
+                    "image": "spoluprace/ukazka-popis-produktu.jpg",
+                    "title": "Popis produktu, který prodává: Alza.cz",
+                    "image_alt": "Srovnání běžného a prémiového popisu produktu na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá na otázku „kdy to budu mít doma“. U zboží na objednání s dodáním 2–3 týdny nebo 4–6 týdnů tohle zákazník potřebuje vědět dřív, než zaplatí.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Stavová lišta: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Pod košíkem ukáže, kolik zbývá do dárku. U vás třeba pohlednice do lampičky nebo Lucky Lucky figurka navíc. Ukazatel dopravy zdarma už máte, tohle je další krok.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Jedna stránka s cenami a termíny všech doprav. U vás jsou informace v textu Jak nakupovat, bez cen, a píše se tam, že posíláte jen Zásilkovnou a větší balíky přes GLS. V košíku je přitom i PPL.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb s cenami a termíny na Rybizak.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: úvodní stránka na mobilu, vánoční nabídka a termíny doručení. Větší změny vzhledu stavíme na datech ze sezony, ať vycházejí z toho, co vaši zákazníci opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď podpoří prodej hned, nebo vám posílí pozici na trhu. Obsah jen pro obsah točit nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U hraček, které se kupují dětem, ale prodávají skutečné fotky z hraní a skutečná Annie, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

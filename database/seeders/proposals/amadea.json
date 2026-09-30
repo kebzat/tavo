@@ -1,0 +1,232 @@
+{
+    "company_name": "Amadea",
+    "slug": "amadea",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop jako zákazník, na počítači i v mobilu, od úvodní stránky přes kategorii Vánoce a detail betlému až po pokladnu. V bodech jsme sepsali, co bychom na webu upravili ještě před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "4 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Amadea za deset let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Firemní prezentace na pozadí letokruhů: čtyři barevné dlaždice, odstavec o chráněné dílně a e-shop odkázaný na jiné doméně. Poctivé, ale nakupovat se tu nedalo.",
+            "image": "spoluprace/amadea-web-2016.jpg",
+            "label": "2016",
+            "title": "Kdysi",
+            "image_alt": "Web Amadea v roce 2016"
+        },
+        {
+            "body": "Vyspělý e-shop s tisíci produkty, recenzemi a gravírem na míru. Na úvodní stránce je ale v říjnu pořád zahrada a truhlíky s květinami.",
+            "image": "spoluprace/amadea-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Amadea"
+        },
+        {
+            "body": "Betlémy z Podkrkonoší nahoře, dárky podle toho, pro koho jsou, hodnocení 4,9 z 5 na očích, příběh dílny a firemní dárky před sezonou. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/amadea-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Amadea"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Největší dlaždice nahoře je Zahrada a oba výběry produktů pod ní jsou plné truhlíků s květinami. Betlémy, se kterými jste největší v Evropě, jsou na úvodní stránce jen jako malá dlaždice Chaloupky. Jedna zákaznice to napsala přímo do hodnocení, které na úvodní stránce máte: „Už se těším na vánoční nabídku.“ Ta by teď měla být první, co návštěvník uvidí.",
+            "tone": "problem",
+            "title": "Na úvodní stránce je v říjnu pořád zahrada",
+            "priority": "urgent"
+        },
+        {
+            "body": "Kategorie má 835 položek a výchozí řazení začíná betlémy za 6 300, 6 450, 13 000 a 10 100 Kč. Hned první dva se jmenují stejně, Dřevěný osvětlený betlém s figurkami 54 cm, a liší se jen cenou. Kdo hledá dárek za pár stovek, musí rolovat nebo filtrovat, a kdo vidí dva stejné betlémy za různou cenu, zaváhá.",
+            "tone": "problem",
+            "title": "Kategorie Vánoce začíná betlémy za 6 až 13 tisíc",
+            "priority": "urgent"
+        },
+        {
+            "body": "Stránku Dárek podle situace s rozcestníkem Pro ženu, Pro babičku, Pro tatínka máte, jenže odkaz na ni v menu není vidět. A kdo se na ni dostane, uvidí jako nejprodávanější Příspěvek pro chráněnou dílnu, Dýško baliči a Pojištění zásilky. Před Vánoci přitom spousta lidí hledá přesně tohle: dárek pro konkrétního člověka.",
+            "tone": "problem",
+            "title": "Rozcestník dárků existuje, ale nikdo ho nenajde",
+            "priority": "important"
+        },
+        {
+            "body": "Na stránce O nás píšete, že jste největší výrobce dřevěných betlémů v Evropě, že jeden betlém je zhruba osm hodin ruční práce a že je dělají i kolegové z chráněné dílny. Příběh se sklepem, jedním laserem a zakázkou pro Škodu. Na úvodní stránce z toho zbyl obecný odstavec o originálních produktech z Česka. Tohle je důvod, proč koupit betlém u vás a ne na tržnici.",
+            "tone": "opportunity",
+            "title": "Největší výrobce betlémů v Evropě, a ví to jen stránka O nás",
+            "priority": "important"
+        },
+        {
+            "body": "Produkty máte nafocené pěkně, na tmavém pozadí nebo v prostředí. Nikde ale není betlém pod stromečkem u zákazníka nebo ozdoby na rodinném stromku. Hodnocení jsou jen textová a část obrázků kategorií je generovaná přes AI. U ruční práce je fotka od skutečného zákazníka nejsilnější důkaz, že to doma opravdu tak vypadá.",
+            "tone": "opportunity",
+            "title": "Chybí fotky od zákazníků, betlém u někoho doma",
+            "priority": "important"
+        },
+        {
+            "body": "Stránka Pro firmy je dotažená: nabídka do 24 hodin, katalog v PDF, obchodníci podle regionu. Firmy ale dárky vybírají teď, v říjnu a listopadu, a na úvodní stránce je Pro firmy jen položka v menu.",
+            "tone": "opportunity",
+            "title": "Firemní dárky na Vánoce jsou schované v menu",
+            "priority": "important"
+        },
+        {
+            "body": "Z 970 hodnocení je 926 za pět hvězdiček. Na úvodní stránce se ukazují jednotlivé recenze, samotné číslo ale uvidí jen ten, kdo se proklikne na stránku hodnocení. Tohle patří nahoru do lišty a ke každému produktu.",
+            "tone": "strength",
+            "title": "4,9 z 5 od 970 zákazníků, jen to číslo nikde nesvítí",
+            "priority": "important"
+        },
+        {
+            "body": "U betlému je termín doručení, video, hodnocení a poctivý popis s rozměry a tím, co je v balení. V košíku lišta do dopravy zdarma, v pokladně dárek. K tomu gravír, který si zákazník navrhne online. Tady není co zachraňovat, jen to ukázat víc lidem.",
+            "tone": "strength",
+            "title": "Detail produktu a nákup jsou nadprůměrné",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Betlémy a vánoční dárky na úvodní stránku místo zahrady, hodnocení 4,9 z 5 do lišty nahoru, kategorie Vánoce seřazená od nejprodávanějšího, odlišené názvy stejných betlémů a servisní položky pryč z výpisů. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Z Dárku podle situace uděláme vánočního rádce: pro koho a za kolik, s ručně vybranými produkty místo automatického výpisu. Odkaz na něj bude v menu i na úvodní stránce.",
+            "title": "Vánoční rádce: pro koho a za kolik"
+        },
+        {
+            "who": "Tom",
+            "body": "Blok na úvodní stránce s ukázkou realizace, odkazem na katalog a jasným termínem, do kdy poptat, aby dárky stihly Vánoce. Hotové do konce října, kdy firmy vybírají.",
+            "title": "Firemní dárky na úvodní stránce před sezonou"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Příběh betlémů, osm hodin práce a chráněnou dílnu dostaneme na úvodní stránku a k betlémům. Po Vánocích pak sběr fotek od zákazníků, třeba s prosbou o fotku stromečku k hodnocení.",
+            "title": "Příběh dílny a fotky od zákazníků"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Úvodní stránku pak měníme podle roční doby, ať v březnu vítá zahrada a v říjnu betlémy.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Betlémy a vánoční dárky nahoře, hodnocení v liště, řazení kategorie Vánoce, pořádek ve výpisech.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Vánoční úvodní stránka"
+        },
+        {
+            "body": "Dárky pro babičku, maminku, kolegy, s rozpočtem a ručně vybranými produkty.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Vánoční rádce dárků"
+        },
+        {
+            "body": "Blok na úvodní stránce s termínem poptávky a ukázkami realizací.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Firemní dárky před sezonou"
+        },
+        {
+            "body": "Největší výrobce betlémů v Evropě, osm hodin práce, chráněná dílna. Na úvodní stránce i u betlémů.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Příběh dílny na očích"
+        },
+        {
+            "body": "Prosba o fotku k hodnocení, galerie od zákazníků na úvodní stránce a u produktů.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Fotky od zákazníků"
+        },
+        {
+            "body": "Úvodní stránka podle sezony a podle toho, co se prodává.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Ladění webu podle dat"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Betlémy z Podkrkonoší nahoře, dárky podle toho, pro koho jsou, betlémy podle velikosti, příběh dílny s fotkami, které už máte, a firemní dárky před sezonou. Místa pro fotky od zákazníků jsou zatím prázdná. Finální podobu doladíme podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/amadea-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Amadea",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme jen to, co u vás ještě chybí, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás 4,9 z 5 od 970 zákazníků, doprava zdarma nad 2 000 Kč a před Vánoci poslední termín pro gravír a firemní zakázky.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Video k betlému máte, jen je schované v záložce pod popisem. Jako první položka v galerii by ukázalo rozsvícenou stáj a detaily figurek hned, když zákazník otevře produkt.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Detail produktu na Venira.cz s videem jako první položkou galerie",
+                    "video_url": null
+                },
+                {
+                    "body": "Související produkty u betlému míchají další betlémy s figurkami. Samostatný blok „Hodí se k tomu“ s ovečkami, Ježíškem a Svatou rodinou, s tlačítkem do košíku u každé položky, z jednoho nákupu udělá dva.",
+                    "image": "spoluprace/ukazka-cross-sell-alza.jpg",
+                    "title": "Nejčastěji kupováno společně: Alza.cz",
+                    "image_alt": "Blok Nejčastěji zakoupeno společně na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "K větší objednávce si zákazník v košíku vybírá dárek. S menším košíkem se o tom ale nedozví, vidí jen lištu do dopravy zdarma. Ukazatel, kolik zbývá do dárku, ho přiměje objednávku dorovnat.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: betlémy a vánoční dárky na úvodní stránce, rádce dárků a firemní zakázky. Větší změny stavíme na datech ze sezony.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "E-shop máte v dobrém stavu, takže nebudeme přestavovat, co funguje. Každá úprava má jasný důvod: rychleji k dárku, nebo víc důvodů koupit právě u vás.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Ruční práci z Podkrkonoší ale nejlíp prodají skutečné fotky z dílny a od zákazníků.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

@@ -1,0 +1,213 @@
+{
+    "company_name": "Emiimio",
+    "slug": "emiimio",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop od úvodní stránky přes kategorie a detail overalu až po košík, na počítači i na mobilu. V bodech jsme sepsali, co připravit ještě před Vánoci, na čem se dá v sezoně vydělat a co může počkat.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "4 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Emiimio dnes a jak by mohl vypadat před Vánoci. Starší verze se v internetovém archivu uložily bez vzhledu, proto tu chybí. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Nová beránková kolekce hned nahoře, krásné fotky miminek, hodnocení i fotky od zákaznic. Dárky a Vánoce zatím nikde a na mobilu se produkty posouvají po jednom.",
+            "image": "spoluprace/emiimio-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Emiimio"
+        },
+        {
+            "body": "Beránková kolekce s termínem pod stromeček, dárky pro miminko a poukazy nahoře, nápověda velikosti podle věku a dílna v Nové Pace na úvodní stránce. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/emiimio-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Emiimio"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Na webu zatím není nic o Vánocích. Dárkové krabičky pro miminko jsou schované v menu Pro miminko a z osmi balíčků jsou čtyři vyprodané a jeden na objednávku, obě beránkové sady mezi nimi. Kdo hledá dárek k narození nebo pod stromeček, najde hlavně „Vyprodáno“. Krabičky je potřeba doplnit nebo skrýt a dárky s poukazy dát na úvodní stránku.",
+            "tone": "opportunity",
+            "title": "Vánoce zatím nikde, dárkové krabičky napůl vyprodané",
+            "priority": "urgent"
+        },
+        {
+            "body": "Rostoucí overaly šijete větší než běžná konfekce a jedna velikost vydrží přes tři. Vysvětlení i tabulka jsou ale až v popisu pod fotkami, na telefonu zhruba 2 500 pixelů pod výběrem velikosti. Zákaznice to řeší i v recenzích: „Malá nosí velikost 56/62 a objednala jsem 68 a přijde mi větší.“ Krátká nápověda podle věku přímo u výběru ušetří dotazy i výměny.",
+            "tone": "problem",
+            "title": "Velikost rostoucího overalu se vybírá naslepo",
+            "priority": "important"
+        },
+        {
+            "body": "Hodnocení 5,0 od 2 093 zákazníků, z toho 2 061 za pět hvězd. Na úvodní stránce jsou fotky od maminek, beránková kolekce je nahoře přesně včas a po přidání do košíku nabídnete čepici, rukavice a capáčky ve stejné barvě i lištu do dopravy zdarma. Na tomhle se dá stavět.",
+            "tone": "strength",
+            "title": "5,0 od 2 093 zákazníků a košík, který umí prodávat",
+            "priority": "important"
+        },
+        {
+            "body": "Stránka O značce má skvělé fotky dílny, švadlenek u strojů, Romany a příběh Emičky z roku 2018. Je ale schovaná v menu Více a v patičce. Na úvodní stránce z ní zbyly dvě ikonky, „Jsme maminky“ a „Poctivá česká výroba“. Lidé za značkou jsou přitom hlavní důvod, proč koupit tady a ne ve velkém obchodě.",
+            "tone": "opportunity",
+            "title": "Dílna v Nové Pace je schovaná pod Více",
+            "priority": "important"
+        },
+        {
+            "body": "Novinky i Bestsellery jsou na telefonu posuvné pásy s jedním produktem na šířku a šipkami přes fotku. Každý další overal znamená další posunutí. Mřížka se dvěma produkty vedle sebe ukáže celou beránkovou kolekci na pár posunutí prstem.",
+            "tone": "problem",
+            "title": "Na mobilu se produkty posouvají po jednom",
+            "priority": "important"
+        },
+        {
+            "body": "U produktu je jen „Skladem“. Že skladové kousky odesíláte do druhého dne a šité na objednávku do týdne, je na stránce Doprava a platba. Datum doručení rovnou u ceny pomůže hlavně v prosinci, kdy se každý ptá, jestli to stihne.",
+            "tone": "opportunity",
+            "title": "Kdy balíček dorazí, se u produktu nedozvíte",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Termín pod stromeček v liště, dárky pro miminko a poukazy hned nahoře a na mobilu mřížka produktů místo posuvných pásů. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Vánoční úvodní stránka do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "U rostoucích overalů výběr podle věku miminka a věta „vydrží přes tři velikosti“ hned u tlačítka. Tabulka se otevře v okně, bez posouvání dolů.",
+            "title": "Nápověda velikosti přímo u výběru"
+        },
+        {
+            "who": "Tom",
+            "body": "Jedna stránka s dárkovými krabičkami, novorozeneckými sety a poukazy, bez vyprodaných kousků. Na úvodní stránce na ni vede samostatný blok.",
+            "title": "Dárky pro miminko na jednom místě"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Krátký příběh Romany a dílny na úvodní stránku, s fotkami, které už máte. Pomůžeme s texty, aby bylo na první pohled jasné, proč koupit právě u vás.",
+            "title": "Dílna a lidé na úvodní stránce"
+        },
+        {
+            "who": "Tom",
+            "body": "Datum doručení u ceny podle toho, jestli je kousek skladem, nebo se šije. Po sezoně se podíváme do dat a podle nich web upravujeme dál.",
+            "title": "Doručení u produktu a ladění podle dat"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Termín pod stromeček, dárky a poukazy nahoře, mřížka produktů na mobilu.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Vánoční úvodní stránka"
+        },
+        {
+            "body": "Vyprodané krabičky doplnit nebo skrýt, dárky a poukazy na jedné stránce.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Dárky pro miminko"
+        },
+        {
+            "body": "Nápověda velikosti podle věku a tabulka v okně u rostoucích overalů.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Výběr velikosti"
+        },
+        {
+            "body": "Příběh Romany a fotky z dílny v Nové Pace.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Dílna na úvodní stránce"
+        },
+        {
+            "body": "Datum doručení u produktu podle skladu a šití na objednávku.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Doručení u ceny"
+        },
+        {
+            "body": "Podle toho, co se v sezoně prodávalo a kde lidé z webu odcházeli.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Ladění webu podle dat"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Beránková kolekce s termínem pod stromeček, dárky pro miminko a poukazy nahoře, nápověda velikosti podle věku a dílna v Nové Pace. Finální podobu doladíme spolu podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/emiimio-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Emiimio",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co se hodí k výbavičce pro miminka před Vánoci, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Hnědou lištu s dopravou zdarma už máte. Od listopadu do ní patří i to, do kdy objednat, aby balíček stihl Vánoce, zvlášť pro kousky šité na objednávku.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Pár vteřin videa jako první položka v galerii. U beránkového overalu ukáže, jak hebký je materiál a jak se ohrnují náplety, líp než další fotka.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Detail produktu na Venira.cz s videem jako první položkou galerie",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá, kdy bude zboží doma. U vás rozdíl mezi „skladem, zítra odesíláme“ a „šijeme, do týdne“, a v prosinci jistota, že dárek dorazí včas.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Pod košíkem ukáže, kolik zbývá do dárku. U vás třeba capáčky nebo mušelínová plenka zdarma. Pomůže to hlavně objednávkám, kterým kousek chybí do dopravy zdarma od 2 600 Kč.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co může prodat ještě před Vánoci: dárky pro miminko na úvodní stránce, termín pod stromeček a jistota při výběru velikosti. Větší změny stavíme na tom, co se v sezoně opravdu prodávalo.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď pomůže prodat hned, nebo posílí to, čím se lišíte. Úpravy jen pro efekt dělat nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U výbavičky šité v Nové Pace ale prodávají skutečné fotky miminek, maminek a švadlenek, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

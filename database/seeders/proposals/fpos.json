@@ -1,0 +1,181 @@
+{
+    "company_name": "FPOS",
+    "slug": "fpos",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web tak, jak ho vidí nákupčí nebo technolog, který hledá dodavatele jednoúčelového stroje nebo přípravku. V bodech jsme sepsali, co opravit hned, co přinese víc poptávek a co se vyplatí dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "2 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web FPOS za deset let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Klikové hřídele v hlavičce, tři dlaždice (jednoúčelové stroje, Midalu, FGR) a pod nimi odstavec o tom, že stroje vedou k úspoře ve výrobě a lepší kvalitě výrobků.",
+            "image": "spoluprace/fpos-web-2016.jpg",
+            "label": "2016",
+            "title": "Kdysi",
+            "image_alt": "Web FPOS v roce 2016"
+        },
+        {
+            "body": "Letecký snímek areálu, šest ikon služeb a novinky o motocyklech. Web funguje i na mobilu, ale výzva k poptávce na úvodní stránce chybí úplně.",
+            "image": "spoluprace/fpos-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní úvodní stránka webu FPOS"
+        },
+        {
+            "body": "Nahoře jasné sdělení a tlačítko na poptávku. Loga zákazníků hned pod ním, realizované stroje s fotkou, lidé s přímým telefonem a krátký formulář s přílohou výkresu.",
+            "image": "spoluprace/fpos-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové úvodní stránky webu FPOS"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do návštěvnosti webu ani do toho, kolik poptávek dnes chodí, jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Na úvodní stránce není tlačítko ani formulář, nikde slovo poptávka. Formulář „Napište nám“ je jen na stránce Kontakt a otevírá se do nové záložky. Telefonní čísla nejsou na mobilu klikací, v hlavičce telefon chybí úplně. Kdo přijde s konkrétní zakázkou, musí si cestu k vám hledat sám.",
+            "tone": "problem",
+            "title": "Z úvodní stránky se nedá poptat",
+            "priority": "urgent"
+        },
+        {
+            "body": "Podle vašeho profilu jsou hlavním programem jednoúčelové stroje. V aktualitách na úvodní stránce je ale rekonstrukce haly pro nového nájemce, Autosalon 2024 a partnerství s Filipem Salačem v MotoGP. Poslední novinka o strojích je rozšíření strojového parku z roku 2019. Nákupčí z výrobní firmy z toho snadno usoudí, že se věnujete hlavně motocyklům.",
+            "tone": "problem",
+            "title": "Úvodní stránka mluví víc o motocyklech a hale než o strojích",
+            "priority": "important"
+        },
+        {
+            "body": "Na stránce Reference máte 15 log, mezi nimi Siemens, Valeo, Bühler, OEZ, Rieter nebo FAB Assa Abloy. Na úvodní stránce ale není ani jedno. Pro nového zákazníka je to nejrychlejší důkaz, že vám velké firmy svěřily výrobu. Patří hned pod hlavní sdělení.",
+            "tone": "strength",
+            "title": "Silná jména zákazníků schovaná na podstránce",
+            "priority": "important"
+        },
+        {
+            "body": "U automobilového, leteckého, potravinářského i farmaceutického průmyslu je vždy jeden stroj, jedna nebo dvě věty a pár malých fotek. Chybí, co zákazník potřeboval vyřešit a co mu stroj přinesl (takt, úspora lidí, kvalita). Na webu z roku 2016 jste přitom psali právě o úspoře ve výrobě. Bruslařský trenažér pro hokejisty nebo nýtování prstence tryskového motoru jsou přitom zakázky, které si člověk zapamatuje.",
+            "tone": "opportunity",
+            "title": "Realizované stroje mají jednu dvě věty",
+            "priority": "important"
+        },
+        {
+            "body": "Na stránce Kontakt je sedm lidí se jménem a rolí, šest z nich s přímým telefonem a čtyři s fotkou. Vedoucí výroby i technolog jsou dostupní napřímo. Máte i promo video z roku 2024, virtuální prohlídky areálu a ISO 9001 od roku 2002. Tohle u strojírenských firem často chybí a u vás to jen stačí dostat na úvodní stránku.",
+            "tone": "strength",
+            "title": "Skuteční lidé s telefonem a fotkou",
+            "priority": "important"
+        },
+        {
+            "body": "Server při načtení stránky hlásí PHP 5.6. Tahle verze nedostává bezpečnostní opravy od konce roku 2018. Web může dál běžet, ale každá větší úprava je riskantnější a hrozí, že ho jednoho dne hosting vypne nebo se na něj někdo dostane.",
+            "tone": "problem",
+            "title": "Web běží na téměř osm let nepodporované verzi PHP",
+            "priority": "important"
+        },
+        {
+            "body": "Hlavní nadpis úvodní stránky je „www.fpos.cz“ a stejně důležité nadpisy mají i tři novinky pod ním. Stránky jednotlivých oborů mají pár vět. Google tak z webu těžko pozná, že stavíte jednoúčelové stroje a přípravky. Adresa fpos.cz navíc přesměruje na www.fpos.cz/index.php?url_clanku=, tedy na druhou kopii úvodní stránky.",
+            "tone": "problem",
+            "title": "Vyhledávače z webu nepoznají, co děláte",
+            "priority": "later"
+        },
+        {
+            "body": "Formulář chce jen jméno, e-mail a poznámku, to je dobře. U zakázkové výroby ale skoro každá poptávka začíná výkresem, fotkou dílu nebo videem z linky. Bez přílohy to zákazník pošle e-mailem, nebo to odloží.",
+            "tone": "opportunity",
+            "title": "K poptávce nejde přiložit výkres ani fotku",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se nejdřív projeví na počtu poptávek. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Tlačítko na poptávku a klikací telefon do hlavičky, loga zákazníků na úvodní stránku, novinky o hale a motocyklech níž. Web dělal TH SOFT, takže rozsah řekneme po prohlídce administrace. Pokud do ní nepůjde sáhnout, poctivě řekneme, že se oprava nevyplatí.",
+            "title": "Nejnutnější úpravy do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Web na podporované verzi PHP a na systému, kde si novinky i realizace doplníte sami. Obsah, fotky a adresy stránek převezmeme, aby se neztratilo to, co už Google zná.",
+            "title": "Nový web na aktuální technice"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Ke každému stroji krátký příběh: co zákazník vyráběl, co ho brzdilo a co stroj změnil. Kde to zákazník dovolí, i s jeho logem. Od vás potřebujeme hodinu s konstruktérem, texty napíšeme my.",
+            "title": "Realizace, které prodávají"
+        },
+        {
+            "who": "Tom",
+            "body": "Formulář s výběrem typu zakázky a přílohou pro výkres, fotku nebo video. Poptávky dostanete do e-mailu a uvidíte, ze které stránky přišly.",
+            "title": "Poptávka s přílohou"
+        },
+        {
+            "who": "Tom",
+            "body": "Samostatné stránky pro jednoúčelové stroje, přípravky a CNC obrábění s dost textem na to, aby je Google našel. Motocykly FGR a Midalu jako ukázka toho, co zvládne vaše konstrukce.",
+            "title": "Stránky služeb pro vyhledávače"
+        }
+    ],
+    "steps_intro": "Nejdřív to, co odblokuje poptávky na stávajícím webu. Pak nový web, na kterém už to bude fungovat samo.",
+    "steps": [
+        {
+            "body": "Poptávka a telefon v hlavičce, loga zákazníků nahoru.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Rychlé úpravy"
+        },
+        {
+            "body": "Projdeme s vámi, které stroje ukázat a co o nich můžeme napsat.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Výběr realizací"
+        },
+        {
+            "body": "Úvodní stránka a struktura webu podle návrhu níž.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Návrh nového webu"
+        },
+        {
+            "body": "Převod obsahu, nové realizace, formulář s přílohou, přesměrování starých adres.",
+            "when": "4.–8. týden",
+            "later": false,
+            "title": "Stavba a spuštění"
+        },
+        {
+            "body": "Podle toho, jaké poptávky chodí, doplňujeme realizace a ladíme stránky.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Rozvoj webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek, textů a referencí, abyste viděli směr dřív, než cokoliv zaplatíte. Hlavní sdělení a poptávka nahoře, loga zákazníků, realizované stroje podle oborů, postup od zadání po předání, lidé s přímým telefonem a formulář s přílohou. U strojů zatím chybí výsledky (takt, úspora), ty doplníme s vámi. Finální podobu doladíme spolu.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/fpos-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat úvodní stránka",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové úvodní stránky webu FPOS",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, aby se z webu dalo snadno poptat a aby nákupčí hned viděl, co stavíte a pro koho. Nový vzhled přijde potom a postavíme ho na tom, jaké poptávky chodí.",
+            "title": "Nejdřív poptávky, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má přivést víc nebo lepších poptávek, nebo ušetřit čas vašemu technikovi. Obsah jen pro obsah dělat nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Jednoúčelový stroj ale prodávají fotky skutečných strojů a lidé, kteří je postavili, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

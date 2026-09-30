@@ -1,0 +1,207 @@
+{
+    "company_name": "DUPETO",
+    "slug": "dupeto",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes výběr velikosti až po košík. V bodech najdete, co bychom opravili hned, co stihnout před zimou a Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "4 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Starší verze e-shopu se v internetovém archivu nenačítají celé, proto ukazujeme jen dnešek a návrh. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Podzimní overal nahoře, pod ním čtyři kategorie a výhody. Skvělé fotky dětí venku. Na mobilu se ale banner zmenší tak, že nadpis nejde přečíst.",
+            "image": "spoluprace/dupeto-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu DUPETO"
+        },
+        {
+            "body": "Overal s hodnocením 5,0 hned nahoře, velikosti skladem u každého produktu, výběr velikosti na jedno klepnutí a zimní výbava s dárky pod stromeček. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/dupeto-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu DUPETO"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Nový zimní overal od 3 950 Kč, funkční oteplovačky a bundy najde zákazník jen v kategorii Na zimu. Dárkové poukazy na 500 až 2 000 Kč jsou na konci menu e-shopu a o Vánocích web zatím mlčí. Mezi články na úvodní stránce je v říjnu balení na tábor. Zimní výbava se kupuje teď, dárky od listopadu.",
+            "tone": "opportunity",
+            "title": "Zimní novinky a dárky zatím nejsou vidět",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na telefonu se hlavní banner zmenší na pruh vysoký pár centimetrů a nadpis „Overal, který vaše dítě vynosí tento i příští podzim“ nejde přečíst. Pod ním jsou čtyři velké dlaždice kategorií a produkty pak jdou po jednom pod sebou, každý se žlutým tlačítkem Detail. K hodnocení se zákaznice dostane až po dlouhém posouvání.",
+            "tone": "problem",
+            "title": "Na mobilu je hlavní sdělení nečitelné",
+            "priority": "important"
+        },
+        {
+            "body": "U Softshellové bundy Vesmír vybíráte ze 14 velikostí v rozbalovacím seznamu a 7 z nich je vyprodaných. Vyprodaná velikost jde vybrat a tlačítko Do košíku vypadá pořád stejně. Tlačítka s velikostmi vedle sebe, vyprodané přeškrtnuté s možností hlídat, ušetří hlavně na mobilu hledání i zklamání.",
+            "tone": "problem",
+            "title": "Velikost se vybírá z dlouhého seznamu, polovina je vyprodaná",
+            "priority": "important"
+        },
+        {
+            "body": "Děti venku na skalách, v blátě a ve sněhu, žádné studio. Popis bundy vysvětluje, proč vydrží dvě sezony, kolik centimetrů přidá rukáv jak ji pět let vyvíjely a že ji přes šest let testují v lesní školce. K tomu příběh Alice a Aničky a prodejna v Brně. Přesně tohle prodává dětský outdoor a spousta e-shopů to nemá.",
+            "tone": "strength",
+            "title": "Fotky, popisy a příběh, které prodávají řešení",
+            "priority": "important"
+        },
+        {
+            "body": "Průměr 5,0 z 2 165 hodnocení je silné číslo. Na úvodní stránce je ale jen jako odkaz v menu a citace až nad patičkou. U produktů se zobrazují jen jejich vlastní hodnocení, u bundy Vesmír čtyři. Hodnocení obchodu patří nahoru, k produktům a do košíku. A fotky od zákaznic z výletů by přesvědčily víc než další text.",
+            "tone": "opportunity",
+            "title": "2 165 hodnocení s průměrem 5,0 je schovaných dole",
+            "priority": "important"
+        },
+        {
+            "body": "Po přidání do košíku vyskočí okno s ukazatelem, kolik zbývá do dopravy zdarma, a s produkty, které nakoupili ostatní. Stejný ukazatel je v košíku. Tohle funguje a nechali bychom to.",
+            "tone": "strength",
+            "title": "Košík s ukazatelem dopravy zdarma",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Samostatný banner pro mobil s čitelným nadpisem, hodnocení 5,0 hned nahoru, produkty na mobilu po dvou vedle sebe a zimní novinky na úvodní stránku. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Velikosti jako tlačítka vedle sebe, vyprodané přeškrtnuté s tlačítkem Hlídat. Na Shoptetu jde udělat úpravou šablony nebo doplňkem, přesný rozsah řekneme po prohlídce administrace.",
+            "title": "Výběr velikosti na jedno klepnutí"
+        },
+        {
+            "who": "Tom",
+            "body": "Jedna stránka se zimní výbavou a dárky: overaly a oteplovačky, dárky do 300 a do 600 Kč, poukazy a termín, do kdy objednat pod stromeček. Hotové do začátku listopadu a odkaz na ni z úvodní stránky.",
+            "title": "Zimní a vánoční stránka"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Pomůžeme posbírat fotky od zákaznic z výletů a dáme je k hodnocením, na úvodní stránku i k produktům. Texty necháme vaše, jsou dobré.",
+            "title": "Fotky od zákaznic na webu"
+        },
+        {
+            "who": "Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Stránka dopravy s termíny doručení a další drobnosti přijdou na řadu podle priorit.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před zimou a Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Mobilní banner, hodnocení nahoru, dva produkty vedle sebe, zimní novinky.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Refresh úvodní stránky"
+        },
+        {
+            "body": "Overaly, oteplovačky, dárky podle ceny a poukazy s termínem pod stromeček.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Zimní a vánoční stránka"
+        },
+        {
+            "body": "Tlačítka místo rozbalovacího seznamu, hlídání vyprodaných velikostí.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Výběr velikosti na detailu produktu"
+        },
+        {
+            "body": "Podle dat ze sezony. Fotky od zákaznic, doprava s termíny.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Ladění webu"
+        },
+        {
+            "body": "Každá nová kolekce dostane na webu své místo v den spuštění.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Nové kolekce"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Nahoře podzimní overal s hodnocením 5,0, u každého produktu velikosti skladem, ukázka výběru velikosti na jedno klepnutí, zimní výbava s dárky a příběh Holek Dupeťaček. Místa pro fotky od zákaznic jsou zatím prázdná. Ceny a skladovost jsou z vašeho webu k 1. 10. 2026. Finální podobu doladíme s vámi podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/dupeto-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před zimou",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu DUPETO",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme jen to, co u vás zatím chybí, v pořadí, jak jimi prochází zákaznice: od první návštěvy přes detail produktu a košík po dopravu. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Sleva za přihlášení k newsletteru s jasnou podmínkou. Váš newsletter s měsíčním losováním o poukaz za 1 000 Kč je dnes jen v patičce, kam dojde málokdo.",
+                    "image": "spoluprace/ukazka-popup-venira.jpg",
+                    "title": "Pop-up za kontakt: Venira.cz",
+                    "image_alt": "Okno se slevou za přihlášení k newsletteru na Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá na otázku „kdy to budu mít doma“. U vás je u varianty jen „Skladem 2 ks“. Před zimou a Vánoci je datum doručení to, podle čeho se rozhoduje.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Pod košíkem ukáže, kolik zbývá do dárku. U vás třeba ponožky nebo nášivka k objednávce nad určitou částku. Ukazatel do dopravy zdarma už máte, dárek by ho jen doplnil.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Přehledná tabulka dopravců s cenou a termínem doručení. Vaše stránka dopravy má ceny, ale ne to, kdy balík dorazí.",
+                    "image": "spoluprace/ukazka-doprava-rybizak.jpg",
+                    "title": "Doprava a platba: Rybizak.cz",
+                    "image_alt": "Stránka dopravy a plateb na Rybizak.cz s cenami a termíny",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: čitelná úvodní stránka na mobilu, zimní výbava a snadný výběr velikosti. Větší změny stavíme na datech ze sezony, ať vycházejí z toho, co vaše zákaznice opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava webu buď pomůže prodat hned, nebo posílí důvěru ve značku. Nic jen proto, že je to zrovna v módě.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Dětský outdoor ale prodávají skutečné děti v blátě a ve sněhu, ne obrázky z AI. Ty máte a jsou výborné.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

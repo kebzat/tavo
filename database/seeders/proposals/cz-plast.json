@@ -1,0 +1,193 @@
+{
+    "company_name": "CZ PLAST",
+    "slug": "cz-plast",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web i e-shop tak, jak je vidí nákupčí z výrobní firmy nebo stavebník, který shání vodoměrnou šachtu. V bodech jsme sepsali, co opravit hned, co přinese víc poptávek a co se vyplatí dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web CZ PLAST za šestnáct let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Zelené dlaždice v menu, v hlavičce kloubový autobus a hned v první větě, co nabízíte: konstrukci plastového dílu, výrobu formy a dodávky hotových dílů. V menu byly i Reference.",
+            "image": "spoluprace/cz-plast-web-2010.jpg",
+            "label": "2010",
+            "title": "Kdysi",
+            "image_alt": "Web CZ PLAST v roce 2010"
+        },
+        {
+            "body": "Moderní vzhled, e-shop a nové služby kolem 3D tisku. Na první obrazovce je ale jen nádrž na dešťovou vodu a to, čím se živíte hlavně, je o několik kliknutí dál.",
+            "image": "spoluprace/cz-plast-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní úvodní stránka webu CZ PLAST"
+        },
+        {
+            "body": "Hned nahoře jasné sdělení pro výrobce strojů, vedle toho šachty s cenou z e-shopu. Certifikace na očích, postup spolupráce, 3D tisk a krátká poptávka s přílohou výkresu.",
+            "image": "spoluprace/cz-plast-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové úvodní stránky webu CZ PLAST"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do návštěvnosti webu ani do toho, kolik poptávek dnes chodí, jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Dvě fotky u služeb 3D tisku mají dohromady přes 45 MB (weber.png 22,5 MB a fdm_s linkou.png 23,2 MB). Celá úvodní stránka tak stahuje zhruba 50 MB, na mobilu stejně jako na počítači. Na mobilních datech se stránka načítá dlouho a dlaždice služeb zatím svítí šedě. Stejné fotky jako JPEG by měly pár set kilobajtů.",
+            "tone": "problem",
+            "title": "Úvodní stránka má kvůli dvěma fotkám 50 MB",
+            "priority": "urgent"
+        },
+        {
+            "body": "Formulář „Napište nám“ je na každé stránce a všech sedm polí má hvězdičku, včetně Společnosti a IČ. Hlavní banner přitom nabízí nádrže na dešťovou vodu, které podle vašeho webu „se hodí pro rodinný dům i chatu“. Soukromý stavebník IČ nemá. Konstruktér zase nemá kam přiložit výkres nebo 3D model, i když u nádrží na míru je to první věc, kterou potřebujete vidět.",
+            "tone": "problem",
+            "title": "Poptávka chce po každém IČ a nejde k ní přiložit výkres",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na stránce palivových nádrží píšete, že jsou vaším „stěžejním výrobním programem“. Úvodní stránka ale ukazuje jen nádrž na dešťovou vodu a pod ní ikony výrobků bez jediné věty. To, že s firmou navrhnete díl, vyrobíte formu a dodáte sérii, je až na stránce O nás. Na webu z roku 2010 to byla první věta. Nákupčí, který hledá dodavatele nádrže do stroje, by to měl vědět do pěti vteřin.",
+            "tone": "problem",
+            "title": "Z první obrazovky není poznat, co je váš hlavní obor",
+            "priority": "important"
+        },
+        {
+            "body": "ISO 9001 od roku 2003 je jen na stránce Ke stažení. Certifikace palivových nádrží u TÜV SÜD a dozor TZÚS Praha nad šachtami a jímkami jsou v odstavci na stránce O nás. Firma od roku 1997 je vidět jen v logu. Pro nákupčího výrobní firmy jsou to přitom první věci, které si u nového dodavatele ověřuje.",
+            "tone": "opportunity",
+            "title": "Certifikace a historie jsou schované na podstránkách",
+            "priority": "important"
+        },
+        {
+            "body": "Píšete, že vaše nádrže „jezdí, plavou a létají“, a vyjmenováváte traktory, autobusy, sekačky i paragliding. Na webu ale není jediná fotka nádrže ve stroji ani jméno zákazníka. Všechny fotky výrobků jsou na bílém pozadí. Na starém webu jste měli Reference s fotogalerií podle oborů (Agro, Doprava, Hasiči, Stavební stroje a další). U zakázkové výroby je to nejsilnější důkaz, že to zvládnete i pro nového zákazníka.",
+            "tone": "opportunity",
+            "title": "Chybí reference a díly v reálném nasazení",
+            "priority": "important"
+        },
+        {
+            "body": "V novinkách z prosince 2024 píšete o největší velkoformátové 3D tiskárně v Evropě, která zpracuje až 36 kg materiálu za hodinu. Stránka Služby jsou přitom jen čtyři dlaždice bez jediné věty a na úvodní stránce je 3D tisk jen nadpis nad fotkou. Kdo hledá velkoformátový 3D tisk, se o tiskárně z webu skoro nedozví.",
+            "tone": "opportunity",
+            "title": "Největší 3D tiskárna v Evropě je schovaná v novinkách",
+            "priority": "important"
+        },
+        {
+            "body": "Kdo chce vodoměrnou šachtu, klikne na banner, pak na kategorii, pak na detail a teprve tlačítko „Koupit na eshopu“ ho pošle na jiný web s jiným vzhledem, kde uvidí cenu. E-shop přitom ukazuje ceny i dostupnost dobře. Stačí na něj z hlavního webu posílat rovnou.",
+            "tone": "problem",
+            "title": "Cena šachty je až na čtvrté stránce a na jiném webu",
+            "priority": "later"
+        },
+        {
+            "body": "Na úvodní stránce visí jako nejnovější pozvánka na veletrh BAUMA 2025 z března 2025. Články přitom přidáváte pravidelně, poslední je z března 2026. Stačí novinky z úvodní stránky schovat, nebo tam dávat i čerstvé články, ať web nepůsobí opuštěně.",
+            "tone": "problem",
+            "title": "Nejnovější novinka je rok a půl stará",
+            "priority": "later"
+        },
+        {
+            "body": "Na stránkách O nás a Technologie máte fotky rotačních forem, výrobní haly, dvora plného nádrží a dvou lidí u robotické tiskárny. Jsou to přesně ty fotky, které budí důvěru, jen jsou jako malé náhledy dole na podstránkách. Web i e-shop navíc fungují na mobilu, telefon je v hlavičce na jedno ťuknutí.",
+            "tone": "strength",
+            "title": "Máte skutečné fotky z výroby, jen jsou vzadu",
+            "priority": "important"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se nejdřív projeví na počtu a kvalitě poptávek. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Zmenšit dvě obří fotky, ubrat povinná pole ve formuláři (firma a IČ nepovinné) a přidat přílohu pro výkres. E-shop má v patičce Elevante a hlavní web je nejspíš na stejném systému. Obrázky vyměníme v administraci hned, formulář bude chtít přístup ke kódu nebo domluvu s nimi.",
+            "title": "Opravit to, co brzdí poptávky, do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Nahoře jedna věta o tom, co děláte a pro koho. Pod ní dvě cesty: výroba na zakázku pro výrobce strojů a šachty s cenou rovnou z e-shopu. K tomu certifikace, postup spolupráce od výkresu po sérii a vaše fotky z haly.",
+            "title": "Úvodní stránka, která se rozdělí na dva typy zákazníků"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Pět až osm zakázek podle oborů: fotka nádrže ve stroji, co zákazník potřeboval a co jste vyřešili. Kde to smlouva dovolí, i se jménem zákazníka. Texty připravíme my, od vás potřebujeme fotky a pár vět od konstruktéra.",
+            "title": "Reference podle oborů"
+        },
+        {
+            "who": "Tom",
+            "body": "Vlastní stránka s parametry tiskárny (tiskový prostor, rychlost, materiály), ukázkami výtisků a krátkou poptávkou s nahráním modelu. Aby se na ni dalo dostat i z vyhledávání „velkoformátový 3D tisk“.",
+            "title": "Stránka velkoformátového 3D tisku"
+        },
+        {
+            "who": "Tom",
+            "body": "Kategorie šachet a nádrží na hlavním webu propojit s e-shopem, ať zákazník vidí cenu dřív. Když se ukáže, že to dává smysl, dva weby postupně sjednotit do jednoho.",
+            "title": "Propojit web a e-shop"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co odblokuje poptávky. Zbytek přijde, až uvidíme, odkud poptávky chodí.",
+    "steps": [
+        {
+            "body": "Zmenšené fotky, kratší formulář s přílohou výkresu, schované staré novinky.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Rychlé opravy"
+        },
+        {
+            "body": "Aby bylo vidět, kolik poptávek přichází z webu a z kterých stránek.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Měření formuláře a telefonu"
+        },
+        {
+            "body": "Dvě cesty pro dva typy zákazníků, certifikace, postup spolupráce a fotky z výroby.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Nová úvodní stránka"
+        },
+        {
+            "body": "Vybereme s vámi zakázky, domluvíme focení a napíšeme texty.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Reference podle oborů"
+        },
+        {
+            "body": "3D tisk, robotické centrum a 3D sken s poptávkou a nahráním modelu.",
+            "when": "Po spuštění",
+            "later": true,
+            "title": "Stránky služeb"
+        },
+        {
+            "body": "Propojení s e-shopem a ladění podle toho, jaké poptávky chodí.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Rozvoj webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek, textů a cen z e-shopu, abyste viděli směr dřív, než cokoliv zaplatíte. Jasné sdělení pro výrobce strojů nahoře, šachty s cenou vedle, certifikace na očích, postup od výkresu po sérii, velkoformátový 3D tisk a krátká poptávka s přílohou. Místa pro fotky dílů ve strojích zákazníků a pro reference jsou zatím prázdná, ty doplníme s vámi. Finální podobu doladíme podle toho, co dovolí váš systém.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/cz-plast-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat úvodní stránka",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové úvodní stránky webu CZ PLAST",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co brzdí poptávky dnes: těžká úvodní stránka a formulář, který část zákazníků odradí. Větší změny vzhledu stavíme na tom, jaké poptávky pak z webu chodí.",
+            "title": "Nejdřív poptávky, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má přivést víc nebo lepších poptávek, nebo ušetřit práci vašemu obchodu. Obsah jen pro obsah dělat nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U zakázkové výroby ale přesvědčují skutečné fotky z haly a dílů ve strojích zákazníků, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

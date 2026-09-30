@@ -1,0 +1,180 @@
+{
+    "company_name": "YXA",
+    "slug": "yxa",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web jako někdo, kdo shání nový plot: úvod, nabídku, reference i kalkulaci ceny. V bodech jsme sepsali, co bychom opravili hned, co vám může přinést víc poptávek a co počká.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web YXA dnes a jak by mohl vypadat. Starší podobu webu internetový archiv nezachytil. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Tmavý a čistý web se skutečnými fotkami plotů. Hlavní tlačítko vede na kalkulaci, která chce rozměry každého dílce v milimetrech. O lidech za firmou, cenách ani hodnoceních zákazníků se návštěvník nedozví nic.",
+            "image": "spoluprace/yxa-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage webu YXA"
+        },
+        {
+            "body": "Krátká poptávka hned na první obrazovce, orientační cena u každého typu plotu, reference s místem a barvou, postup od poptávky po montáž a místo pro vás dva a hodnocení zákazníků.",
+            "image": "spoluprace/yxa-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage webu YXA"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do návštěvnosti webu ani počtu poptávek jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Tlačítko Kalkulace ceny je na webu nejvýraznější. Vede ale na formulář, kde zákazník musí zadat šířku a výšku každé brány, branky, dílce i sloupku v milimetrech a k tomu ulici, město a PSČ. Cenu na konci neuvidí. Kdo teprve zvažuje, jestli do hliníkového plotu jít, rozměry většinou nemá a odejde. Stačí krátká poptávka: typ plotu, přibližná délka, obec a telefon.",
+            "tone": "problem",
+            "title": "Kalkulace ceny chce rozměry v milimetrech",
+            "priority": "urgent"
+        },
+        {
+            "body": "Fotky realizací se na web nahrávají rovnou z fotoaparátu, 6000 × 4000 px a přes 10 MB za kus. Stránka Reference tak stáhne asi 33 MB a detail realizace Áres v Kolíně přes 50 MB. Na mobilních datech se načítá dlouho, a přitom právě tady si zákazník ověřuje, jestli vám věřit. Zmenšení fotek je práce na den a vzhled se nezmění.",
+            "tone": "problem",
+            "title": "Reference se na mobilu načítají desítky megabajtů",
+            "priority": "urgent"
+        },
+        {
+            "body": "Plot je velký výdaj a lidé si nejdřív chtějí udělat představu, kolik je bude stát. Na webu není cena ani orientačně. Údaj „od kolika korun za metr“ u lamelových, designových a tahokovových plotů odradí ty, kdo hledají nejlevnější pletivo, a ostatním dá důvod se ozvat.",
+            "tone": "opportunity",
+            "title": "Nikde ani orientační cena",
+            "priority": "important"
+        },
+        {
+            "body": "Píšete, že YXA tvoří dva přátelé a že konzultaci, výrobu i montáž držíte ve svých rukou. Jména ani fotky vás dvou ale na webu nejsou a u textu o společnosti je ilustrační fotka muže, který podepisuje papíry. Kdo si objednává plot na desítky let, chce vědět, kdo k němu přijede. Pár fotek z dílny a z montáže tu udělá víc než text.",
+            "tone": "opportunity",
+            "title": "Lidé za firmou chybí, místo nich fotka z fotobanky",
+            "priority": "important"
+        },
+        {
+            "body": "Sídlo máte v Hradci Králové. Na stránce Reference jsou čtyři realizace: Kolín, Nymburk, Praha a Březina v Jihomoravském kraji. Stránka Kontakty má v názvu „Hliníkové oplocení Pardubice“. Web nikde neříká, kam na montáž jezdíte. Zákazník z Hradce nepozná, že jste kousek od něj, a zákazník z Brna neví, jestli k němu vůbec přijedete.",
+            "tone": "problem",
+            "title": "Není jasné, kde plot postavíte",
+            "priority": "important"
+        },
+        {
+            "body": "U realizací máte hezky popsané zadání, motiv, barvu i typ brány. Chybí ale jediná věta od zákazníka. Hodnocení na webu nenajdete nikde. Dvě tři věty od majitele domu se jménem a obcí, u každé realizace a na úvodní stránce, jsou pro nového zákazníka nejsilnější důkaz.",
+            "tone": "opportunity",
+            "title": "Žádné hodnocení od zákazníků",
+            "priority": "important"
+        },
+        {
+            "body": "Garantované dodání do šesti týdnů, vlastní CNC laser, svařování a lakování, 18 motivů ve třech typech plotů a vlastní fotky z reálných zakázek. Na tom se dá stavět. Jen to dnes zabírá tři krátké odstavce pod hlavním obrázkem a na stránce Reference jsou realizace jen čtyři.",
+            "tone": "strength",
+            "title": "Dodání do 6 týdnů a skutečné fotky realizací",
+            "priority": "important"
+        },
+        {
+            "body": "Na mobilu první obrazovka nabízí jen Kalkulaci ceny. Telefon je schovaný v menu a pak až úplně dole na stránce. Kdo stojí před domem a chce se rychle zeptat, musí ho hledat. Tlačítko Zavolat přímo pod nadpisem to vyřeší.",
+            "tone": "problem",
+            "title": "Na mobilu je telefon schovaný v menu",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co může přivést poptávky nejdřív. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Krátká poptávka na úvodní stránce vedle dnešní kalkulace, zmenšené fotky v referencích a u motivů, tlačítko Zavolat na mobilu. Web je napsaný v PHP a Bootstrapu, takže to jde upravit přímo, bez přechodu na jiný systém a bez výpadku.",
+            "title": "Opravit poptávku a rychlost webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Od vás potřebujeme jen čísla: od kolika korun za metr vychází každý typ plotu a kam na montáž jezdíte. Doplníme to k plotům na úvodní stránce i na podstránky, s poznámkou, že přesná cena přijde po konzultaci.",
+            "title": "Orientační ceny a oblast, kde stavíte"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Jedno dopoledne v dílně a na montáži. Fotky vás dvou, řezání motivu na laseru a hotový plot se zákazníkem. K tomu krátký text o tom, kdo jste, místo dnešní fotky z fotobanky.",
+            "title": "Fotky a texty, které ukážou lidi za YXA"
+        },
+        {
+            "who": "Tom",
+            "body": "Víc realizací, u každé místo, motiv, barva a věta od zákazníka. Filtr podle typu plotu a kraje, ať si každý najde něco blízko sebe. Pomůžeme i s tím, jak hodnocení od zákazníků snadno sbírat.",
+            "title": "Reference, které prodávají"
+        },
+        {
+            "who": "Tom",
+            "body": "Nová homepage podle návrhu níž: poptávka nahoře, typy plotů s cenou, reference, postup a vy dva. Když se ukáže, že to funguje, převedeme do stejného stylu i podstránky.",
+            "title": "Nová homepage a postupně celý web"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, aby se vám ozvalo víc lidí z těch, kdo už na web chodí. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Krátká poptávka, zmenšené fotky, tlačítko Zavolat na mobilu.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Rychlé opravy webu"
+        },
+        {
+            "body": "Podle čísel od vás. Na úvodní stránku i k jednotlivým typům plotů.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Orientační ceny a oblast působnosti"
+        },
+        {
+            "body": "Vy dva, dílna, montáž a hotové ploty u zákazníků.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Focení v dílně a na montáži"
+        },
+        {
+            "body": "Podle návrhu, s novými fotkami a prvními hodnoceními.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Nová homepage"
+        },
+        {
+            "body": "Podstránky typů plotů, nové reference a filtr podle kraje. Ať je web hotový dřív, než lidé začnou plánovat stavbu na jaro.",
+            "when": "Přes zimu",
+            "later": true,
+            "title": "Reference a podstránky v novém stylu"
+        },
+        {
+            "body": "Každá nová realizace na web s fotkami a větou od zákazníka.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Doplňování realizací"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a textů, abyste viděli směr dřív, než cokoliv zaplatíte. Krátká poptávka hned nahoře, orientační cena u každého typu plotu, reference s místem a barvou, postup od poptávky po montáž. Místa pro ceny, vaše fotky a hodnocení zákazníků jsou zatím prázdná, ta doplníme s vámi. Finální podobu doladíme společně.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/yxa-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage, která sbírá poptávky",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage webu YXA",
+            "placement": "after_findings",
+            "link_label": null
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co může přivést víc poptávek hned: jednodušší poptávka, rychlé reference a orientační cena. Větší změny vzhledu stavíme až na tom, na co lidé na webu opravdu reagují.",
+            "title": "Nejdřív poptávky, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má buď přivést poptávku, nebo pomoct zákazníkovi rozhodnout se pro vás. Web jen pro hezčí vzhled stavět nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Plot na desítky let ale prodávají skutečné fotky vašich realizací a vás dvou, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

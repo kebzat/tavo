@@ -1,0 +1,239 @@
+{
+    "company_name": "Vivien Cosmetics",
+    "slug": "vivien-cosmetics",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop jako zákaznice, na počítači i v mobilu, od úvodní stránky přes kategorie a detail produktu až po košík. V bodech jsme sepsali, co bychom na webu upravili ještě před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Vivien za deset let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Fialová hlavička, dlouhé menu vlevo a uprostřed Akční středeční nabídka. U bezplatné linky byly fotky dvou žen, které objednávky vyřizovaly. Na první pohled bylo vidět, že za obchodem jsou lidé.",
+            "image": "spoluprace/vivien-cosmetics-web-2016.jpg",
+            "label": "2016",
+            "title": "Kdysi",
+            "image_alt": "E-shop Vivien Cosmetics v roce 2016"
+        },
+        {
+            "body": "Čistší Shoptet, bannery s modelkami a pásy produktů se šipkami. Lidé z vašeho týmu z úvodní stránky zmizeli a menu v říjnu pořád začíná Opalováním.",
+            "image": "spoluprace/vivien-cosmetics-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Vivien Cosmetics"
+        },
+        {
+            "body": "Vánoční dárky nahoře, rozcestník podle toho, co zákaznici trápí, vlastní parfémy se vzorkem za 11 Kč a Monika s prodejnou v Hradci Králové. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/vivien-cosmetics-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Vivien Cosmetics"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákaznice. Do čísel e-shopu jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Menu začíná Opalováním, nejnovější článek na blogu je o SPF a mezi novinkami je mléko do solária. O Vánocích na úvodní stránce není nic. Přitom máte hotové dárkové sady rozdělené podle ceny do 200, 400 i 700 Kč, jen se k nim zákaznice musí proklikat sama. Kdo teď přijde vybírat dárek, měl by ho vidět hned nahoře.",
+            "tone": "problem",
+            "title": "V říjnu vítáte zákaznice opalováním, Vánoce nikde",
+            "priority": "urgent"
+        },
+        {
+            "body": "Úvodní stránka jsou dva pásy produktů a menu je řazené podle druhu výrobku a složení: hadí jed, kozí mléko, argan. Zákaznice ale nepřemýšlí „chci hadí jed“, hledá něco na suchou pleť nebo na bolavá záda. Kolečka Klouby a svaly nebo Lehký krok jsou dobrý začátek, jenže vedou na výsledky vyhledávání. U kloubů a svalů se tam vedle masážních gelů objeví ricinový olej na růst vlasů a řas i pánská dárková kazeta.",
+            "tone": "problem",
+            "title": "Web prodává krémy, zákaznice hledá řešení",
+            "priority": "urgent"
+        },
+        {
+            "body": "U produktů jsou jen fotky obalu na bílém pozadí, v bannerech modelky. Jediná skutečná fotka lidí je prodejna na stránce O nás. U kosmetiky zákaznice chce vidět, jak krém vypadá v koupelně a v ruce někoho, jako je ona. Tohle jí dá jistotu víc než popis složení.",
+            "tone": "problem",
+            "title": "Nikde nejsou skutečné zákaznice ani produkty při použití",
+            "priority": "important"
+        },
+        {
+            "body": "Monika, obchod od roku 2001, vlastní české parfémy a kamenná prodejna na Třídě Edvarda Beneše. To je důvod, proč nakoupit právě u vás. Najít se to dá jen na stránce O nás a odkaz na ni v patičce funguje jen z úvodní stránky. Z kategorií a produktů vede na „Stránka neexistuje“ (ověřeno 1. 10. 2026 z kategorie Pleťová séra).",
+            "tone": "opportunity",
+            "title": "Váš příběh a prodejna jsou schované a odkaz na ně nefunguje",
+            "priority": "important"
+        },
+        {
+            "body": "Že od 500 Kč posíláte zdarma, se zákaznice dozví až po vložení zboží do košíku. Na úvodní stránce to není a stránka Doprava a platba uvádí jen ceny dopravců. Přitom u krémů za 100 až 300 Kč je to přesně ten důvod, proč přihodit druhý kus.",
+            "tone": "opportunity",
+            "title": "Doprava zdarma od 500 Kč je vidět až v košíku",
+            "priority": "important"
+        },
+        {
+            "body": "V titulku webu stojí „České parfémy a kosmetika online“, na úvodní stránce ale žádný parfém není. Máte vlastní vůně po 499 a 649 Kč, verze do kabelky za 175 Kč a vzorky za 11 Kč. Vůni se online kupuje těžko a vzorek ten strach řeší. A parfém je před Vánoci klasický dárek.",
+            "tone": "opportunity",
+            "title": "Vlastní parfémy nemají na úvodní stránce místo",
+            "priority": "important"
+        },
+        {
+            "body": "Na telefonu jsou nahoře tři bannery pod sebou a sedm koleček s kategoriemi. První produkt se objeví až po necelých dvou obrazovkách. Hodně lidí dnes nakupuje z mobilu a kdo hned nevidí, co u vás koupí, často odejde.",
+            "tone": "problem",
+            "title": "Na mobilu je první produkt až po dvou obrazovkách",
+            "priority": "later"
+        },
+        {
+            "body": "Hodnocení Ověřeno zákazníky na Heurece máte přímo na úvodní stránce, i s posledními recenzemi. A po vložení do košíku zákaznice vidí, kolik jí chybí do dopravy zdarma, a pod tím, co si k tomu ostatní koupili. Tohle spousta e-shopů nemá a stojí za to to ukázat víc.",
+            "tone": "strength",
+            "title": "98 % spokojených od 496 zákazníků a košík, který funguje",
+            "priority": "important"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Vánoční dárky podle rozpočtu místo opalování, doprava zdarma od 500 Kč a hodnocení 98 % do lišty nahoru, opravený odkaz na O nás a na mobilu produkty výš. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Místo výsledků vyhledávání vlastní stránky pro nejčastější potíže: suchá pleť, vrásky, bolavé klouby, popraskané ruce, slabé vlasy. Na každé pár vybraných produktů, krátce co pomáhá a v jakém pořadí to používat. Na Shoptetu to jde přes kategorie, bez zásahu do sortimentu.",
+            "title": "Rozcestník podle toho, co zákaznici trápí"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Jedno focení v prodejně v Hradci Králové: produkty v koupelně a v rukou, Monika a tým při balení, pár zákaznic se souhlasem. K tomu jednoduchý způsob, jak sbírat fotky od zákaznic k hodnocení. Fotky pak použijeme na úvodní stránce, u produktů i v rozcestníku.",
+            "title": "Skutečné fotky z prodejny a od zákaznic"
+        },
+        {
+            "who": "Tom",
+            "body": "Sekce s vašimi vlastními parfémy na úvodní stránce, u každé vůně odkaz na vzorek za 11 Kč a parfémové sady mezi vánočními dárky. Ať je vidět, co u vás koupí a jinde ne.",
+            "title": "Výloha pro vlastní české parfémy"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Třeba hotové pleťové rutiny ze séra a krému, které se vloží do košíku jedním kliknutím.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Vánoční dárky nahoře, lišta s dopravou zdarma a hodnocením, opravený odkaz O nás, produkty na mobilu výš.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Vánoční úvodní stránka"
+        },
+        {
+            "body": "Stránky pro nejčastější potíže místo výsledků vyhledávání, s vybranými produkty a krátkou radou.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Rozcestník Co vás trápí"
+        },
+        {
+            "body": "Produkty v koupelně, tým při balení, zákaznice se souhlasem. Stačí jedno dopoledne.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Focení v prodejně v Hradci Králové"
+        },
+        {
+            "body": "Vlastní parfémy se vzorky, příběh Moniky a prodejna na úvodní stránce. Nové fotky na hlavní místa.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Parfémy a příběh na úvodní stránce"
+        },
+        {
+            "body": "Hotové rutiny ze séra a krému, sběr fotek od zákaznic k hodnocení, fotky u produktů.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Rutiny a fotky od zákaznic"
+        },
+        {
+            "body": "Podle toho, co se prodává, upravujeme rozcestník i úvodní stránku.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Ladění webu podle dat"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich produktů a fotky prodejny, abyste viděli směr dřív, než cokoliv zaplatíte. Vánoční dárky nahoře, rozcestník Co vás trápí s konkrétními produkty, večerní péče ve dvou krocích, vlastní parfémy se vzorkem a Monika s prodejnou v Hradci. Místa pro fotky zákaznic a produktů v koupelně jsou zatím prázdná, ty nafotíme s vámi. Finální podobu doladíme podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/vivien-cosmetics-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Vivien Cosmetics",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co u vás chybí, v pořadí, jak jimi prochází zákaznice: od lišty nahoře přes detail produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás doprava zdarma od 500 Kč, 98 % spokojených na Heurece a před Vánoci poslední termín, kdy balíček dorazí pod stromeček.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Krátké video jako první položka v galerii. U séra nebo masážního gelu stačí pár vteřin: jak vypadá textura, kolik ho nabrat, jak ho vklepat. Tohle fotka obalu na bílém pozadí neukáže.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Detail produktu na Venira.cz s videem jako první položkou galerie",
+                    "video_url": null
+                },
+                {
+                    "body": "Popisy máte dlouhé a poctivé, se složením i postupem. Chybí v nich fotky při použití, pro koho produkt je a shrnutí v pár bodech nahoře. Takhle zákaznice za deset vteřin pozná, jestli je to krém pro ni.",
+                    "image": "spoluprace/ukazka-popis-produktu.jpg",
+                    "title": "Popis, který prodává: Alza.cz",
+                    "image_alt": "Porovnání běžného a prémiového popisu produktu na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "U ceny máte jen Skladem. Věta „U vás doma ve čtvrtek“ nebo „Vyzvednete na prodejně v Hradci Králové“ uklidní hlavně před Vánoci, kdy každý počítá dny.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Kdy to budu mít doma: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Lištu do dopravy zdarma už v košíku máte. Další krok je dárek podle hodnoty objednávky, třeba vzorek parfému nebo sůl do koupele, a ukazatel, kolik zbývá dokoupit.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: vánoční dárky, doprava zdarma na očích a rozcestník podle potíží. Větší změny vzhledu stavíme na datech ze sezony, ať vycházejí z toho, co vaše zákaznice opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má jasný důvod: buď pomůže zákaznici rychleji najít, co potřebuje, nebo jí dá důvod nakoupit právě u vás.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U kosmetiky ale prodávají skutečné fotky, skutečné zákaznice a skutečná prodejna, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

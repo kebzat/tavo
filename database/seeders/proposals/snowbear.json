@@ -1,0 +1,226 @@
+{
+    "company_name": "Snowbear",
+    "slug": "snowbear",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš web jako zákazník, na počítači i v mobilu: úvodní stránku, půjčovnu, servis, test centrum Lusti, e-shop i košík. Sepsali jsme, co bychom s vámi upravili hned na začátku sezony a co přinese víc až časem.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Web Snowbearu za deset let. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Modrý web s medvědem a čtyřmi pobočkami v rohu: Hradec, Olešnice, Sedloňov a Bartošovice. Uprostřed servis na strojích Montana a tři oranžová tlačítka Servis, Půjčovna, Školička.",
+            "image": "spoluprace/snowbear-web-2016.jpg",
+            "label": "2016",
+            "title": "Kdysi",
+            "image_alt": "Web Snowbear v roce 2016"
+        },
+        {
+            "body": "Moderní Shoptet s novým medvědem, skutečnými fotkami z Medvědova hřiště a přehledem všech služeb. Objednat se ale dá jen zboží, na půjčovnu, servis i školu se pořád chodí nebo volá.",
+            "image": "spoluprace/snowbear-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage webu Snowbear"
+        },
+        {
+            "body": "Celosezónní půjčovna nahoře s rezervací online, čitelný ceník, servis a test centrum Lusti vedle sebe a dárkové poukazy na Vánoce. Na Shoptetu, bez migrace.",
+            "image": "spoluprace/snowbear-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage webu Snowbear"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Koukáme zvenku, jako zákazník. Do čísel jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Od 29. září půjčujete komplety na celou zimu a tohle je teď to nejdůležitější, co máte. Na úvodní stránce je to až třetí banner v posuvníku, a ten je z roku 2019 s cenou od 1 690 Kč. V aktuálním ceníku přitom začínáte na 1 590 Kč. Rodiče řeší lyže pro děti právě teď, v říjnu a listopadu.",
+            "tone": "problem",
+            "title": "Celosezónní půjčovna je schovaná ve starém banneru",
+            "priority": "urgent"
+        },
+        {
+            "body": "Půjčit komplet na sezonu, objednat servis nebo hodinu v lyžařské škole jde jen osobně nebo po telefonu. Formulář mají jen test centra. Kdo večer doma řeší lyže pro děti, nemá kam kliknout, a ráno už to nemusí stihnout. Stačí jednoduchá rezervace: komplet, výška, velikost boty, termín vyzvednutí. Platit se u vás dál může na místě.",
+            "tone": "opportunity",
+            "title": "Služby si nejde zarezervovat online",
+            "priority": "urgent"
+        },
+        {
+            "body": "Ceník půjčovny, celosezónní půjčovny i servisu je vložený jako obrázek. Na telefonu je text v tabulkách tak malý, že se bez zvětšování nedá přečíst, a Google z obrázku ceny nevyčte. Přitom „kolik stojí půjčení lyží v Hradci“ je přesně to, co lidi hledají.",
+            "tone": "problem",
+            "title": "Ceníky jsou obrázky, na mobilu nečitelné",
+            "priority": "important"
+        },
+        {
+            "body": "V říjnu na úvodní stránce v Akčním zboží svítí spirálový zámek na kolo, věneček ložiska za 5 Kč nebo matice za 3 Kč. U lyží Lusti MP 74 za 13 690 Kč web v „Zákazníci také nakoupili“ nabízí brzdovou gumičku, rohy na řídítka a zvonek ve tvaru krávy. K lyžím přitom patří hůlky, brýle, helma a seřízení vázání.",
+            "tone": "problem",
+            "title": "K lyžím web nabízí zvonek na kolo",
+            "priority": "important"
+        },
+        {
+            "body": "Na webu nejde koupit poukaz na servis, lyžařskou školu, Medvědovo hřiště ani na nákup (vyhledávání „poukaz“ nic nenajde). Zážitky a služby jsou přitom přesně to, co se pod stromeček kupuje na poslední chvíli. Vstup na Medvědovo hřiště už online prodáváte, takže zákazníci na to jsou zvyklí.",
+            "tone": "opportunity",
+            "title": "Chybí dárkové poukazy na Vánoce",
+            "priority": "important"
+        },
+        {
+            "body": "Stránka test centra je nejlepší na celém webu: jasný nadpis, modely s délkami, ceník a formulář. Když si pak lyže koupíte, odečtete až dva dny půjčovného. Jenže u samotných lyží Lusti v e-shopu o test centru není ani slovo. Právě tam se lidé rozhodují, jestli dát 13 tisíc za lyže, které nevyzkoušeli.",
+            "tone": "opportunity",
+            "title": "Test centrum Lusti není vidět u lyží Lusti",
+            "priority": "important"
+        },
+        {
+            "body": "Skutečné fotky dětí na Medvědově hřišti, prodejna na Pospíšilovce, servis Montana, patnáct let v Hradci a otevírací doba s ikonami otevřeno a zavřeno. V košíku lišta, kolik zbývá do dopravy zdarma. A 4,8 z 5 hvězdiček, i když zatím jen od 30 zákazníků. Tohle je dobrý základ, na kterém se dá stavět.",
+            "tone": "strength",
+            "title": "Skuteční lidé a skutečná prodejna",
+            "priority": "important"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit ještě v téhle sezoně. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Celosezónní půjčovna nahoru s aktuální cenou, ceníky jako normální text a tabulky, zimní zboží místo cyklodílů, u lyží Lusti odkaz na test centrum a opravený titulek webu, kde teď stojí „Vše po lyžování“. Na Shoptetu, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Formulář pro celosezónní půjčovnu a servis: co, pro koho, jaké velikosti, kdy. Vám přijde e-mail, zákazníkovi potvrzení. Platba zůstane na místě, jak jste zvyklí. Do Shoptetu to vložíme jako vlastní formulář, na školu se pak dá použít stejný.",
+            "title": "Rezervace půjčovny a servisu online"
+        },
+        {
+            "who": "Tom",
+            "body": "Poukazy na servis, lyžařskou školu, Medvědovo hřiště a na nákup v e-shopu, jako běžné produkty s PDF, které přijde e-mailem. Hotové do poloviny listopadu, ať se stihnou vánoční nákupy.",
+            "title": "Dárkové poukazy do Vánoc"
+        },
+        {
+            "who": "Tom",
+            "body": "K lyžím hůlky, brýle a seřízení vázání, k botám vložky, ke snowboardu vázání. Cyklodíly v zimě stranou a naopak. Na Shoptetu se to nastaví v souvisejících produktech a v pravidlech pro výpisy.",
+            "title": "Doporučené zboží podle sezony"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme, co se přes web rezervovalo a prodávalo, a podle toho ho upravujeme dál. Třeba sběr hodnocení po vrácení půjčeného vybavení, ať těch 30 hodnocení odpovídá patnácti letům.",
+            "title": "Rozvoj webu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat na začátku sezony. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Celosezónní půjčovna nahoře, textové ceníky, zimní zboží na úvodní stránce, test centrum u lyží Lusti.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Úvodní stránka na zimu"
+        },
+        {
+            "body": "Formulář pro celosezónní půjčovnu, potom servis.",
+            "when": "2. týden",
+            "later": false,
+            "title": "Rezervace online"
+        },
+        {
+            "body": "Servis, škola, hřiště a nákup. S PDF poukazem e-mailem.",
+            "when": "3. týden",
+            "later": false,
+            "title": "Dárkové poukazy"
+        },
+        {
+            "body": "Doporučené zboží k lyžím, botám a snowboardům místo cyklodílů.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Doporučené produkty podle sezony"
+        },
+        {
+            "body": "Rezervace i do lyžařské školy, sběr hodnocení po sezoně.",
+            "when": "Po sezoně",
+            "later": true,
+            "title": "Škola a hodnocení"
+        },
+        {
+            "body": "V létě tábory a kola, v zimě lyže. Úvodní stránka podle roční doby.",
+            "when": "Průběžně",
+            "later": true,
+            "title": "Web podle sezony"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek, ceníků a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Celosezónní půjčovna nahoře s rezervací, ceník jako tabulka, servis a test centrum Lusti vedle sebe, novinky na sezonu a dárkové poukazy. Finální podobu doladíme spolu podle toho, co Shoptet umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/snowbear-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage na začátku sezony",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage webu Snowbear",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co u vás chybí, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí. U vás teď „Lyže na celou zimu od 1 590 Kč, vyzvednutí do 2. 1.“, před Vánoci poukazy a v zimě stav Medvědova hřiště.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Blok se zbožím, které se kupuje spolu, s tlačítkem do košíku u každé položky. K lyžím hůlky, brýle a seřízení vázání místo zvonku na kolo.",
+                    "image": "spoluprace/ukazka-cross-sell-alza.jpg",
+                    "title": "Nejčastěji kupováno společně: Alza.cz",
+                    "image_alt": "Blok Nejčastěji zakoupeno společně na Alza.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "U vás se po přidání do košíku jen změní částka v rohu. Vysouvací košík ukáže, co v něm je, kolik zbývá do dopravy zdarma a co se k tomu hodí.",
+                    "image": "spoluprace/ukazka-kosik-pompo.jpg",
+                    "title": "Vysouvací košík: Pompo.cz",
+                    "image_alt": "Vysouvací košík na Pompo.cz s doporučenými produkty a lištou do dopravy zdarma",
+                    "video_url": null
+                },
+                {
+                    "body": "Dárek podle hodnoty objednávky a ukazatel, kolik zbývá dokoupit. U vás třeba vosk nebo mazání lyží zdarma k nákupu nad určitou částku.",
+                    "image": "spoluprace/ukazka-darek-k-objednavce-venira.jpg",
+                    "title": "Dárek k objednávce: Venira.cz",
+                    "image_alt": "Nabídka dárků k objednávce s ukazatelem, kolik zbývá dokoupit, na Venira.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit ještě letos: rezervace půjčovny a servisu online, poukazy na Vánoce a správné zboží k lyžím. Větší změny vzhledu stavíme na datech ze sezony.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Každá úprava má jasný úkol: ušetřit vám telefon, nebo přivést zákazníka do prodejny či do košíku.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. Fotky dětí z Medvědova hřiště a z vašeho servisu ale žádná AI nenahradí, a vy je máte.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}

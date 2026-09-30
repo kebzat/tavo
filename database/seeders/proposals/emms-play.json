@@ -1,0 +1,224 @@
+{
+    "company_name": "Emm's play",
+    "slug": "emms-play",
+    "title": "V čem vám můžeme pomoct?",
+    "intro": "Prošli jsme váš e-shop na počítači i na mobilu, od úvodní stránky přes kategorie a produkty až po košík. V bodech najdete, co opravit hned, co stihnout před Vánoci a co přinese víc až dlouhodobě.",
+    "prepared_at": "2026-10-01",
+    "highlights": [
+        {
+            "label": "Web",
+            "value": "3 z 5"
+        },
+        {
+            "label": "Sociální sítě",
+            "value": null
+        },
+        {
+            "label": "Výkonnostní marketing",
+            "value": null
+        }
+    ],
+    "timeline_intro": "Starší podoby webu se v archivu nedochovaly tak, aby se daly ukázat, takže jen dnešek a návrh. Po kliknutí na obrázek se otevře celý.",
+    "timeline": [
+        {
+            "body": "Horní lišta i první banner nabízí chodítko MODU za 2 399 Kč „jen do 30. 9. 2026“. Pod tím kategorie, novinky do školky a nejprodávanější produkty.",
+            "image": "spoluprace/emms-play-web-2026.jpg",
+            "label": "2026",
+            "title": "Dnes",
+            "image_alt": "Dnešní homepage e-shopu Emm's play"
+        },
+        {
+            "body": "Vánoce nahoře, vaše vlastní smyslové tuby a senzorický materiál, dárky podle věku, konkrétní výhody v liště a Simona s příběhem. Na WooCommerce, bez migrace.",
+            "image": "spoluprace/emms-play-navrh-homepage.jpg",
+            "label": "Návrh",
+            "title": "S námi",
+            "image_alt": "Návrh nové homepage e-shopu Emm's play"
+        }
+    ],
+    "findings_title": "Stručné shrnutí",
+    "findings_intro": "Díváme se zvenku, jako zákazník. Do čísel e-shopu ani reklamních účtů jsme zatím neviděli, takže část z toho jsou hypotézy, které si spolu ověříme.",
+    "findings": [
+        {
+            "body": "Horní lišta i první banner dnes, 1. 10., pořád hlásí „Dětské chodítko MODU 3v1 nyní o 1 000 Kč levnější! Jen do 30. 9. 2026“ a cenu 2 399 Kč. Na stránce produktu je ale už 3 399 Kč. Kdo klikne kvůli slevě, uvidí o tisíc víc a odejde s pocitem, že ho web napálil.",
+            "tone": "problem",
+            "title": "Akce na MODU skončila včera, web ji pořád nabízí",
+            "priority": "urgent"
+        },
+        {
+            "body": "Na webu není vánoční kategorie, banner ani položka v menu. Úvodní stránka pořád ukazuje výběr „Připraveni do školky i školy“, blok s e-bookem nabízí letní aktivity a ke startovací sadě PlayTRAY web doporučuje Senzorický materiál JARO. Přitom máte vlastní zimní výrobky, třeba Smyslovou tubu Zimní mlsání nebo Senzorický materiál ZIMA.",
+            "tone": "opportunity",
+            "title": "Vánoce na webu zatím nejsou",
+            "priority": "urgent"
+        },
+        {
+            "body": "U produktů jsou jen záložky Popis a Další informace a hodnocení obchodu jsme na webu nenašli. U mladšího e-shopu je to to první, co si nový zákazník ověřuje. A školky, které nakupují na fakturu, chtějí vědět, že nakupují u prověřeného obchodu.",
+            "tone": "problem",
+            "title": "Nikde nejsou vidět hodnocení zákazníků",
+            "priority": "important"
+        },
+        {
+            "body": "Kategorie Smyslové hraní má 817 produktů po dvanácti na stránce, tedy 69 stránek, a nejde filtrovat podle ceny, věku ani značky. Na první stránce jsou i tři nedostupné kryty light panelů. Na stránce O nás přitom píšete, že raději nabídnete menší výběr, za kterým si stojíte. V kategoriích to tak zatím nepůsobí.",
+            "tone": "problem",
+            "title": "V kategoriích se špatně vybírá",
+            "priority": "important"
+        },
+        {
+            "body": "Výhody na úvodní stránce zní obecně: osobní přístup, poradíme, pečlivě balíme, certifikace. Ty konkrétní máte jinde: doprava zdarma od 1 500 Kč, objednávky do 10:00 se snažíte odeslat týž den a od 2 400 Kč přidáváte dárek. Zákazník se to dozví až na stránce Dodání zboží nebo v košíku.",
+            "tone": "opportunity",
+            "title": "Nejsilnější výhody jsou schované",
+            "priority": "important"
+        },
+        {
+            "body": "Na stránce O nás je silný příběh: Simona, dcery a začátky s vlastními smyslovými boxy a modelínou. Výrobky značky Emm's play prodáváte dodnes a nikdo jiný je nemá. Na úvodní stránce ale není Simona ani jediný vlastní výrobek.",
+            "tone": "opportunity",
+            "title": "Simona a vlastní výrobky nejsou na úvodní stránce",
+            "priority": "important"
+        },
+        {
+            "body": "PlayTRAY má popis, jaký má málokterý e-shop: pro koho je, k čemu všemu se hodí, z čeho je a jak se myje. K tomu fotky dětí při hraní a nabídka doplňků k přikoupení rovnou u tlačítka. Takhle by měly vypadat všechny nejprodávanější produkty.",
+            "tone": "strength",
+            "title": "Detail produktu je nadprůměrný",
+            "priority": "later"
+        },
+        {
+            "body": "Stránka Pro školy a školky nabízí fakturu se splatností, pomoc s nákupem z dotací a katalog pro MŠ na rok 2026/2027. Vysouvací košík ukáže, kolik zbývá do dopravy zdarma a do dárku. Obojí funguje a stačí na to víc upozornit.",
+            "tone": "strength",
+            "title": "Školky a košík máte vyřešené dobře",
+            "priority": "later"
+        }
+    ],
+    "recommendations_intro": "Seřazené podle toho, co se může projevit na tržbách ještě letos. Věci, které pomáhají spíš dlouhodobě, jsou na konci.",
+    "recommendations": [
+        {
+            "who": "Tom",
+            "body": "Prošlou akci na MODU pryč a bannery s datem nastavené tak, aby samy zmizely. Vánoce do menu a na úvodní stránku, konkrétní výhody do horní lišty a sezónní doporučení u produktů přepnout z jara na zimu. Na WooCommerce, bez migrace a bez výpadku.",
+            "title": "Opravit problémová místa na webu do 14 dní"
+        },
+        {
+            "who": "Tom",
+            "body": "Vánoční kategorie s vašimi zimními výrobky, výběr dárků podle věku (kategorie Miminka až Školáci už máte) a poslední termín objednávky, aby dárek dorazil pod stromeček.",
+            "title": "Vánoce na úvodní stránce"
+        },
+        {
+            "who": "Tom",
+            "body": "Filtr podle ceny, věku a značky, víc produktů na stránku a nedostupné zboží na konec výpisu. Začneme u Smyslového hraní a Hraček pro děti, kde je produktů nejvíc.",
+            "title": "Kategorie, ve kterých se dá vybrat"
+        },
+        {
+            "who": "Tom",
+            "body": "Zapnout hodnocení produktů a obchodu, po nákupu zákazníky o hodnocení požádat a ukázat ho na úvodní stránce, u produktů a na stránce pro školky.",
+            "title": "Začít sbírat a ukazovat hodnocení"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Sekce „Vyrábíme sami“ s fotkami z výroby a Simona s krátkým příběhem na úvodní stránce. Videa z hraní, která už točíte, přidáme do galerií nejprodávanějších produktů.",
+            "title": "Simona a vlastní výrobky na očích"
+        },
+        {
+            "who": "Pavel a Tom",
+            "body": "Po sezoně se podíváme do dat, co fungovalo, a podle toho web upravujeme dál. Když se ukáže, že to má smysl, připravíme celý redesign.",
+            "title": "Rozvoj e-shopu podle vašich priorit"
+        }
+    ],
+    "steps_intro": "Prvních pár týdnů jde o to, co stihne zabrat ještě před Vánoci. Zbytek přijde, až uvidíme první výsledky.",
+    "steps": [
+        {
+            "body": "Prošlá akce pryč, konkrétní výhody v liště, jaro vystřídá zima.",
+            "when": "1. týden",
+            "later": false,
+            "title": "Úklid úvodní stránky"
+        },
+        {
+            "body": "Vánoční kategorie, banner a dárky podle věku.",
+            "when": "1.–2. týden",
+            "later": false,
+            "title": "Vánoční nabídka"
+        },
+        {
+            "body": "Filtry a víc produktů na stránku ve velkých kategoriích.",
+            "when": "2.–3. týden",
+            "later": false,
+            "title": "Kategorie"
+        },
+        {
+            "body": "Hodnocení zapnuté, Simona a vlastní výrobky na úvodní stránce.",
+            "when": "3.–4. týden",
+            "later": false,
+            "title": "Důvěra"
+        },
+        {
+            "body": "Videa v galeriích produktů a další úpravy podle dat ze sezony.",
+            "when": "Po Vánocích",
+            "later": true,
+            "title": "Ladění webu"
+        }
+    ],
+    "examples": [
+        {
+            "body": "Návrh jsme připravili s pomocí AI z vašich fotek a produktů, abyste viděli směr dřív, než cokoliv zaplatíte. Vánoce nahoře, vlastní smyslové tuby a senzorický materiál, dárky podle věku, konkrétní výhody v liště a Simona s příběhem. Místa pro fotky z výroby, Simony s dcerami a hodnocení zákazníků jsou zatím prázdná, ty doplníme s vámi. Finální podobu doladíme podle toho, co šablona umožní.",
+            "kind": "Návrh s pomocí AI",
+            "image": "spoluprace/emms-play-navrh-homepage.jpg",
+            "title": "Takhle by mohla vypadat homepage před Vánoci",
+            "scroll": true,
+            "link_url": null,
+            "image_alt": "Návrh nové homepage e-shopu Emm's play",
+            "placement": "after_findings",
+            "link_label": null
+        },
+        {
+            "body": "Pár příkladů z e-shopů, které to dělají dobře. Vybrali jsme to, co u vás chybí, v pořadí, jak jimi prochází zákazník: od lišty nahoře přes detail produktu po košík. Popisy produktů, doplňky k přikoupení a stránku s dopravou vynecháváme, ty máte dobře. Screenshoty jsou z 30. 9. 2026, po kliknutí se otevřou celé.",
+            "kind": "Inspirace",
+            "image": null,
+            "items": [
+                {
+                    "body": "Tenký pruh nad hlavičkou s tím, co právě platí, a u akce s odpočtem, který po konci sám zmizí. U vás by tam patřila doprava zdarma od 1 500 Kč a odeslání týž den, před Vánoci poslední termín doručení.",
+                    "image": "spoluprace/ukazka-horni-lista-venira.jpg",
+                    "title": "Horní lišta: Venira.cz",
+                    "image_alt": "Horní lišta s odpočtem akce nad hlavičkou e-shopu Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Video jako první položka galerie. Krátká videa z hraní už točíte, v galeriích produktů, které jsme prošli, ale nejsou. U PlayTRAY nebo light panelu ukáže deset vteřin víc než pět fotek.",
+                    "image": "spoluprace/ukazka-video-produktu-venira.jpg",
+                    "title": "Video v galerii produktu: Venira.cz",
+                    "image_alt": "Video jako první položka v galerii produktu na Venira.cz",
+                    "video_url": null
+                },
+                {
+                    "body": "Rovnou u ceny odpovídá na otázku „kdy to budu mít doma“. Odesíláte rychle, u produktu ale stojí jen Skladem. Konkrétní den doručení je před Vánoci silný argument.",
+                    "image": "spoluprace/ukazka-doruceni-sparkys.jpg",
+                    "title": "Stavová lišta: Sparkys.cz",
+                    "image_alt": "Detail produktu na Sparkys.cz s blokem Kdy budu mít zboží doma",
+                    "video_url": null
+                },
+                {
+                    "body": "Vysouvací košík, který kromě lišty do dopravy zdarma nabídne i doplňky. Vy lištu i dárek od 2 400 Kč už máte, chybí jen doporučení. K PlayTRAY se hodí senzorický materiál, k light panelu průsvitné kostky.",
+                    "image": "spoluprace/ukazka-kosik-pompo.jpg",
+                    "title": "Vysouvací košík: Pompo.cz",
+                    "image_alt": "Vysouvací košík s doporučenými produkty a lištou do dopravy zdarma na Pompo.cz",
+                    "video_url": null
+                }
+            ],
+            "title": "Jak to vypadá, když je to zvládnuté",
+            "scroll": false,
+            "link_url": "pro-klienty",
+            "image_alt": null,
+            "placement": "after_principles",
+            "link_label": "Další tipy pro e-shopy"
+        }
+    ],
+    "principles": [
+        {
+            "body": "Začínáme tím, co se může projevit na prodejích ještě letos: prošlá akce pryč, Vánoce na úvodní stránce a výběr v kategoriích. Větší změny vzhledu stavíme na datech ze sezony, ať vycházejí z toho, co vaši zákazníci opravdu kupují.",
+            "title": "Nejdřív tržby, pak hezké věci"
+        },
+        {
+            "body": "Buď podpoří prodej hned, nebo vám posílí pozici na trhu. Obsah jen pro obsah točit nebudeme.",
+            "title": "Každá koruna má úkol"
+        },
+        {
+            "body": "Na návrhy a analýzy ano. U hraček, které Simona testuje s dcerami, ale prodávají skutečné fotky z hraní a z výroby, ne obrázky z AI.",
+            "title": "AI tam, kde pomáhá"
+        }
+    ]
+}
