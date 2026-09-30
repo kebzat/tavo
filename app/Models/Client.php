@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\Ads\PrimaryGoal;
+use App\Models\Ads\AdAccount;
+use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdClientSettings;
+use App\Models\Ads\AdReport;
 use App\Models\Crm\Company;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Client extends Model
 {
@@ -33,9 +39,76 @@ class Client extends Model
         return $this->hasMany(Proposal::class);
     }
 
+    public function adAccounts(): HasMany
+    {
+        return $this->hasMany(AdAccount::class);
+    }
+
+    /** Cíle, rozpočet a paušál u reklam. Založí se s prvním propojeným účtem. */
+    public function adSettings(): HasOne
+    {
+        return $this->hasOne(AdClientSettings::class);
+    }
+
+    public function adAlerts(): HasMany
+    {
+        return $this->hasMany(AdAlert::class);
+    }
+
+    public function adReports(): HasMany
+    {
+        return $this->hasMany(AdReport::class);
+    }
+
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_archived', false);
+    }
+
+    /** Klienti, kterým hlídáme reklamy: aspoň jeden zapnutý reklamní účet. */
+    public function scopeWithAds(Builder $query): Builder
+    {
+        return $query->whereHas('adAccounts', fn (Builder $query) => $query->where('is_active', true)->ads());
+    }
+
+    /**
+     * Zapnuté reklamní účty, bez analytiky. Z nich se sčítá útrata a konverze.
+     *
+     * @return list<int>
+     */
+    public function activeAdAccountIds(): array
+    {
+        return $this->adAccounts
+            ->filter(fn (AdAccount $account): bool => $account->is_active && ! $account->isAnalytics())
+            ->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
+    }
+
+    /**
+     * Zapnuté GA4 property.
+     *
+     * @return list<int>
+     */
+    public function activeAnalyticsAccountIds(): array
+    {
+        return $this->adAccounts
+            ->filter(fn (AdAccount $account): bool => $account->is_active && $account->isAnalytics())
+            ->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
+    }
+
+    public function adGoal(): PrimaryGoal
+    {
+        return $this->adSettings?->primary_goal ?? PrimaryGoal::Purchases;
+    }
+
+    /** Měna prvního aktivního účtu. Klienti s účty v různých měnách jsou výjimka. */
+    public function adCurrency(): string
+    {
+        return $this->adAccounts->first(fn (AdAccount $account): bool => $account->is_active && ! $account->isAnalytics())?->currency ?? 'CZK';
     }
 
     protected function casts(): array

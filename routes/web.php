@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdReportController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
@@ -106,6 +107,9 @@ Route::get('/checklist/{key}/{slug}', [ChecklistController::class, 'category'])-
 
 // Audit klientského webu. Sdílí se stejně jako checklist a oba na sebe odkazují.
 Route::get('/audit/{key}', AuditController::class)->name('audit.show');
+
+// Report reklam pro klienta. Sdílí se jako audit: čitelná adresa, noindex.
+Route::get('/report/{key}', AdReportController::class)->name('ad-report.show');
 
 // Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
 Route::get('/potencialni-spoluprace/{slug}', ProposalController::class)->name('proposal.show');

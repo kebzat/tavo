@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Founder;
 use App\Settings\ContactSettings;
 use App\Settings\SiteSettings;
+use App\Support\Ads\Ai\AdsAdvisor;
+use App\Support\Ads\Ai\ClaudeAdsAdvisor;
+use App\Support\Ads\Ai\NullAdsAdvisor;
 use App\Support\Crm\Ai\ClaudeProspectAi;
 use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
@@ -27,6 +30,15 @@ class AppServiceProvider extends ServiceProvider
                 config('services.anthropic.workspace_id'),
             )
             : new NullProspectAi);
+
+        // Návrh úprav reklam: stejný vypínač jako u CRM.
+        $this->app->bind(AdsAdvisor::class, fn (): AdsAdvisor => config('services.anthropic.enabled') && filled(config('services.anthropic.key'))
+            ? new ClaudeAdsAdvisor(
+                config('services.anthropic.key'),
+                config('services.anthropic.model'),
+                config('services.anthropic.workspace_id'),
+            )
+            : new NullAdsAdvisor);
     }
 
     public function boot(): void

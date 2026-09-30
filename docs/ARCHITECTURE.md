@@ -68,6 +68,7 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/checklist/{key}/{slug}` | `ChecklistController@category` | `checklist/category` |
 | GET | `/audit/{key}` | `AuditController` | `audit/show` |
 | GET | `/potencialni-spoluprace/{slug}` | `ProposalController` | `proposal/show` |
+| GET | `/report/{key}` | `AdReportController` | `ad-report/show` |
 | GET | `/{slug}` | `PageController@show` | `pages/show` |
 
 > Poslední routa chytá volný slug pro statické stránky — **musí zůstat na konci** souboru
@@ -148,6 +149,13 @@ prázdná se nezobrazí. Nadpisy sekcí jsou statické texty `spoluprace.*`.
 Nová stránka vzniká nesdílená, přihlášený správce ji vidí přes Náhled. Otevření
 klientem se počítá a u propojeného klienta zapíše do CRM stejně jako u auditu
 (`App\Models\Concerns\TracksClientViews`).
+
+### Reklamy klientů
+
+Skupina **Reklamy** v panelu nástrojů: denní čísla z reklamních účtů klientů
+(Meta), upozornění s doporučením, co upravit, a týdenní či měsíční reporty
+sdílené odkazem `/report/{slug}`. Klient je stejný model `Client` jako
+u checklistů a auditů. Podrobnosti, přístupy a plánované běhy v [ADS.md](ADS.md).
 
 ### Audity
 

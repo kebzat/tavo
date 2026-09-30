@@ -29,3 +29,33 @@ Schedule::command('crm:discover')
     ->weeklyOn(1, '05:00')
     ->timezone('Europe/Prague')
     ->onOneServer();
+
+// Reklamy klientů: stažení čísel, kontrola a ranní souhrn. Meta mívá včerejšek
+// dopočítaný kolem páté ráno, v šest je stažení bezpečné. Viz docs/ADS.md.
+Schedule::command('ads:sync')
+    ->dailyAt('06:00')
+    ->timezone('Europe/Prague')
+    ->withoutOverlapping(60)
+    ->onOneServer();
+
+Schedule::command('ads:alerts')
+    ->dailyAt('06:40')
+    ->timezone('Europe/Prague')
+    ->onOneServer();
+
+Schedule::command('ads:digest')
+    ->weekdays()
+    ->at('07:15')
+    ->timezone('Europe/Prague')
+    ->onOneServer();
+
+// Koncepty reportů. Neodesílají se, čekají na komentář Pavla.
+Schedule::command('ads:reports weekly')
+    ->weeklyOn(1, '07:30')
+    ->timezone('Europe/Prague')
+    ->onOneServer();
+
+Schedule::command('ads:reports monthly')
+    ->monthlyOn(1, '07:30')
+    ->timezone('Europe/Prague')
+    ->onOneServer();

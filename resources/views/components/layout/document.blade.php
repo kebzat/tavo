@@ -1,6 +1,8 @@
 @props([
     'title' => null,
     'eyebrow' => null,
+    // Věta v patičce. Report reklam má čísla zmrazená, tam „průběžně aktualizujeme“ neplatí.
+    'note' => 'Pracovní dokument. Průběžně ho aktualizujeme, takže se obsah může měnit.',
 ])
 
 {{--
@@ -57,7 +59,7 @@
     <footer class="section-x section-y-sm bg-brick text-cream" data-block-bg="brick">
         <div class="container-tavo flex flex-col gap-4 menu:flex-row menu:items-end menu:justify-between">
             <p class="max-w-[46ch] text-perex text-cream/80">
-                Pracovní dokument. Průběžně ho aktualizujeme, takže se obsah může měnit.
+                {{ $note }}
             </p>
 
             <a href="{{ route('home') }}"
