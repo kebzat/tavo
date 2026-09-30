@@ -30,6 +30,7 @@ class ProposalController extends Controller
         return view('proposal.show', [
             'proposal' => $proposal,
             'tiles' => $proposal->highlightTiles(),
+            'timeline' => $proposal->timelineItems(),
             'findings' => $proposal->findingItems(),
             'recommendations' => $proposal->recommendationItems(),
             'steps' => $proposal->stepGroups(),

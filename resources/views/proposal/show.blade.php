@@ -58,6 +58,72 @@
         </section>
     @endif
 
+    {{-- Kdysi, dnes a s námi: tři podoby webu vedle sebe, poslední zvýrazněná. --}}
+    @if ($timeline)
+        {{-- Spodní odsazení nechává na sekci pod sebou, ať se dvě krémové sekce nesečtou. --}}
+        <section id="kdysi-a-dnes" class="section-x section-y pb-0!">
+            <div class="container-tavo">
+                <div class="max-w-[60ch]">
+                    <h2 data-reveal class="text-h2 font-extrabold tracking-[-.02em]">
+                        {{ text('spoluprace.timeline_title', 'Kdysi, dnes a s námi') }}
+                    </h2>
+                    @if ($proposal->timeline_intro)
+                        <p data-reveal class="mt-5 whitespace-pre-line text-perex text-body">{{ $proposal->timeline_intro }}</p>
+                    @endif
+                </div>
+
+                <ol @class([
+                    'mt-12 grid gap-8 menu:gap-5 loop:gap-8',
+                    'menu:grid-cols-2' => count($timeline) === 2,
+                    'menu:grid-cols-3' => count($timeline) >= 3,
+                ])>
+                    @foreach ($timeline as $stage)
+                        <li data-reveal class="flex flex-col">
+                            <div class="flex items-baseline gap-3">
+                                @if ($stage['label'])
+                                    <span @class([
+                                        'text-sm font-bold tracking-[.14em] uppercase tabular-nums',
+                                        'text-brick' => $loop->last,
+                                        'text-muted' => ! $loop->last,
+                                    ])>{{ $stage['label'] }}</span>
+                                @endif
+                                <h3 class="text-h3-sm font-extrabold tracking-[-.02em] text-ink">{{ $stage['title'] }}</h3>
+                            </div>
+
+                            @if ($stage['image'])
+                                <a href="{{ $stage['full_url'] }}" target="_blank" rel="noopener"
+                                   @class([
+                                       'group mt-5 block overflow-hidden rounded-card border bg-ink-soft transition duration-300 ease-tavo hover:-translate-y-1',
+                                       'border-brick shadow-[0_24px_60px_-24px_rgba(219,75,36,.55)] outline-2 outline-brick' => $loop->last,
+                                       'border-ink/14' => ! $loop->last,
+                                   ])>
+                                    <span aria-hidden="true" class="flex items-center gap-1.5 border-b border-cream/10 px-3.5 py-2.5">
+                                        <span class="size-2 rounded-full bg-cream/25"></span>
+                                        <span class="size-2 rounded-full bg-cream/25"></span>
+                                        <span class="size-2 rounded-full bg-cream/25"></span>
+                                    </span>
+                                    <span class="block aspect-[9/5] overflow-hidden bg-cream">
+                                        <img src="{{ $stage['image']['src'] }}"
+                                             @if ($stage['image']['srcset']) srcset="{{ $stage['image']['srcset'] }}" sizes="(min-width: 861px) 30vw, 88vw" @endif
+                                             alt="{{ $stage['image']['alt'] }}"
+                                             @if ($stage['image']['width']) width="{{ $stage['image']['width'] }}" @endif
+                                             @if ($stage['image']['height']) height="{{ $stage['image']['height'] }}" @endif
+                                             loading="lazy" decoding="async"
+                                             class="h-full w-full object-cover object-top transition-transform duration-500 ease-tavo group-hover:scale-[1.02]">
+                                    </span>
+                                </a>
+                            @endif
+
+                            @if ($stage['body'])
+                                <p class="mt-4 whitespace-pre-line text-perex text-body">{{ $stage['body'] }}</p>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        </section>
+    @endif
+
     {{-- 01 Co jsme objevili --}}
     @if ($findings)
         <section id="zjisteni" class="section-x section-y">

@@ -28,6 +28,7 @@ class ProposalForm
         return $schema->components([
             Tabs::make()->columnSpanFull()->persistTabInQueryString()->tabs([
                 self::basics(),
+                self::timeline(),
                 self::findings(),
                 self::recommendations(),
                 self::steps(),
@@ -103,6 +104,36 @@ class ProposalForm
                         ->addActionLabel('Přidat číslo')
                         ->reorderable(),
                 ]),
+        ]);
+    }
+
+    private static function timeline(): Tab
+    {
+        return Tab::make('Kdysi a dnes')->schema([
+            Textarea::make('timeline_intro')
+                ->label('Perex sekce')
+                ->rows(2),
+
+            Repeater::make('timeline')
+                ->label('Podoby webu')
+                ->helperText('Vedle sebe, zleva doprava. Poslední se zvýrazní, to je návrh s námi. Stačí horní část stránky, na kliknutí se otevře celý obrázek.')
+                ->schema([
+                    TextInput::make('label')->label('Štítek')->placeholder('2016'),
+                    TextInput::make('title')->label('Nadpis')->required()->placeholder('Kdysi'),
+                    Textarea::make('body')->label('Text')->rows(2)->columnSpanFull(),
+                    ImageUpload::file('image')
+                        ->label('Screenshot')
+                        ->directory('spoluprace')
+                        ->columnSpanFull(),
+                    TextInput::make('image_alt')->label('Popisek obrázku (alt)')->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->itemLabel(fn (array $state): ?string => trim(($state['label'] ?? '').' '.($state['title'] ?? '')) ?: null)
+                ->maxItems(3)
+                ->defaultItems(0)
+                ->addActionLabel('Přidat podobu webu')
+                ->reorderable(),
         ]);
     }
 

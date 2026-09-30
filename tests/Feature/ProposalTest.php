@@ -31,6 +31,10 @@ class ProposalTest extends TestCase
             'intro' => 'Prošli jsme web.',
             'prepared_at' => '2026-09-30',
             'highlights' => [['value' => '5 / 5', 'label' => 'na Heurece'], ['value' => '', 'label' => 'prázdná dlaždice']],
+            'timeline' => [
+                ['label' => '2016', 'title' => 'Kdysi', 'body' => 'Zelený web.'],
+                ['label' => 'Návrh', 'title' => 'S námi', 'body' => 'Nový vzhled.'],
+            ],
             'findings' => [
                 ['tone' => 'problem', 'title' => 'Košík ukáže jen poslední kus', 'body' => 'Popis košíku.'],
                 ['tone' => 'strength', 'title' => '', 'body' => 'Řádek bez nadpisu se nezobrazí.'],
@@ -67,6 +71,9 @@ class ProposalTest extends TestCase
             ->assertSeeInOrder([
                 'Co bychom udělali do Vánoc',
                 '5 / 5',
+                'Kdysi, dnes a s námi',
+                'Kdysi',
+                'S námi',
                 'Co jsme objevili',
                 'Problém',
                 'Košík ukáže jen poslední kus',
@@ -86,11 +93,12 @@ class ProposalTest extends TestCase
 
     public function test_prazdna_sekce_se_nezobrazi(): void
     {
-        $this->proposal(['findings' => [], 'principles' => null, 'examples' => []]);
+        $this->proposal(['findings' => [], 'principles' => null, 'examples' => [], 'timeline' => null]);
 
         $this->get('/potencialni-spoluprace/hracky-zkouska')
             ->assertOk()
             ->assertDontSee('Co jsme objevili')
+            ->assertDontSee('Kdysi, dnes a s námi')
             ->assertDontSee('Jak k tomu přistupujeme')
             ->assertSee('Co doporučujeme');
     }
@@ -170,5 +178,6 @@ class ProposalTest extends TestCase
         $this->assertNotNull($proposal);
         $this->assertCount(9, $proposal->findingItems());
         $this->assertNotEmpty($proposal->stepGroups()['later']);
+        $this->assertSame(['Kdysi', 'Dnes', 'S námi'], array_column($proposal->timelineItems(), 'title'));
     }
 }

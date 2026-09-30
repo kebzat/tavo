@@ -79,6 +79,24 @@ class Proposal extends Model
             ->all();
     }
 
+    /**
+     * Kdysi, dnes a s námi. Obrázek je vyřešený na zmenšeniny, `full_url`
+     * vede na originál, ať se dá screenshot otevřít celý.
+     *
+     * @return list<array{label: string, title: string, body: string, image: ?array<string, mixed>, full_url: ?string}>
+     */
+    public function timelineItems(): array
+    {
+        return $this->rows('timeline')
+            ->map(fn (array $row): array => [
+                'label' => (string) ($row['label'] ?? ''),
+                'title' => (string) $row['title'],
+                'body' => (string) ($row['body'] ?? ''),
+                ...$this->image($row),
+            ])
+            ->all();
+    }
+
     /** @return list<array{title: string, body: string, tag: ?array{label: string, class: string}}> */
     public function findingItems(): array
     {
@@ -137,14 +155,12 @@ class Proposal extends Model
 
         foreach ($this->rows('examples') as $row) {
             $placement = array_key_exists($row['placement'] ?? '', $grouped) ? $row['placement'] : 'after_findings';
-            $path = $row['image'] ?? null;
 
             $grouped[$placement][] = [
                 'kind' => (string) ($row['kind'] ?? ''),
                 'title' => (string) $row['title'],
                 'body' => (string) ($row['body'] ?? ''),
-                'image' => filled($path) ? ResponsiveImage::make($path, (string) ($row['image_alt'] ?? '')) : null,
-                'full_url' => filled($path) ? Storage::disk('public')->url($path) : null,
+                ...$this->image($row),
                 'scroll' => (bool) ($row['scroll'] ?? false),
                 'link_url' => filled($row['link_url'] ?? null) ? (string) $row['link_url'] : null,
                 'link_label' => (string) (($row['link_label'] ?? null) ?: 'Otevřít ukázku'),
@@ -163,6 +179,25 @@ class Proposal extends Model
                 'body' => (string) ($row['body'] ?? ''),
             ])
             ->all();
+    }
+
+    /**
+     * Obrázek z řádku repeateru: zmenšeniny pro <img> a odkaz na originál.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array{image: ?array<string, mixed>, full_url: ?string}
+     */
+    private function image(array $row): array
+    {
+        $path = $row['image'] ?? null;
+
+        if (blank($path)) {
+            return ['image' => null, 'full_url' => null];
+        }
+
+        $image = ResponsiveImage::make($path, (string) ($row['image_alt'] ?? ''));
+
+        return ['image' => $image, 'full_url' => $image ? Storage::disk('public')->url($path) : null];
     }
 
     /** Řádky repeateru bez těch, kterým chybí nadpis. */
@@ -187,6 +222,7 @@ class Proposal extends Model
         return [
             'prepared_at' => 'date',
             'highlights' => 'array',
+            'timeline' => 'array',
             'findings' => 'array',
             'recommendations' => 'array',
             'steps' => 'array',
