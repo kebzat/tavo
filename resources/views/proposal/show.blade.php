@@ -58,7 +58,43 @@
         </section>
     @endif
 
-    {{-- Kdysi, dnes a s námi: tři podoby webu vedle sebe, poslední zvýrazněná. --}}
+    {{-- 01 Co jsme objevili --}}
+    @if ($findings)
+        <section id="zjisteni" class="section-x section-y">
+            <div class="container-tavo grid gap-10 menu:grid-cols-[0.8fr_1.2fr] loop:gap-20">
+                <div class="menu:sticky menu:top-8 menu:self-start">
+                    <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">01</p>
+                    <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
+                        {{ text('spoluprace.findings_title', 'Co jsme objevili') }}
+                    </h2>
+                    @if ($proposal->findings_intro)
+                        <p data-reveal class="mt-5 max-w-[46ch] whitespace-pre-line text-perex text-body">{{ $proposal->findings_intro }}</p>
+                    @endif
+                </div>
+
+                <ol class="border-b border-ink/14">
+                    @foreach ($findings as $finding)
+                        <li data-reveal class="border-t border-ink/14 py-7 menu:py-9">
+                            @if ($finding['tag'])
+                                <span class="audit-tag {{ $finding['tag']['class'] }}">{{ $finding['tag']['label'] }}</span>
+                            @endif
+                            <h3 class="mt-3 text-step font-extrabold tracking-[-.01em] text-ink">{{ $finding['title'] }}</h3>
+                            @if ($finding['body'])
+                                <p class="mt-3 max-w-[62ch] whitespace-pre-line text-body-lg text-body">{{ $finding['body'] }}</p>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        </section>
+    @endif
+
+    @foreach ($examples['after_findings'] as $example)
+        <x-proposal.example :example="$example" />
+    @endforeach
+
+    {{-- Kdysi, dnes a s námi: tři podoby webu vedle sebe, poslední zvýrazněná.
+         Stojí za ukázkou návrhu, ať klient nejdřív vidí nový design a pak srovnání. --}}
     @if ($timeline)
         {{-- Spodní odsazení nechává na sekci pod sebou, ať se dvě krémové sekce nesečtou. --}}
         <section id="kdysi-a-dnes" class="section-x section-y pb-0!">
@@ -123,41 +159,6 @@
             </div>
         </section>
     @endif
-
-    {{-- 01 Co jsme objevili --}}
-    @if ($findings)
-        <section id="zjisteni" class="section-x section-y">
-            <div class="container-tavo grid gap-10 menu:grid-cols-[0.8fr_1.2fr] loop:gap-20">
-                <div class="menu:sticky menu:top-8 menu:self-start">
-                    <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">01</p>
-                    <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
-                        {{ text('spoluprace.findings_title', 'Co jsme objevili') }}
-                    </h2>
-                    @if ($proposal->findings_intro)
-                        <p data-reveal class="mt-5 max-w-[46ch] whitespace-pre-line text-perex text-body">{{ $proposal->findings_intro }}</p>
-                    @endif
-                </div>
-
-                <ol class="border-b border-ink/14">
-                    @foreach ($findings as $finding)
-                        <li data-reveal class="border-t border-ink/14 py-7 menu:py-9">
-                            @if ($finding['tag'])
-                                <span class="audit-tag {{ $finding['tag']['class'] }}">{{ $finding['tag']['label'] }}</span>
-                            @endif
-                            <h3 class="mt-3 text-step font-extrabold tracking-[-.01em] text-ink">{{ $finding['title'] }}</h3>
-                            @if ($finding['body'])
-                                <p class="mt-3 max-w-[62ch] whitespace-pre-line text-body-lg text-body">{{ $finding['body'] }}</p>
-                            @endif
-                        </li>
-                    @endforeach
-                </ol>
-            </div>
-        </section>
-    @endif
-
-    @foreach ($examples['after_findings'] as $example)
-        <x-proposal.example :example="$example" />
-    @endforeach
 
     {{-- 02 Co doporučujeme --}}
     @if ($recommendations)

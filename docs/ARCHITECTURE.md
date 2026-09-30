@@ -140,8 +140,8 @@ dál chrání `noindex` a `robots.txt`, ne tajná adresa.
 ### Potenciální spolupráce
 
 Dopadová stránka pro firmu, kterou chceme získat (Checklisty → Potenciální
-spolupráce). Sekce jdou v pořadí kdysi, dnes a s námi (tři screenshoty webu vedle sebe)
-→ co jsme objevili → co doporučujeme → akční kroky → jak přemýšlíme, mezi ně se vkládají ukázky (tmavé pruhy s návrhem webu,
+spolupráce). Sekce jdou v pořadí co jsme objevili → kdysi, dnes a s námi (tři screenshoty
+webu vedle sebe) → co doporučujeme → akční kroky → jak přemýšlíme, mezi ně se vkládají ukázky (tmavé pruhy s návrhem webu,
 fotkami nebo videem). Každá sekce je JSON pole z repeateru na modelu `Proposal`,
 prázdná se nezobrazí. Nadpisy sekcí jsou statické texty `spoluprace.*`.
 
