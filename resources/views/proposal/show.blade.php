@@ -1,6 +1,6 @@
 {{--
     Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
-    Pořadí: co jsme objevili → co doporučujeme → akční kroky → jak přemýšlíme.
+    Pořadí: co jsme objevili → co doporučujeme → akční kroky → jak přemýšlíme → ukázky na konec.
     Mezi sekce se vkládají ukázky (tmavé pruhy), viz x-proposal.example.
     Prázdná sekce se nevykreslí. Data připravuje App\Models\Proposal.
 --}}
@@ -65,7 +65,7 @@
                 <div class="menu:sticky menu:top-8 menu:self-start">
                     <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">01</p>
                     <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
-                        {{ text('spoluprace.findings_title', 'Co jsme objevili') }}
+                        {{ $proposal->findings_title ?: text('spoluprace.findings_title', 'Co jsme objevili') }}
                     </h2>
                     @if ($proposal->findings_intro)
                         <p data-reveal class="mt-5 max-w-[46ch] whitespace-pre-line text-perex text-body">{{ $proposal->findings_intro }}</p>
@@ -258,6 +258,27 @@
         <x-proposal.example :example="$example" />
     @endforeach
 
+    {{-- Zkušenosti z praxe: věty s cihlově vyznačenými čísly. Čtou se jako
+         podklad k tomu, jak přemýšlíme, proto stojí hned před zásadami. --}}
+    @if ($experiences)
+        <section id="zkusenosti" class="section-x section-y">
+            <div class="container-tavo">
+                <h2 data-reveal class="max-w-[22ch] text-h2 font-extrabold tracking-[-.02em]">
+                    {{ text('spoluprace.experiences_title', 'Pár zkušeností z posledních měsíců') }}
+                </h2>
+
+                <ul class="mt-12 grid gap-3 menu:grid-cols-2 menu:gap-5">
+                    @foreach ($experiences as $parts)
+                        <li data-reveal class="flex gap-4 rounded-card border border-ink/14 p-6 menu:gap-5 menu:p-8">
+                            <span class="pt-1 text-sm font-bold text-brick tabular-nums">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                            <p class="text-body-lg text-body">@foreach ($parts as $part)@if ($part['strong'])<strong @class(['font-extrabold text-brick', 'whitespace-nowrap' => $part['nowrap']])>{{ $part['text'] }}</strong>@else{{ $part['text'] }}@endif@endforeach</p>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
+
     @if ($principles)
         <section class="section-x section-y bg-ink text-cream" data-block-bg="ink">
             <div class="container-tavo">
@@ -282,6 +303,11 @@
             </div>
         </section>
     @endif
+
+    {{-- Za tmavými zásadami je ukázka světlá, jinak by se dva tmavé pruhy slily. --}}
+    @foreach ($examples['after_principles'] as $example)
+        <x-proposal.example :example="$example" :light="(bool) $principles" />
+    @endforeach
 
     <x-cta-band
         id="kontakt"

@@ -176,8 +176,62 @@ class ProposalTest extends TestCase
         $proposal = Proposal::firstWhere('slug', 'iq-hracky');
 
         $this->assertNotNull($proposal);
-        $this->assertCount(9, $proposal->findingItems());
+        $this->assertSame('V čem vám můžeme pomoct?', $proposal->title);
+        $this->assertSame('Stručné shrnutí', $proposal->findings_title);
+        $this->assertSame(['3 z 5', '1 z 5', '2 z 5'], array_column($proposal->highlightTiles(), 'value'));
+        $this->assertCount(10, $proposal->findingItems());
+        $this->assertCount(8, $proposal->recommendationItems());
+        $this->assertCount(8, $proposal->experienceItems());
         $this->assertNotEmpty($proposal->stepGroups()['later']);
         $this->assertSame(['Kdysi', 'Dnes', 'S námi'], array_column($proposal->timelineItems(), 'title'));
+
+        $examples = $proposal->examplesByPlacement();
+        $this->assertCount(4, $examples['after_recommendations'][0]['items']);
+        $this->assertSame('video', $examples['after_recommendations'][0]['items_layout']);
+        $this->assertNotEmpty($examples['after_principles']);
+    }
+
+    public function test_migrace_neprepise_co_spravce_upravil(): void
+    {
+        $proposal = Proposal::firstWhere('slug', 'iq-hracky');
+        $proposal->update(['title' => 'Vlastní nadpis', 'findings_title' => null, 'experiences' => null]);
+
+        $migration = require database_path('migrations/2026_09_30_160000_update_iq_hracky_proposal_after_review.php');
+        $migration->up();
+
+        $proposal->refresh();
+        $this->assertSame('Vlastní nadpis', $proposal->title);
+        $this->assertSame('Stručné shrnutí', $proposal->findings_title);
+        $this->assertCount(8, $proposal->experienceItems());
+    }
+
+    public function test_zkusenosti_zvyrazni_cisla(): void
+    {
+        $this->proposal(['experiences' => [
+            ['text' => 'Meta Ads vrátí 3–10 Kč z koruny.', 'emphasis' => ['3–10 Kč']],
+            ['text' => '', 'emphasis' => []],
+        ]]);
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertSee('Pár zkušeností z posledních měsíců')
+            ->assertSee('Meta Ads vrátí <strong class="font-extrabold text-brick whitespace-nowrap">3–10 Kč</strong> z koruny.', false);
+    }
+
+    public function test_video_z_disku_se_nacte_az_po_kliknuti(): void
+    {
+        $this->proposal(['examples' => [[
+            'placement' => 'after_principles',
+            'title' => 'Formát, který funguje',
+            'items' => [
+                ['title' => 'Rozbalování', 'video_url' => 'https://drive.google.com/file/d/1WnBwA_3Lcz8GRLc6iK2htmjU4TNtINR3/view?usp=sharing'],
+                ['title' => 'Bez videa i obrázku', 'video_url' => 'https://example.com/video.mp4'],
+            ],
+        ]]]);
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertSeeInOrder(['Jak k tomu přistupujeme', 'Formát, který funguje', 'Rozbalování'])
+            ->assertSee('https://drive.google.com/thumbnail?id=1WnBwA_3Lcz8GRLc6iK2htmjU4TNtINR3', false)
+            ->assertSee('<template x-if="playing">', false)
+            ->assertDontSee('Bez videa i obrázku');
     }
 }

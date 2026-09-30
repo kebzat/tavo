@@ -28,6 +28,7 @@ class Proposal extends Model
         'after_findings' => 'Za „Co jsme objevili“',
         'after_recommendations' => 'Za „Co doporučujeme“',
         'after_steps' => 'Za „Akční kroky“',
+        'after_principles' => 'Na konec, před výzvu',
     ];
 
     /** Štítek nálezu: popisek a třída z .audit-tag v app.css. */
@@ -164,10 +165,109 @@ class Proposal extends Model
                 'scroll' => (bool) ($row['scroll'] ?? false),
                 'link_url' => filled($row['link_url'] ?? null) ? (string) $row['link_url'] : null,
                 'link_label' => (string) (($row['link_label'] ?? null) ?: 'Otevřít ukázku'),
+                ...$this->exampleItems($row['items'] ?? null),
             ];
         }
 
         return $grouped;
+    }
+
+    /**
+     * Mřížka ukázek pod textem: screenshoty e-shopů, videa z Google Disku.
+     * Položka bez obrázku i bez videa nemá co ukázat, vypadne. `items_layout`
+     * říká šabloně, jestli jde o samá videa na výšku, nebo o screenshoty.
+     *
+     * @return array{items: list<array<string, mixed>>, items_layout: string}
+     */
+    private function exampleItems(mixed $rows): array
+    {
+        $items = collect(is_array($rows) ? $rows : [])
+            ->filter(fn ($row): bool => is_array($row))
+            ->map(fn (array $row): array => [
+                'title' => (string) ($row['title'] ?? ''),
+                'body' => (string) ($row['body'] ?? ''),
+                ...$this->image($row),
+                'video' => self::driveVideo($row['video_url'] ?? null),
+            ])
+            ->filter(fn (array $item): bool => $item['image'] !== null || $item['video'] !== null)
+            ->values();
+
+        $onlyVideos = $items->isNotEmpty() && $items->every(fn (array $item): bool => $item['video'] !== null);
+
+        return ['items' => $items->all(), 'items_layout' => $onlyVideos ? 'video' : 'image'];
+    }
+
+    /**
+     * Video sdílené z Google Disku. Přehrává se v Diskovém přehrávači, takže
+     * cizí videa na web nekopírujeme. Náhled bere Disk, dokud správce nenahraje
+     * vlastní obrázek. Soubor musí být sdílený „kdokoli s odkazem“.
+     *
+     * @return array{embed_url: string, poster_url: string}|null
+     */
+    private static function driveVideo(mixed $url): ?array
+    {
+        if (! is_string($url) || ! str_contains($url, 'drive.google.com')) {
+            return null;
+        }
+
+        if (! preg_match('~/file/d/([\w-]{10,})|[?&]id=([\w-]{10,})~', $url, $match)) {
+            return null;
+        }
+
+        $id = ($match[1] ?? '') ?: $match[2];
+
+        return [
+            'embed_url' => "https://drive.google.com/file/d/{$id}/preview",
+            'poster_url' => "https://drive.google.com/thumbnail?id={$id}&sz=w720",
+        ];
+    }
+
+    /**
+     * Zkušenosti z praxe. Věta zůstává, jak ji správce napsal, jen se rozdělí
+     * na kousky, aby šablona mohla vyznačená místa (čísla) zvýraznit.
+     *
+     * @return list<list<array{text: string, strong: bool, nowrap: bool}>>
+     */
+    public function experienceItems(): array
+    {
+        return collect($this->experiences ?? [])
+            ->filter(fn ($row): bool => is_array($row) && filled($row['text'] ?? null))
+            ->map(fn (array $row): array => self::emphasize((string) $row['text'], (array) ($row['emphasis'] ?? [])))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Rozdělí text na obyčejné a zvýrazněné kousky. Zvýrazní se každý výskyt
+     * zadaných frází, delší fráze mají přednost před kratšími.
+     *
+     * @param  array<int, mixed>  $phrases
+     * @return list<array{text: string, strong: bool, nowrap: bool}>
+     */
+    private static function emphasize(string $text, array $phrases): array
+    {
+        $phrases = collect($phrases)
+            ->filter(fn ($phrase): bool => is_string($phrase) && trim($phrase) !== '')
+            ->map(fn (string $phrase): string => trim($phrase))
+            ->sortByDesc(fn (string $phrase): int => mb_strlen($phrase))
+            ->map(fn (string $phrase): string => preg_quote($phrase, '~'));
+
+        if ($phrases->isEmpty()) {
+            return [['text' => $text, 'strong' => false, 'nowrap' => false]];
+        }
+
+        $parts = preg_split('~('.$phrases->implode('|').')~u', $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$text];
+
+        return collect($parts)
+            ->map(fn (string $part, int $index): array => [
+                'text' => $part,
+                'strong' => $index % 2 === 1,
+                // Krátké číslo („3–10 Kč“) se nemá lámat na pomlčce ani mezeře.
+                'nowrap' => $index % 2 === 1 && mb_strlen($part) <= 16,
+            ])
+            ->reject(fn (array $part): bool => $part['text'] === '')
+            ->values()
+            ->all();
     }
 
     /** @return list<array{title: string, body: string}> */
@@ -227,6 +327,7 @@ class Proposal extends Model
             'recommendations' => 'array',
             'steps' => 'array',
             'examples' => 'array',
+            'experiences' => 'array',
             'principles' => 'array',
             'is_public' => 'boolean',
             'first_viewed_at' => 'datetime',

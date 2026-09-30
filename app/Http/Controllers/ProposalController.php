@@ -35,6 +35,7 @@ class ProposalController extends Controller
             'recommendations' => $proposal->recommendationItems(),
             'steps' => $proposal->stepGroups(),
             'examples' => $proposal->examplesByPlacement(),
+            'experiences' => $proposal->experienceItems(),
             'principles' => $proposal->principleItems(),
             'links' => $this->auditLinks($proposal),
         ]);

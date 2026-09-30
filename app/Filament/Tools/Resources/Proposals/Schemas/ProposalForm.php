@@ -7,6 +7,7 @@ use App\Models\Proposal;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -33,6 +34,7 @@ class ProposalForm
                 self::recommendations(),
                 self::steps(),
                 self::examples(),
+                self::experiences(),
                 self::principles(),
                 self::sharing(),
             ]),
@@ -140,6 +142,11 @@ class ProposalForm
     private static function findings(): Tab
     {
         return Tab::make('Co jsme objevili')->schema([
+            TextInput::make('findings_title')
+                ->label('Nadpis sekce')
+                ->placeholder('Co jsme objevili')
+                ->helperText('Prázdné = „Co jsme objevili“ ze Statických textů.'),
+
             Textarea::make('findings_intro')
                 ->label('Perex sekce')
                 ->rows(2),
@@ -242,12 +249,59 @@ class ProposalForm
 
                     TextInput::make('link_url')->label('Odkaz')->url()->placeholder('https://www.instagram.com/reel/…'),
                     TextInput::make('link_label')->label('Text odkazu')->placeholder('Otevřít ukázku'),
+
+                    Repeater::make('items')
+                        ->label('Mřížka ukázek')
+                        ->helperText('Screenshoty nebo videa pod textem, třeba jak to dělají jiné e-shopy. Položka potřebuje obrázek, nebo video.')
+                        ->schema([
+                            TextInput::make('title')->label('Nadpis')->placeholder('Název e-shopu'),
+                            TextInput::make('video_url')
+                                ->label('Video z Google Disku')
+                                ->url()
+                                ->placeholder('https://drive.google.com/file/d/…/view')
+                                ->helperText('Sdílené „kdokoli s odkazem“. Přehraje se až po kliknutí.'),
+                            Textarea::make('body')->label('Proč to funguje')->rows(2)->columnSpanFull(),
+                            ImageUpload::file('image')
+                                ->label('Obrázek')
+                                ->directory('spoluprace')
+                                ->helperText('Screenshot. U videa náhled, bez něj ho vezme Disk.'),
+                            TextInput::make('image_alt')->label('Popisek obrázku (alt)'),
+                        ])
+                        ->columns(2)
+                        ->collapsible()
+                        ->collapsed()
+                        ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
+                        ->defaultItems(0)
+                        ->addActionLabel('Přidat do mřížky')
+                        ->reorderable()
+                        ->columnSpanFull(),
                 ])
                 ->columns(2)
                 ->collapsible()
                 ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
                 ->defaultItems(0)
                 ->addActionLabel('Přidat ukázku')
+                ->reorderable(),
+        ]);
+    }
+
+    private static function experiences(): Tab
+    {
+        return Tab::make('Zkušenosti')->schema([
+            Repeater::make('experiences')
+                ->label('Zkušenosti z praxe')
+                ->helperText('Karty nad „Jak k tomu přistupujeme“. Jen to, co umíme doložit.')
+                ->schema([
+                    Textarea::make('text')->label('Text')->required()->rows(2),
+                    TagsInput::make('emphasis')
+                        ->label('Zvýraznit')
+                        ->placeholder('3–10 Kč')
+                        ->helperText('Části textu přesně tak, jak v něm stojí. Na webu budou cihlově a tučně.'),
+                ])
+                ->collapsible()
+                ->itemLabel(fn (array $state): ?string => Str::limit((string) ($state['text'] ?? ''), 60) ?: null)
+                ->defaultItems(0)
+                ->addActionLabel('Přidat zkušenost')
                 ->reorderable(),
         ]);
     }
