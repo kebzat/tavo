@@ -6,6 +6,8 @@
 --}}
 <x-layout.document :title="$proposal->title" :eyebrow="$proposal->company_name">
 
+    <x-proposal.section-nav :nav="$nav" :company="$proposal->company_name" />
+
     <section class="section-x pt-6 pb-2">
         <div class="container-tavo">
             <div class="rounded-card bg-ink px-[7vw] py-12 text-cream menu:px-14 menu:py-16">
@@ -21,6 +23,21 @@
 
                         @if ($proposal->intro)
                             <p class="mt-6 whitespace-pre-line text-perex text-cream/70">{{ $proposal->intro }}</p>
+                        @endif
+
+                        {{-- Rozcestník. Konec úvodu hlídá lepivé menu: jakmile zmizí z obrazovky, menu nastoupí. --}}
+                        @if ($nav)
+                            <ul data-section-nav-start class="mt-8 flex flex-wrap gap-2.5">
+                                @foreach ($nav as $item)
+                                    <li>
+                                        <a href="#{{ $item['id'] }}"
+                                           class="group inline-flex items-center gap-2 rounded-pill border-[1.5px] border-cream/30 px-5 py-3 text-sm font-bold text-cream transition duration-300 ease-tavo hover:-translate-y-0.5 hover:border-cream hover:bg-cream hover:text-ink">
+                                            {{ $item['label'] }}
+                                            <span aria-hidden="true" class="transition-transform duration-300 ease-tavo group-hover:translate-y-0.5">↓</span>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
                         @endif
 
                         <x-client-docs.links :links="$links" class="mt-8" />
@@ -89,6 +106,8 @@
         </section>
     @endif
 
+    {{-- Kotva „Redesign webu“: návrh homepage a hned za ním srovnání kdysi a dnes. --}}
+    <div id="redesign">
     @foreach ($examples['after_findings'] as $example)
         <x-proposal.example :example="$example" />
     @endforeach
@@ -159,6 +178,7 @@
             </div>
         </section>
     @endif
+    </div>
 
     {{-- 02 Co doporučujeme --}}
     @if ($recommendations)
@@ -280,7 +300,7 @@
     @endif
 
     @if ($principles)
-        <section class="section-x section-y bg-ink text-cream" data-block-bg="ink">
+        <section id="pristup" class="section-x section-y bg-ink text-cream" data-block-bg="ink">
             <div class="container-tavo">
                 <h2 data-reveal class="max-w-[18ch] text-h2 font-extrabold tracking-[-.02em]">
                     {{ text('spoluprace.principles_title', 'Jak k tomu přistupujeme') }}

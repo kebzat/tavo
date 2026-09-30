@@ -91,6 +91,20 @@ class ProposalTest extends TestCase
             ->assertDontSee('Řádek bez nadpisu se nezobrazí.');
     }
 
+    public function test_rozcestnik_vede_jen_na_sekce_ktere_na_strance_jsou(): void
+    {
+        $this->proposal(['principles' => null]);
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertOk()
+            ->assertSeeInOrder(['href="#redesign"', 'href="#doporuceni"', 'href="#kroky"'], false)
+            ->assertSee('id="redesign"', false)
+            ->assertSee('Naše doporučení')
+            ->assertSee('Akční plán')
+            ->assertDontSee('href="#pristup"', false)
+            ->assertDontSee('Obecné doporučení');
+    }
+
     public function test_prazdna_sekce_se_nezobrazi(): void
     {
         $this->proposal(['findings' => [], 'principles' => null, 'examples' => [], 'timeline' => null]);

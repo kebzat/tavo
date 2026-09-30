@@ -27,7 +27,7 @@ class ProposalController extends Controller
             $proposal->recordView($request->userAgent());
         }
 
-        return view('proposal.show', [
+        $sections = [
             'proposal' => $proposal,
             'tiles' => $proposal->highlightTiles(),
             'timeline' => $proposal->timelineItems(),
@@ -38,7 +38,44 @@ class ProposalController extends Controller
             'experiences' => $proposal->experienceItems(),
             'principles' => $proposal->principleItems(),
             'links' => $this->auditLinks($proposal),
-        ]);
+        ];
+
+        return view('proposal.show', $sections + ['nav' => $this->nav($sections)]);
+    }
+
+    /**
+     * Rozcestník: tlačítka v úvodu a lepivé menu. Jen sekce, které na stránce
+     * opravdu jsou. „Co jsme objevili“ tu chybí schválně, začíná hned pod úvodem.
+     *
+     * @param  array<string, mixed>  $sections
+     * @return list<array{id: string, label: string}>
+     */
+    private function nav(array $sections): array
+    {
+        $items = [
+            'redesign' => [
+                'label' => text('spoluprace.nav_redesign', 'Redesign webu', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),
+                'shown' => $sections['examples']['after_findings'] || $sections['timeline'],
+            ],
+            'doporuceni' => [
+                'label' => text('spoluprace.nav_recommendations', 'Naše doporučení', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),
+                'shown' => (bool) $sections['recommendations'],
+            ],
+            'kroky' => [
+                'label' => text('spoluprace.nav_steps', 'Akční plán', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),
+                'shown' => $sections['steps']['now'] || $sections['steps']['later'],
+            ],
+            'pristup' => [
+                'label' => text('spoluprace.nav_principles', 'Obecné doporučení', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),
+                'shown' => (bool) $sections['principles'],
+            ],
+        ];
+
+        return collect($items)
+            ->filter(fn (array $item): bool => (bool) $item['shown'])
+            ->map(fn (array $item, string $id): array => ['id' => $id, 'label' => $item['label']])
+            ->values()
+            ->all();
     }
 
     /**

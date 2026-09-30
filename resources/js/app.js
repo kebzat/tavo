@@ -214,6 +214,68 @@ Alpine.data('tavoAuditToc', () => ({
 }));
 
 /**
+ * Lepivé menu sdílené nabídky spolupráce (x-proposal.section-nav).
+ *
+ * Nastoupí, jakmile z obrazovky zmizí tlačítka v úvodu, a zvýrazní sekci,
+ * ve které čtenář je. Na mobilu se lišta posouvá do strany, aktivní
+ * položku v ní držíme na očích posunem lišty, stránkou se nehýbe.
+ */
+Alpine.data('tavoSectionNav', () => ({
+    visible: false,
+    active: null,
+
+    init() {
+        const start = document.querySelector('[data-section-nav-start]');
+        const sekce = Array.from(this.$root.querySelectorAll('[data-section]'))
+            .map((odkaz) => document.getElementById(odkaz.dataset.section))
+            .filter(Boolean);
+
+        if (! start || ! sekce.length) return;
+
+        // Sekce po kliknutí přistane pod lištou (scroll-padding-top 90 px).
+        const hranice = 120;
+        let ceka = false;
+
+        const zmer = () => {
+            ceka = false;
+            this.visible = start.getBoundingClientRect().bottom < 0;
+
+            const naKonci = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+            const prejete = sekce.filter((el) => el.getBoundingClientRect().top <= hranice);
+            const aktualni = naKonci ? sekce[sekce.length - 1] : prejete[prejete.length - 1];
+            const id = aktualni?.id ?? null;
+
+            if (id === this.active) return;
+
+            this.active = id;
+            this.$nextTick(() => this.dorolujListu());
+        };
+
+        window.addEventListener('scroll', () => {
+            if (ceka) return;
+            ceka = true;
+            requestAnimationFrame(zmer);
+        }, { passive: true });
+
+        zmer();
+    },
+
+    dorolujListu() {
+        const lista = this.$refs.list;
+        const odkaz = lista?.querySelector('[aria-current="location"]');
+
+        if (! odkaz || lista.scrollWidth <= lista.clientWidth) return;
+
+        const o = odkaz.getBoundingClientRect();
+        const l = lista.getBoundingClientRect();
+
+        if (o.left < l.left || o.right > l.right) {
+            lista.scrollLeft += o.left - l.left - l.width / 2 + o.width / 2;
+        }
+    },
+}));
+
+/**
  * Poptávkový formulář.
  *
  * Bez JS se odešle klasicky a stránka se překreslí. Tady odeslání odchytneme
