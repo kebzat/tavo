@@ -14,6 +14,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Zmenšeniny dlouhých návrhů homepage (1440 × 5 000 px) přes GD
+        // se do výchozích 128 MB na produkci nevejdou.
+        ini_set('memory_limit', '1024M');
+
         foreach (ProposalDraft::files() as $path) {
             ProposalDraft::import($path);
         }
