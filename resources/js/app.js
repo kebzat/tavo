@@ -223,6 +223,9 @@ Alpine.data('tavoAuditToc', () => ({
 Alpine.data('tavoSectionNav', () => ({
     visible: false,
     active: null,
+    muzeDoleva: false,
+    muzeDoprava: false,
+    naznaceno: false,
 
     init() {
         const start = document.querySelector('[data-section-nav-start]');
@@ -257,7 +260,44 @@ Alpine.data('tavoSectionNav', () => ({
             requestAnimationFrame(zmer);
         }, { passive: true });
 
+        window.addEventListener('resize', () => this.zmerOkraje(), { passive: true });
+
+        // Skrytá lišta nemá šířku, okraje jde změřit až po zobrazení.
+        this.$watch('visible', (visible) => {
+            if (visible) this.$nextTick(() => { this.zmerOkraje(); this.naznac(); });
+        });
+
         zmer();
+    },
+
+    /** Jde lištou ještě posunout doleva nebo doprava? */
+    zmerOkraje() {
+        const lista = this.$refs.list;
+
+        if (! lista) return;
+
+        this.muzeDoleva = lista.scrollLeft > 4;
+        this.muzeDoprava = lista.scrollLeft + lista.clientWidth < lista.scrollWidth - 4;
+    },
+
+    posun(smer) {
+        const lista = this.$refs.list;
+        lista?.scrollBy({ left: smer * lista.clientWidth * 0.6, behavior: 'smooth' });
+    },
+
+    /**
+     * Při prvním zobrazení lišta krátce popojede doprava a zpět, ať je
+     * na mobilu vidět, že se dá posouvat. Jen jednou a jen když je kam.
+     */
+    naznac() {
+        const lista = this.$refs.list;
+
+        if (this.naznaceno || ! this.muzeDoprava || lista.scrollLeft > 4) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        this.naznaceno = true;
+        lista.scrollTo({ left: 56, behavior: 'smooth' });
+        setTimeout(() => lista.scrollTo({ left: 0, behavior: 'smooth' }), 550);
     },
 
     dorolujListu() {

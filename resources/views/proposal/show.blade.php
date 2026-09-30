@@ -79,7 +79,7 @@
     @if ($findings)
         <section id="zjisteni" class="section-x section-y">
             <div class="container-tavo grid gap-10 menu:grid-cols-[0.8fr_1.2fr] loop:gap-20">
-                <div class="menu:sticky menu:top-8 menu:self-start">
+                <div class="menu:sticky menu:top-30 menu:self-start">
                     <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">01</p>
                     <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
                         {{ $proposal->findings_title ?: text('spoluprace.findings_title', 'Co jsme objevili') }}
@@ -224,7 +224,7 @@
     @if ($steps['now'] || $steps['later'])
         <section id="kroky" class="section-x section-y">
             <div class="container-tavo grid gap-10 menu:grid-cols-[0.8fr_1.2fr] loop:gap-20">
-                <div class="menu:sticky menu:top-8 menu:self-start">
+                <div class="menu:sticky menu:top-30 menu:self-start">
                     <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">03</p>
                     <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
                         {{ text('spoluprace.steps_title', 'Akční kroky v prvních týdnech') }}
