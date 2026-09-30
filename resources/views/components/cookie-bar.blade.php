@@ -17,7 +17,7 @@
          x-transition
          role="region"
          aria-label="{{ text('cookies.lista_nazev', 'Souhlas s cookies', 'Cookie lišta', 'Název lišty pro čtečky obrazovky') }}"
-         class="fixed inset-x-4 bottom-4 z-[60] mx-auto max-w-[620px] rounded-card bg-ink p-6 text-cream shadow-2xl md:inset-x-auto md:right-6 md:bottom-6 md:p-7">
+         class="fixed inset-x-4 bottom-4 z-[60] mx-auto max-w-[620px] rounded-card bg-ink p-5 text-cream shadow-2xl sm:p-6 md:inset-x-auto md:right-6 md:bottom-6 md:p-7">
         <p class="m-0 text-[15px] font-bold">
             {{ text('cookies.lista_nadpis', 'Můžeme měřit, jak web používáte?', 'Cookie lišta', 'Nadpis lišty') }}
         </p>
@@ -26,8 +26,11 @@
             <a href="{{ url('/cookies') }}" class="text-cream underline underline-offset-2 hover:text-brick">{{ text('cookies.lista_odkaz', 'Víc o cookies', 'Cookie lišta', 'Odkaz na stránku Cookies') }}</a>
         </p>
 
-        <div class="mt-5 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-2 text-[13px] text-cream/55">
+        {{-- Od 360 px je všechno na jednom řádku. Na užším displeji nebo s delšími
+             texty z administrace se tlačítko zalomí pod odkazy, ale zůstane
+             vpravo pod palcem. --}}
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div class="flex items-center gap-1.5 text-[13px] text-cream/55">
                 <button type="button" @click="$store.consent.rejectAll()"
                         class="py-2 underline underline-offset-4 transition hover:text-cream">
                     {{ text('cookies.odmitnout', 'Odmítnout', 'Cookie lišta', 'Odkaz pro jen nezbytné cookies') }}
@@ -39,7 +42,7 @@
                 </button>
             </div>
             <button type="button" @click="$store.consent.acceptAll()"
-                    class="shrink-0 rounded-pill bg-go px-8 py-3.5 text-[15px] font-bold text-cream shadow-[0_10px_24px_-10px_rgba(30,122,56,.8)] transition hover:-translate-y-0.5 hover:bg-go-dark">
+                    class="ml-auto shrink-0 rounded-pill bg-go px-5 py-3.5 text-[15px] font-bold text-cream sm:px-8 shadow-[0_10px_24px_-10px_rgba(30,122,56,.8)] transition hover:-translate-y-0.5 hover:bg-go-dark">
                 {{ text('cookies.souhlasim', 'Souhlasím', 'Cookie lišta', 'Hlavní tlačítko souhlasu se vším') }}
             </button>
         </div>
