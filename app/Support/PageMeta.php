@@ -23,7 +23,6 @@ final class PageMeta
      *     imageHeight: ?int,
      *     imageAlt: ?string,
      *     schema: list<array<string, mixed>>,
-     *     gtmId: ?string,
      * }
      */
     public static function build(
@@ -49,7 +48,6 @@ final class PageMeta
             'imageHeight' => $imageHeight,
             'imageAlt' => $imageUrl ? ($imageAlt ?: ($title ?: $seo->default_title)) : null,
             'schema' => array_merge([StructuredData::professionalService()], $schema),
-            'gtmId' => $seo->gtm_id,
         ];
     }
 

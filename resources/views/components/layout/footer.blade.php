@@ -41,6 +41,12 @@
             <div class="flex flex-wrap gap-5">
                 <a href="{{ url('/ochrana-osobnich-udaju') }}" class="text-cream/45 transition-colors hover:text-cream">Ochrana osobních údajů</a>
                 <a href="{{ url('/cookies') }}" class="text-cream/45 transition-colors hover:text-cream">Cookies</a>
+                @if ($tracking->needsConsent())
+                    <button type="button" x-data @click="$store.consent.openSettings()"
+                            class="text-cream/45 transition-colors hover:text-cream">
+                        {{ text('cookies.paticka_odkaz', 'Nastavení cookies', 'Cookie lišta', 'Odkaz v patičce, který znovu otevře výběr') }}
+                    </button>
+                @endif
                 <span>{{ $site->footer_note }}</span>
             </div>
         </div>

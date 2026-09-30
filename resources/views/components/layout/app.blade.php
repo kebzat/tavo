@@ -15,6 +15,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <x-tracking />
+
     <x-seo.meta :title="$title" :description="$description" :ogImage="$ogImage" :ogImageAlt="$ogImageAlt" :schema="$schema" :indexable="$indexable" />
 
     {{-- Montserrat — @fonts vysází @font-face pravidla a preload odkazy podle

@@ -51,10 +51,3 @@
         {!! json_encode($document, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>
 @endforeach
-
-@if ($meta['gtmId'])
-    <script>
-        // GTM se načte až po souhlasu — viz components/cookie-bar.blade.php
-        window.__tavoGtmId = @json($meta['gtmId']);
-    </script>
-@endif

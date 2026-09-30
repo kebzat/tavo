@@ -47,17 +47,38 @@ class ManageSeo extends SettingsPage
                         ->helperText('Doporučeno 1200 × 630 px.'),
                 ]),
 
-            Section::make('Měření')->schema([
-                TextInput::make('gtm_id')
-                    ->label('Google Tag Manager ID')
-                    ->placeholder('GTM-XXXXXXX')
-                    ->helperText('Načte se až po souhlasu s cookies. Prázdné = žádné měření a cookie lišta nabídne jen nezbytné cookies.'),
+            Section::make('Měření')
+                ->description('Každý kód se načte až poté, co návštěvník v cookie liště souhlasí s jeho kategorií. Když není vyplněné nic, cookie lišta se nezobrazí.')
+                ->schema([
+                    TextInput::make('ga4_id')
+                        ->label('Google Analytics 4')
+                        ->placeholder('G-XXXXXXXXXX')
+                        ->regex('/^G-[A-Z0-9]+$/')
+                        ->helperText('Analytické cookies. Odeslaná poptávka se měří jako událost generate_lead, v GA4 ji označte jako klíčovou událost.'),
 
-                Toggle::make('indexable')
-                    ->label('Povolit indexaci vyhledávači')
-                    ->helperText('Vypněte na testovacím serveru — přidá se noindex.')
-                    ->default(true),
-            ]),
+                    TextInput::make('clarity_id')
+                        ->label('Microsoft Clarity')
+                        ->placeholder('abcd1234ef')
+                        ->regex('/^[a-z0-9]+$/')
+                        ->helperText('Analytické cookies. ID projektu z adresy clarity.microsoft.com/projects/view/…'),
+
+                    TextInput::make('meta_pixel_id')
+                        ->label('Meta Pixel')
+                        ->placeholder('1234567890123456')
+                        ->regex('/^\d+$/')
+                        ->helperText('Marketingové cookies. Po odeslání poptávky pošle událost Lead.'),
+
+                    TextInput::make('gtm_id')
+                        ->label('Google Tag Manager')
+                        ->placeholder('GTM-XXXXXXX')
+                        ->regex('/^GTM-[A-Z0-9]+$/')
+                        ->helperText('Nepovinné. Když v GTM nastavíte i GA4, pole Google Analytics 4 nechte prázdné, jinak se návštěvy počítají dvakrát. Poptávka přijde do GTM jako vlastní událost generate_lead.'),
+
+                    Toggle::make('indexable')
+                        ->label('Povolit indexaci vyhledávači')
+                        ->helperText('Vypněte na testovacím serveru — přidá se noindex.')
+                        ->default(true),
+                ]),
         ]);
     }
 }

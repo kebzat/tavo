@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import initMotion from './motion';
+import { registerConsent, trackLead } from './consent';
 
 /**
  * Stav mobilního menu je globální — potřebuje ho navigace i cookie lišta,
@@ -349,6 +350,7 @@ Alpine.data('tavoLeadForm', () => ({
 
             if (odpoved.ok) {
                 this.odeslano = true;
+                trackLead();
                 this.$nextTick(() => this.ukaz(this.$refs.podekovani?.querySelector('[role="status"]')));
 
                 return;
@@ -404,6 +406,8 @@ function prepisProgres(selektor, progres) {
         blok.querySelectorAll('[data-progres-vypln]').forEach((el) => (el.style.width = `${progres.percent}%`));
     });
 }
+
+registerConsent(Alpine);
 
 window.Alpine = Alpine;
 Alpine.start();

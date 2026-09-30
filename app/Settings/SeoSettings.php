@@ -23,6 +23,15 @@ class SeoSettings extends Settings
     /** GTM kontejner (GTM-XXXX). Načte se až po souhlasu s cookies. */
     public ?string $gtm_id;
 
+    /** Google Analytics 4 (G-XXXX). Analytická kategorie souhlasu. */
+    public ?string $ga4_id;
+
+    /** Microsoft Clarity (ID projektu). Analytická kategorie souhlasu. */
+    public ?string $clarity_id;
+
+    /** Meta Pixel (číselné ID). Marketingová kategorie souhlasu. */
+    public ?string $meta_pixel_id;
+
     /** Vypnuto = do <head> se přidá noindex (pro staging). */
     public bool $indexable;
 

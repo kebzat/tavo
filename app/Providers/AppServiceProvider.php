@@ -13,6 +13,7 @@ use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
 use App\Support\EshopOffers;
 use App\Support\ImageDerivatives;
+use App\Support\Tracking;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -64,6 +65,16 @@ class AppServiceProvider extends ServiceProvider
          */
         View::composer('components.layout.footer', function ($view) {
             $view->with('eshopOffers', EshopOffers::all());
+        });
+
+        // Měřicí kódy a souhlas s cookies. Patička potřebuje vědět, jestli
+        // nabídnout odkaz na změnu souhlasu.
+        View::composer([
+            'components.tracking',
+            'components.cookie-bar',
+            'components.layout.footer',
+        ], function ($view) {
+            $view->with('tracking', app(Tracking::class));
         });
 
         /*

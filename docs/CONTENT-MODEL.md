@@ -108,11 +108,24 @@ Tyto údaje se propisují do navigace, patičky i všech CTA sekcí — nikde je
 
 ## Nastavení → SEO a měření
 
-Výchozí titulek a popisek, obrázek pro sdílení na sociálních sítích, ID Google Tag Manageru
+Výchozí titulek a popisek, obrázek pro sdílení na sociálních sítích, ID měřicích kódů
 a přepínač indexace (vypnout na testovacím serveru).
 
-Měřicí kód se načte **až po souhlasu s cookies**. Když je pole GTM prázdné, cookie lišta
-nabídne jen nezbytné cookies.
+| Pole | Kategorie souhlasu |
+|---|---|
+| Google Analytics 4 (`G-…`) | analytické |
+| Microsoft Clarity | analytické |
+| Meta Pixel | marketingové |
+| Google Tag Manager (`GTM-…`, nepovinné) | načte se po souhlasu s kteroukoliv, dál řídí Consent Mode |
+
+Žádný kód se nenačte **dřív, než návštěvník v cookie liště souhlasí** s jeho kategorií.
+Pro Google platí Consent Mode v2, výchozí stav „zamítnuto" nastavuje `<x-tracking>`
+v `<head>`. Když není vyplněné nic, cookie lišta se vůbec nezobrazí.
+
+Odeslaná poptávka (až po úspěšné odpovědi serveru) posílá: Meta `Lead`, GA4
+`generate_lead`, do GTM vlastní událost `generate_lead` a do Clarity událost `lead`.
+Logika je v `resources/js/consent.js`. Když se změní kategorie nebo nástroje v nich,
+zvyš tam `VERSION`, aby se lišta ukázala všem znovu. A doplň stránku `/cookies`.
 
 ## Obsah → Reference
 

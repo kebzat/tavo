@@ -194,7 +194,8 @@ pod `.prose-audit` a `.audit-tag`.
 | `<x-gallery>` | galerie obrázků na detailu reference s lightboxem (Alpine `tavoLightbox`) |
 | `<x-cta-band>` | cihlový pruh s výzvou; s `:form="true"` obsahuje i formulář |
 | `<x-lead-form>` | poptávkový formulář |
-| `<x-cookie-bar>` | cookie lišta, spouští měření až po souhlasu |
+| `<x-cookie-bar>` | cookie lišta a okno s nastavením kategorií, stav v Alpine store `consent` (`resources/js/consent.js`) |
+| `<x-tracking>` | v `<head>`: výchozí Consent Mode a ID měřicích kódů pro JS |
 | `<x-home.*>` | jednotlivé sekce homepage |
 | `<x-errors.layout>` | společný layout chybových stránek |
 
