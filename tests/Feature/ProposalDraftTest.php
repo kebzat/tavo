@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Proposal;
+use App\Support\ProposalAdditions;
 use App\Support\ProposalDraft;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -46,6 +47,18 @@ class ProposalDraftTest extends TestCase
             $this->assertNotEmpty($proposal->findingGroups());
             $this->assertNotEmpty($proposal->experienceItems());
         }
+    }
+
+    public function test_doplneni_vlozi_za_nadpis_a_nezdvoji(): void
+    {
+        $current = [['title' => 'A'], ['title' => 'B']];
+        $items = [['title' => 'X', '_after' => 'A'], ['title' => 'B'], ['title' => 'Y', '_after' => 'neexistuje']];
+
+        $merged = ProposalAdditions::merge($current, $items);
+
+        $this->assertSame(['A', 'X', 'B', 'Y'], array_column($merged, 'title'));
+        $this->assertArrayNotHasKey('_after', $merged[1]);
+        $this->assertSame($merged, ProposalAdditions::merge($merged, $items));
     }
 
     public function test_import_neprepise_existujici_stranku(): void
