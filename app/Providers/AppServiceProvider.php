@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\EshopOffer;
 use App\Models\Founder;
 use App\Settings\ContactSettings;
 use App\Settings\SiteSettings;
@@ -11,7 +12,6 @@ use App\Support\Ads\Ai\NullAdsAdvisor;
 use App\Support\Crm\Ai\ClaudeProspectAi;
 use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
-use App\Support\EshopOffers;
 use App\Support\ImageDerivatives;
 use App\Support\Tracking;
 use Illuminate\Support\Facades\URL;
@@ -59,12 +59,9 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        /*
-         * Skupina „Pro e-shopy" v patičce. Nabídky nejsou v databázi, protože
-         * ke každé patří vlastní routa a šablona — viz App\Support\EshopOffers.
-         */
+        // Skupina „Pro e-shopy" v patičce, z Obsah → Nabídky pro e-shopy.
         View::composer('components.layout.footer', function ($view) {
-            $view->with('eshopOffers', EshopOffers::all());
+            $view->with('eshopOffers', EshopOffer::published()->ordered()->get(['slug', 'nav_label']));
         });
 
         // Měřicí kódy a souhlas s cookies. Patička potřebuje vědět, jestli

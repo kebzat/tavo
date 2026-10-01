@@ -13,8 +13,8 @@ app/
 │                              Sitemap
 ├─ Http/Requests/LeadRequest   validace poptávkového formuláře
 ├─ Mail/LeadReceived           notifikace o nové poptávce
-├─ Models/                     CaseStudy, CaseStudyCategory, Service, WebText,
-│                              ProcessStep, Founder, Page, Lead, User
+├─ Models/                     CaseStudy, CaseStudyCategory, Service, EshopOffer,
+│                              WebText, ProcessStep, Founder, Page, Lead, User
 ├─ Providers/AppServiceProvider  sdílí $site a $contact, spouští ImageDerivatives
 ├─ Settings/                   SiteSettings, ContactSettings, HomeSettings, SeoSettings
 └─ Support/
@@ -24,7 +24,6 @@ app/
    ├─ StructuredData           JSON-LD
    ├─ WebTexts                 statické texty editovatelné v administraci
    ├─ helpers.php              globální text() nad WebTexts
-   ├─ EshopOffers              obsah čtyř dopadových stránek pro e-shopy
    └─ ContentSettingsMigration základ migrací nastavení
 
 database/
@@ -56,10 +55,6 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/reference` | `CaseStudyController@index` | `case-studies/index` |
 | GET | `/reference/{slug}` | `CaseStudyController@show` | `case-studies/show` |
 | GET | `/sluzby/{slug}` | `ServiceController@show` | `services/show` |
-| GET | `/mereni-pro-eshopy` | `EshopOfferController` | `eshop/show` |
-| GET | `/aplikace-pro-shoptet-premium` | `EshopOfferController` | `eshop/show` |
-| GET | `/migrace-na-shoptet` | `EshopOfferController` | `eshop/show` |
-| GET | `/rozvoj-eshopu` | `EshopOfferController` | `eshop/show` |
 | GET | `/sitemap.xml` | `SitemapController@sitemap` | `sitemap` |
 | GET | `/robots.txt` | `SitemapController@robots` | — |
 | POST | `/poptavka` | `LeadController` | přesměruje na `/#kontakt` |
@@ -69,14 +64,15 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/audit/{key}` | `AuditController` | `audit/show` |
 | GET | `/potencialni-spoluprace/{slug}` | `ProposalController` | `proposal/show` |
 | GET | `/report/{key}` | `AdReportController` | `ad-report/show` |
-| GET | `/{slug}` | `PageController@show` | `pages/show` |
+| GET | `/{slug}` | `PageController@show` | `pages/show`, nebo `eshop/show` pro nabídku pro e-shopy |
 
 > Poslední routa chytá volný slug pro statické stránky — **musí zůstat na konci** souboru
 > `routes/web.php`, jinak přebije všechno ostatní.
 
-> Čtyři adresy nabídek pro e-shopy jsou jednosegmentové, takže je `routes/web.php`
-> registruje **nad** catch-all routou. Slugy i obsah drží `App\Support\EshopOffers`,
-> odtud je bere i patička a mapa webu.
+> Nabídky pro e-shopy (`/mereni-pro-eshopy`, `/rozvoj-eshopu`…) sdílí catch-all routu
+> se statickými stránkami. `PageController` nejdřív hledá zveřejněnou `EshopOffer`
+> a předá ji `EshopOfferController`, teprve pak `Page`. Aby se slugy nepotkaly, hlídá
+> formuláře obou resourců pravidlo `App\Rules\FreeTopLevelSlug`.
 
 Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 

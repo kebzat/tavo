@@ -1,31 +1,63 @@
 <?php
 
-namespace App\Support;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Dopadové stránky s konkrétními nabídkami pro e-shopy.
+ * Přenese čtyři nabídky pro e-shopy z kódu do databáze, aby šly upravovat
+ * v administraci (Obsah → Nabídky pro e-shopy).
  *
- * Obsah bydlí v kódu, ne v databázi, protože každá stránka má vlastní routu
- * a vlastní strukturovaná data — kdyby si správce v administraci smazal
- * položku, zůstala by po ní routa bez obsahu a odkaz v patičce do prázdna.
- * Texty se tu proto mění commitem, stejně jako routy.
- *
- * Tvar jedné nabídky:
- *   nav_label       krátký název do patičky a rozcestníku
- *   seo_title       titulek do <head> BEZ přípony (tu přidá PageMeta)
- *   seo_description meta description
- *   service_type    schema.org serviceType
- *   headline        H1
- *   intro           odstavce pod H1
- *   sections        [{title (H2), paragraphs}]
- *   faq             [{question (H3), answer}] — zdroj pro JSON-LD FAQPage
- *   cta_title       první věta CTA
- *   cta_perex       zbytek CTA
+ * Chová se jako `add()` u settings migrací: nabídku založí, jen když její
+ * slug ještě neexistuje. Co správce mezitím upravil, zůstane.
  */
-final class EshopOffers
+return new class extends Migration
 {
+    public function up(): void
+    {
+        $order = 0;
+
+        foreach ($this->offers() as $slug => $offer) {
+            $order++;
+
+            if (DB::table('eshop_offers')->where('slug', $slug)->exists()) {
+                continue;
+            }
+
+            DB::table('eshop_offers')->insert([
+                'slug' => $slug,
+                'nav_label' => $offer['nav_label'],
+                'headline' => $offer['headline'],
+                'intro' => implode("\n\n", $offer['intro']),
+                'sections' => $this->json(array_map(fn (array $section) => [
+                    'title' => $section['title'],
+                    'text' => implode("\n\n", $section['paragraphs']),
+                ], $offer['sections'])),
+                'faq' => $this->json($offer['faq']),
+                'cta_title' => $offer['cta_title'],
+                'cta_perex' => $offer['cta_perex'],
+                'seo_title' => $offer['seo_title'],
+                'seo_description' => $offer['seo_description'],
+                'service_type' => $offer['service_type'],
+                'published' => true,
+                'order_column' => $order,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    public function down(): void
+    {
+        DB::table('eshop_offers')->whereIn('slug', array_keys($this->offers()))->delete();
+    }
+
+    private function json(array $value): string
+    {
+        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     /** @return array<string, array<string, mixed>> */
-    public static function all(): array
+    private function offers(): array
     {
         return [
             'mereni-pro-eshopy' => [
@@ -248,37 +280,4 @@ final class EshopOffers
             ],
         ];
     }
-
-    /** @return list<string> */
-    public static function slugs(): array
-    {
-        return array_keys(self::all());
-    }
-
-    /** @return array<string, mixed> */
-    public static function find(string $slug): array
-    {
-        $offer = self::all()[$slug] ?? abort(404);
-
-        return $offer + ['slug' => $slug, 'url' => self::url($slug)];
-    }
-
-    /**
-     * Ostatní nabídky pro rozcestník na konci stránky.
-     *
-     * @return list<array<string, mixed>>
-     */
-    public static function others(string $slug): array
-    {
-        return collect(self::all())
-            ->except($slug)
-            ->map(fn (array $offer, string $key) => $offer + ['slug' => $key, 'url' => self::url($key)])
-            ->values()
-            ->all();
-    }
-
-    public static function url(string $slug): string
-    {
-        return route('eshop.'.$slug);
-    }
-}
+};

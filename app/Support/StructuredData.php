@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\EshopOffer;
 use App\Models\Founder;
 use App\Models\Service;
 use App\Settings\ContactSettings;
@@ -120,28 +121,22 @@ class StructuredData
         ]);
     }
 
-    /**
-     * Nabídka pro e-shopy z App\Support\EshopOffers. Nemá vlastní model,
-     * proto samostatná metoda vedle service() výš.
-     *
-     * @param  array<string, mixed>  $offer
-     * @return array<string, mixed>
-     */
-    public static function eshopOffer(array $offer): array
+    /** @return array<string, mixed> */
+    public static function eshopOffer(EshopOffer $offer): array
     {
-        return [
+        return array_filter([
             '@context' => 'https://schema.org',
             '@type' => 'Service',
-            'name' => $offer['nav_label'],
-            'description' => $offer['seo_description'],
-            'url' => $offer['url'],
-            'serviceType' => $offer['service_type'],
+            'name' => $offer->nav_label,
+            'description' => $offer->seo_description,
+            'url' => $offer->url(),
+            'serviceType' => $offer->service_type ?: $offer->nav_label,
             'provider' => ['@id' => url('/').self::ORGANIZATION_ID],
             'areaServed' => [
                 ['@type' => 'City', 'name' => 'Hradec Králové'],
                 ['@type' => 'Country', 'name' => 'Česko'],
             ],
-        ];
+        ]);
     }
 
     /**

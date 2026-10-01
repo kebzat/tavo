@@ -181,6 +181,32 @@ Záložky Detailní stránka a SEO se zobrazí jen u takové služby.
 zakládat pátou, dejte jí vlastní dotaz, ne variaci na existující. Dvě stránky o tom samém
 si berou pozice navzájem.
 
+## Obsah → Nabídky pro e-shopy
+
+Dopadové stránky `/mereni-pro-eshopy`, `/aplikace-pro-shoptet-premium`, `/migrace-na-shoptet`
+a `/rozvoj-eshopu`. Odkazy na ně jsou v patičce ve skupině „Pro e-shopy" a na konci
+každé z nich v rozcestníku „Další nabídky pro e-shopy". Obojí se skládá samo ze
+zveřejněných nabídek v pořadí ze seznamu (mění se tažením).
+
+| Záložka | Ovládá na webu |
+|---|---|
+| **Základ** | krátký název (patička, rozcestník), URL, zveřejnění, nadpis H1 a text pod ním |
+| **Obsah** | světlé sekce pod úvodem: nadpis vlevo, text vpravo |
+| **Časté otázky** | černá sekce s otázkami; stejné znění jde do strukturovaných dat FAQ, prázdná = sekce není |
+| **Výzva k akci** | cihlový pruh na konci; tlačítko s e-mailem bere Nastavení → Kontakt |
+| **SEO** | titulek, popisek a typ služby pro schema.org |
+
+V delších textech (úvod, sekce) **oddělte odstavce prázdným řádkem**.
+
+**URL adresu po spuštění neměňte.** Vedou na ni odkazy z e-mailů a pozice ve vyhledávání.
+Adresa nesmí být stejná jako u statické stránky, formulář to nepustí.
+
+**Vypnutá nabídka** zmizí z patičky, rozcestníku i mapy webu a její adresa vrací 404.
+
+Popisky, které mají všechny nabídky stejné („Pro e-shopy" nad nadpisem, „Časté otázky",
+„Další nabídky pro e-shopy", „Zjistit více", „Poptat projekt"), jsou ve Statických textech
+ve skupině „Nabídky pro e-shopy". Nadpis skupiny v patičce je tamtéž pod „Patička".
+
 ## Obsah → Kategorie referencí
 
 Filtry nad výpisem `/reference`. Slug se používá v adrese: `/reference?kategorie=weby`.

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CaseStudy;
+use App\Models\EshopOffer;
 use App\Models\Page;
 use App\Models\Service;
 use App\Settings\SeoSettings;
-use App\Support\EshopOffers;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -27,9 +27,10 @@ class SitemapController extends Controller
             ];
         }
 
-        foreach (EshopOffers::slugs() as $slug) {
+        foreach (EshopOffer::published()->ordered()->get() as $offer) {
             $urls[] = [
-                'loc' => EshopOffers::url($slug),
+                'loc' => $offer->url(),
+                'lastmod' => $offer->updated_at?->toAtomString(),
                 'priority' => '0.8',
                 'changefreq' => 'monthly',
             ];

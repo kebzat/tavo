@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Pages\Schemas;
 
 use App\Filament\Schemas\ContentBlocks;
+use App\Models\Page;
+use App\Rules\FreeTopLevelSlug;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -29,7 +31,7 @@ class PageForm
                 TextInput::make('slug')
                     ->label('URL adresa')
                     ->required()
-                    ->unique(ignoreRecord: true)
+                    ->rule(fn (?Page $record) => new FreeTopLevelSlug($record))
                     ->helperText('Např. „cookies" → /cookies'),
 
                 Toggle::make('published')->label('Zveřejněno')->default(true),

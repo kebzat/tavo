@@ -2,31 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\EshopOffers;
+use App\Models\EshopOffer;
 use App\Support\StructuredData;
 use Illuminate\Contracts\View\View;
 
 /**
- * Dopadové stránky s nabídkami pro e-shopy. Obsah drží App\Support\EshopOffers,
- * routy se z něj generují v routes/web.php.
+ * Dopadové stránky s nabídkami pro e-shopy. Obsah se edituje v administraci
+ * (Obsah → Nabídky pro e-shopy), na stránku je posílá PageController.
  */
 class EshopOfferController extends Controller
 {
-    public function __invoke(string $slug): View
+    public function show(EshopOffer $offer): View
     {
-        $offer = EshopOffers::find($slug);
+        $faq = $offer->faqItems();
 
         return view('eshop.show', [
             'offer' => $offer,
-            'others' => EshopOffers::others($slug),
-            'schema' => [
+            'intro' => $offer->introParagraphs(),
+            'sections' => $offer->contentSections(),
+            'faq' => $faq,
+            'others' => EshopOffer::published()->ordered()->whereKeyNot($offer->id)->get(),
+            'schema' => array_values(array_filter([
                 StructuredData::eshopOffer($offer),
-                StructuredData::faq($offer['faq']),
+                $faq ? StructuredData::faq($faq) : null,
                 StructuredData::breadcrumbs([
                     'Úvod' => route('home'),
-                    $offer['nav_label'] => $offer['url'],
+                    $offer->nav_label => $offer->url(),
                 ]),
-            ],
+            ])),
         ]);
     }
 }

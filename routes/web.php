@@ -10,7 +10,6 @@ use App\Http\Controllers\Crm\CandidateImportController;
 use App\Http\Controllers\Crm\CompanyScoutController;
 use App\Http\Controllers\Crm\PipelineExportController;
 use App\Http\Controllers\EmailSignatureController;
-use App\Http\Controllers\EshopOfferController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
@@ -19,7 +18,6 @@ use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\VerifyCrmToken;
-use App\Support\EshopOffers;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -79,15 +77,6 @@ Route::get('/reference/{slug}', [CaseStudyController::class, 'show'])->name('cas
 
 Route::get('/sluzby/{slug}', [ServiceController::class, 'show'])->name('services.show');
 
-// Dopadové stránky s nabídkami pro e-shopy. Adresy jsou jednosegmentové,
-// takže je musí zaregistrovat před catch-all routou /{slug} na konci souboru.
-// Slugy i obsah drží App\Support\EshopOffers.
-foreach (EshopOffers::slugs() as $eshopSlug) {
-    Route::get('/'.$eshopSlug, EshopOfferController::class)
-        ->defaults('slug', $eshopSlug)
-        ->name('eshop.'.$eshopSlug);
-}
-
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
@@ -119,5 +108,6 @@ if (app()->isLocal()) {
     Route::get('/podpis-emailu', EmailSignatureController::class)->name('email-signature');
 }
 
-// Statické stránky (GDPR, cookies…) — musí zůstat poslední, chytá volný slug.
+// Statické stránky (GDPR, cookies…) a nabídky pro e-shopy (/mereni-pro-eshopy…).
+// Musí zůstat poslední, chytá volný slug. Rozdělení viz PageController.
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
