@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Filament\Resources\EshopOffers\EshopOfferResource;
 use App\Filament\Resources\EshopOffers\Pages\CreateEshopOffer;
 use App\Filament\Resources\EshopOffers\Pages\EditEshopOffer;
+use App\Filament\Resources\EshopOffers\Pages\ListEshopOffers;
 use App\Filament\Resources\Pages\Pages\CreatePage;
 use App\Models\EshopOffer;
 use App\Models\User;
@@ -148,6 +150,16 @@ class EshopOffersTest extends TestCase
             ->assertOk()
             ->assertSee('Feedy, které projdou', false)
             ->assertSee('<p data-reveal class="text-perex mt-[34px] mb-0 max-w-[62ch] text-body">Druhý odstavec.</p>', false);
+    }
+
+    public function test_klik_na_radek_v_seznamu_otevre_upravu(): void
+    {
+        $this->spravce();
+        $offer = EshopOffer::firstWhere('slug', 'rozvoj-eshopu');
+
+        $table = Livewire::test(ListEshopOffers::class)->instance()->getTable();
+
+        $this->assertSame(EshopOfferResource::getUrl('edit', ['record' => $offer]), $table->getRecordUrl($offer));
     }
 
     public function test_slug_nesmi_kolidovat_se_statickou_strankou(): void

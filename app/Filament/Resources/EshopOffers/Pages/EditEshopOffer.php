@@ -14,7 +14,7 @@ class EditEshopOffer extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('view')
+            Action::make('showOnWeb')
                 ->label('Zobrazit na webu')
                 ->icon('heroicon-o-arrow-top-right-on-square')
                 ->color('gray')

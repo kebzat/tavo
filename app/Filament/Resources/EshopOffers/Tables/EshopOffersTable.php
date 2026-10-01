@@ -25,7 +25,7 @@ class EshopOffersTable
                 TextColumn::make('updated_at')->label('Upraveno')->dateTime('j. n. Y H:i'),
             ])
             ->recordActions([
-                Action::make('view')
+                Action::make('showOnWeb')
                     ->label('Zobrazit')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (EshopOffer $record) => $record->url())
