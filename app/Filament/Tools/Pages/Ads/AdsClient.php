@@ -106,7 +106,7 @@ class AdsClient extends Page
     /** Upozornění, když období začíná dřív, než u klienta máme čísla. */
     public function periodNote(): ?string
     {
-        return $this->historyNote($this->dataSince(), 'Starší čísla doplníte tlačítkem Další → Doplnit starší historii.');
+        return $this->historyNote($this->dataSince(), config('ads.history_backfill') ? 'Starší čísla doplníte tlačítkem Další → Doplnit starší historii.' : 'Starší čísla zatím nestahujeme.');
     }
 
     /** Nejstarší den, ze kterého máme u klienta čísla. */
@@ -487,6 +487,7 @@ class AdsClient extends Page
     private function historyAction(): Action
     {
         return Action::make('history')
+            ->visible(fn (): bool => (bool) config('ads.history_backfill'))
             ->label('Doplnit starší historii')
             ->icon(Heroicon::OutlinedClock)
             ->modalHeading('Doplnit starší historii')

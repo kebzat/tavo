@@ -58,7 +58,7 @@ class AdsOverview extends Page
     {
         $since = AdDailyStat::query()->min('date');
 
-        return $this->historyNote($since ? substr((string) $since, 0, 10) : null, 'Starší čísla doplníte na detailu klienta: Další → Doplnit starší historii.');
+        return $this->historyNote($since ? substr((string) $since, 0, 10) : null, config('ads.history_backfill') ? 'Starší čísla doplníte na detailu klienta: Další → Doplnit starší historii.' : 'Starší čísla zatím nestahujeme.');
     }
 
     public function setSort(string $sort): void

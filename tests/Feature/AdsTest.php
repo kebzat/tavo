@@ -340,6 +340,19 @@ class AdsTest extends TestCase
         $this->assertSame('2023-08-30', $period->from->toDateString());
     }
 
+    public function test_vychozi_historie_jsou_tri_mesice_a_doplneni_je_skryte(): void
+    {
+        $account = $this->klient()->adAccounts->first();
+        $this->fakeMeta([]);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
+        Filament::setCurrentPanel('tools');
+
+        (new BackfillAdAccount($account->id))->handle(app(AccountSync::class));
+
+        Http::assertSentCount(2);
+        Livewire::test(AdsClient::class, ['client' => $account->client])->assertActionHidden('history');
+    }
+
     public function test_detail_klienta_s_vlastnim_obdobim(): void
     {
         $client = $this->klient();
@@ -357,6 +370,7 @@ class AdsTest extends TestCase
 
     public function test_pri_propojeni_se_stahne_cela_historie_po_ctvrtletich(): void
     {
+        config(['ads.backfill_months' => 37]);
         $account = $this->klient()->adAccounts->first();
         $this->fakeMeta([]);
 
@@ -370,6 +384,7 @@ class AdsTest extends TestCase
 
     public function test_doplneni_historie_stahne_jen_chybejici_usek(): void
     {
+        config(['ads.history_backfill' => true]);
         Bus::fake([BackfillAdAccount::class]);
         $client = $this->klient();
         $this->dny($client, '2026-07-01', '2026-09-29', ['spend' => 100]);

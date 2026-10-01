@@ -88,10 +88,13 @@ return [
     'sync_days' => (int) env('ADS_SYNC_DAYS', 7),
 
     /*
-     * Historie, kterou stáhneme po připojení nového účtu. Výchozí je všechno,
-     * co Meta vydá (37 měsíců). Stahuje se po čtvrtletích, u jednoho účtu
-     * to je asi 13 dotazů jednou provždy.
+     * Historie, kterou stáhneme po připojení nového účtu, v měsících. Stahuje se
+     * po čtvrtletích: 3 měsíce = 1 dotaz, 37 měsíců (maximum Mety) = asi 13 dotazů.
+     * Delší historii zapneme až po domluvě s Pavlem kvůli zatížení API.
      */
-    'backfill_months' => (int) env('ADS_BACKFILL_MONTHS', 37),
+    'backfill_months' => (int) env('ADS_BACKFILL_MONTHS', 3),
+
+    /* Tlačítko „Doplnit starší historii“ na detailu klienta. Zatím skryté. */
+    'history_backfill' => (bool) env('ADS_HISTORY_BACKFILL', false),
 
 ];
