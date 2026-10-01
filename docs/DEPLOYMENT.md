@@ -218,7 +218,7 @@ Ve `Settings → Secrets and variables → Actions` nastavte:
 | `DEPLOY_PATH` | kořen projektu na serveru, např. `/var/www/taveo` (bez lomítka na konci) |
 | `PRODUCTION_URL` | `https://taveo.cz` |
 | `PHP_BIN` | cesta k PHP 8.4 na serveru — na CyberPanelu `/usr/local/lsws/lsphp84/bin/php`, jinak `php` |
-| `WEB_USER` | volitelné; uživatel, pod kterým běží web (nahrané soubory se mu vrátí do vlastnictví) |
+| `WEB_USER` | uživatel, pod kterým běží web (na produkci `taveo1015`). Po nasazení se mu vrátí vlastnictví souborů. Bez toho patří cache konfigurace rootovi a tlačítko „Obnovit cache“ v administraci nefunguje. Když chybí, vezme se vlastník složky `storage`. |
 
 Server ke GitHubu přístup mít nemusí — soubory tam posílá GitHub, ne naopak.
 

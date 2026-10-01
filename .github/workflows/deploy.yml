@@ -143,7 +143,14 @@ jobs:
             "$PHP" artisan optimize
             "$PHP" artisan queue:restart
 
-            # lsphp běží pod uživatelem webu — vrátit vlastnictví nahraných souborů
+            # lsphp běží pod uživatelem webu — vrátit vlastnictví nahraných souborů.
+            # Bez toho zůstane cache konfigurace rootovi a tlačítko „Obnovit cache“
+            # v administraci ji nepřepíše (změna .env se pak neprojeví). Když tajemství
+            # WEB_USER chybí, vezme se vlastník složky storage, tu zakládá hosting.
+            if [ -z "$WEB_USER" ]; then
+              WEB_USER=$(stat -c '%U' storage 2>/dev/null || true)
+              [ "$WEB_USER" = "root" ] && WEB_USER=''
+            fi
             if [ -n "$WEB_USER" ]; then
               chown -R "$WEB_USER:$WEB_USER" . \
                 || echo "Varování: chown neprošel, zkontroluj práva ručně."
