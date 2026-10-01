@@ -15,12 +15,16 @@ class BackfillAdAccount
 {
     use Dispatchable;
 
-    public function __construct(public int $accountId, public ?int $days = null) {}
+    /**
+     * Bez období se stáhne celá dostupná historie (config ads.backfill_months),
+     * s obdobím jen to vybrané, třeba starší část, která ještě chybí.
+     */
+    public function __construct(public int $accountId, public ?string $from = null, public ?string $to = null) {}
 
     public function handle(AccountSync $sync): void
     {
         ignore_user_abort(true);
-        set_time_limit(300);
+        set_time_limit(600);
 
         $account = AdAccount::find($this->accountId);
 
@@ -28,9 +32,17 @@ class BackfillAdAccount
             return;
         }
 
-        $days = $this->days ?? (int) config('ads.backfill_days');
-        $yesterday = now()->subDay();
+        $sync->sync($account, $this->from && $this->to
+            ? Period::custom($this->from, $this->to)
+            : self::fullHistory());
+    }
 
-        $sync->sync($account, Period::between($yesterday->copy()->subDays($days - 1), $yesterday));
+    /** Celá historie, kterou Meta vydá, až po včerejšek. */
+    public static function fullHistory(): Period
+    {
+        $months = min(Period::MAX_HISTORY_MONTHS, max(1, (int) config('ads.backfill_months')));
+
+        // Den rezervy, ať začátek přesně na hraně 37 měsíců Meta neodmítne.
+        return Period::custom(now()->subMonthsNoOverflow($months)->addDay()->toDateString(), now()->subDay()->toDateString());
     }
 }

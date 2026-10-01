@@ -9,6 +9,7 @@ use App\Enums\Ads\ReportStatus;
 use App\Enums\Ads\ReportType;
 use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Ads\AdsClient;
+use App\Jobs\BackfillAdAccount;
 use App\Mail\AdReportMail;
 use App\Mail\AdsDailyDigest;
 use App\Models\Ads\AdAccount;
@@ -39,6 +40,7 @@ use Filament\Facades\Filament;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -328,6 +330,55 @@ class AdsTest extends TestCase
         $this->assertSame('bad', $tiles['Nákupy']['tone']);
         $this->assertSame('bad', $tiles['Cena za nákup']['tone']);
         $this->assertSame("cíl 150\u{00A0}Kč", $tiles['Cena za nákup']['hint']);
+    }
+
+    public function test_vlastni_obdobi_se_orizne_na_vcerejsek_a_37_mesicu(): void
+    {
+        $period = Period::custom('2026-10-15', '2020-01-01');
+
+        $this->assertSame('2026-09-29', $period->to->toDateString());
+        $this->assertSame('2023-08-30', $period->from->toDateString());
+    }
+
+    public function test_detail_klienta_s_vlastnim_obdobim(): void
+    {
+        $client = $this->klient();
+        $this->dny($client, '2026-07-01', '2026-07-10', ['spend' => 100]);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
+        Filament::setCurrentPanel('tools');
+
+        Livewire::test(AdsClient::class, ['client' => $client])
+            ->set('from', '2026-07-01')
+            ->set('to', '2026-07-10')
+            ->call('applyRange')
+            ->assertSet('period', 'custom')
+            ->assertSee("1\u{00A0}000\u{00A0}Kč");
+    }
+
+    public function test_pri_propojeni_se_stahne_cela_historie_po_ctvrtletich(): void
+    {
+        $account = $this->klient()->adAccounts->first();
+        $this->fakeMeta([]);
+
+        (new BackfillAdAccount($account->id))->handle(app(AccountSync::class));
+
+        $run = AdSyncRun::query()->latest('id')->first();
+        $this->assertSame('2023-08-31', $run->date_from->toDateString());
+        // 37 měsíců po 92 dnech = 13 dotazů na čísla + 1 na stav účtu.
+        Http::assertSentCount(14);
+    }
+
+    public function test_doplneni_historie_stahne_jen_chybejici_usek(): void
+    {
+        Bus::fake([BackfillAdAccount::class]);
+        $client = $this->klient();
+        $this->dny($client, '2026-07-01', '2026-09-29', ['spend' => 100]);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
+        Filament::setCurrentPanel('tools');
+
+        Livewire::test(AdsClient::class, ['client' => $client])->callAction('history', ['months' => 12]);
+
+        Bus::assertDispatchedAfterResponse(BackfillAdAccount::class, fn (BackfillAdAccount $job): bool => $job->from === '2025-10-01' && $job->to === '2026-06-30');
     }
 
     /*

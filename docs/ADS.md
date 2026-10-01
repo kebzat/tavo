@@ -29,7 +29,16 @@ nikde neukládáme.
    ze seznamu toho, co token vidí, nic se neopisuje. Při propojení se vyplní cíl
    (nákupy, poptávky, návštěvnost), měsíční rozpočet, cílová cena za konverzi,
    cílový ROAS a náš paušál.
-4. Na pozadí se stáhne historie za 90 dní (`ADS_BACKFILL_DAYS`).
+4. Na pozadí se stáhne celá historie, kterou Meta vydá: 37 měsíců (`ADS_BACKFILL_MONTHS`).
+   Stahuje se po čtvrtletích, u jednoho účtu asi 13 dotazů jednou provždy.
+
+Účet propojený dřív s kratší historií doplníte na detailu klienta: **Další → Doplnit
+starší historii** (6 měsíců až 37 měsíců). Stáhne se jen úsek, který chybí, tlačítko
+jde použít jednou za hodinu.
+
+Období se volí nahoře na přehledu i detailu: přednastavená (7 dní, 30 dní, tento
+a minulý měsíc) nebo **Vlastní období** od–do. Volba čte jen z naší databáze, na Metu
+nejde žádný dotaz. Když období začíná dřív, než máme čísla, stránka na to upozorní.
 
 Další účet téhož klienta: detail klienta → Další → Propojit účet. Vypnout nebo
 odpojit účet jde v Checklisty → Klienti → klient → Reklamní účty.
@@ -113,6 +122,7 @@ nadměrný:
 
 | Pojistka | Jak funguje |
 |---|---|
+| Historie | Při propojení jednou celá historie po čtvrtletích (asi 13 dotazů na účet), pak už nikdy. |
 | Jednou denně | `ads:sync` běží jen v 6:00. Na účet jde jeden dotaz na stav účtu a jeden na čísla za 7 dní, u 20 klientů zhruba 40 dotazů denně. |
 | Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. |
 | Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |

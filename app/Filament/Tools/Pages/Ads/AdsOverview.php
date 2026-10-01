@@ -3,13 +3,14 @@
 namespace App\Filament\Tools\Pages\Ads;
 
 use App\Filament\Tools\Actions\Ads\ConnectAdAccountAction;
+use App\Filament\Tools\Pages\Ads\Concerns\HasAdsPeriod;
 use App\Filament\Tools\Resources\AdAlerts\AdAlertResource;
 use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdDailyStat;
 use App\Models\Client;
 use App\Support\Ads\BudgetPace;
 use App\Support\Ads\Format;
 use App\Support\Ads\Metrics;
-use App\Support\Ads\Period;
 use App\Support\Ads\Stats;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -25,6 +26,8 @@ use Livewire\Attributes\Url;
  */
 class AdsOverview extends Page
 {
+    use HasAdsPeriod;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPresentationChartLine;
 
     protected static ?string $navigationLabel = 'Přehled klientů';
@@ -50,20 +53,12 @@ class AdsOverview extends Page
         return $this->currentPeriod()->label().', srovnání s '.$this->currentPeriod()->previous()->label();
     }
 
-    public function currentPeriod(): Period
+    /** Upozornění, když období začíná dřív, než máme čísla. */
+    public function periodNote(): ?string
     {
-        return Period::preset($this->period);
-    }
+        $since = AdDailyStat::query()->min('date');
 
-    /** @return array<string, string> */
-    public function periods(): array
-    {
-        return Period::PRESETS;
-    }
-
-    public function setPeriod(string $period): void
-    {
-        $this->period = array_key_exists($period, Period::PRESETS) ? $period : '7d';
+        return $this->historyNote($since ? substr((string) $since, 0, 10) : null, 'Starší čísla doplníte na detailu klienta: Další → Doplnit starší historii.');
     }
 
     public function setSort(string $sort): void
@@ -112,7 +107,7 @@ class AdsOverview extends Page
             return [
                 'id' => $client->getKey(),
                 'name' => $client->name,
-                'url' => AdsClient::getUrl(['client' => $client->getKey(), 'period' => $this->period]),
+                'url' => AdsClient::getUrl(['client' => $client->getKey(), ...$this->periodQuery()]),
                 'goal' => $goal->conversionLabel(),
                 'spend_raw' => $m->spend(),
                 'has_data' => $m->hasData(),

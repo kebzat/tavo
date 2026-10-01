@@ -54,8 +54,11 @@ class MetaAds implements AdsPlatform
         202 => 'closed',
     ];
 
-    /** Delší období se stahuje po kusech, jedna odpověď by byla zbytečně velká. */
-    private const CHUNK_DAYS = 31;
+    /**
+     * Delší období se stahuje po čtvrtletích. Méně kusů = méně dotazů, a malý
+     * účet má za čtvrtletí stovky řádků, ne desetitisíce.
+     */
+    private const CHUNK_DAYS = 92;
 
     /**
      * Strop stránek jednoho výsledku. Malý účet má jednu stránku, 90 dní

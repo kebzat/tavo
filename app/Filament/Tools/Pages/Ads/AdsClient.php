@@ -7,11 +7,14 @@ use App\Enums\Ads\PrimaryGoal;
 use App\Enums\Ads\ReportType;
 use App\Filament\Tools\Actions\Ads\ConnectAdAccountAction;
 use App\Filament\Tools\Actions\Ads\LogTimeAction;
+use App\Filament\Tools\Pages\Ads\Concerns\HasAdsPeriod;
 use App\Filament\Tools\Resources\AdReports\AdReportResource;
 use App\Filament\Tools\Resources\Clients\ClientResource;
 use App\Filament\Tools\Resources\TimeEntries\TimeEntryResource;
+use App\Jobs\BackfillAdAccount;
 use App\Models\Ads\AdAccount;
 use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdDailyStat;
 use App\Models\Ads\AdReport;
 use App\Models\Client;
 use App\Models\TimeEntry;
@@ -51,6 +54,8 @@ use Livewire\Attributes\Url;
  */
 class AdsClient extends Page
 {
+    use HasAdsPeriod;
+
     protected static ?string $slug = 'reklamy/klient';
 
     protected static bool $shouldRegisterNavigation = false;
@@ -98,20 +103,18 @@ class AdsClient extends Page
         ];
     }
 
-    public function currentPeriod(): Period
+    /** Upozornění, když období začíná dřív, než u klienta máme čísla. */
+    public function periodNote(): ?string
     {
-        return Period::preset($this->period);
+        return $this->historyNote($this->dataSince(), 'Starší čísla doplníte tlačítkem Další → Doplnit starší historii.');
     }
 
-    /** @return array<string, string> */
-    public function periods(): array
+    /** Nejstarší den, ze kterého máme u klienta čísla. */
+    public function dataSince(): ?string
     {
-        return Period::PRESETS;
-    }
+        $since = AdDailyStat::query()->whereIn('ad_account_id', $this->freshClient()->activeAdAccountIds())->min('date');
 
-    public function setPeriod(string $period): void
-    {
-        $this->period = array_key_exists($period, Period::PRESETS) ? $period : '30d';
+        return $since ? substr((string) $since, 0, 10) : null;
     }
 
     public function performance(): PerformanceView
@@ -257,6 +260,7 @@ class AdsClient extends Page
             $this->logTimeAction(),
             $this->settingsAction(),
             ActionGroup::make([
+                $this->historyAction(),
                 ConnectAdAccountAction::make($this->client),
                 $this->adviceAction(),
                 Action::make('accounts')
@@ -473,6 +477,56 @@ class AdsClient extends Page
     private function manualSyncKey(): string
     {
         return 'ads.manual-sync.client.'.$this->client->getKey();
+    }
+
+    /**
+     * Doplnění starší historie u účtů, které mají jen část (propojené dřív,
+     * kdy se stahovalo 90 dní). Stáhne jen chybějící úsek před nejstarším
+     * dnem, který máme. Jednou za hodinu.
+     */
+    private function historyAction(): Action
+    {
+        return Action::make('history')
+            ->label('Doplnit starší historii')
+            ->icon(Heroicon::OutlinedClock)
+            ->modalHeading('Doplnit starší historii')
+            ->modalDescription(fn (): string => ($this->dataSince() ? 'Čísla máme od '.Carbon::parse($this->dataSince())->format('j. n. Y').'. ' : '')
+                .'Stáhne se jen úsek, který chybí, po čtvrtletích: zhruba 1 dotaz na každé 3 měsíce a účet, jednou provždy. Meta vydá nejvýš '.Period::MAX_HISTORY_MONTHS.' měsíců zpátky.')
+            ->schema([
+                Select::make('months')
+                    ->label('Jak daleko zpátky')
+                    ->options([6 => '6 měsíců', 12 => '1 rok', 24 => '2 roky', Period::MAX_HISTORY_MONTHS => 'Všechno, co Meta vydá (37 měsíců)'])
+                    ->default(Period::MAX_HISTORY_MONTHS)
+                    ->required(),
+            ])
+            ->modalSubmitActionLabel('Doplnit')
+            ->action(function (array $data): void {
+                if (! Cache::add('ads.history.client.'.$this->client->getKey(), true, now()->addHour())) {
+                    Notification::make()->warning()->title('Historie se doplňovala před chvílí')->body('Znovu to půjde za hodinu.')->send();
+
+                    return;
+                }
+
+                $months = min(Period::MAX_HISTORY_MONTHS, (int) $data['months']);
+                $from = now()->subMonthsNoOverflow($months)->addDay()->startOfDay();
+                $queued = 0;
+
+                foreach ($this->client->adAccounts()->active()->get() as $account) {
+                    $earliest = $account->isAnalytics() ? $account->traffic()->min('date') : $account->stats()->min('date');
+                    $to = $earliest ? Carbon::parse($earliest)->subDay() : now()->subDay();
+
+                    if ($from->gt($to)) {
+                        continue;
+                    }
+
+                    BackfillAdAccount::dispatchAfterResponse($account->getKey(), $from->toDateString(), $to->toDateString());
+                    $queued++;
+                }
+
+                $queued > 0
+                    ? Notification::make()->success()->title('Historie se doplňuje na pozadí')->body('Za minutu obnovte stránku.')->send()
+                    : Notification::make()->info()->title('Historii za tohle období už máme')->send();
+            });
     }
 
     private function adviceAction(): Action

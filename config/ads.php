@@ -87,7 +87,11 @@ return [
      */
     'sync_days' => (int) env('ADS_SYNC_DAYS', 7),
 
-    /* Historie, kterou stáhneme po připojení nového účtu. */
-    'backfill_days' => (int) env('ADS_BACKFILL_DAYS', 90),
+    /*
+     * Historie, kterou stáhneme po připojení nového účtu. Výchozí je všechno,
+     * co Meta vydá (37 měsíců). Stahuje se po čtvrtletích, u jednoho účtu
+     * to je asi 13 dotazů jednou provždy.
+     */
+    'backfill_months' => (int) env('ADS_BACKFILL_MONTHS', 37),
 
 ];

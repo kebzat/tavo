@@ -17,13 +17,7 @@
         $time = $this->recentTime();
     @endphp
 
-    <div class="flex flex-wrap gap-2">
-        @foreach ($this->periods() as $key => $label)
-            <x-filament::button size="sm" :color="$period === $key ? 'primary' : 'gray'" wire:click="setPeriod('{{ $key }}')">
-                {{ $label }}
-            </x-filament::button>
-        @endforeach
-    </div>
+    @include('filament.tools.pages.ads.partials.period', ['note' => $this->periodNote()])
 
     @if ($alerts->isNotEmpty())
         <x-filament::section>

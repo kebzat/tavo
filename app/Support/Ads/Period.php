@@ -47,6 +47,29 @@ final class Period
         };
     }
 
+    /** Nejstarší den, který Meta ještě vydá (37 měsíců zpátky). */
+    public const MAX_HISTORY_MONTHS = 37;
+
+    /**
+     * Vlastní období od–do. Dnešek a budoucnost se uříznou na včerejšek,
+     * prohozené meze se otočí a začátek nesmí být starší než 37 měsíců.
+     */
+    public static function custom(string $from, string $to, ?CarbonInterface $today = null): self
+    {
+        $today = CarbonImmutable::parse($today ?? now())->startOfDay();
+        $yesterday = $today->subDay();
+        $oldest = $today->subMonthsNoOverflow(self::MAX_HISTORY_MONTHS);
+
+        $a = CarbonImmutable::parse($from)->startOfDay();
+        $b = CarbonImmutable::parse($to)->startOfDay();
+        [$a, $b] = $a->gt($b) ? [$b, $a] : [$a, $b];
+
+        $b = $b->min($yesterday);
+        $a = $a->max($oldest)->min($b);
+
+        return new self($a, $b, 'custom');
+    }
+
     /** Týden pondělí až neděle, do kterého patří zadaný den. */
     public static function week(CarbonInterface $day): self
     {

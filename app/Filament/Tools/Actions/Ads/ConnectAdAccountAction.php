@@ -127,7 +127,7 @@ class ConnectAdAccountAction
                 Notification::make()
                     ->success()
                     ->title("{$account->name} je propojený s klientem {$client->name}")
-                    ->body('Historie za '.config('ads.backfill_days').' dní se stahuje na pozadí. Za minutu obnovte stránku.')
+                    ->body('Stahuje se celá historie, kterou Meta vydá (až '.config('ads.backfill_months').' měsíců), na pozadí asi minutu. Pak obnovte stránku.')
                     ->send();
             })
             ->successRedirectUrl(fn (array $data): string => AdsClient::getUrl(['client' => $client?->getKey() ?? $data['client_id']]));

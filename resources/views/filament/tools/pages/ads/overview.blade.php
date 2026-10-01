@@ -4,13 +4,7 @@
     @endphp
 
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap gap-2">
-            @foreach ($this->periods() as $key => $label)
-                <x-filament::button size="sm" :color="$period === $key ? 'primary' : 'gray'" wire:click="setPeriod('{{ $key }}')">
-                    {{ $label }}
-                </x-filament::button>
-            @endforeach
-        </div>
+        @include('filament.tools.pages.ads.partials.period', ['note' => $this->periodNote()])
 
         @if ($cards->count() > 1)
             <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
