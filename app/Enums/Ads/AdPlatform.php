@@ -52,6 +52,15 @@ enum AdPlatform: string implements HasLabel
         return in_array($this, [self::Demo, self::DemoGa4], true);
     }
 
+    /**
+     * Umí platforma vrátit přesný dosah za období (bez překryvů mezi dny)?
+     * Google Ads dosah nemá, u něj se dosah a frekvence nepočítají.
+     */
+    public function hasPeriodReach(): bool
+    {
+        return in_array($this, [self::Meta, self::Demo], true);
+    }
+
     /** @return list<self> */
     public static function adPlatforms(): array
     {

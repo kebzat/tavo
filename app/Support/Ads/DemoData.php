@@ -57,7 +57,7 @@ class DemoData
                     ['client_id' => $client->getKey(), 'name' => $account['name'], 'currency' => 'CZK', 'timezone' => 'Europe/Prague', 'is_active' => true],
                 );
 
-                $this->sync->sync($model, $period);
+                $this->sync->sync($model, $period, withReach: true);
             }
 
             $this->time($client, $userId);

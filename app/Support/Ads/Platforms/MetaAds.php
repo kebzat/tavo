@@ -38,7 +38,14 @@ class MetaAds implements AdsPlatform
         'leads' => ['lead', 'onsite_conversion.lead_grouped', 'offsite_conversion.fb_pixel_lead', 'onsite_web_lead'],
         'add_to_cart' => ['omni_add_to_cart', 'add_to_cart', 'offsite_conversion.fb_pixel_add_to_cart'],
         'checkouts' => ['omni_initiated_checkout', 'initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout'],
+        'landing_page_views' => ['landing_page_view', 'omni_landing_page_view'],
     ];
+
+    /**
+     * Dosah, frekvence a unikátní prokliky za celé období. Přes dny se sčítat
+     * nedají, proto je bereme za účet a období zvlášť (jeden dotaz na všechna).
+     */
+    private const REACH_FIELDS = 'reach,frequency,impressions,unique_inline_link_clicks';
 
     /** Číselné stavy účtu z Graph API. */
     private const STATUSES = [
@@ -135,7 +142,37 @@ class MetaAds implements AdsPlatform
             leads: $this->pick($actions, self::ACTIONS['leads']),
             addToCart: $this->pick($actions, self::ACTIONS['add_to_cart']),
             checkouts: $this->pick($actions, self::ACTIONS['checkouts']),
+            landingPageViews: $this->pick($actions, self::ACTIONS['landing_page_views']),
             raw: ['actions' => $actions, 'action_values' => $values],
+        );
+    }
+
+    public function periodReach(AdAccount $account, array $periods): Collection
+    {
+        if ($periods === []) {
+            return collect();
+        }
+
+        $ranges = array_map(fn (Period $period): array => ['since' => $period->from->toDateString(), 'until' => $period->to->toDateString()], $periods);
+
+        return $this->paginate('act_'.$account->external_id.'/insights', [
+            'level' => 'account',
+            'time_ranges' => json_encode(array_values($ranges)),
+            'fields' => self::REACH_FIELDS,
+            'limit' => 50,
+        ])->map(fn (array $row): ReachStat => $this->reachStat($row))->values();
+    }
+
+    /** @param  array<string, mixed>  $row */
+    public function reachStat(array $row): ReachStat
+    {
+        return new ReachStat(
+            from: (string) $row['date_start'],
+            to: (string) $row['date_stop'],
+            reach: (int) ($row['reach'] ?? 0),
+            impressions: (int) ($row['impressions'] ?? 0),
+            frequency: (float) ($row['frequency'] ?? 0),
+            uniqueLinkClicks: (int) ($row['unique_inline_link_clicks'] ?? 0),
         );
     }
 

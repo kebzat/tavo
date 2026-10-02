@@ -93,7 +93,34 @@ class DemoAds implements AdsPlatform
             leads: $isShop ? 0 : $conversions,
             addToCart: $isShop && ! $broken ? round($linkClicks * 0.09 * $noise('a', 0.3)) : 0,
             checkouts: $isShop && ! $broken ? round($linkClicks * 0.05 * $noise('o', 0.3)) : 0,
+            // Část prokliků odejde dřív, než se stránka načte.
+            landingPageViews: round($linkClicks * 0.78 * $noise('l', 0.1)),
         );
+    }
+
+    /**
+     * Dosah za období z vymyšlených denních čísel. Lidé se přes dny opakují,
+     * takže frekvence s délkou období roste, jako u skutečného účtu.
+     */
+    public function periodReach(AdAccount $account, array $periods): Collection
+    {
+        return collect($periods)
+            ->map(function (Period $period) use ($account): ReachStat {
+                $days = $this->dailyStats($account, $period);
+                $impressions = (int) $days->sum('impressions');
+                $frequency = min(4.2, 1.25 + 0.06 * $period->days()) * (1 + DemoCatalog::noise($account->external_id.'|reach|'.$period->from->toDateString()) * 0.08);
+                $reach = $frequency > 0 ? (int) round($impressions / $frequency) : 0;
+
+                return new ReachStat(
+                    from: $period->from->toDateString(),
+                    to: $period->to->toDateString(),
+                    reach: $reach,
+                    impressions: $impressions,
+                    frequency: $reach > 0 ? round($impressions / $reach, 4) : 0,
+                    uniqueLinkClicks: (int) round($days->sum('linkClicks') * 0.82),
+                );
+            })
+            ->values();
     }
 
     /** @param  array<string, mixed>  $spec */
