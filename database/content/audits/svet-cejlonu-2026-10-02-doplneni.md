@@ -430,7 +430,7 @@ Zboží ze Srí Lanky závisí na dovozu a část produktů bude občas nedostup
 
 ## Plán a varianty spolupráce
 
-Hlavní cíl do března je dostat e-shop v Googlu výš u dotazů, které přivádějí objednávky. Proto má přednost to, co Google při hodnocení stránek používá: co má v indexu, titulky a popisky, obsah kategorií, návody a odkazy mezi nimi. Ostatní nálezy z auditu, třeba GEO, profily v katalozích a drobnosti, řešíme, až na ně zbude prostor, nebo ve větší variantě.
+Hlavní cíl do března je dostat e-shop v Googlu výš u dotazů, které přivádějí objednávky. Proto má přednost to, co Google při hodnocení stránek používá: co má v indexu, titulky a popisky, obsah kategorií, články a odkazy mezi nimi. Ostatní nálezy z auditu, třeba GEO, profily v katalozích a drobnosti, řešíme, až na ně zbude prostor, nebo ve větší variantě.
 
 Konkrétní pozice předem neslibujeme. Úpravy se v Googlu obvykle projeví po několika týdnech až měsících a výsledek ovlivňuje i konkurence.
 
@@ -444,7 +444,7 @@ Po celou dobu průběžně sledujeme pozice hlavních dotazů v Googlu, indexaci
 - úklid indexu a sitemapy
 - titulky, popisky a strukturovaná data
 - texty a FAQ pro kategorie Čaje a Koření
-- dva návody propojené s produkty
+- dva články v Rádci (blog) propojené s produkty
 - průběžné sledování pozic, indexace a chyb
 - měsíční přehled
 :::
@@ -456,7 +456,7 @@ Po celou dobu průběžně sledujeme pozice hlavních dotazů v Googlu, indexaci
 
 - vše z varianty A
 - texty a FAQ pro všechny kategorie
-- čtyři návody místo dvou
+- čtyři články místo dvou
 - podkategorie Černé čaje a Zelené čaje
 - zmenšení fotek u hlavních produktů
 - produktové feedy pro Google a Zboží.cz
@@ -468,16 +468,16 @@ Po celou dobu průběžně sledujeme pozice hlavních dotazů v Googlu, indexaci
 |---|---|---|
 | Říjen | Search Console a Seznam Webmaster, výchozí stav pozic a návštěvnosti, úklid indexu a sitemapy, odstranění ukázkového obsahu, oprava rozbitého odkazu | produktové feedy pro Google a Zboží.cz |
 | Listopad | titulky a popisky úvodní stránky, kategorií a dárkových balíčků, oprava strukturovaných dat | zmenšení fotek u hlavních produktů |
-| Prosinec | kontrola indexace a pozic, pravidla pro přidávání produktů; v sezóně nic velkého neměníme | první návod |
+| Prosinec | kontrola indexace a pozic, pravidla pro přidávání produktů; v sezóně nic velkého neměníme | první článek |
 | Leden | vyhodnocení Vánoc, texty a FAQ pro kategorie Čaje a Koření | texty a FAQ pro ostatní kategorie |
-| Únor | návod o cejlonské skořici propojený s produkty, zákaz filtrů v robots.txt po jejich vyřazení z indexu | podkategorie Černé čaje a Zelené čaje |
-| Březen | druhý návod nebo FAQ k hlavním produktům, vyhodnocení proti říjnu a plán na další měsíce | další návod |
+| Únor | článek o cejlonské skořici propojený s produkty, zákaz filtrů v robots.txt po jejich vyřazení z indexu | podkategorie Černé čaje a Zelené čaje |
+| Březen | druhý článek nebo FAQ k hlavním produktům, vyhodnocení proti říjnu a plán na další měsíce | další článek |
 
 ### Co od vás budeme potřebovat
 
 - přístupy do administrace Upgates, Google Analytics a k ověření Search Console,
 - fakta k produktům a kategoriím: oblasti původu, pěstitelé, zpracování, vlastní zkušenosti,
-- podklady k návodům, texty z nich připravíme my,
+- texty článků; stačí nám samotný text, na web ho vložíme, graficky upravíme a propojíme s produkty,
 - posouzení zdravotních tvrzení odborníkem; seznam rizikových formulací vám předáme, samotné posouzení v ceně není.
 
 ### Co v nabídce není
