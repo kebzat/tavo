@@ -20,4 +20,15 @@ interface AdsPlatform extends ConnectedSource
      * @throws AdsApiException
      */
     public function dailyStats(AdAccount $account, Period $period): Collection;
+
+    /**
+     * Přesný dosah účtu za každé ze zadaných období (jeden dotaz na všechna).
+     * Platforma bez dosahu (AdPlatform::hasPeriodReach() = false) vrací prázdnou kolekci.
+     *
+     * @param  list<Period>  $periods
+     * @return Collection<int, ReachStat>
+     *
+     * @throws AdsApiException
+     */
+    public function periodReach(AdAccount $account, array $periods): Collection;
 }

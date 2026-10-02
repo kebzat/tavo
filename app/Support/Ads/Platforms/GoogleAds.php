@@ -93,6 +93,12 @@ class GoogleAds implements AdsPlatform
         )->map(fn (array $row): DailyStat => $this->dailyStat($row, $goal))->values();
     }
 
+    /** Google Ads dosah za období nevrací, dosah a frekvence jsou jen z Mety. */
+    public function periodReach(AdAccount $account, array $periods): Collection
+    {
+        return collect();
+    }
+
     /** @param  array<string, mixed>  $row */
     public function dailyStat(array $row, PrimaryGoal $goal): DailyStat
     {

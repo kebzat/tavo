@@ -34,8 +34,9 @@ final class PerformanceView
         $this->goal = PrimaryGoal::tryFrom($snapshot['goal'] ?? '') ?? PrimaryGoal::Purchases;
         $this->period = Period::between($snapshot['period']['from'], $snapshot['period']['to']);
         $this->previousPeriod = Period::between($snapshot['previous']['from'], $snapshot['previous']['to']);
-        $this->totals = Metrics::fromArray($snapshot['totals'] ?? []);
-        $this->previous = Metrics::fromArray($snapshot['previous_totals'] ?? []);
+        // Přesný dosah za období mají jen novější snímky a jen přednastavená období.
+        $this->totals = Metrics::fromArray($snapshot['totals'] ?? [])->withPeriodReach($snapshot['period_reach']['current'] ?? null);
+        $this->previous = Metrics::fromArray($snapshot['previous_totals'] ?? [])->withPeriodReach($snapshot['period_reach']['previous'] ?? null);
     }
 
     public function hasData(): bool
@@ -44,56 +45,39 @@ final class PerformanceView
     }
 
     /**
-     * Dlaždice s hlavními čísly. Tón říká, jestli je změna dobrá: u ceny
-     * za konverzi je růst špatně, u konverzí dobře, u útraty ani jedno.
+     * Dlaždice s hlavními čísly. Které to jsou, říká výběr v „Co ukazovat“,
+     * bez výběru výchozí sada podle cíle (MetricCatalog). Tón říká, jestli je
+     * změna dobrá: u ceny za konverzi je růst špatně, u konverzí dobře,
+     * u útraty ani jedno.
      *
-     * @return list<array{label: string, value: string, previous: string, change: ?string, tone: string, hint: ?string}>
+     * @return list<array{key: string, label: string, value: string, previous: string, change: ?string, tone: string, hint: ?string}>
      */
     public function tiles(): array
     {
-        $m = $this->totals;
-        $p = $this->previous;
-        $goal = $this->goal;
+        $keys = MetricCatalog::tiles($this->snapshot['dashboard']['tiles'] ?? null, $this->goal);
+
+        return array_map(fn (string $key): array => $this->tile(
+            $key,
+            MetricCatalog::label($key, $this->goal),
+            MetricCatalog::value($key, $this->totals, $this->goal),
+            MetricCatalog::value($key, $this->previous, $this->goal),
+            fn (?float $value): string => MetricCatalog::format($key, $value, $this->currency),
+            MetricCatalog::direction($key),
+            $this->hint($key),
+        ), $keys);
+    }
+
+    /** Poznámka pod dlaždicí: cíl, nebo proč číslo chybí. */
+    private function hint(string $key): ?string
+    {
         $targets = $this->snapshot['targets'] ?? [];
 
-        $tiles = [
-            $this->tile('spend', 'Útrata', $m->spend(), $p->spend(), fn ($v) => Format::money($v, $this->currency), 0),
-            $this->tile('conversions', $goal->conversionLabel(), $m->conversions($goal), $p->conversions($goal), fn ($v) => Format::count($v), 1),
-            $this->tile('cost', $goal->costLabel(), $m->costPerConversion($goal), $p->costPerConversion($goal), fn ($v) => Format::unitPrice($v, $this->currency), -1,
-                filled($targets['target_cpa'] ?? null) && $goal !== PrimaryGoal::Traffic ? 'cíl '.Format::unitPrice((float) $targets['target_cpa'], $this->currency) : null),
-        ];
-
-        $tiles = match ($goal) {
-            PrimaryGoal::Purchases => [
-                ...$tiles,
-                $this->tile('roas', 'ROAS', $m->roas(), $p->roas(), fn ($v) => Format::roas($v), 1,
-                    filled($targets['target_roas'] ?? null) ? 'cíl '.Format::roas((float) $targets['target_roas']) : null),
-                $this->tile('value', 'Hodnota nákupů', $m->get('purchase_value'), $p->get('purchase_value'), fn ($v) => Format::money($v, $this->currency), 1),
-                $this->tile('clicks', 'Prokliky na web', $m->get('link_clicks'), $p->get('link_clicks'), fn ($v) => Format::number($v), 1),
-            ],
-            PrimaryGoal::Leads => [
-                ...$tiles,
-                $this->tile('conversion_rate', 'Konverzní poměr', $m->conversionRate($goal), $p->conversionRate($goal), fn ($v) => Format::percent($v), 1),
-                $this->tile('clicks', 'Prokliky na web', $m->get('link_clicks'), $p->get('link_clicks'), fn ($v) => Format::number($v), 1),
-                $this->tile('cpc', 'Cena za proklik', $m->cpc(), $p->cpc(), fn ($v) => Format::unitPrice($v, $this->currency), -1),
-            ],
-            PrimaryGoal::Traffic => [
-                ...$tiles,
-                $this->tile('impressions', 'Zobrazení', $m->get('impressions'), $p->get('impressions'), fn ($v) => Format::number($v), 1),
-            ],
+        return match (true) {
+            $key === 'cost_per_conversion' && filled($targets['target_cpa'] ?? null) && $this->goal !== PrimaryGoal::Traffic => 'cíl '.Format::unitPrice((float) $targets['target_cpa'], $this->currency),
+            $key === 'roas' && filled($targets['target_roas'] ?? null) => 'cíl '.Format::roas((float) $targets['target_roas']),
+            MetricCatalog::needsPeriodReach($key) && ! $this->totals->hasPeriodReach() => PeriodReach::UNAVAILABLE_HINT,
+            default => null,
         };
-
-        $tiles = [
-            ...$tiles,
-            $this->tile('ctr', 'CTR', $m->ctr(), $p->ctr(), fn ($v) => Format::percent($v), 1),
-            $this->tile('cpm', 'CPM', $m->cpm(), $p->cpm(), fn ($v) => Format::unitPrice($v, $this->currency), -1),
-        ];
-
-        $chosen = $this->snapshot['dashboard']['tiles'] ?? null;
-
-        return $chosen
-            ? array_values(array_filter($tiles, fn (array $tile): bool => in_array($tile['key'], $chosen, true)))
-            : $tiles;
     }
 
     /**
@@ -105,24 +89,6 @@ final class PerformanceView
         $chosen = $this->snapshot['dashboard']['sections'] ?? null;
 
         return $chosen === null || in_array($section, $chosen, true);
-    }
-
-    /** Všechny dlaždice, které jde u klienta zapnout, pro formulář nastavení. */
-    public static function tileOptions(PrimaryGoal $goal): array
-    {
-        return array_filter([
-            'spend' => 'Útrata',
-            'conversions' => $goal->conversionLabel(),
-            'cost' => $goal->costLabel(),
-            'roas' => $goal->hasValue() ? 'ROAS' : null,
-            'value' => $goal->hasValue() ? 'Hodnota nákupů' : null,
-            'conversion_rate' => $goal === PrimaryGoal::Leads ? 'Konverzní poměr' : null,
-            'clicks' => $goal === PrimaryGoal::Traffic ? null : 'Prokliky na web',
-            'cpc' => $goal === PrimaryGoal::Leads ? 'Cena za proklik' : null,
-            'impressions' => $goal === PrimaryGoal::Traffic ? 'Zobrazení' : null,
-            'ctr' => 'CTR',
-            'cpm' => 'CPM',
-        ]);
     }
 
     public const SECTIONS = [
@@ -244,6 +210,7 @@ final class PerformanceView
             PrimaryGoal::Purchases => [
                 'Zobrazení' => $m->get('impressions'),
                 'Prokliky na web' => $m->get('link_clicks'),
+                'Zobrazení cílové stránky' => $m->get('landing_page_views'),
                 'Přidání do košíku' => $m->get('add_to_cart'),
                 'Zahájení objednávky' => $m->get('checkouts'),
                 'Nákupy' => $m->get('purchases'),
@@ -251,6 +218,7 @@ final class PerformanceView
             PrimaryGoal::Leads => [
                 'Zobrazení' => $m->get('impressions'),
                 'Prokliky na web' => $m->get('link_clicks'),
+                'Zobrazení cílové stránky' => $m->get('landing_page_views'),
                 'Poptávky' => $m->get('leads'),
             ],
             PrimaryGoal::Traffic => [

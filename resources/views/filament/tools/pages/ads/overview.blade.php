@@ -1,6 +1,7 @@
 <x-filament-panels::page>
     @php
         $cards = $this->cards();
+        $tileOptions = $this->tileOptions();
     @endphp
 
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -32,17 +33,20 @@
             </div>
         </x-filament::section>
     @else
-        <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
             @foreach ($cards as $card)
-                <a href="{{ $card['url'] }}" wire:key="ads-card-{{ $card['id'] }}" @class([
-                    'group flex flex-col rounded-xl bg-white p-5 shadow-sm ring-1 transition hover:shadow-md dark:bg-gray-900',
+                {{-- Celá karta je odkaz přes roztažený ::after u názvu. Tři tečky u čísel leží nad ním (z-10), ať neotevírají detail. --}}
+                <div wire:key="ads-card-{{ $card['id'] }}" @class([
+                    'group relative flex flex-col rounded-xl bg-white p-5 shadow-sm ring-1 transition hover:shadow-md dark:bg-gray-900',
                     'ring-danger-300 dark:ring-danger-500/50' => $card['worst']?->value === 'critical',
                     'ring-warning-300 dark:ring-warning-500/50' => $card['worst']?->value === 'warning',
                     'ring-gray-950/5 dark:ring-white/10' => ! in_array($card['worst']?->value, ['critical', 'warning'], true),
                 ])>
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <h2 class="truncate text-base font-semibold text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">{{ $card['name'] }}</h2>
+                            <h2 class="truncate text-base font-semibold text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+                                <a href="{{ $card['url'] }}" class="after:absolute after:inset-0 after:rounded-xl">{{ $card['name'] }}</a>
+                            </h2>
                             <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $card['accounts'] }}</p>
                         </div>
 
@@ -60,9 +64,31 @@
 
                     @if ($card['has_data'])
                         <dl class="mt-4 grid grid-cols-3 gap-x-3 gap-y-3">
-                            @foreach ($card['metrics'] as $metric)
-                                <div class="min-w-0">
-                                    <dt class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $metric['label'] }}</dt>
+                            @foreach ($card['metrics'] as $slot => $metric)
+                                <div class="min-w-0" @if ($metric['hint']) title="{{ $metric['hint'] }}" @endif>
+                                    <dt class="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                        <span class="min-w-0 truncate">{{ $metric['label'] }}</span>
+                                        <x-filament::dropdown placement="bottom-start" max-height="20rem" width="xs" shift class="-my-1 shrink-0">
+                                            <x-slot name="trigger" class="relative z-10">
+                                                <button type="button" title="Vybrat číslo" class="flex size-5 items-center justify-center rounded text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200">
+                                                    <x-filament::icon icon="heroicon-m-ellipsis-vertical" class="size-4" />
+                                                    <span class="sr-only">Vybrat číslo na pozici {{ $slot + 1 }}</span>
+                                                </button>
+                                            </x-slot>
+
+                                            <x-filament::dropdown.header>Pozice {{ $slot + 1 }}, platí pro všechny klienty</x-filament::dropdown.header>
+                                            <x-filament::dropdown.list>
+                                                @foreach ($tileOptions as $key => $label)
+                                                    <x-filament::dropdown.list.item
+                                                        wire:click="setOverviewTile({{ $slot }}, '{{ $key }}')"
+                                                        x-on:click="close()"
+                                                        :color="$metric['key'] === $key ? 'primary' : 'gray'"
+                                                        :icon="$metric['key'] === $key ? 'heroicon-m-check' : null"
+                                                    >{{ $label }}</x-filament::dropdown.list.item>
+                                                @endforeach
+                                            </x-filament::dropdown.list>
+                                        </x-filament::dropdown>
+                                    </dt>
                                     <dd class="truncate text-base font-semibold tabular-nums text-gray-950 dark:text-white">{{ $metric['value'] }}</dd>
                                     @if ($metric['change'])
                                         <dd @class([
@@ -105,7 +131,7 @@
                             </div>
                         </div>
                     @endif
-                </a>
+                </div>
             @endforeach
         </div>
     @endif

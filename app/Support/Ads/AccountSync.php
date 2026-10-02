@@ -30,7 +30,12 @@ class AccountSync
 {
     public function __construct(private readonly Platforms $platforms) {}
 
-    public function sync(AdAccount $account, Period $period): AdSyncRun
+    /**
+     * @param  bool  $withReach  stáhnout i přesný dosah za přednastavená období
+     *                           (jeden dotaz navíc). Ranní běh a ruční načtení ano,
+     *                           doplňování historie ne.
+     */
+    public function sync(AdAccount $account, Period $period, bool $withReach = false): AdSyncRun
     {
         // Jeden účet se nikdy nestahuje dvakrát současně (ranní běh a tlačítko,
         // dvojklik). Druhý pokus se jen zapíše jako přeskočený.
@@ -48,13 +53,13 @@ class AccountSync
         }
 
         try {
-            return $this->run($account, $period);
+            return $this->run($account, $period, $withReach);
         } finally {
             $lock->release();
         }
     }
 
-    private function run(AdAccount $account, Period $period): AdSyncRun
+    private function run(AdAccount $account, Period $period, bool $withReach): AdSyncRun
     {
         $run = $account->syncRuns()->create([
             'date_from' => $period->from,
@@ -83,6 +88,10 @@ class AccountSync
             ])->save();
 
             $run->update(['status' => 'ok', 'rows' => $rows, 'finished_at' => now()]);
+
+            if ($withReach && $platform instanceof AdsPlatform && $account->platform->hasPeriodReach()) {
+                $this->syncReach($account, $platform);
+            }
         } catch (AdsApiException $e) {
             $account->forceFill(['last_sync_error' => $e->getMessage()])->save();
             $run->update(['status' => 'failed', 'error' => $e->getMessage(), 'finished_at' => now()]);
@@ -94,6 +103,29 @@ class AccountSync
         }
 
         return $run;
+    }
+
+    /**
+     * Přesný dosah za přednastavená období, jeden dotaz na účet. Když se
+     * nepovede, denní čísla platí dál a zůstane včerejší dosah. Kvůli dosahu
+     * se synchronizace jako chybná neoznačuje.
+     */
+    private function syncReach(AdAccount $account, AdsPlatform $platform): void
+    {
+        $periods = PeriodReach::ranges();
+
+        try {
+            $stats = $platform->periodReach($account, $periods);
+        } catch (AdsApiException $e) {
+            Log::warning('Reklamy: dosah za období se nestáhl.', [
+                'account' => $account->external_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        DB::transaction(fn () => PeriodReach::store($account, $periods, $stats));
     }
 
     /** @param  Collection<int, DailyStat>  $stats */

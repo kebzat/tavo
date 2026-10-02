@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Log;
  *   nad 75 %) nebo vrátí chybu „moc dotazů“, stahování z ní pozastaví, podle Mety
  *   do obnovení přístupu, jinak do zítřka.
  *
- * Běžný provoz je o řád níž: ranní synchronizace dělá dva dotazy na účet a den.
+ * Běžný provoz je o řád níž: ranní synchronizace dělá tři dotazy na účet a den
+ * (stav účtu, čísla po kampaních, dosah za přednastavená období).
  * Pojistka je tu pro případ chyby v kódu nebo opakovaného klikání, ne pro každodenní
  * provoz.
  */
@@ -47,7 +48,7 @@ final class ApiGuard
         $limit = $this->dailyLimit();
 
         if ($this->callsToday() >= $limit) {
-            throw new AdsApiException($this->label().": dnešní strop {$limit} dotazů je vyčerpaný, další stahování zítra. Běžně stačí dva dotazy na účet a den, zkontrolujte log.");
+            throw new AdsApiException($this->label().": dnešní strop {$limit} dotazů je vyčerpaný, další stahování zítra. Běžně stačí tři dotazy na účet a den, zkontrolujte log.");
         }
 
         Cache::add($this->counterKey(), 0, now()->addDays(2));

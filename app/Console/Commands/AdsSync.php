@@ -43,9 +43,11 @@ class AdsSync extends Command
         }
 
         $failed = 0;
+        // Dosah za přednastavená období jen při běžném denním běhu, ne při stahování historie.
+        $withReach = ! $this->option('from');
 
         foreach ($accounts as $account) {
-            $run = $sync->sync($account, $period);
+            $run = $sync->sync($account, $period, $withReach);
 
             if ($run->status === 'ok') {
                 $this->info("{$account->client->name} · {$account->name}: {$run->rows} řádků ({$period->label()}).");

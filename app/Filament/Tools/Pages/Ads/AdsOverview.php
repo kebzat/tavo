@@ -2,18 +2,23 @@
 
 namespace App\Filament\Tools\Pages\Ads;
 
+use App\Enums\Ads\PrimaryGoal;
 use App\Filament\Tools\Actions\Ads\ConnectAdAccountAction;
 use App\Filament\Tools\Pages\Ads\Concerns\HasAdsPeriod;
 use App\Filament\Tools\Resources\AdAlerts\AdAlertResource;
 use App\Models\Ads\AdAlert;
 use App\Models\Ads\AdDailyStat;
 use App\Models\Client;
+use App\Settings\AdsSettings;
 use App\Support\Ads\BudgetPace;
 use App\Support\Ads\Format;
+use App\Support\Ads\MetricCatalog;
 use App\Support\Ads\Metrics;
+use App\Support\Ads\PeriodReach;
 use App\Support\Ads\Stats;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
@@ -21,8 +26,9 @@ use Livewire\Attributes\Url;
 
 /**
  * Přehled všech klientů v reklamách na jedné obrazovce. Karta na klienta:
- * útrata, konverze, cena za konverzi, ROAS, CTR, čerpání rozpočtu a co
- * svítí. Klient s upozorněním je nahoře.
+ * šest čísel (výchozí útrata, konverze, cena za konverzi, ROAS, CTR, CPM,
+ * každé jde třemi tečkami vyměnit), čerpání rozpočtu a co svítí. Klient
+ * s upozorněním je nahoře.
  */
 class AdsOverview extends Page
 {
@@ -86,13 +92,17 @@ class AdsOverview extends Page
         $previous = Stats::byAccount($ids, $period->previous());
         $daily = Stats::dailyByAccount($ids, $period);
         $alerts = AdAlert::query()->live()->get()->groupBy('client_id');
+        $reach = PeriodReach::byAccount($ids, $period);
+        $previousReach = PeriodReach::byAccount($ids, $period->previous());
+        $slots = MetricCatalog::overviewSlots(app(AdsSettings::class)->overview_tiles);
 
-        $cards = $clients->map(function (Client $client) use ($period, $current, $previous, $daily, $alerts): array {
+        $cards = $clients->map(function (Client $client) use ($period, $current, $previous, $daily, $alerts, $reach, $previousReach, $slots): array {
             $accountIds = $client->activeAdAccountIds();
+            $reachIds = PeriodReach::accountIds($client->adAccounts);
             $goal = $client->adGoal();
             $currency = $client->adCurrency();
-            $m = $this->sum($current, $accountIds);
-            $p = $this->sum($previous, $accountIds);
+            $m = $this->sum($current, $accountIds)->withPeriodReach(PeriodReach::total($reachIds, $period, $reach));
+            $p = $this->sum($previous, $accountIds)->withPeriodReach(PeriodReach::total($reachIds, $period->previous(), $previousReach));
             $clientAlerts = $alerts->get($client->getKey(), collect());
             $worst = $clientAlerts->sortByDesc(fn (AdAlert $alert): int => $alert->severity->weight())->first()?->severity;
             $pace = BudgetPace::for($accountIds, $client->adSettings?->monthly_budget);
@@ -111,13 +121,7 @@ class AdsOverview extends Page
                 'goal' => $goal->conversionLabel(),
                 'spend_raw' => $m->spend(),
                 'has_data' => $m->hasData(),
-                'metrics' => array_values(array_filter([
-                    ['label' => 'Útrata', 'value' => Format::money($m->spend(), $currency), 'change' => Format::change(Metrics::change($m->spend(), $p->spend())), 'tone' => 'neutral'],
-                    $this->metric($goal->conversionLabel(), $m->conversions($goal), $p->conversions($goal), fn ($v) => Format::count($v), 1),
-                    $this->metric($goal->costLabel(), $m->costPerConversion($goal), $p->costPerConversion($goal), fn ($v) => Format::unitPrice($v, $currency), -1),
-                    $goal->hasValue() ? $this->metric('ROAS', $m->roas(), $p->roas(), fn ($v) => Format::roas($v), 1) : null,
-                    $this->metric('CTR', $m->ctr(), $p->ctr(), fn ($v) => Format::percent($v), 1),
-                ])),
+                'metrics' => array_map(fn (string $key): array => $this->metric($key, $goal, $currency, $m, $p), $slots),
                 'spark_spend' => $days->map(fn (Metrics $day): float => $day->spend())->all(),
                 'spark_conversions' => $days->map(fn (Metrics $day): float => $day->conversions($goal))->all(),
                 'budget' => $pace ? [
@@ -168,21 +172,60 @@ class AdsOverview extends Page
     }
 
     /**
-     * @param  callable(?float): string  $format
-     * @return array{label: string, value: string, change: ?string, tone: string}
+     * Které číslo je na kartách v pozici $slot (0 až 5). Platí pro všechny
+     * klienty i všechny uživatele nástrojů.
      */
-    private function metric(string $label, ?float $current, ?float $previous, callable $format, int $direction): array
+    public function setOverviewTile(int $slot, string $metric): void
     {
-        $change = Metrics::change($current, $previous);
+        if ($slot < 0 || $slot >= MetricCatalog::OVERVIEW_SLOTS || ! MetricCatalog::exists($metric)) {
+            Notification::make()->danger()->title('Takové číslo neznáme')->send();
+
+            return;
+        }
+
+        $settings = app(AdsSettings::class);
+        $slots = MetricCatalog::overviewSlots($settings->overview_tiles);
+        $slots[$slot] = $metric;
+        $settings->overview_tiles = $slots;
+        $settings->save();
+    }
+
+    /**
+     * Všechna čísla pro výběr u dlaždice.
+     *
+     * @return array<string, string>
+     */
+    public function tileOptions(): array
+    {
+        return MetricCatalog::allOptions();
+    }
+
+    /**
+     * Jedno číslo na kartě. Když pro cíl klienta nedává smysl (ROAS
+     * u poptávek), ukáže se pomlčka.
+     *
+     * @return array{key: string, label: string, value: string, change: ?string, tone: string, hint: ?string}
+     */
+    private function metric(string $key, PrimaryGoal $goal, string $currency, Metrics $m, Metrics $p): array
+    {
+        $current = MetricCatalog::value($key, $m, $goal);
+        $change = Metrics::change($current, MetricCatalog::value($key, $p, $goal));
+        $direction = MetricCatalog::direction($key);
 
         return [
-            'label' => $label,
-            'value' => $format($current),
+            'key' => $key,
+            'label' => MetricCatalog::label($key, $goal),
+            'value' => MetricCatalog::format($key, $current, $currency),
             'change' => Format::change($change),
             'tone' => match (true) {
-                $change === null || abs($change) < 3 => 'neutral',
+                $change === null, $direction === 0, abs($change) < 3 => 'neutral',
                 $change * $direction > 0 => 'good',
                 default => 'bad',
+            },
+            'hint' => match (true) {
+                ! MetricCatalog::appliesTo($key, $goal) => 'U cíle „'.$goal->getLabel().'“ se nepočítá',
+                MetricCatalog::needsPeriodReach($key) && ! $m->hasPeriodReach() => 'Dosah a frekvence '.PeriodReach::UNAVAILABLE_HINT,
+                default => null,
             },
         ];
     }

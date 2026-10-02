@@ -43,6 +43,12 @@ class AdsSettings extends Settings
      */
     public int $min_conversions;
 
+    /**
+     * Šest čísel na kartě klienta v přehledu, klíče z MetricCatalog. Mění se
+     * třemi tečkami u dlaždice a platí pro všechny.
+     */
+    public array $overview_tiles;
+
     public static function group(): string
     {
         return 'ads';

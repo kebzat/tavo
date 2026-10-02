@@ -57,7 +57,7 @@ class ManageAds extends SettingsPage
                     ->all()),
 
             Section::make('Ochrana před přetížením')
-                ->description('Čísla se stahují jednou denně v 6:00, dva dotazy na účet. Ruční načtení u klienta má pauzu 30 minut. Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
+                ->description('Čísla se stahují jednou denně v 6:00, tři dotazy na účet (stav účtu, čísla, dosah). Ruční načtení u klienta má pauzu 30 minut. Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
                 ->columns(3)
                 ->schema(collect(['meta' => 'Meta', 'google_ads' => 'Google Ads', 'ga4' => 'GA4'])->map(fn (string $label, string $key): TextEntry => TextEntry::make('guard_'.$key)
                     ->label($label)

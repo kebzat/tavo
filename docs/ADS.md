@@ -9,7 +9,7 @@ Panel nástrojů → skupina **Reklamy**:
 
 | Obrazovka | Adresa | Co tam je |
 |---|---|---|
-| Přehled klientů | `/nastroje/reklamy` | karta na klienta: útrata, konverze, cena za konverzi, ROAS, CTR, sparklines, čerpání rozpočtu, upozornění |
+| Přehled klientů | `/nastroje/reklamy` | karta na klienta: šest čísel (vybírají se třemi tečkami), sparklines, čerpání rozpočtu, upozornění |
 | Detail klienta | `/nastroje/reklamy/klient/{id}` | dlaždice se srovnáním, graf po dnech, cesta k nákupu, kampaně, domluva s klientem, účty, reporty |
 | Upozornění | `/nastroje/reklamy/upozorneni` | všechna živá upozornění, akce Řeším / Vyřešeno / Zamítnout |
 | Reporty | `/nastroje/reklamy/reporty` | koncepty a odeslané reporty |
@@ -125,11 +125,11 @@ nadměrný:
 | Pojistka | Jak funguje |
 |---|---|
 | Historie | Při propojení jednou 3 měsíce (1 dotaz), pak už nikdy. Delší historie je vypnutá. |
-| Jednou denně | `ads:sync` běží jen v 6:00. Na účet jde jeden dotaz na stav účtu a jeden na čísla za 7 dní, u 20 klientů zhruba 40 dotazů denně. |
-| Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. |
+| Jednou denně | `ads:sync` běží jen v 6:00. Na účet Mety jdou tři dotazy: stav účtu, čísla za 7 dní a dosah za přednastavená období. U 20 klientů zhruba 60 dotazů denně. |
+| Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. Stejné tři dotazy na účet. |
 | Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |
 | Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána (ruční tlačítko také). |
-| Denní strop | Nejvýš 200 dotazů na platformu za den (`META_DAILY_CALL_LIMIT`). Běžný provoz je pětina. Strop chytí chybu v kódu dřív než Meta. |
+| Denní strop | Nejvýš 200 dotazů na platformu za den (`META_DAILY_CALL_LIMIT`). Běžný provoz je necelá třetina. Strop chytí chybu v kódu dřív než Meta. |
 | Bez souběhu | Jeden účet se nikdy nestahuje dvakrát současně (zámek). |
 | Strop stránek | Nejvýš 20 stránek výsledku na dotaz, víc znamená chybu. |
 | Seznam účtů | Nabídka při propojování se drží 5 minut v paměti, i když skončí chybou. Test spojení jde jednou za 5 minut. |
@@ -169,7 +169,8 @@ Ruční příkazy:
 |---|---|
 | `ad_accounts` | účet klienta (platforma, číslo účtu, měna, stav, poslední synchronizace a chyba) |
 | `ad_campaigns` | kampaně |
-| `ad_daily_stats` | součty na kampaň a den: útrata, zobrazení, dosah, prokliky, nákupy, hodnota, poptávky, košík, pokladna + celé `actions` z API v `raw` |
+| `ad_daily_stats` | součty na kampaň a den: útrata, zobrazení, dosah, kliknutí, prokliky, nákupy, hodnota, poptávky, košík, pokladna, zobrazení cílové stránky + celé `actions` z API v `raw` |
+| `ad_period_reach` | přesný dosah, zobrazení, frekvence a unikátní prokliky účtu za přednastavená období, přepisuje se každé ráno |
 | `ad_client_settings` | cíl, rozpočet, cílové CPA a ROAS, paušál, hodiny, sazba, příjemci reportů, poslední návrh od Clauda |
 | `ad_alerts` | upozornění (pravidlo, závažnost, doporučení, stav) |
 | `ad_reports` | reporty se zmrazenými čísly (`snapshot`) |
@@ -181,6 +182,17 @@ Pravidla, na kterých to stojí:
   až ze součtů za období (`App\Support\Ads\Metrics`). Průměr denních poměrů by lhal.
 - **Nákupy = `omni_purchase`**, jako sloupec „Nákupy“ ve Správci reklam. Pořadí
   typů akcí je v `MetaAds::ACTIONS`. Atribuce je ta, kterou má nastavený účet.
+- **Zobrazení cílové stránky = `landing_page_view`**. Sloupec přibyl později, starší
+  řádky doplnila migrace ze surových `actions` v `raw`.
+- **Dosah, frekvence a unikátní CTR se ze součtů nepočítají.** Tentýž člověk by se
+  za každý den a kampaň započítal znovu. Ranní běh proto pošle na účet Mety jeden
+  dotaz navíc (`level=account`, `time_ranges`) a uloží přesná čísla za 7 a 30 dní,
+  tento a minulý měsíc, minulý týden pondělí až neděle a pro každé z nich i srovnávací
+  období (`PeriodReach::ranges()`). U klienta s víc účty se sčítají, frekvence
+  = zobrazení / dosah. U vlastního období od–do ukážou dlaždice pomlčku s poznámkou
+  „jen u přednastavených období“. Google Ads dosah nemá, do součtu nevstupuje.
+  Pravidlo `creative_fatigue` dál používá odhad frekvence ze součtu denních dosahů
+  (`Metrics::frequency()`).
 - **Synchronizace přepisuje celé období** (smaže a vloží), opakované spuštění nic
   nezdvojí.
 - **Report má čísla zmrazená.** Klient za měsíc v tomtéž odkazu uvidí stejná čísla,
@@ -237,11 +249,49 @@ Report se dá vytisknout do PDF z prohlížeče, graf je SVG a tisk ho zachová.
   chyby, interní porada) se do částky nepočítá, jen do kapacity.
 - Pod tím kdo kolik odpracoval (kapacita Pavla a Toma, BRAND-STRATEGY §16.1).
 
+## Čísla
+
+Všechna čísla jsou v `App\Support\Ads\MetricCatalog`: název (u konverzí podle cíle
+klienta), výpočet, formát, jestli je růst dobře a pro které cíle dávají smysl.
+
+| Klíč | Číslo | Cíle |
+|---|---|---|
+| `spend` | Útrata | všechny |
+| `conversions` | Nákupy / Poptávky / Prokliky na web | všechny |
+| `cost_per_conversion` | Cena za nákup / poptávku / proklik | všechny |
+| `roas` | ROAS (hodnota nákupů / útrata) | nákupy |
+| `purchase_value` | Hodnota nákupů | nákupy |
+| `average_order_value` | Průměrná hodnota nákupu | nákupy |
+| `conversion_rate` | Konverzní poměr (konverze / prokliky) | nákupy, poptávky |
+| `add_to_cart`, `cost_per_add_to_cart` | Přidání do košíku a cena za něj | nákupy |
+| `checkouts`, `cost_per_checkout` | Zahájené objednávky a cena za ně | nákupy |
+| `link_clicks`, `cpc` | Prokliky na web a cena za proklik | nákupy, poptávky |
+| `landing_page_views`, `cost_per_landing_page_view` | Zobrazení cílové stránky a cena za něj | všechny |
+| `landing_page_view_rate` | Zobrazení stránky z prokliků (%) | všechny |
+| `landing_page_conversion_rate` | Nákupy / poptávky ze zobrazení stránky (%) | nákupy, poptávky |
+| `reach`, `frequency`, `unique_ctr` | Dosah, frekvence, unikátní CTR odkazu (jen přednastavená období) | všechny |
+| `impressions` | Zobrazení | všechny |
+| `ctr`, `ctr_all` | CTR odkazu a CTR všech kliknutí | všechny |
+| `cpm` | CPM | všechny |
+
 ## Co ukazovat
 
 Detail klienta → Cíle a paušál → Co ukazovat: které dlaždice s čísly a které sekce
 (graf, cesta ke konverzi, kampaně, rozpad podle účtů, GA4) se ukážou. Platí pro detail
-i pro reporty, které klient dostane. Bez výběru se ukáže všechno.
+i pro reporty, které klient dostane.
+
+Bez výběru se ukáže výchozí sada podle cíle: u e-shopu útrata, nákupy, cena za nákup,
+ROAS, hodnota nákupů, prokliky, CTR a CPM. Ostatní čísla (dosah, frekvence, košík,
+zobrazení cílové stránky…) se zapínají zaškrtnutím. Výběr shodný s výchozí sadou se
+neukládá, uložený výběr ze starších klíčů (`cost`, `value`, `clicks`) platí dál.
+Zmrazené reporty se starším tvarem čísel se zobrazují beze změny.
+
+## Přehled klientů: šest čísel
+
+Každá karta v přehledu má šest čísel. Tři tečky u čísla nabídnou celý katalog;
+výběr platí pro tu pozici u všech klientů a pro všechny uživatele nástrojů
+(`AdsSettings::$overview_tiles`, výchozí útrata, konverze, cena za konverzi, ROAS,
+CTR, CPM). Číslo, které u cíle klienta nedává smysl (ROAS u poptávek), ukáže pomlčku.
 
 ## Návrh úprav od Clauda
 

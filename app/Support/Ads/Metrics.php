@@ -14,8 +14,16 @@ use App\Models\Ads\AdDailyStat;
  */
 final class Metrics
 {
-    /** @param  array<string, float>  $sums */
-    private function __construct(private readonly array $sums) {}
+    /**
+     * Přesný dosah za celé období (PeriodReach) je zvlášť, null = nemáme.
+     *
+     * @param  array<string, float>  $sums
+     * @param  array{reach: float, impressions: float, unique_link_clicks: float}|null  $periodReach
+     */
+    private function __construct(
+        private readonly array $sums,
+        private readonly ?array $periodReach = null,
+    ) {}
 
     /** @param  array<string, mixed>  $sums */
     public static function fromArray(array $sums): self
@@ -32,6 +40,30 @@ final class Metrics
     public static function empty(): self
     {
         return self::fromArray([]);
+    }
+
+    /**
+     * Stejné součty s přesným dosahem za celé období. Bez něj jsou dosah,
+     * frekvence a unikátní CTR null.
+     *
+     * @param  array<string, mixed>|null  $periodReach
+     */
+    public function withPeriodReach(?array $periodReach): self
+    {
+        if ($periodReach === null) {
+            return new self($this->sums);
+        }
+
+        return new self($this->sums, [
+            'reach' => (float) ($periodReach['reach'] ?? 0),
+            'impressions' => (float) ($periodReach['impressions'] ?? 0),
+            'unique_link_clicks' => (float) ($periodReach['unique_link_clicks'] ?? 0),
+        ]);
+    }
+
+    public function hasPeriodReach(): bool
+    {
+        return $this->periodReach !== null;
     }
 
     /** @return array<string, float> */
@@ -84,6 +116,12 @@ final class Metrics
         return $ratio === null ? null : $ratio * 100;
     }
 
+    /** CTR ze všech kliknutí (i na profil, „více“, obrázek), v procentech. */
+    public function ctrAll(): ?float
+    {
+        return self::percent($this->sums['clicks'], $this->sums['impressions']);
+    }
+
     public function cpc(): ?float
     {
         return self::ratio($this->sums['spend'], $this->sums['link_clicks']);
@@ -106,6 +144,51 @@ final class Metrics
         return self::ratio($this->sums['impressions'], $this->sums['reach']);
     }
 
+    /** Lidé zasažení za celé období, bez opakování mezi dny. */
+    public function reach(): ?float
+    {
+        return $this->periodReach['reach'] ?? null;
+    }
+
+    /** Přesná frekvence za období: zobrazení na člověka podle dosahu za celé období. */
+    public function periodFrequency(): ?float
+    {
+        return $this->periodReach === null ? null : self::ratio($this->periodReach['impressions'], $this->periodReach['reach']);
+    }
+
+    /** Unikátní CTR odkazu: kolik zasažených lidí kliklo na web, v procentech. */
+    public function uniqueCtr(): ?float
+    {
+        return $this->periodReach === null ? null : self::percent($this->periodReach['unique_link_clicks'], $this->periodReach['reach']);
+    }
+
+    public function costPerAddToCart(): ?float
+    {
+        return self::ratio($this->sums['spend'], $this->sums['add_to_cart']);
+    }
+
+    public function costPerCheckout(): ?float
+    {
+        return self::ratio($this->sums['spend'], $this->sums['checkouts']);
+    }
+
+    public function costPerLandingPageView(): ?float
+    {
+        return self::ratio($this->sums['spend'], $this->sums['landing_page_views']);
+    }
+
+    /** Kolik prokliků na web skončilo načtenou stránkou, v procentech. */
+    public function landingPageViewRate(): ?float
+    {
+        return self::percent($this->sums['landing_page_views'], $this->sums['link_clicks']);
+    }
+
+    /** Konverze (nákupy, poptávky) na zobrazení cílové stránky, v procentech. */
+    public function landingPageConversionRate(PrimaryGoal $goal): ?float
+    {
+        return $goal === PrimaryGoal::Traffic ? null : self::percent($this->conversions($goal), $this->sums['landing_page_views']);
+    }
+
     /** Podíl prokliků, které skončily konverzí, v procentech. */
     public function conversionRate(PrimaryGoal $goal): ?float
     {
@@ -123,6 +206,7 @@ final class Metrics
         return self::ratio($this->sums['purchase_value'], $this->sums['purchases']);
     }
 
+    /** Součet dvou období nebo účtů. Přesný dosah se sečíst nedá, výsledek ho nemá. */
     public function plus(self $other): self
     {
         $sums = [];
@@ -147,5 +231,12 @@ final class Metrics
     private static function ratio(float $numerator, float $denominator): ?float
     {
         return $denominator > 0 ? $numerator / $denominator : null;
+    }
+
+    private static function percent(float $numerator, float $denominator): ?float
+    {
+        $ratio = self::ratio($numerator, $denominator);
+
+        return $ratio === null ? null : $ratio * 100;
     }
 }

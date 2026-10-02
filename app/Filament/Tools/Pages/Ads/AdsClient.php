@@ -24,6 +24,7 @@ use App\Support\Ads\Billing;
 use App\Support\Ads\BudgetPace;
 use App\Support\Ads\ClientPerformance;
 use App\Support\Ads\Format;
+use App\Support\Ads\MetricCatalog;
 use App\Support\Ads\PerformanceView;
 use App\Support\Ads\Period;
 use App\Support\Ads\ReportBuilder;
@@ -346,9 +347,9 @@ class AdsClient extends Page
                     'included_hours', 'hourly_rate', 'report_recipients', 'weekly_report', 'monthly_report',
                 ]) ?? ['primary_goal' => PrimaryGoal::Purchases->value, 'weekly_report' => true, 'monthly_report' => true];
 
-                // Bez uloženého výběru je zapnuté všechno.
+                // Bez uloženého výběru výchozí dlaždice podle cíle a všechny sekce.
                 $data['dashboard'] = [
-                    'tiles' => $settings?->dashboard['tiles'] ?? array_keys(PerformanceView::tileOptions($goal)),
+                    'tiles' => MetricCatalog::tiles($settings?->dashboard['tiles'] ?? null, $goal),
                     'sections' => $settings?->dashboard['sections'] ?? array_keys(PerformanceView::SECTIONS),
                 ];
 
@@ -376,7 +377,8 @@ class AdsClient extends Page
                     ->schema([
                         CheckboxList::make('dashboard.tiles')
                             ->label('Dlaždice s čísly')
-                            ->options(fn (): array => PerformanceView::tileOptions($this->client->adGoal()))
+                            ->options(fn (): array => MetricCatalog::options($this->client->adGoal()))
+                            ->helperText('Dosah, frekvence a unikátní CTR jsou jen u přednastavených období, ne u vlastního od–do.')
                             ->columns(3)
                             ->required(),
                         CheckboxList::make('dashboard.sections')
@@ -397,11 +399,13 @@ class AdsClient extends Page
                 ]),
             ])
             ->action(function (array $data): void {
-                // Když je zapnuté všechno, výběr neukládáme. Nové dlaždice se pak ukážou samy.
-                $allTiles = array_diff(array_keys(PerformanceView::tileOptions($this->client->adGoal())), $data['dashboard']['tiles'] ?? []) === [];
+                // Výchozí dlaždice a všechny sekce se neukládají (null). Klient pak
+                // dostává výchozí sadu, i když se časem změní.
+                $goal = $data['primary_goal'] instanceof PrimaryGoal ? $data['primary_goal'] : PrimaryGoal::from($data['primary_goal']);
+                $tiles = MetricCatalog::selectionToStore(array_values($data['dashboard']['tiles'] ?? []), $goal);
                 $allSections = array_diff(array_keys(PerformanceView::SECTIONS), $data['dashboard']['sections'] ?? []) === [];
-                $data['dashboard'] = $allTiles && $allSections ? null : [
-                    'tiles' => $allTiles ? null : array_values($data['dashboard']['tiles'] ?? []),
+                $data['dashboard'] = $tiles === null && $allSections ? null : [
+                    'tiles' => $tiles,
                     'sections' => $allSections ? null : array_values($data['dashboard']['sections'] ?? []),
                 ];
 
@@ -432,7 +436,7 @@ class AdsClient extends Page
             ->requiresConfirmation()
             ->modalHeading('Načíst čísla znovu?')
             ->modalDescription('Čísla se stahují samy každé ráno v 6:00. Ručně je načtěte, jen když potřebujete aktuální stav hned. '
-                .'Stáhne se posledních '.config('ads.sync_days').' dní, jeden až dva dotazy na účet. Další ruční načtení půjde za '.self::MANUAL_SYNC_COOLDOWN.' minut.')
+                .'Stáhne se posledních '.config('ads.sync_days').' dní a dosah za přednastavená období, nejvýš tři dotazy na účet. Další ruční načtení půjde za '.self::MANUAL_SYNC_COOLDOWN.' minut.')
             ->modalSubmitActionLabel('Načíst')
             ->action(function (AccountSync $sync): void {
                 // Cache::add projde jen jednou za pauzu, i při dvojkliku nebo ve dvou oknech.
@@ -447,7 +451,7 @@ class AdsClient extends Page
                 $errors = [];
 
                 foreach ($this->client->adAccounts()->active()->get() as $account) {
-                    $run = $sync->sync($account, $period);
+                    $run = $sync->sync($account, $period, withReach: true);
 
                     if ($run->status === 'failed') {
                         $errors[] = "{$account->name}: {$run->error}";

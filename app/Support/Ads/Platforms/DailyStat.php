@@ -21,6 +21,7 @@ final class DailyStat
         public readonly float $leads = 0,
         public readonly float $addToCart = 0,
         public readonly float $checkouts = 0,
+        public readonly float $landingPageViews = 0,
         public readonly array $raw = [],
     ) {}
 
@@ -39,6 +40,7 @@ final class DailyStat
             'leads' => $this->leads,
             'add_to_cart' => $this->addToCart,
             'checkouts' => $this->checkouts,
+            'landing_page_views' => $this->landingPageViews,
         ];
     }
 }
