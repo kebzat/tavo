@@ -114,6 +114,16 @@ jobs:
           ssh "$REMOTE" \
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan down --render=errors::503 --retry=15 || true"
 
+      # Záloha databáze ještě před nahráním nového kódu. Když selže, nasazení
+      # skončí se starým kódem i starou databází a krok níž web nahodí zpět.
+      # Příkaz se nahraje napřed sám, ať funguje i na serveru, kde ještě není.
+      - name: Zálohovat databázi
+        run: |
+          rsync -az -e ssh app/Console/Commands/DbBackup.php \
+            "$REMOTE:${{ secrets.DEPLOY_PATH }}/app/Console/Commands/DbBackup.php"
+          ssh "$REMOTE" \
+            "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan db:zaloha"
+
       - name: Nahrát soubory
         run: |
           rsync -az --delete --human-readable \

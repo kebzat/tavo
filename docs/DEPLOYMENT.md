@@ -230,10 +230,15 @@ sestaví na GitHubu a na server se pošle hotový:
 
 ```
 composer install --no-dev + npm run build (na GitHubu)
-→ php artisan down → rsync celého projektu na server
+→ php artisan down → db:zaloha (záloha databáze) → rsync celého projektu na server
 → migrate --force → storage:link → obrazky:zmensit
 → optimize → queue:restart → php artisan up
 ```
+
+`db:zaloha` uloží dump databáze do `storage/app/backups/taveo-<datum>.sql.gz`
+(nechává posledních 10) ještě před nahráním nového kódu. Když záloha selže, nasazení
+skončí se starým kódem i databází a web se nahodí zpátky. Obnova:
+`gunzip -c storage/app/backups/taveo-….sql.gz | mysql -u … -p … taveo`.
 
 `obrazky:zmensit` dopočítá WebP zmenšeniny k obrázkům, které je ještě nemají
 (první nasazení, obsah nahraný dřív). Hotové přeskočí, takže běh je při dalších
