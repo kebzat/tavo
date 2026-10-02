@@ -101,6 +101,24 @@ class HomeSettings extends Settings
 
     public ?string $pricing_free_cta_label;
 
+    // Ceník: „Kolik hodin vlastně potřebuji?" Příklady z praxe pod kartami.
+    // [{hours, price, for, items: [text], after}]
+    public ?string $pricing_examples_title;
+
+    public ?string $pricing_examples_perex;
+
+    public array $pricing_examples;
+
+    public ?string $pricing_examples_note;
+
+    // Recenze klientů (#recenze), proklik z „5,0 na Googlu"
+    public ?string $reviews_title;
+
+    public ?string $reviews_perex;
+
+    /** Odkaz na hodnocení na Googlu. Prázdné = tlačítko se nezobrazí. */
+    public ?string $reviews_google_url;
+
     // Závěrečné CTA
     public ?string $cta_eyebrow;
 

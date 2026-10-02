@@ -85,13 +85,14 @@ Celý obsah úvodní stránky, rozdělený do záložek podle sekcí.
 
 | Záložka | Ovládá na webu |
 |---|---|
-| **Úvod** | velký nadpis přes tři řádky (odkrývá se po řádcích), perex, obě tlačítka a **pruh s čísly** pod úvodem (max. 4 položky „číslo + popisek“; jen čísla, která umíme doložit, prázdný pruh se nezobrazí) |
+| **Úvod** | velký nadpis přes tři řádky (odkrývá se po řádcích), perex, obě tlačítka a **pruh s čísly** pod úvodem (max. 4 položky „číslo + popisek“, volitelně s odkazem, např. „5,0 na Googlu“ → `/#recenze`; jen čísla, která umíme doložit, prázdný pruh se nezobrazí) |
 | **Problém** | černá sekce „Web je hotový a tím to skončí" — nadpis, perex, očíslované body |
 | **Dvě situace** | dvě velké karty („Potřebujeme nový web" / „Web máme, ale…") |
 | **Služby a reference** | **Nejnovější projekt** za sekcí „Dvě situace“, text vlevo a obrázek vpravo (výběr reference: s blokem „Před a po“ ukáže posuvník, jinak první obrázek z galerie; prázdné = sekce není) a nadpisy sekcí; obsah přichází z Obsah → Služby a Obsah → Reference |
 | **Proč my** | černá sekce se čtyřmi sloupci (Marketing → Web → Data → Rozvoj) |
 | **Lidé a proces** | nadpisy sekcí „Kdo jsme" a „Jak spolu pracujeme", plus blok o specialistech kolem nás |
-| **Ceník** | černá sekce „A kolik to celé stojí?" se třemi kartami (konzultace, jednorázová a pravidelná spolupráce). Karta bez názvu nebo ceny se nevypíše, bez karet zmizí celá sekce |
+| **Ceník** | černá sekce „A kolik to celé stojí?" se třemi kartami (konzultace, jednorázová a pravidelná spolupráce). Karta bez názvu nebo ceny se nevypíše, bez karet zmizí celá sekce. Pod kartami **„Kolik hodin vlastně potřebuji?“**: příklady (rozsah, cena, co za měsíc stihneme, co se změní za tři měsíce); bez příkladu blok zmizí |
+| **Recenze** | nadpis a perex sekce „Co o nás říkají klienti“ (`#recenze`, za logy klientů) a odkaz na hodnocení na Googlu (prázdný = tlačítko není). Samotné recenze jsou v Obsah → Recenze |
 | **Závěrečné CTA** | cihlová sekce s formulářem na konci stránky |
 
 > Které reference se objeví na homepage, řídí přepínač **„Vypíchnout na homepage"**
@@ -221,6 +222,12 @@ pozadím, a hlídejte, aby logo bylo čitelné na světlém podkladu: bílá log
 na webu zmizí. Loga zůstávají v barvách značek. Nadpis a text vedle něj jsou ve Statických
 textech (klíče `home.spoluprace_*`).
 
+## Obsah → Recenze
+
+Recenze klientů na homepage. Text doslova, autor, role nebo obor, komu recenze patří
+(Pavel / Tom, štítek u citace) a web klienta, na který vede jméno. Pořadí přetažením,
+prvních šest je vidět hned, zbytek po kliknutí na „Zobrazit další recenze“.
+
 ## Obsah → Postup spolupráce
 
 Pět kroků v sekci „Jak spolu pracujeme". Přepínač „Zvýraznit" udělá horní linku kroku cihlovou
@@ -249,11 +256,13 @@ stačí jeden blok „Text", zbytek jsou grafické sekce ze stejné sady, jakou 
 | **Text** | běžný editor v úzkém sloupci — nadpisy, odstavce, seznamy, odkazy |
 | **Obrázek a text** | dvousloupec; přepínačem volíte stranu obrázku a světlou/tmavou barvu sekce |
 | **Před a po** | dva snímky přes sebe s dělicí čárou, která sleduje myš; návštěvník si přejetím ukáže původní i nový stav |
+| **Před a po: víc obrazovek** | několik porovnání přepínaných záložkami (úvodní stránka, kategorie, detail produktu, košík…). Záložka bez obou obrázků se nezobrazí, takže prázdné čekají na doplnění. Reference webů a e-shopů ho mají připravený |
 | **Statistiky** | řada velkých čísel s popisky a poznámkou pod nimi |
 | **Očíslované body** | nadpis vlevo, perex a číslovaný seznam vpravo (jako sekce „Web je hotový" na úvodu) |
 | **Odrážky ve sloupcích** | nadpis, perex a jeden nebo dva sloupce odrážek s cihlovým nadtitulkem |
 | **Postup v krocích** | tři nebo čtyři sloupce s číslem, názvem a popisem, každý s linkou nahoře |
 | **Karty** | mřížka karet s nadpisem a textem, na dva nebo tři sloupce |
+| **Karty s ukázkou** | karty s náhledem, štítkem, „Co to dělá“, „Proč se to vyplatí“ a odkazem (např. na referenci); světlé i tmavé. Na /pro-klienty výčet toho, co umíme na e-shopu a v marketingu |
 | **Výčet v pilulkách** | nadpis s perexem vlevo, krátké výrazy jako pilulky vpravo (názvy platforem, technologií) |
 | **Obrázek** | samostatný obrázek přes šířku textu, volitelně s popiskem |
 | **Citace** | výrok s cihlovou linkou a jménem pod ním |

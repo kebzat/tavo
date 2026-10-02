@@ -67,6 +67,10 @@ class ManageHome extends SettingsPage
                                 ->schema([
                                     TextInput::make('value')->label('Číslo')->required()->helperText('Např. „8+ let"'),
                                     TextInput::make('label')->label('Popisek')->required()->helperText('Např. „praxe každého z nás"'),
+                                    TextInput::make('url')
+                                        ->label('Odkaz')
+                                        ->helperText('Volitelné. Např. „/#recenze" u hodnocení na Googlu. Prázdné = číslo bez odkazu.')
+                                        ->columnSpanFull(),
                                 ])
                                 ->columns(2)
                                 ->itemLabel(fn (array $state): ?string => trim(($state['value'] ?? '').' '.($state['label'] ?? '')) ?: null)
@@ -221,6 +225,47 @@ class ManageHome extends SettingsPage
                             TextInput::make('pricing_free_title')->label('Nadpis'),
                             Textarea::make('pricing_free_text')->label('Text')->rows(2),
                             TextInput::make('pricing_free_cta_label')->label('Popisek tlačítka')->helperText('Prázdné pole tlačítko skryje.'),
+                        ]),
+
+                    Section::make('„Kolik hodin vlastně potřebuji?"')
+                        ->description('Příklady z praxe pod kartami ceníku: co za daný počet hodin měsíčně stihneme a co se změní za tři měsíce. Bez jediného příkladu se blok nezobrazí.')
+                        ->schema([
+                            TextInput::make('pricing_examples_title')->label('Nadpis'),
+                            Textarea::make('pricing_examples_perex')->label('Perex')->rows(3),
+                            Repeater::make('pricing_examples')
+                                ->label('Příklady')
+                                ->addActionLabel('Přidat příklad')
+                                ->schema([
+                                    TextInput::make('hours')->label('Rozsah')->required()->helperText('Např. „8 hodin měsíčně"'),
+                                    TextInput::make('price')->label('Cena')->helperText('Např. „8 000 Kč / měsíc". Prázdné = bez ceny.'),
+                                    Textarea::make('for')->label('Pro koho')->rows(2)->columnSpanFull(),
+                                    Repeater::make('items')
+                                        ->label('Co za měsíc stihneme')
+                                        ->addActionLabel('Přidat bod')
+                                        ->simple(TextInput::make('text')->required())
+                                        ->columnSpanFull(),
+                                    Textarea::make('after')->label('Co se změní za tři měsíce')->rows(3)->columnSpanFull(),
+                                ])
+                                ->columns(2)
+                                ->itemLabel(fn (array $state): ?string => $state['hours'] ?? null)
+                                ->maxItems(3),
+                            Textarea::make('pricing_examples_note')
+                                ->label('Poznámka pod příklady')
+                                ->rows(2)
+                                ->helperText('Drobným písmem, např. co se platí zvlášť.'),
+                        ]),
+                ]),
+
+                Tab::make('Recenze')->schema([
+                    Section::make('Sekce „Co o nás říkají klienti"')
+                        ->description('Stojí za logy klientů, kotva #recenze. Samotné recenze se editují v menu Obsah → Recenze. Bez jediné zveřejněné recenze se sekce nezobrazí.')
+                        ->schema([
+                            TextInput::make('reviews_title')->label('Nadpis'),
+                            Textarea::make('reviews_perex')->label('Perex')->rows(2),
+                            TextInput::make('reviews_google_url')
+                                ->label('Odkaz na hodnocení na Googlu')
+                                ->url()
+                                ->helperText('Odkaz na firemní profil na Googlu. Prázdné = tlačítko „Hodnocení na Googlu" se nezobrazí.'),
                         ]),
                 ]),
 

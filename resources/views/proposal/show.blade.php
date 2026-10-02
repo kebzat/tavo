@@ -342,6 +342,29 @@
         <x-proposal.example :example="$example" :light="(bool) $principles" />
     @endforeach
 
+    {{-- Společná fotka všech konceptů (nástroje → Koncepty: společná fotka). --}}
+    @if ($teamPhoto)
+        <section class="section-x section-y bg-cream text-ink" data-block-bg="cream">
+            <div @class([
+                'container-tavo grid grid-cols-1 items-center gap-[clamp(28px,5vw,80px)]',
+                'menu:grid-cols-[1.1fr_0.9fr]' => $teamPhoto['title'] || $teamPhoto['text'],
+            ])>
+                <x-media data-reveal :image="$teamPhoto['image']" fit="natural" sizes="(min-width: 861px) 52vw, 88vw" />
+
+                @if ($teamPhoto['title'] || $teamPhoto['text'])
+                    <div data-reveal>
+                        @if ($teamPhoto['title'])
+                            <h2 class="text-h2 m-0 max-w-[16ch] font-extrabold tracking-[-.02em]">{{ $teamPhoto['title'] }}</h2>
+                        @endif
+                        @if ($teamPhoto['text'])
+                            <p class="mt-6 mb-0 max-w-[48ch] whitespace-pre-line text-perex text-muted">{{ $teamPhoto['text'] }}</p>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
     <x-cta-band
         id="kontakt"
         :eyebrow="text('spoluprace.cta_eyebrow', 'Další krok')"

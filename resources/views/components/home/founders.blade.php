@@ -1,4 +1,4 @@
-@props(['home', 'founders', 'photo' => null])
+@props(['home', 'founders', 'photo' => null, 'photoTags' => []])
 
 <section id="lide" class="section-x section-y bg-cream">
     <div class="container-tavo">
@@ -22,10 +22,12 @@
                     <div class="aspect-square w-full hatch-dark"></div>
                 @endif
 
-                <div class="absolute bottom-5 left-[22px] flex gap-2">
-                    @foreach ($founders as $founder)
-                        <span class="rounded-pill px-[13px] py-[7px] text-xs font-bold tracking-[.06em] {{ $loop->first ? 'bg-cream/92 text-ink' : 'bg-brick/95 text-white' }}">
-                            {{ $founder->name }}
+                {{-- Jména v pořadí, v jakém lidé stojí na fotce (chystá HomeController),
+                     každé pod svým člověkem: první vlevo, druhé vpravo. --}}
+                <div class="absolute inset-x-[22px] bottom-5 flex justify-between gap-2">
+                    @foreach ($photoTags as $tag)
+                        <span class="rounded-pill px-[13px] py-[7px] text-xs font-bold tracking-[.06em] {{ $tag['brick'] ? 'bg-brick/95 text-white' : 'bg-cream/92 text-ink' }}">
+                            {{ $tag['name'] }}
                         </span>
                     @endforeach
                 </div>

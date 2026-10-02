@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Audit;
 use App\Models\Proposal;
+use App\Settings\ProposalSettings;
+use App\Support\ResponsiveImage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -13,7 +15,7 @@ use Illuminate\Http\Request;
  */
 class ProposalController extends Controller
 {
-    public function __invoke(Request $request, string $slug): View
+    public function __invoke(Request $request, string $slug, ProposalSettings $settings): View
     {
         // Přihlášený správce otevře i stránku, kterou ještě nesdílíme, aby ji
         // mohl před odesláním zkontrolovat přesně tak, jak ji uvidí klient.
@@ -40,7 +42,33 @@ class ProposalController extends Controller
             'links' => $this->auditLinks($proposal),
         ];
 
-        return view('proposal.show', $sections + ['nav' => $this->nav($sections)]);
+        return view('proposal.show', $sections + [
+            'nav' => $this->nav($sections),
+            'teamPhoto' => $this->teamPhoto($settings),
+        ]);
+    }
+
+    /**
+     * Společná fotka všech konceptů před závěrečnou výzvou. Bez fotky
+     * (nebo když soubor chybí) se sekce nevykreslí.
+     *
+     * @return array{image: array<string, mixed>, title: ?string, text: ?string}|null
+     */
+    private function teamPhoto(ProposalSettings $settings): ?array
+    {
+        $image = filled($settings->photo)
+            ? ResponsiveImage::make($settings->photo, (string) $settings->photo_alt)
+            : null;
+
+        if (! $image) {
+            return null;
+        }
+
+        return [
+            'image' => $image,
+            'title' => filled($settings->photo_title) ? $settings->photo_title : null,
+            'text' => filled($settings->photo_text) ? $settings->photo_text : null,
+        ];
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Models\ClientLogo;
 use App\Models\Founder;
 use App\Models\ProcessStep;
 use App\Models\Service;
+use App\Models\Testimonial;
 use App\Settings\HomeSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -24,6 +25,8 @@ class HomeController extends Controller
             'loopItems' => $home->loop_items,
             'processSteps' => ProcessStep::ordered()->get(),
             'pricingPlans' => $this->pricingPlans($home),
+            'pricingExamples' => $this->pricingExamples($home),
+            'testimonials' => Testimonial::published()->ordered()->get(),
             'latest' => $this->latestCase($home),
             'trustItems' => collect($home->trust_items)
                 ->filter(fn (array $item): bool => filled($item['value'] ?? null) && filled($item['label'] ?? null))
@@ -33,6 +36,17 @@ class HomeController extends Controller
                 ->filter()
                 ->values(),
             'founders' => $founders,
+            // Štítky se jmény na společné fotce. Na fotce stojí Tom vlevo
+            // a Pavel vpravo, tedy obráceně než pořadí zakladatelů, a každý
+            // si nese svou barvu (první v pořadí krémovou, druhý cihlovou).
+            'photoTags' => $founders
+                ->values()
+                ->map(fn (Founder $founder, int $index): array => [
+                    'name' => $founder->name,
+                    'brick' => $index > 0,
+                ])
+                ->reverse()
+                ->values(),
             // Kroužky s Pavlem a Tomem v úvodu. Kdo fotku nemá, v úvodu chybí.
             'heroPortraits' => $founders
                 ->map(fn (Founder $founder): ?array => $founder->portraitImage())
@@ -73,6 +87,26 @@ class HomeController extends Controller
         }
 
         return ['case' => $case, 'comparison' => $comparison, 'image' => $image];
+    }
+
+    /**
+     * Příklady „Kolik hodin vlastně potřebuji?". Stejně jako u karet ceníku
+     * doplní chybějící klíče; příklad bez rozsahu hodin se vynechá.
+     *
+     * @return Collection<int, array{hours: string, price: ?string, for: ?string, items: array<int, string>, after: ?string}>
+     */
+    private function pricingExamples(HomeSettings $home): Collection
+    {
+        return collect($home->pricing_examples)
+            ->map(fn (array $example): array => [
+                'hours' => trim((string) ($example['hours'] ?? '')),
+                'price' => filled($example['price'] ?? null) ? $example['price'] : null,
+                'for' => filled($example['for'] ?? null) ? $example['for'] : null,
+                'items' => collect($example['items'] ?? [])->filter(fn ($item) => is_string($item) && filled($item))->values()->all(),
+                'after' => filled($example['after'] ?? null) ? $example['after'] : null,
+            ])
+            ->filter(fn (array $example): bool => $example['hours'] !== '')
+            ->values();
     }
 
     /**

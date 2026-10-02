@@ -142,6 +142,10 @@ webu vedle sebe) → co doporučujeme → akční kroky → jak přemýšlíme, 
 fotkami nebo videem). Každá sekce je JSON pole z repeateru na modelu `Proposal`,
 prázdná se nezobrazí. Nadpisy sekcí jsou statické texty `spoluprace.*`.
 
+Před závěrečnou výzvou může stát společná fotka s nadpisem, stejná pro všechny
+koncepty (`ProposalSettings`, Checklisty → Koncepty: společná fotka). Bez fotky se
+sekce nezobrazí.
+
 Nová stránka vzniká nesdílená, přihlášený správce ji vidí přes Náhled. Otevření
 klientem se počítá a u propojeného klienta zapíše do CRM stejně jako u auditu
 (`App\Models\Concerns\TracksClientViews`).

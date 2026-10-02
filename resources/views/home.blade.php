@@ -21,12 +21,16 @@
         <x-home.client-logos :logos="$clientLogos" />
     @endif
 
+    @if ($testimonials->isNotEmpty())
+        <x-home.reviews :home="$home" :testimonials="$testimonials" />
+    @endif
+
     <x-home.loop :home="$home" :items="$loopItems" />
-    <x-home.founders :home="$home" :founders="$founders" :photo="$foundersPhoto" />
+    <x-home.founders :home="$home" :founders="$founders" :photo="$foundersPhoto" :photo-tags="$photoTags" />
     <x-home.process :home="$home" :steps="$processSteps" />
 
     @if ($pricingPlans->isNotEmpty())
-        <x-home.pricing :home="$home" :plans="$pricingPlans" />
+        <x-home.pricing :home="$home" :plans="$pricingPlans" :examples="$pricingExamples" />
     @endif
 
     <x-cta-band
