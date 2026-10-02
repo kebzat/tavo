@@ -53,11 +53,13 @@ class ContentBlocks
             self::textBlock(),
             self::imageTextBlock($directory),
             self::beforeAfterBlock($directory),
+            self::beforeAfterTabsBlock($directory),
             self::metricsBlock(),
             self::pointsBlock(),
             self::bulletsBlock(),
             self::stepsBlock(),
             self::cardsBlock(),
+            self::featureCardsBlock($directory),
             self::pillsBlock(),
             self::imageBlock($directory),
             self::quoteBlock(),
@@ -157,6 +159,73 @@ class ContentBlocks
                 TextInput::make('caption')
                     ->label('Poznámka pod porovnáním')
                     ->columnSpanFull(),
+            ]);
+    }
+
+    /**
+     * Víc porovnání „před a po" v jedné sekci, přepínaných záložkami
+     * (úvodní stránka, kategorie, detail produktu, košík). Obrazovka bez obou
+     * obrázků se nevysází, takže prázdné záložky můžou v referenci čekat
+     * na doplnění.
+     */
+    private static function beforeAfterTabsBlock(string $directory): Block
+    {
+        return Block::make('before_after_tabs')
+            ->label('Před a po: víc obrazovek')
+            ->icon(self::preview('before-after-tabs'))
+            ->columns(2)
+            ->schema([
+                TextInput::make('eyebrow')->label('Nadtitulek'),
+
+                Select::make('tone')
+                    ->label('Barva sekce')
+                    ->options(self::TONES)
+                    ->default('cream')
+                    ->selectablePlaceholder(false),
+
+                TextInput::make('title')->label('Nadpis')->columnSpanFull(),
+
+                Textarea::make('perex')->label('Perex')->rows(2)->columnSpanFull(),
+
+                Repeater::make('screens')
+                    ->label('Obrazovky')
+                    ->addActionLabel('Přidat obrazovku')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                    ->default([
+                        ['label' => 'Úvodní stránka'],
+                        ['label' => 'Kategorie'],
+                        ['label' => 'Detail produktu'],
+                        ['label' => 'Košík'],
+                    ])
+                    ->helperText('Každá obrazovka je jedna záložka. Bez obou obrázků se záložka nezobrazí, bez žádné hotové obrazovky celá sekce.')
+                    ->schema([
+                        TextInput::make('label')
+                            ->label('Název záložky')
+                            ->required()
+                            ->columnSpanFull(),
+
+                        ImageUpload::file('before')
+                            ->label('Obrázek před')
+                            ->imageEditor()
+                            ->directory($directory)
+                            ->helperText('Ideálně 1600 × 1000 px od horního okraje stránky, stejně jako obrázek po.'),
+
+                        ImageUpload::file('after')
+                            ->label('Obrázek po')
+                            ->imageEditor()
+                            ->directory($directory),
+
+                        TextInput::make('before_alt')->label('Popisek obrázku před (alt)'),
+                        TextInput::make('after_alt')->label('Popisek obrázku po (alt)'),
+
+                        Textarea::make('text')
+                            ->label('Co se změnilo')
+                            ->rows(2)
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -293,6 +362,71 @@ class ContentBlocks
                     ->schema([
                         TextInput::make('title')->label('Název kroku')->required(),
                         Textarea::make('text')->label('Popis')->rows(2),
+                    ]),
+            ]);
+    }
+
+    /**
+     * Karty s náhledem: obrázek, co prvek dělá a proč se vyplatí. Pro výčet
+     * toho, co umíme (/pro-klienty). Obyčejné „Karty" jsou jen nadpis a text.
+     */
+    private static function featureCardsBlock(string $directory): Block
+    {
+        return Block::make('feature_cards')
+            ->label('Karty s ukázkou')
+            ->icon(self::preview('feature-cards'))
+            ->columns(2)
+            ->schema([
+                TextInput::make('eyebrow')->label('Nadtitulek'),
+
+                Select::make('tone')
+                    ->label('Barva sekce')
+                    ->options(self::TONES)
+                    ->default('cream')
+                    ->selectablePlaceholder(false),
+
+                TextInput::make('title')->label('Nadpis')->columnSpanFull(),
+
+                Textarea::make('perex')->label('Perex')->rows(2)->columnSpanFull(),
+
+                Select::make('columns')
+                    ->label('Počet sloupců')
+                    ->options([2 => '2', 3 => '3'])
+                    ->default(3)
+                    ->selectablePlaceholder(false),
+
+                Repeater::make('items')
+                    ->label('Karty')
+                    ->addActionLabel('Přidat kartu')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
+                    ->defaultItems(3)
+                    ->schema([
+                        TextInput::make('title')->label('Nadpis karty')->required(),
+                        TextInput::make('tag')
+                            ->label('Štítek')
+                            ->helperText('Krátce, např. „Košík" nebo „Shoptet". Prázdné = bez štítku.'),
+
+                        ImageUpload::file('image')
+                            ->label('Náhled')
+                            ->imageEditor()
+                            ->directory($directory)
+                            ->helperText('Screenshot nebo fotka, ideálně na šířku 4 : 3. Prázdné = karta bez obrázku.'),
+
+                        TextInput::make('image_alt')->label('Popisek obrázku (alt)'),
+
+                        Textarea::make('what')->label('Co to dělá')->rows(3),
+                        Textarea::make('why')->label('Proč se to vyplatí')->rows(3),
+
+                        TextInput::make('link_url')
+                            ->label('Odkaz')
+                            ->placeholder('/reference/svet-cejlonu')
+                            ->helperText('Třeba na referenci, kde to běží. Prázdné = bez odkazu.'),
+                        TextInput::make('link_label')
+                            ->label('Text odkazu')
+                            ->placeholder('Ukázka v referenci'),
                     ]),
             ]);
     }

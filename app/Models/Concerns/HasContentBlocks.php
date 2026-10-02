@@ -17,6 +17,9 @@ trait HasContentBlocks
     /** Pole bloků, ve kterých je uložená cesta k obrázku na disku `public`. */
     private const BLOCK_IMAGE_KEYS = ['image', 'before', 'after'];
 
+    /** Opakované položky bloku, které můžou mít vlastní obrázky. */
+    private const BLOCK_NESTED_KEYS = ['screens', 'items'];
+
     /**
      * Bloky připravené k vykreslení. Šablona pak jen vysází komponentu, kterou
      * dostane, a předá jí `data` — žádné dopočítávání v Blade.
@@ -56,6 +59,27 @@ trait HasContentBlocks
             $data[$key.'_image'] = filled($data[$key] ?? null)
                 ? ResponsiveImage::make($data[$key], (string) ($data[$key.'_alt'] ?? ''))
                 : null;
+        }
+
+        // Opakované položky s vlastním obrázkem (obrazovky „před a po",
+        // karty s ukázkou) dostanou totéž o úroveň níž.
+        foreach (self::BLOCK_NESTED_KEYS as $key) {
+            if (is_array($data[$key] ?? null)) {
+                // Jednoduché opakovače (odrážky, pilulky) ukládají řetězce,
+                // ty zůstanou, jak jsou.
+                $data[$key] = array_map(
+                    fn ($item) => is_array($item) ? $this->resolveBlockImages($item) : $item,
+                    $data[$key],
+                );
+            }
+        }
+
+        // Záložky „před a po": vysadí se jen obrazovky s oběma obrázky.
+        if (is_array($data['screens'] ?? null)) {
+            $data['screens_ready'] = array_values(array_filter(
+                $data['screens'],
+                fn ($screen): bool => is_array($screen) && $screen['before_image'] && $screen['after_image'],
+            ));
         }
 
         return $data;
