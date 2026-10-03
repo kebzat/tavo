@@ -22,16 +22,7 @@
                         <p class="mb-4 text-sm font-bold tracking-[.14em] text-brick uppercase">{{ $client->name }}</p>
                         <h1 class="text-h2-sm font-extrabold tracking-[-.02em]">{{ text('client_dashboard.heading', 'Přehled spolupráce') }}</h1>
 
-                        <nav class="mt-6 flex items-center gap-2 print:hidden" aria-label="{{ text('client_dashboard.months', 'Měsíce') }}">
-                            @if ($previousUrl)
-                                <a href="{{ $previousUrl }}" class="grid size-10 place-items-center rounded-pill border border-cream/25 text-cream transition duration-300 ease-tavo hover:border-cream hover:bg-cream hover:text-ink" aria-label="{{ text('client_dashboard.previous', 'Předchozí měsíc') }}">←</a>
-                            @endif
-                            <p class="px-2 text-perex font-bold">{{ $dashboard->label() }}</p>
-                            @if ($nextUrl)
-                                <a href="{{ $nextUrl }}" class="grid size-10 place-items-center rounded-pill border border-cream/25 text-cream transition duration-300 ease-tavo hover:border-cream hover:bg-cream hover:text-ink" aria-label="{{ text('client_dashboard.next', 'Další měsíc') }}">→</a>
-                            @endif
-                        </nav>
-                        <p class="mt-6 hidden text-perex font-bold print:block">{{ $dashboard->label() }}</p>
+                        <p class="mt-4 text-perex font-bold text-cream/80 print:text-ink">{{ $dashboard->label() }}</p>
 
                         @if ($dashboard->goal())
                             <p class="mt-6 text-perex text-cream/80 print:text-body">
@@ -52,6 +43,28 @@
             </div>
         </div>
     </section>
+
+    @if (count($months) > 1)
+        <nav class="section-x pt-6 print:hidden" aria-label="{{ text('client_dashboard.months', 'Měsíce') }}">
+            <div class="container-tavo flex flex-col gap-3 menu:flex-row menu:items-center menu:gap-5">
+                <p class="text-sm font-bold text-muted">{{ text('client_dashboard.pick_month', 'Vyberte měsíc') }}</p>
+                {{-- Víc měsíců se na mobilu posouvá do strany, stránka sama nepřeteče. --}}
+                <ul class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                    @foreach ($months as $month)
+                        <li class="shrink-0">
+                            <a href="{{ $month['url'] }}"
+                               @if ($month['active']) aria-current="page" @endif
+                               @class([
+                                   'block rounded-pill border px-5 py-2.5 text-sm font-bold transition duration-300 ease-tavo',
+                                   'border-ink bg-ink text-cream' => $month['active'],
+                                   'border-ink/20 text-ink hover:-translate-y-0.5 hover:border-ink' => ! $month['active'],
+                               ])>{{ $month['label'] }}</a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </nav>
+    @endif
 
     @if ($dashboard->showsRetainers())
         <section class="section-x pt-5">

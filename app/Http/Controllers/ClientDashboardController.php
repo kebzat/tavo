@@ -35,8 +35,9 @@ class ClientDashboardController extends Controller
             'legend' => $dashboard->legend(),
             'documents' => $dashboard->documents(),
             'summary' => $dashboard->summary(),
-            'previousUrl' => $dashboard->previousMonth() ? route('client-dashboard.show', [$token, 'mesic' => $dashboard->previousMonth()]) : null,
-            'nextUrl' => $dashboard->nextMonth() ? route('client-dashboard.show', [$token, 'mesic' => $dashboard->nextMonth()]) : null,
+            'months' => array_map(fn (array $month): array => $month + [
+                'url' => route('client-dashboard.show', [$token, 'mesic' => $month['key']]),
+            ], $dashboard->months()),
             'isDraft' => ! $client->dashboard_enabled,
         ]);
     }

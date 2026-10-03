@@ -69,16 +69,38 @@ final class ClientDashboard
         return $this->month->isSameMonth(CarbonImmutable::now());
     }
 
-    public function previousMonth(): ?string
+    /**
+     * Záložky měsíců nad dlaždicemi, nejnovější vpravo. Rok jen u měsíců
+     * z jiného roku, než je ten letošní.
+     *
+     * @return list<array{key: string, label: string, active: bool}>
+     */
+    public function months(): array
     {
-        $previous = $this->month->subMonthNoOverflow();
+        $now = CarbonImmutable::now();
 
-        return $previous->gte(self::firstMonthOf($this->client)) ? $previous->format('Y-m') : null;
+        return array_map(fn (CarbonImmutable $month): array => [
+            'key' => $month->format('Y-m'),
+            'label' => Str::ucfirst($month->translatedFormat($month->year === $now->year ? 'F' : 'F Y')),
+            'active' => $month->isSameMonth($this->month),
+        ], $this->range());
     }
 
-    public function nextMonth(): ?string
+    /**
+     * Měsíce od začátku spolupráce do dneška, nejvýš posledních dvanáct.
+     *
+     * @return list<CarbonImmutable>
+     */
+    private function range(): array
     {
-        return $this->isCurrentMonth() ? null : $this->month->addMonthNoOverflow()->format('Y-m');
+        $now = CarbonImmutable::now()->startOfMonth();
+        $months = [];
+
+        for ($month = self::firstMonthOf($this->client)->max($now->subMonthsNoOverflow(self::HISTORY_MONTHS - 1)); $month->lte($now); $month = $month->addMonthNoOverflow()) {
+            $months[] = $month;
+        }
+
+        return $months;
     }
 
     /** Fakturovatelný čas v měsíci. */
@@ -259,8 +281,8 @@ final class ClientDashboard
      */
     public function history(): array
     {
-        $now = CarbonImmutable::now()->startOfMonth();
-        $from = self::firstMonthOf($this->client)->max($now->subMonthsNoOverflow(self::HISTORY_MONTHS - 1));
+        $months = $this->range();
+        $from = $months[0];
 
         $entries = $this->client->timeEntries()
             ->where('billable', true)
@@ -268,12 +290,6 @@ final class ClientDashboard
             ->with('task')
             ->get()
             ->groupBy(fn (TimeEntry $entry): string => $entry->worked_on->format('Y-m'));
-
-        $months = [];
-
-        for ($month = $from; $month->lte($now); $month = $month->addMonthNoOverflow()) {
-            $months[] = $month;
-        }
 
         $max = max(1, ...array_map(fn (CarbonImmutable $month): int => (int) ($entries->get($month->format('Y-m'))?->sum('minutes') ?? 0), $months));
 

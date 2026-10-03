@@ -117,6 +117,9 @@ class ClientDashboardTest extends TestCase
         $this->get($this->url($client, ['mesic' => '2026-09']))
             ->assertOk()
             ->assertSee('Září 2026')
+            ->assertSee('Vyberte měsíc')
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('mesic=2026-10', false)
             ->assertDontSee('Poslat fotky produktů')
             ->assertDontSee('Co následuje');
     }
