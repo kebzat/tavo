@@ -9,6 +9,8 @@ use App\Filament\Tools\Actions\Ads\LogTimeAction;
 use App\Models\Client;
 use App\Models\User;
 use App\Support\Ads\Billing;
+use App\Support\ClientDashboard;
+use App\Support\ClientDashboardDemo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -124,6 +126,24 @@ class ClientDashboardTest extends TestCase
             ->assertDontSee('Co následuje');
     }
 
+    public function test_starsi_mesice_jsou_v_seznamu(): void
+    {
+        $client = $this->klient();
+        $client->update(['started_on' => '2025-07-01']);
+
+        $months = ClientDashboard::for($client->fresh(), '2025-09')->months();
+
+        $this->assertSame(['Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen'], array_column($months['recent'], 'label'));
+        $this->assertSame('Duben 2026', $months['older'][0]['label']);
+        $this->assertSame('Červenec 2025', end($months['older'])['label']);
+        $this->assertTrue($months['older_active']);
+
+        $this->get($this->url($client, ['mesic' => '2025-09']))
+            ->assertOk()
+            ->assertSee('Starší měsíce')
+            ->assertSee('<option value="2025-09" selected>Září 2025</option>', false);
+    }
+
     public function test_mesic_mimo_spolupraci_spadne_do_rozsahu(): void
     {
         $client = $this->klient();
@@ -186,6 +206,34 @@ class ClientDashboardTest extends TestCase
     {
         $this->get($this->url($this->klient()))->assertSee('noindex', false);
         $this->get('/robots.txt')->assertSee('Disallow: /klient');
+    }
+
+    public function test_ukazka_se_obnovi_k_aktualnimu_mesici_a_odkaz_zustane(): void
+    {
+        $demo = app(ClientDashboardDemo::class);
+        $url = $demo->install();   // migrace ji už založila, tohle ji obnoví
+        $client = $demo->client();
+
+        $this->assertSame(1, Client::where('name', ClientDashboardDemo::NAME)->count());
+        $this->assertSame(0, $client->timeEntries()->where('worked_on', '>', now()->toDateString())->count());
+        $tasks = $client->tasks()->count();
+
+        Carbon::setTestNow('2026-12-01 05:00');
+        $this->artisan('clients:dashboard-demo --refresh')->assertSuccessful();
+
+        $this->assertSame($url, $demo->client()->dashboardPreviewUrl());
+        $this->assertSame($tasks, $demo->client()->tasks()->count());
+        $this->assertSame('2026-10-01', $demo->client()->started_on->toDateString());
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')->get($url)
+            ->assertOk()
+            ->assertSee('Prosinec 2026')
+            ->assertSee('Stránka pro velkoodběratele')
+            ->assertSee('Poslat fotky nových směsí');
+
+        $this->artisan('clients:dashboard-demo --remove')->assertSuccessful();
+        $this->artisan('clients:dashboard-demo --refresh')->assertSuccessful();
+        $this->assertNull($demo->client());
     }
 
     public function test_administrace_klienta_se_nacte(): void

@@ -35,6 +35,7 @@ use App\Support\Ads\Platforms\DemoCatalog;
 use App\Support\Ads\Platforms\GoogleAds;
 use App\Support\Ads\Platforms\MetaAds;
 use App\Support\Ads\ReportBuilder;
+use App\Support\ClientDashboardDemo;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Illuminate\Console\Scheduling\Schedule;
@@ -611,7 +612,8 @@ class AdsTest extends TestCase
         $this->artisan('ads:demo', ['--days' => 30])->assertSuccessful();
         $this->artisan('ads:demo', ['--days' => 30])->assertSuccessful();
 
-        $demo = Client::query()->where('name', 'like', 'Ukázka:%')->get();
+        // Ukázka přehledu spolupráce reklamy nemá a ads:demo na ni nesahá.
+        $demo = Client::query()->where('name', 'like', 'Ukázka:%')->where('name', '!=', ClientDashboardDemo::NAME)->get();
         $this->assertCount(count(DemoCatalog::CLIENTS), $demo);
         $this->assertGreaterThan(0, AdDailyStat::query()->whereIn('ad_account_id', AdAccount::query()->where('platform', AdPlatform::Demo)->pluck('id'))->count());
         $this->assertGreaterThan(0, AnalyticsDailyStat::query()->count());
@@ -620,7 +622,8 @@ class AdsTest extends TestCase
 
         $this->artisan('ads:demo', ['--remove' => true])->assertSuccessful();
 
-        $this->assertSame(0, Client::query()->where('name', 'like', 'Ukázka:%')->count());
+        $this->assertSame(0, Client::query()->where('name', 'like', 'Ukázka:%')->where('name', '!=', ClientDashboardDemo::NAME)->count());
+        $this->assertNotNull(Client::query()->where('name', ClientDashboardDemo::NAME)->first());
         $this->assertTrue($skutecny->fresh()->exists);
     }
 

@@ -35,10 +35,22 @@ class ClientDashboardController extends Controller
             'legend' => $dashboard->legend(),
             'documents' => $dashboard->documents(),
             'summary' => $dashboard->summary(),
-            'months' => array_map(fn (array $month): array => $month + [
-                'url' => route('client-dashboard.show', [$token, 'mesic' => $month['key']]),
-            ], $dashboard->months()),
+            'months' => $this->withUrls($dashboard->months(), $token),
+            'monthsUrl' => route('client-dashboard.show', $token),
             'isDraft' => ! $client->dashboard_enabled,
         ]);
+    }
+
+    /**
+     * Odkaz ke každé záložce měsíce.
+     *
+     * @param  array<string, mixed>  $months
+     * @return array<string, mixed>
+     */
+    private function withUrls(array $months, string $token): array
+    {
+        $link = fn (array $month): array => $month + ['url' => route('client-dashboard.show', [$token, 'mesic' => $month['key']])];
+
+        return ['recent' => array_map($link, $months['recent']), 'older' => array_map($link, $months['older'])] + $months;
     }
 }

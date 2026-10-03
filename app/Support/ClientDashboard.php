@@ -31,6 +31,9 @@ final class ClientDashboard
     /** Kolik měsíců ukazuje graf hodin. */
     private const HISTORY_MONTHS = 12;
 
+    /** Kolik posledních měsíců má vlastní záložku, starší jsou v seznamu. */
+    private const MONTH_TABS = 6;
+
     /** @var Collection<int, TimeEntry>|null */
     private ?Collection $entries = null;
 
@@ -70,33 +73,48 @@ final class ClientDashboard
     }
 
     /**
-     * Záložky měsíců nad dlaždicemi, nejnovější vpravo. Rok jen u měsíců
-     * z jiného roku, než je ten letošní.
+     * Výběr měsíce nad dlaždicemi: posledních šest měsíců jako záložky
+     * (nejnovější vpravo), starší v rozbalovacím seznamu (nejnovější nahoře).
+     * U záložek rok jen tehdy, když není letošní.
      *
-     * @return list<array{key: string, label: string, active: bool}>
+     * @return array{recent: list<array{key: string, label: string, active: bool}>, older: list<array{key: string, label: string, active: bool}>, older_active: bool}
      */
     public function months(): array
     {
         $now = CarbonImmutable::now();
+        $all = $this->range();
+        $recent = array_slice($all, -self::MONTH_TABS);
+        $older = array_reverse(array_slice($all, 0, max(0, count($all) - self::MONTH_TABS)));
 
-        return array_map(fn (CarbonImmutable $month): array => [
+        $item = fn (CarbonImmutable $month, string $format): array => [
             'key' => $month->format('Y-m'),
-            'label' => Str::ucfirst($month->translatedFormat($month->year === $now->year ? 'F' : 'F Y')),
+            'label' => Str::ucfirst($month->translatedFormat($format)),
             'active' => $month->isSameMonth($this->month),
-        ], $this->range());
+        ];
+
+        return [
+            'recent' => array_map(fn (CarbonImmutable $month): array => $item($month, $month->year === $now->year ? 'F' : 'F Y'), $recent),
+            'older' => array_map(fn (CarbonImmutable $month): array => $item($month, 'F Y'), $older),
+            'older_active' => collect($older)->contains(fn (CarbonImmutable $month): bool => $month->isSameMonth($this->month)),
+        ];
     }
 
     /**
-     * Měsíce od začátku spolupráce do dneška, nejvýš posledních dvanáct.
+     * Měsíce od začátku spolupráce do dneška, případně jen posledních pár.
      *
      * @return list<CarbonImmutable>
      */
-    private function range(): array
+    private function range(?int $last = null): array
     {
         $now = CarbonImmutable::now()->startOfMonth();
+        $from = self::firstMonthOf($this->client);
         $months = [];
 
-        for ($month = self::firstMonthOf($this->client)->max($now->subMonthsNoOverflow(self::HISTORY_MONTHS - 1)); $month->lte($now); $month = $month->addMonthNoOverflow()) {
+        if ($last !== null) {
+            $from = $from->max($now->subMonthsNoOverflow($last - 1));
+        }
+
+        for ($month = $from; $month->lte($now); $month = $month->addMonthNoOverflow()) {
             $months[] = $month;
         }
 
@@ -281,7 +299,7 @@ final class ClientDashboard
      */
     public function history(): array
     {
-        $months = $this->range();
+        $months = $this->range(self::HISTORY_MONTHS);
         $from = $months[0];
 
         $entries = $this->client->timeEntries()

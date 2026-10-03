@@ -62,3 +62,21 @@ ne při založení klienta. Starší datové migrace zakládají klienty dřív,
 existuje.
 
 Texty na stránce jdou přepsat v Nastavení → Statické texty pod klíči `client_dashboard.*`.
+
+## Ukázka
+
+Klient **Ukázka: Bylinky z Podkrkonoší** je vymyšlený e-shop se zapnutým přehledem.
+Jeho odkaz jde poslat komukoli, kdo chce vidět, jak přehled vypadá. Odkaz najdete
+v nástrojích u klienta.
+
+Data se vztahují k aktuálnímu měsíci: dva měsíce historie, rozpracovaná práce,
+„čeká na vás“ a plán dopředu. Plánovač je 1. v měsíci v 5:00 obnoví
+(`clients:dashboard-demo --refresh`), odkaz zůstává stejný.
+
+```bash
+./bin/art clients:dashboard-demo           # založí nebo hned obnoví
+./bin/art clients:dashboard-demo --remove  # smaže, plánovač ji už nevrátí
+```
+
+Ukázka má paušál 15 000 Kč, takže se zobrazí i ve Fakturaci, stejně jako ukázkoví
+klienti u reklam.

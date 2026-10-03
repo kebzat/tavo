@@ -59,3 +59,9 @@ Schedule::command('ads:reports monthly')
     ->monthlyOn(1, '07:30')
     ->timezone('Europe/Prague')
     ->onOneServer();
+
+// Ukázkový přehled spolupráce ukazuje aktuální měsíc. Viz docs/CLIENT-DASHBOARD.md.
+Schedule::command('clients:dashboard-demo --refresh')
+    ->monthlyOn(1, '05:00')
+    ->timezone('Europe/Prague')
+    ->onOneServer();

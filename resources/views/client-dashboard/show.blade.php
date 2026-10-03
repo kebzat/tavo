@@ -44,24 +44,42 @@
         </div>
     </section>
 
-    @if (count($months) > 1)
+    @if (count($months['recent']) > 1)
         <nav class="section-x pt-6 print:hidden" aria-label="{{ text('client_dashboard.months', 'Měsíce') }}">
             <div class="container-tavo flex flex-col gap-3 menu:flex-row menu:items-center menu:gap-5">
-                <p class="text-sm font-bold text-muted">{{ text('client_dashboard.pick_month', 'Vyberte měsíc') }}</p>
-                {{-- Víc měsíců se na mobilu posouvá do strany, stránka sama nepřeteče. --}}
-                <ul class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-                    @foreach ($months as $month)
-                        <li class="shrink-0">
-                            <a href="{{ $month['url'] }}"
-                               @if ($month['active']) aria-current="page" @endif
-                               @class([
-                                   'block rounded-pill border px-5 py-2.5 text-sm font-bold transition duration-300 ease-tavo',
-                                   'border-ink bg-ink text-cream' => $month['active'],
-                                   'border-ink/20 text-ink hover:-translate-y-0.5 hover:border-ink' => ! $month['active'],
-                               ])>{{ $month['label'] }}</a>
-                        </li>
+                <p class="shrink-0 text-sm font-bold text-muted">{{ text('client_dashboard.pick_month', 'Vyberte měsíc') }}</p>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    @foreach ($months['recent'] as $month)
+                        <a href="{{ $month['url'] }}"
+                           @if ($month['active']) aria-current="page" @endif
+                           @class([
+                               'rounded-pill border px-5 py-2.5 text-sm font-bold transition-colors duration-300 ease-tavo',
+                               'border-ink bg-ink text-cream' => $month['active'],
+                               'border-ink/20 text-ink hover:border-ink hover:bg-ink/6' => ! $month['active'],
+                           ])>{{ $month['label'] }}</a>
                     @endforeach
-                </ul>
+
+                    {{-- Starší měsíce v seznamu. Alpine po výběru rovnou přejde, bez JS je tu tlačítko. --}}
+                    @if ($months['older'])
+                        <form method="get" action="{{ $monthsUrl }}" class="relative" x-data>
+                            <label for="older-months" class="sr-only">{{ text('client_dashboard.older_months', 'Starší měsíce') }}</label>
+                            <select id="older-months" name="mesic" x-on:change="$el.form.submit()"
+                                    @class([
+                                        'cursor-pointer appearance-none rounded-pill border py-2.5 pr-10 pl-5 text-sm font-bold transition-colors duration-300 ease-tavo',
+                                        'border-ink bg-ink text-cream' => $months['older_active'],
+                                        'border-ink/20 bg-transparent text-ink hover:border-ink hover:bg-ink/6' => ! $months['older_active'],
+                                    ])>
+                                <option value="" disabled @selected(! $months['older_active'])>{{ text('client_dashboard.older_months', 'Starší měsíce') }}</option>
+                                @foreach ($months['older'] as $month)
+                                    <option value="{{ $month['key'] }}" @selected($month['active'])>{{ $month['label'] }}</option>
+                                @endforeach
+                            </select>
+                            <span aria-hidden="true" @class(['pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-xs', 'text-cream' => $months['older_active'], 'text-ink' => ! $months['older_active']])>▾</span>
+                            <noscript><button type="submit" class="ml-2 text-sm font-bold underline">{{ text('client_dashboard.show_month', 'Zobrazit') }}</button></noscript>
+                        </form>
+                    @endif
+                </div>
             </div>
         </nav>
     @endif
@@ -155,18 +173,20 @@
                     @endif
                 </div>
 
-                <div class="rounded-card border border-ink/14 p-5 menu:p-7 print:break-inside-avoid">
-                    <ol class="flex h-48 items-stretch gap-2 menu:gap-4">
+                {{-- min-w-0: dvanáct sloupců se musí vejít i do úzkého mobilu. --}}
+                <div class="min-w-0 rounded-card border border-ink/14 p-4 menu:p-7 print:break-inside-avoid">
+                    <ol class="flex h-48 items-stretch gap-1 menu:gap-4">
                         @foreach ($history as $month)
                             <li class="flex min-w-0 flex-1 flex-col items-center gap-2" title="{{ $month['title'] }}: {{ $month['total'] }}">
-                                <span @class(['text-xs tabular-nums', 'font-bold text-ink' => $month['current'], 'text-muted' => ! $month['current']])>{{ $month['total'] }}</span>
+                                {{-- Na mobilu číslo jen u vybraného měsíce, ostatní by se nad úzké sloupce nevešla. --}}
+                                <span @class(['text-[11px] whitespace-nowrap tabular-nums menu:text-xs', 'font-bold text-ink' => $month['current'], 'invisible text-muted menu:visible' => ! $month['current']])>{{ $month['total'] }}</span>
                                 {{-- Výška sloupce je poměr z dat, proto inline styl. --}}
                                 <div class="flex w-full max-w-12 flex-1 flex-col-reverse overflow-hidden rounded-t-[6px] bg-sand-100/60">
                                     @foreach ($month['segments'] as $segment)
                                         <div class="{{ $segment['bar'] }}" style="height: {{ $segment['height'] }}%" title="{{ $segment['label'] }}"></div>
                                     @endforeach
                                 </div>
-                                <span @class(['text-xs', 'font-bold text-ink' => $month['current'], 'text-muted' => ! $month['current']])>{{ $month['label'] }}</span>
+                                <span @class(['text-[11px] menu:text-xs', 'font-bold text-ink' => $month['current'], 'text-muted' => ! $month['current']])>{{ $month['label'] }}</span>
                             </li>
                         @endforeach
                     </ol>
