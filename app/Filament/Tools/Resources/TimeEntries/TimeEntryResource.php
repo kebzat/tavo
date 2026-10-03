@@ -54,11 +54,13 @@ class TimeEntryResource extends Resource
     {
         return $table
             ->defaultSort('worked_on', 'desc')
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['client', 'user']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['client', 'user', 'task']))
             ->columns([
                 TextColumn::make('worked_on')->label('Den')->date('j. n. Y')->sortable(),
                 TextColumn::make('client.name')->label('Klient')->searchable()->sortable(),
-                TextColumn::make('description')->label('Co se dělalo')->wrap()->searchable(),
+                TextColumn::make('description')->label('Co se dělalo')->wrap()->searchable()
+                    ->description(fn (TimeEntry $record): ?string => $record->task?->title),
+                TextColumn::make('area')->label('Oblast')->badge()->toggleable(),
                 TextColumn::make('minutes')->label('Čas')->formatStateUsing(fn (int $state): string => Billing::formatMinutes($state))->sortable()
                     ->summarize(Sum::make()->label('Celkem')->formatStateUsing(fn ($state): string => Billing::formatMinutes((int) $state))),
                 TextColumn::make('user.name')->label('Kdo')->toggleable(),
@@ -91,6 +93,8 @@ class TimeEntryResource extends Resource
                         'client_id' => $record->client_id,
                         'worked_on' => $record->worked_on,
                         'duration' => intdiv($record->minutes, 60).':'.str_pad((string) ($record->minutes % 60), 2, '0', STR_PAD_LEFT),
+                        'task_id' => $record->task_id,
+                        'area' => $record->area,
                         'description' => $record->description,
                         'billable' => $record->billable,
                     ])
@@ -99,9 +103,7 @@ class TimeEntryResource extends Resource
                             'client_id' => $data['client_id'],
                             'worked_on' => $data['worked_on'],
                             'minutes' => Billing::parseMinutes((string) $data['duration']),
-                            'description' => $data['description'],
-                            'billable' => (bool) $data['billable'],
-                        ]);
+                        ] + LogTimeAction::attributes($data));
 
                         return $record;
                     }),

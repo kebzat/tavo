@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkArea;
 use App\Support\Ads\Billing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,11 @@ class TimeEntry extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(ClientTask::class, 'task_id');
     }
 
     public function scopeInMonth(Builder $query, int $year, int $month): Builder
@@ -47,6 +53,7 @@ class TimeEntry extends Model
             'worked_on' => 'date',
             'billable' => 'boolean',
             'invoiced_at' => 'datetime',
+            'area' => WorkArea::class,
         ];
     }
 }

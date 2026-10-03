@@ -157,6 +157,13 @@ Skupina **Reklamy** v panelu nástrojů: denní čísla z reklamních účtů kl
 sdílené odkazem `/report/{slug}`. Klient je stejný model `Client` jako
 u checklistů a auditů. Podrobnosti, přístupy a plánované běhy v [ADS.md](ADS.md).
 
+### Přehled spolupráce
+
+Klient na paušál dostane odkaz `/klient/{token}`: paušál po oblastech, hodiny
+sečtené po úkolech, co čeká na něj, plán po měsících a sdílené dokumenty.
+Úkoly a cíle měsíců se plní u klienta v nástrojích. Podrobnosti
+v [CLIENT-DASHBOARD.md](CLIENT-DASHBOARD.md).
+
 ### Audity
 
 Vedle checklistu může mít klient **audit**: dlouhý dokument s nálezy, který dostane

@@ -3,6 +3,7 @@
 namespace App\Support\Ads;
 
 use App\Models\Client;
+use App\Models\ClientRetainer;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
@@ -10,6 +11,9 @@ use Carbon\CarbonInterface;
  * Kolik za měsíc fakturovat: paušál plus hodiny nad rámec paušálu sazbou
  * z nastavení klienta. Nefakturovatelná práce se do hodin nepočítá,
  * jen do kapacity.
+ *
+ * Paušál se bere z rozdělení po oblastech (client_retainers), když ho klient
+ * má, jinak z nastavení reklam. Bez hodin v paušálu se nad rámec neúčtuje.
  */
 final class Billing
 {
@@ -22,6 +26,7 @@ final class Billing
         public readonly float $billableHours,
         public readonly float $nonBillableHours,
         public readonly int $uninvoicedEntries,
+        public readonly bool $capped = true,
     ) {}
 
     public static function for(Client $client, CarbonInterface $month): self
@@ -29,23 +34,25 @@ final class Billing
         $month = CarbonImmutable::parse($month)->startOfMonth();
         $settings = $client->adSettings;
         $entries = $client->timeEntries()->inMonth($month->year, $month->month)->get();
+        $retainers = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->activeIn($month));
 
         return new self(
             client: $client,
             month: $month,
-            fee: (float) ($settings?->fee_czk ?? 0),
-            includedHours: (float) ($settings?->included_hours ?? 0),
+            fee: $retainers->isNotEmpty() ? (float) $retainers->sum('monthly_fee') : (float) ($settings?->fee_czk ?? 0),
+            includedHours: $retainers->isNotEmpty() ? (float) $retainers->sum('included_hours') : (float) ($settings?->included_hours ?? 0),
             hourlyRate: (float) ($settings?->hourly_rate ?? 0),
             billableHours: $entries->where('billable', true)->sum('minutes') / 60,
             nonBillableHours: $entries->where('billable', false)->sum('minutes') / 60,
             uninvoicedEntries: $entries->where('billable', true)->whereNull('invoiced_at')->count(),
+            capped: $retainers->isEmpty() || $retainers->contains(fn (ClientRetainer $retainer): bool => $retainer->included_hours !== null),
         );
     }
 
-    /** Hodiny nad paušál. */
+    /** Hodiny nad paušál. Paušál bez stropu hodin žádné nemá. */
     public function extraHours(): float
     {
-        return max(0, $this->billableHours - $this->includedHours);
+        return $this->capped ? max(0, $this->billableHours - $this->includedHours) : 0;
     }
 
     /** Kolik hodin z paušálu ještě zbývá. */

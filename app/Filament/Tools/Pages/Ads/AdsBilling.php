@@ -75,10 +75,11 @@ class AdsBilling extends Page
         $withTime = TimeEntry::query()->inMonth($month->year, $month->month)->distinct()->pluck('client_id');
 
         return Client::query()
-            ->with('adSettings')
+            ->with(['adSettings', 'retainers'])
             ->where(fn ($query) => $query
                 ->whereIn('id', $withTime)
-                ->orWhereHas('adSettings', fn ($query) => $query->where('fee_czk', '>', 0)))
+                ->orWhereHas('adSettings', fn ($query) => $query->where('fee_czk', '>', 0))
+                ->orWhereHas('retainers'))
             ->orderBy('name')
             ->get()
             ->map(function (Client $client) use ($month): array {

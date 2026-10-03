@@ -1,0 +1,64 @@
+# Přehled spolupráce pro klienta
+
+Stránka `/klient/{token}` pro klienty na měsíční paušál. Ukazuje, za co platí,
+kolik hodin jsme odpracovali, co je hotové, co čeká na klienta a co je v plánu.
+Odpovídá na tři otázky z BRAND-STRATEGY §5: co bylo dokončeno, co jsme zjistili,
+co následuje.
+
+## Kde se to plní
+
+Nástroje → Checklisty → **Klienti** → klient:
+
+| Co | Kde | Na přehledu |
+|---|---|---|
+| Paušál po oblastech | sekce Pravidelná spolupráce → Paušál | dlaždice s cenou a hodinami, součet v hlavičce |
+| Začátek spolupráce | Spolupráce od | první měsíc v přepínači a v grafu hodin |
+| Zapnutí odkazu | Přehled vidí klient | bez zapnutí 404, přihlášený vidí náhled vždy |
+| Úkoly | záložka Úkoly | Co jsme udělali, Čeká na vás, Co následuje |
+| Cíl a komentář měsíce | záložka Měsíce | hlavička, sekce Co jsme zjistili |
+| Hodiny | Reklamy → Hodiny nebo Zapsat čas | sečtené po úkolech a oblastech |
+
+Při zápisu času se vybírá úkol (jde ho rovnou založit tlačítkem +). Oblast se pak
+bere z úkolu. Čas bez úkolu klient vidí jako jeden řádek „Komunikace, konzultace
+a drobné úpravy“ za oblast.
+
+## Co klient vidí a co ne
+
+- Jen **fakturovatelný** čas. Nefakturovatelné zápisy (oprava naší chyby,
+  interní porada) se nezobrazují ani nepočítají.
+- Úkol: název, popis pro klienta, stav, oblast, hodiny v měsíci a kdo na něm
+  pracoval. **Interní poznámka** úkolu ani **popis zápisu času** ven nejdou.
+- „Čeká na vás“ a „Co následuje“ jen u aktuálního měsíce. Minulé měsíce ukazují
+  jen tehdejší práci.
+- V plánu nejsou úkoly, na kterých se tento měsíc už pracovalo, ty jsou v „Co jsme
+  udělali“. Úkol s měsícem v minulosti, který není hotový, spadne do aktuálního
+  měsíce.
+- Dokumenty: veřejné audity, checklisty a reporty reklam téhož klienta.
+
+## Paušál a fakturace
+
+`App\Support\Ads\Billing` bere paušál z `client_retainers`, když je klient má,
+jinak z nastavení reklam. Přehled i Fakturace proto ukazují stejná čísla.
+
+**Hodin v paušálu prázdné** = hodiny jen ukazujeme, nad rámec se nic neúčtuje.
+Jakmile se u některé oblasti vyplní, hodiny nad součet se počítají sazbou
+z nastavení reklam.
+
+Převod nevyčerpaných hodin do dalšího měsíce přehled neumí a neukazuje. Zakladatelé
+ho zatím nemají domluvený (BRAND-STRATEGY §7.4).
+
+## Implementace
+
+| Soubor | K čemu |
+|---|---|
+| `App\Support\ClientDashboard` | skládá data za měsíc, šablona jen vypisuje |
+| `App\Http\Controllers\ClientDashboardController` | token, náhled pro přihlášené, `?mesic=2026-10` |
+| `resources/views/client-dashboard/show.blade.php` | stránka, layout sdílených dokumentů (noindex) |
+| `App\Models\ClientRetainer`, `ClientTask`, `ClientMonth` | paušál, úkoly, měsíce |
+| `App\Enums\WorkArea`, `TaskStatus` | oblasti (vývoj webu, marketing) a stavy úkolu |
+
+Token vzniká až při prvním zobrazení odkazu (`Client::dashboardPreviewUrl()`),
+ne při založení klienta. Starší datové migrace zakládají klienty dřív, než sloupec
+existuje.
+
+Texty na stránce jdou přepsat v Nastavení → Statické texty pod klíči `client_dashboard.*`.

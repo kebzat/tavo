@@ -6,6 +6,8 @@ use App\Filament\Tools\Resources\Clients\Pages\CreateClient;
 use App\Filament\Tools\Resources\Clients\Pages\EditClient;
 use App\Filament\Tools\Resources\Clients\Pages\ListClients;
 use App\Filament\Tools\Resources\Clients\RelationManagers\AdAccountsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\MonthsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\TasksRelationManager;
 use App\Filament\Tools\Resources\Clients\Schemas\ClientForm;
 use App\Filament\Tools\Resources\Clients\Tables\ClientsTable;
 use App\Models\Client;
@@ -46,6 +48,8 @@ class ClientResource extends Resource
     public static function getRelations(): array
     {
         return [
+            TasksRelationManager::class,
+            MonthsRelationManager::class,
             AdAccountsRelationManager::class,
         ];
     }

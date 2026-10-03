@@ -5,6 +5,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
+use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\Crm\AuditImportController;
 use App\Http\Controllers\Crm\CandidateImportController;
 use App\Http\Controllers\Crm\CompanyScoutController;
@@ -99,6 +100,10 @@ Route::get('/audit/{key}', AuditController::class)->name('audit.show');
 
 // Report reklam pro klienta. Sdílí se jako audit: čitelná adresa, noindex.
 Route::get('/report/{key}', AdReportController::class)->name('ad-report.show');
+
+// Přehled spolupráce pro klienta na paušál: hodiny, hotová práce, plán.
+// Ukazuje peníze, proto náhodný token místo čitelné adresy.
+Route::get('/klient/{token}', ClientDashboardController::class)->name('client-dashboard.show');
 
 // Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
 Route::get('/potencialni-spoluprace/{slug}', ProposalController::class)->name('proposal.show');

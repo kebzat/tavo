@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Client extends Model
 {
@@ -65,6 +66,45 @@ class Client extends Model
         return $this->hasMany(TimeEntry::class);
     }
 
+    /** Měsíční paušál po oblastech, viz App\Support\ClientDashboard. */
+    public function retainers(): HasMany
+    {
+        return $this->hasMany(ClientRetainer::class)->orderBy('order_column')->orderBy('id');
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ClientTask::class);
+    }
+
+    public function months(): HasMany
+    {
+        return $this->hasMany(ClientMonth::class);
+    }
+
+    /** Odkaz na přehled spolupráce. Null, dokud ho nezapneme. */
+    public function dashboardUrl(): ?string
+    {
+        return $this->dashboard_enabled ? $this->dashboardPreviewUrl() : null;
+    }
+
+    /**
+     * Náhled pro přihlášeného správce, funguje i u vypnutého přehledu.
+     *
+     * Přehled ukazuje peníze a hodiny, proto náhodný token místo čitelné
+     * adresy, jakou mají audity. Vzniká až tady: starší datové migrace
+     * zakládají klienty dřív, než sloupec existuje, hook při zakládání
+     * by je na čisté databázi shodil.
+     */
+    public function dashboardPreviewUrl(): string
+    {
+        if (! $this->dashboard_token) {
+            $this->forceFill(['dashboard_token' => Str::random(40)])->saveQuietly();
+        }
+
+        return route('client-dashboard.show', $this->dashboard_token);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_archived', false);
@@ -115,6 +155,8 @@ class Client extends Model
     {
         return [
             'is_archived' => 'boolean',
+            'dashboard_enabled' => 'boolean',
+            'started_on' => 'date',
         ];
     }
 }
