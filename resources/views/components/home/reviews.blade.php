@@ -2,10 +2,11 @@
 
 {{-- Recenze klientů, kotva #recenze (proklik z „5,0 na Googlu" v pruhu
      s čísly). Navazuje na pás log, proto stejné pozadí a linka nahoře.
-     Prvních šest je vidět hned, zbytek po kliknutí. Mřížka jde po řádcích,
-     ať se recenze Pavla a Toma střídají i na pohled. --}}
+     Posuvník (tavoSlider v app.js): na počítači tři karty vedle sebe, na
+     tabletu dvě, na mobilu jedna a kousek další, ať je vidět, že jde listovat.
+     Recenze Pavla a Toma se v pořadí střídají. --}}
 <section id="recenze" class="section-x bg-cream pb-[clamp(80px,11vw,150px)]"
-         x-data="{ all: false }">
+         x-data="tavoSlider">
     <div class="container-tavo border-t border-ink/14 pt-[clamp(40px,5vw,64px)]">
         <div class="mb-[clamp(28px,3.4vw,44px)] flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
             <div>
@@ -17,19 +18,39 @@
                 @endif
             </div>
 
-            @if ($home->reviews_google_url)
-                <x-btn data-reveal :href="$home->reviews_google_url" variant="ghost" target="_blank" rel="noopener" class="shrink-0">
-                    {{ text('home.recenze_google', 'Hodnocení na Googlu', 'Homepage', 'Tlačítko u recenzí, vede na Google profil') }} ↗
-                </x-btn>
-            @endif
+            <div data-reveal class="flex shrink-0 items-center gap-3">
+                @if ($home->reviews_google_url)
+                    <x-btn :href="$home->reviews_google_url" variant="ghost" target="_blank" rel="noopener">
+                        {{ text('home.recenze_google', 'Hodnocení na Googlu', 'Homepage', 'Tlačítko u recenzí, vede na Google profil') }} ↗
+                    </x-btn>
+                @endif
+
+                {{-- Šipky jen tehdy, když se všechny recenze nevejdou vedle sebe. --}}
+                <div class="flex gap-2" x-show="! (atStart && atEnd)">
+                    <button type="button" x-on:click="move(-1)" x-bind:disabled="atStart"
+                            aria-label="{{ text('home.recenze_predchozi', 'Předchozí recenze', 'Homepage', 'Šipka posuvníku recenzí (pro hlasové čtečky)') }}"
+                            class="flex h-[54px] w-[54px] cursor-pointer items-center justify-center rounded-pill border-[1.5px] border-ink/28 text-xl text-ink transition duration-300 ease-tavo hover:border-ink hover:bg-ink hover:text-cream disabled:cursor-default disabled:opacity-30 disabled:hover:border-ink/28 disabled:hover:bg-transparent disabled:hover:text-ink">
+                        <span aria-hidden="true">←</span>
+                    </button>
+                    <button type="button" x-on:click="move(1)" x-bind:disabled="atEnd"
+                            aria-label="{{ text('home.recenze_dalsi_sipka', 'Další recenze', 'Homepage', 'Šipka posuvníku recenzí (pro hlasové čtečky)') }}"
+                            class="flex h-[54px] w-[54px] cursor-pointer items-center justify-center rounded-pill border-[1.5px] border-ink/28 text-xl text-ink transition duration-300 ease-tavo hover:border-ink hover:bg-ink hover:text-cream disabled:cursor-default disabled:opacity-30 disabled:hover:border-ink/28 disabled:hover:bg-transparent disabled:hover:text-ink">
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-5 menu:grid-cols-2 loop:grid-cols-3">
+        {{-- data-reveal je na celém pásu, ne na kartách: karty mimo obrazovku
+             by animace nikdy neodkryla a zůstaly by průhledné. --}}
+        <div data-reveal
+             x-ref="track"
+             tabindex="0"
+             role="region"
+             aria-label="{{ $home->reviews_title ?: text('home.recenze_popisek', 'Recenze klientů', 'Homepage', 'Popisek posuvníku recenzí (pro hlasové čtečky)') }}"
+             class="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain pb-1 outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-brick/40 [&::-webkit-scrollbar]:hidden">
             @foreach ($testimonials as $testimonial)
-                {{-- Skryté recenze nemají data-reveal: animace by je nechala
-                     průhledné, protože při načtení stránky nebyly vidět. --}}
-                <figure @if ($loop->index < 6) data-reveal @else x-cloak x-show="all" @endif
-                        class="m-0 flex flex-col rounded-card border border-ink/12 bg-cream p-[clamp(22px,2.4vw,30px)]">
+                <figure class="m-0 flex w-[86%] shrink-0 snap-start flex-col rounded-card border border-ink/12 bg-cream p-[clamp(22px,2.4vw,30px)] menu:w-[calc((100%-20px)/2)] loop:w-[calc((100%-40px)/3)]">
                     <blockquote class="m-0 mb-5 text-[15px] leading-[1.6] text-body">
                         „{{ $testimonial->text }}“
                     </blockquote>
@@ -61,12 +82,10 @@
             @endforeach
         </div>
 
-        @if ($testimonials->count() > 6)
-            <div class="mt-8 flex justify-center" x-show="! all">
-                <x-btn type="button" variant="ghost" x-on:click="all = true">
-                    {{ text('home.recenze_dalsi', 'Zobrazit další recenze', 'Homepage', 'Tlačítko pod recenzemi') }} ({{ $testimonials->count() - 6 }})
-                </x-btn>
-            </div>
-        @endif
+        {{-- Ukazatel pozice: tenká linka, cihlový úsek je viditelná část pásu. --}}
+        <div x-show="! (atStart && atEnd)" aria-hidden="true" class="relative mt-8 h-[3px] overflow-hidden rounded-pill bg-ink/10">
+            <div class="absolute inset-y-0 rounded-pill bg-brick transition-[left] duration-150"
+                 x-bind:style="`width: ${visible * 100}%; left: ${progress * (1 - visible) * 100}%`"></div>
+        </div>
     </div>
 </section>

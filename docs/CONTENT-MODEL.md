@@ -226,7 +226,7 @@ textech (klíče `home.spoluprace_*`).
 
 Recenze klientů na homepage. Text doslova, autor, role nebo obor, komu recenze patří
 (Pavel / Tom, štítek u citace) a web klienta, na který vede jméno. Pořadí přetažením,
-prvních šest je vidět hned, zbytek po kliknutí na „Zobrazit další recenze“.
+na webu je posuvník (tři vedle sebe, na mobilu jedna) se šipkami.
 
 ## Obsah → Postup spolupráce
 

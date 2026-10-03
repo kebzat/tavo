@@ -46,7 +46,7 @@ class HomeReviewsAndPricingExamplesTest extends TestCase
             ->assertSee('Co o nás říkají klienti')
             ->assertSeeInOrder(['Marek Bezdíček', 'ChrudimLab', 'Miroslav Hlubuček'])
             ->assertSee('href="https://www.svetcejlonu.cz/"', false)
-            ->assertSee('Zobrazit další recenze')
+            ->assertSee('x-data="tavoSlider"', false)
             ->assertDontSee('Skrytý klient')
             // Recenze Pavla na Toma na společný web nepatří.
             ->assertDontSee('nad zadáním opravdu přemýšlí');

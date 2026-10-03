@@ -87,6 +87,42 @@ Alpine.data('tavoGallery', (images) => ({
 }));
 
 /**
+ * Vodorovný posuvník karet (recenze na homepage). Posouvá se nativní scroll
+ * se snapem, takže na dotyku stačí táhnout prstem a myší kolečkem s Shiftem.
+ * Šipky posunou o jednu šířku viditelné části, ukazatel pod pásem ukazuje,
+ * kde v pásu jsme. Pás je `x-ref="track"`.
+ */
+Alpine.data('tavoSlider', () => ({
+    atStart: true,
+    atEnd: false,
+    progress: 0,
+    visible: 1,
+
+    init() {
+        this.update();
+        this.$refs.track.addEventListener('scroll', () => this.update(), { passive: true });
+        window.addEventListener('resize', () => this.update(), { passive: true });
+    },
+
+    update() {
+        const track = this.$refs.track;
+        const max = track.scrollWidth - track.clientWidth;
+
+        this.atStart = track.scrollLeft <= 4;
+        this.atEnd = track.scrollLeft >= max - 4;
+        this.visible = max > 0 ? track.clientWidth / track.scrollWidth : 1;
+        this.progress = max > 0 ? track.scrollLeft / max : 0;
+    },
+
+    move(direction) {
+        const track = this.$refs.track;
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        track.scrollBy({ left: direction * track.clientWidth, behavior: reduce ? 'auto' : 'smooth' });
+    },
+}));
+
+/**
  * Porovnání „před a po" v bloku statické stránky. Dělicí čára sleduje ukazatel,
  * takže stačí přejet myší; na dotyku se táhne prstem.
  *
