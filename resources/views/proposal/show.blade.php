@@ -1,6 +1,6 @@
 {{--
     Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
-    Pořadí: co jsme objevili → co doporučujeme → akční kroky → jak přemýšlíme → ukázky na konec.
+    Pořadí: co jsme objevili → co doporučujeme → akční kroky → měsíční spolupráce → jak přemýšlíme → ukázky na konec.
     Mezi sekce se vkládají ukázky (tmavé pruhy), viz x-proposal.example.
     Prázdná sekce se nevykreslí. Data připravuje App\Models\Proposal.
 --}}
@@ -290,6 +290,78 @@
     @foreach ($examples['after_steps'] as $example)
         <x-proposal.example :example="$example" />
     @endforeach
+
+    {{-- 04 Měsíční spolupráce: varianty vedle sebe, doporučená je tmavá. --}}
+    @if ($packages)
+        <section id="spoluprace" class="section-x section-y">
+            <div class="container-tavo">
+                <div class="max-w-[60ch]">
+                    <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">04</p>
+                    <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
+                        {{ text('spoluprace.packages_title', 'Měsíční spolupráce') }}
+                    </h2>
+                    @if ($proposal->packages_intro)
+                        <p data-reveal class="mt-5 whitespace-pre-line text-perex text-body">{{ $proposal->packages_intro }}</p>
+                    @endif
+                </div>
+
+                <div @class([
+                    'mt-12 grid items-stretch gap-4 menu:gap-5',
+                    'menu:grid-cols-2' => count($packages) === 2,
+                    'menu:grid-cols-3' => count($packages) >= 3,
+                ])>
+                    @foreach ($packages as $package)
+                        <article data-reveal @class([
+                            'relative flex flex-col rounded-card p-7 menu:p-9',
+                            'bg-ink text-cream shadow-[0_24px_60px_-24px_rgba(219,75,36,.55)] outline-2 outline-brick' => $package['recommended'],
+                            'border border-ink/14 text-ink' => ! $package['recommended'],
+                        ])>
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <h3 class="text-h3-sm font-extrabold tracking-[-.02em]">{{ $package['title'] }}</h3>
+                                @if ($package['recommended'])
+                                    <span class="rounded-pill bg-brick px-3.5 py-1.5 text-xs font-bold text-cream">
+                                        {{ text('spoluprace.packages_recommended', 'Doporučujeme') }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            @if ($package['price'])
+                                <p class="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                    <span class="text-metric font-extrabold tracking-[-.03em] tabular-nums">{{ $package['price'] }}</span>
+                                    @if ($package['period'])
+                                        <span @class(['text-sm font-semibold', 'text-cream/60' => $package['recommended'], 'text-muted' => ! $package['recommended']])>{{ $package['period'] }}</span>
+                                    @endif
+                                </p>
+                            @endif
+
+                            @if ($package['scope'])
+                                <p @class([
+                                    'mt-4 w-fit rounded-pill px-3.5 py-1.5 text-sm font-bold',
+                                    'bg-cream/10 text-cream' => $package['recommended'],
+                                    'bg-ink/6 text-ink' => ! $package['recommended'],
+                                ])>{{ $package['scope'] }}</p>
+                            @endif
+
+                            @if ($package['body'])
+                                <p @class(['mt-5 whitespace-pre-line text-perex', 'text-cream/70' => $package['recommended'], 'text-body' => ! $package['recommended']])>{{ $package['body'] }}</p>
+                            @endif
+
+                            @if ($package['features'])
+                                <ul @class(['mt-6 flex flex-1 flex-col gap-3 border-t pt-6', 'border-cream/15' => $package['recommended'], 'border-ink/14' => ! $package['recommended']])>
+                                    @foreach ($package['features'] as $feature)
+                                        <li class="flex gap-3 text-body-lg">
+                                            <svg aria-hidden="true" class="mt-1 size-4.5 shrink-0 text-brick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+                                            <span @class(['text-cream/85' => $package['recommended'], 'text-body' => ! $package['recommended']])>{{ $feature }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 
     {{-- Zkušenosti z praxe: věty s cihlově vyznačenými čísly. Čtou se jako
          podklad k tomu, jak přemýšlíme, proto stojí hned před zásadami. --}}

@@ -1,0 +1,329 @@
+{
+ "company_name": "Grill NOR",
+ "slug": "grillnor",
+ "title": "V čem vám můžeme pomoct?",
+ "intro": "Prošli jsme web grillnor.cz na počítači i na mobilu a celou cestu nového strávníka, od registrace přes strava.cz po první objednaný oběd. Podívali jsme se i na e-shop s chlebíčky a na rozvozy obědů v okolí Trutnova. V bodech najdete, co bychom řešili hned, a návrh, jak by mohl vypadat web s jídelníčkem, registrací a objednávkou na jednom místě.",
+ "prepared_at": "2026-10-03",
+ "highlights": [
+  {
+   "label": "Web",
+   "value": "2 z 5"
+  },
+  {
+   "label": "Sociální sítě",
+   "value": null
+  },
+  {
+   "label": "Výkonnostní marketing",
+   "value": null
+  }
+ ],
+ "timeline_intro": "Web prošel za ta léta několika podobami. Ukazujeme tu nejstarší, kterou má internetový archiv celou, dnešní a náš návrh. Po kliknutí na obrázek se otevře celý.",
+ "timeline": [
+  {
+   "label": "2008",
+   "title": "Kdysi",
+   "body": "Restaurace na Lipové s heslem „Kvalita. Rychlost. Styl.“, denní nabídka, otevírací doba a anketa, jaké maso máte nejradši. Objednat online se nedalo.",
+   "image": "spoluprace/grillnor-web-2008.jpg",
+   "image_alt": "Web Grill NOR v prosinci 2008 podle internetového archivu"
+  },
+  {
+   "label": "2026",
+   "title": "Dnes",
+   "body": "Zelený box s registrací, žlutý s objednávkou přes strava.cz a menu ve vloženém okně z menicka.cz. Hlavní sdělení „Nejlevnější obědy v Trutnově“ je jen v obrázku banneru.",
+   "image": "spoluprace/grillnor-web-2026.jpg",
+   "image_alt": "Dnešní úvodní stránka grillnor.cz"
+  },
+  {
+   "label": "Návrh",
+   "title": "S námi",
+   "body": "Jídelníček na celý týden přímo na webu, lišta s uzávěrkou, registrace, účet a košík na jednom místě. Jídla na talíři, ne v krabičce.",
+   "image": "spoluprace/grillnor-navrh-homepage.jpg",
+   "image_alt": "Návrh nové úvodní stránky Grill NOR"
+  }
+ ],
+ "findings_title": "Stručné shrnutí",
+ "findings_intro": "Díváme se zvenku, jako nový strávník. Počty strávníků, objednávky ani to, kolik platíte za strava.cz, jsme neviděli, takže část z toho jsou otázky, které si spolu ověříme. Měřeno 3. 10. 2026.",
+ "findings": [
+  {
+   "priority": "urgent",
+   "tone": "problem",
+   "title": "K prvnímu obědu vedou tři weby a den čekání",
+   "body": "Nový strávník vyplní formulář na grillnor.cz, ten odejde e-mailem a přihlašovací údaje mu podle stránky Registrace přijdou „do 24 hodin“. Pak předplatí konto, jenže variabilní symbol najde až po přihlášení do strava.cz. Tam ho čeká druhá cookie lišta a číslo jídelny 11150 musí opsat, samo se nevyplní. Co se vaří, zjistí na třetím webu, menicka.cz. Kdo chce oběd jen zkusit, musí projít všechno. Konkurenti jako Gastro Fiedor, Orange Catering nebo Fitday 4U berou objednávku i platbu na jednom místě."
+  },
+  {
+   "priority": "urgent",
+   "tone": "problem",
+   "title": "Z webu se nedá zjistit, co se zítra vaří",
+   "body": "Aktuální menu je jen ve vloženém okně z menicka.cz s vlastním posuvníkem, na mobilu se tak scrolluje ve scrollu. Stránky Jídla A, B a C jsou galerie 23 až 26 fotek bez jediného názvu jídla a pod nadpisem na všech šesti stránkách zůstal text šablony „Krátký text o jídle?“. Jídelníček je přitom hlavní důvod, proč lidé na web chodí."
+  },
+  {
+   "priority": "urgent",
+   "tone": "problem",
+   "title": "Alergeny chybí u poloviny obědů",
+   "body": "Na strava.cz máte v týdnu 5.–9. 10. čísla alergenů jen u 27 ze 49 obědů a na webu u jídel nejsou vůbec. Podle Státní zemědělské a potravinářské inspekce musí být alergeny u objednávky přes internet nebo telefon k dispozici ještě před jejím dokončením a znovu při doručení. Nejsme právníci, ale na webu s jídelníčkem je to jedna kolonka u každého jídla. Gastro Fiedor je má u všech."
+  },
+  {
+   "priority": "urgent",
+   "tone": "problem",
+   "title": "Na mobilu nejde zavolat a čísla si odporují",
+   "body": "Na celém webu není jediné číslo, na které jde klepnout a vytočit ho. V hlavičce je 736 629 904 a 499 850 111, v Kontaktech 736 629 907 a 499 850 117 s prosbou nevolat kvůli přihlášení a odhlášení obědů. Web přitom míří i na seniory, pro které je telefon nejjednodušší cesta."
+  },
+  {
+   "priority": "important",
+   "tone": "problem",
+   "title": "Registrace je schovaná a neříká, co bude dál",
+   "body": "Položka Registrace v menu i tlačítka Přidej se k nám vedou zpátky na úvod. Samostatná stránka /registrace/ s vysvětlením existuje, ale z menu se na ni nedostanete, a má jinou verzi formuláře. Pole pro e-mail a telefon nevyvolají na mobilu správnou klávesnici. O 350 Kč na první objednávku web neříká, jak se uplatní, a na strava.cz online přihláška zapnutá není."
+  },
+  {
+   "priority": "important",
+   "tone": "problem",
+   "title": "Na mobilu zabere první obrazovku hlavička",
+   "body": "Nad obsahem jsou dvakrát tytéž kontakty, ikony, logo Firmy.cz a košík. Banner začíná zhruba ve třetině obrazovky, je vysoký asi 70 px a texty „Nejlevnější obědy“ nebo „Jídlo už od 110 Kč“ jsou součástí obrázku, takže se na telefonu nedají přečíst. Tlačítko Nastavení cookies po zavření lišty trvale překrývá formulář."
+  },
+  {
+   "priority": "important",
+   "tone": "opportunity",
+   "title": "Jídlo na talíři by působilo chutněji",
+   "body": "Fotek máte hodně a jsou jednotné, to je dobrý základ. Jídlo v bílých plastových miskách na bílém pozadí ale nevypadá tak lákavě jako na talíři a fotky nejsou propojené s menu, nikde u nich není název. Jako PNG mají 120 až 175 kB za kus, stránka Jídla A stáhne jen na náhledech 3,4 MB."
+  },
+  {
+   "priority": "important",
+   "tone": "problem",
+   "title": "E-shop s chlebíčky si odporuje",
+   "body": "Na jednom místě se objednává 1 pracovní den předem, jinde 2. Minimum je 5 kusů, na stránce Studená kuchyně 10. Šunkový chlebíček stojí podle stránky 32, nebo 35 Kč. Na stránce e-shopu jsou vidět 3 ze 7 druhů. Jde jen o osobní odběr a s obědy e-shop propojený není, i když banner láká „Naši členové si mohou objednat také chlebíčky a mísy“."
+  },
+  {
+   "priority": "important",
+   "tone": "opportunity",
+   "title": "Na „rozvoz obědů“ vás najdou, na menu ne",
+   "body": "Na Seznamu jste 3. 10. 2026 první na „rozvoz obědů Trutnov“ i „dovoz obědů Trutnov“. Na „obědy Trutnov“ jste sedmí a na „menu Trutnov“ ani „jídelna Trutnov“ v první desítce nejste, protože názvy jídel jsou na menicka.cz, ne u vás. Úvod a všech šest stránek jídel má stejný titulek, žádný hlavní nadpis a chybí strukturovaná data pro restauraci. Ochrana obrázků vrací Facebooku i Googlu chybu, sdílený odkaz proto nemá náhled. Pozice v Googlu zvenku změřit nejde, ukáže je až Search Console."
+  },
+  {
+   "priority": "important",
+   "tone": "opportunity",
+   "title": "Nevíte, kolik lidí se z webu přihlásí",
+   "body": "Web nemá Google Analytics ani jiné měření, jen počítadlo TOPlist. Nezjistíte, kolik lidí otevře registraci, kolik ji odešle a odkud přišli. TOPlist a měření z vloženého menu menicka.cz se navíc spouští ještě před souhlasem s cookies. Samotnou lištu máte nastavenou dobře, odmítnout jde hned v první vrstvě."
+  },
+  {
+   "priority": "important",
+   "tone": "problem",
+   "title": "Web stojí na krabicovém systému z roku 2021",
+   "body": "Web běží na systému inPage od Zoneru, postavil ho Compel a technicky je z roku 2021 (jQuery 2.2.4, Bootstrap 3.4.1). Jídelníček na týden, účet strávníka nebo košík společný pro obědy i chlebíčky se do něj dělat nedají, formuláře umí jen poslat e-mail. Neexistující stránky přesměrovávají na úvod, v patičce je mrtvý odkaz Recepty a © 2021, Volná místa jsou prázdná."
+  },
+  {
+   "priority": "important",
+   "tone": "strength",
+   "title": "Jasný ceník a silná nabídka pro nováčky",
+   "body": "Tři kategorie za 110, 130 a 145 Kč, objednávka do 13:00 den předem, osobní odběr o 10 Kč levněji a 350 Kč na první objednávku. To jsou silné argumenty a v okolí patříte k nejlevnějším. Jen musí být vidět hned, ne v obrázku banneru."
+  }
+ ],
+ "recommendations_intro": "Seřazené od toho, co jde udělat hned na dnešním webu, po nový web a objednávky. Co přijde na řadu po rozjezdu, je na konci.",
+ "recommendations": [
+  {
+   "who": "Tom",
+   "title": "Rychlé opravy na dnešním webu",
+   "body": "Telefon, na který jde na mobilu klepnout, a jedno číslo pro objednávky. Odkaz Registrace na správnou stránku, pryč s „Krátký text o jídle?“, mrtvým odkazem Recepty a © 2021. Napojíme Google Search Console, ať vidíme, na co vás lidé hledají. Všechno v inPage, bez nového webu."
+  },
+  {
+   "who": "Tom",
+   "title": "Rozhodnout nad čísly, jestli zůstat u strava.cz",
+   "body": "Ceník strava.cz veřejný není, proto se zeptáme, kolik za ni platíte. Hotové systémy pro rozvozy začínají na 680 až 1 890 Kč měsíčně. Vlastní objednávky stavíme jen tehdy, když se to vyplatí víc. Když máte provoz kolem strava.cz zaběhnutý a zautomatizovaný, necháme ji a zjednodušíme cestu k ní: jeden odkaz, předvyplněné číslo jídelny, návod se screenshoty."
+  },
+  {
+   "who": "Tom",
+   "title": "Nový web na Laravelu s administrací na míru",
+   "body": "Doporučujeme Laravel s administrací Filament. Jídelníček, registrace, účty strávníků a objednávky jsou pak postavené přesně podle vašeho provozu a nic se nemusí ohýbat. Kdybyste zůstali u strava.cz a chtěli jen web s jídelníčkem, stačí i WordPress. Návrh nahoře ukazuje, jak by to mohlo vypadat."
+  },
+  {
+   "who": "Tom",
+   "title": "Jídelníček na týden přímo na webu",
+   "body": "Názvy, gramáže, ceny, alergeny a fotka u každého jídla, rozdělené po dnech a podle A, B a C. Google ho uvidí a lidé ho najdou i na „menu Trutnov“. Zjistíme, jak dnes menu chystáte, ať ho nepíšete třikrát do tří systémů."
+  },
+  {
+   "who": "Tom",
+   "title": "Registrace, účet a košík na jednom místě",
+   "body": "Jeden formulář, kontrola, jestli na adresu vozíte, a 350 Kč na kontě hned po registraci. Ve svém účtu strávník vidí plán na týden, kredit a historii, platí kartou nebo QR kódem bez opisování variabilního symbolu. Chlebíčky přidá do stejného košíku. Platí, pokud vyjde, že vlastní objednávky dávají smysl."
+  },
+  {
+   "who": "Tom",
+   "title": "Fotky jídel na talíři",
+   "body": "Nafotit nejčastější jídla na talíři u vás v kuchyni a dát je k jídlům v menu. Fotky v návrhu jsou jen ilustrační, ukazují styl. Zároveň je zmenšíme do moderního formátu, ať stránka s menu nestahuje megabajty."
+  },
+  {
+   "who": "Tom",
+   "title": "Lišta s uzávěrkou a cesta od výběru po talíř",
+   "body": "Nahoře na webu, do kdy dnes objednat a kolik času zbývá. Pod tím čtyři kroky: vyberete, objednáte do 13:00, uvaříme, dovezeme mezi 10. a 13. hodinou. Kdo u vás nikdy neobjednával, hned pochopí, jak to funguje."
+  },
+  {
+   "who": "Tom",
+   "title": "Rodiny a firmy",
+   "body": "Výhodnější cena od určitého počtu porcí na jednu adresu a firemní objednávky s jednou fakturou za měsíc. Podmínky určíte vy, my je na webu ukážeme a v objednávkách ohlídáme. Orange Catering už firmám měsíční fakturu nabízí."
+  },
+  {
+   "who": "Tom",
+   "title": "Nápady, o kterých se pobavíme",
+   "body": "Výživové hodnoty u jídel (nejsou povinné, ale lidé je hledají), SMS připomenutí, když na zítřek nemáte objednáno, a automatické dobíjení kreditu. Hlavně se zeptáme, co vás v provozu zdržuje nejvíc: přepisování menu, telefonáty kvůli odhlášení, nebo párování plateb. Tam se automatizace vyplatí nejvíc."
+  }
+ ],
+ "steps_intro": "Prvních pár týdnů opravíme to, co jde na dnešním webu hned, a nad vašimi čísly rozhodneme, jestli objednávky stavět u vás, nebo nechat strava.cz. Zbytek přijde postupně.",
+ "steps": [
+  {
+   "when": "1. týden",
+   "title": "Rychlé opravy a Search Console",
+   "body": "Klikací telefon, správný odkaz na registraci, úklid zbytků šablony, napojení Search Console.",
+   "later": false
+  },
+  {
+   "when": "2. týden",
+   "title": "Schůzka nad čísly",
+   "body": "Poplatky za strava.cz, počet strávníků, jak chystáte menu a trasy. Rozhodneme, jestli stavět vlastní objednávky.",
+   "later": false
+  },
+  {
+   "when": "3.–4. týden",
+   "title": "Focení jídel",
+   "body": "Nejčastější jídla na talíři, rovnou pro web i sociální sítě.",
+   "later": false
+  },
+  {
+   "when": "Přes zimu",
+   "title": "Nový web s jídelníčkem",
+   "body": "Menu na týden s alergeny, lišta s uzávěrkou, kontakty a e-shop s chlebíčky v novém vzhledu.",
+   "later": true
+  },
+  {
+   "when": "Potom",
+   "title": "Registrace, účet a platby",
+   "body": "Pokud vyjde vlastní systém: účet strávníka, kredit, platba kartou a QR, převod strávníků ze strava.cz.",
+   "later": true
+  },
+  {
+   "when": "Průběžně",
+   "title": "Rodiny, firmy a připomenutí",
+   "body": "Výhody za víc porcí, firemní fakturace, SMS před uzávěrkou.",
+   "later": true
+  }
+ ],
+ "packages_intro": "Nový web a případné vlastní objednávky naceníme zvlášť, až budeme vědět, jestli zůstává strava.cz. Potom se o web staráme měsíčně. Máme dvě varianty.",
+ "packages": [
+  {
+   "title": "Údržba",
+   "scope": "5 hodin práce měsíčně",
+   "price": "4 900 Kč",
+   "period": "měsíčně",
+   "body": "Web běží a drobnosti se opraví. Na nové funkce v tomhle rozsahu čas nezbude.",
+   "features": "Opravy a aktualizace\nDrobné změny textů, cen a fotek\nKontrola, že objednávky a formuláře fungují",
+   "recommended": false
+  },
+  {
+   "title": "Rozvoj",
+   "scope": "10–11 hodin práce měsíčně",
+   "price": "10 000 Kč",
+   "period": "měsíčně",
+   "body": "Web se každý měsíc posune o kus dál podle plánu výš, třeba o firemní objednávky, připomenutí uzávěrky nebo výživové údaje.",
+   "features": "Všechno z Údržby\nNové funkce podle společného plánu\nPřehled z Search Console a měření webu jednou za měsíc\nÚpravy podle sezony: Vánoce, firemní akce, nová jídla",
+   "recommended": true
+  }
+ ],
+ "examples": [
+  {
+   "placement": "after_findings",
+   "kind": "Návrh",
+   "title": "Takhle by mohl vypadat web s jídelníčkem a objednávkou",
+   "body": "Jídelníček je skutečný, z menicka.cz na týden 5.–9. 10. 2026, stejně jako ceny a pravidla uzávěrky. Nahoře lišta s tím, do kdy objednat, pod ní celý týden po dnech a podle A, B a C, cesta od výběru po talíř, nabídka pro rodiny a firmy a chlebíčky ve stejném košíku. Fotky jídel jsou ilustrační, na webu budou vaše. Finální podobu doladíme s vámi.",
+   "image": "spoluprace/grillnor-navrh-homepage.jpg",
+   "image_alt": "Návrh nové úvodní stránky Grill NOR",
+   "scroll": true,
+   "link_url": null,
+   "link_label": null
+  },
+  {
+   "placement": "after_recommendations",
+   "kind": "Návrh",
+   "title": "Registrace, účet a bannery",
+   "body": "Jak by vypadala cesta nového strávníka bez strava.cz: registrace na jednom formuláři s kontrolou adresy, účet s plánem na týden a kreditem a bannery, které jsou čitelné i na mobilu. Účet a registrace dávají smysl jen s vlastními objednávkami, o tom rozhodnou čísla.",
+   "image": null,
+   "scroll": false,
+   "link_url": null,
+   "link_label": null,
+   "items": [
+    {
+     "title": "Úvodní stránka na mobilu",
+     "body": "Jídelníček po dnech, jídla A, B a C rozbalovací, košík stále po ruce.",
+     "image": "spoluprace/grillnor-navrh-mobil.jpg",
+     "image_alt": "Návrh úvodní stránky Grill NOR na mobilu",
+     "video_url": null
+    },
+    {
+     "title": "Můj účet",
+     "body": "Plán na týden, kredit, porce na adresu a připomenutí uzávěrky.",
+     "image": "spoluprace/grillnor-navrh-ucet.jpg",
+     "image_alt": "Návrh účtu strávníka Grill NOR",
+     "video_url": null
+    },
+    {
+     "title": "Registrace",
+     "body": "Jeden formulář, správná klávesnice pro telefon a e-mail, kontrola adresy a 350 Kč hned.",
+     "image": "spoluprace/grillnor-navrh-registrace.jpg",
+     "image_alt": "Návrh registrace Grill NOR na mobilu",
+     "video_url": null
+    },
+    {
+     "title": "Bannery",
+     "body": "Nový jídelníček, 350 Kč pro nováčky a obědy pro firmy. Text je živý, ne v obrázku.",
+     "image": "spoluprace/grillnor-navrh-bannery.jpg",
+     "image_alt": "Návrhy bannerů Grill NOR pro počítač i mobil",
+     "video_url": null
+    }
+   ]
+  },
+  {
+   "placement": "after_principles",
+   "kind": "Konkurence",
+   "title": "Co mají rozvozy v okolí",
+   "body": "Rozvozy obědů, které vozí na Trutnovsko. Vybrali jsme jen to, co u vás zatím chybí. Screenshoty jsou z 3. 10. 2026.",
+   "image": null,
+   "scroll": false,
+   "link_url": null,
+   "link_label": null,
+   "items": [
+    {
+     "title": "Gastro Fiedor",
+     "body": "Vozí ze Dvora Králové i do Trutnova. Vlastní online objednávky, týdenní jídelníček s alergeny u každého jídla a platba QR kódem. Oběd 120 Kč bez polévky.",
+     "image": "spoluprace/grillnor-konkurence-fiedor.jpg",
+     "image_alt": "Úvodní stránka gastrofiedor.cz",
+     "video_url": null
+    },
+    {
+     "title": "Orange Catering",
+     "body": "E-shop s platbou QR kódem při objednávce a firmám stálé dodávání bez objednávání s fakturou jednou za měsíc. Oběd 135 Kč.",
+     "image": "spoluprace/grillnor-konkurence-orange.jpg",
+     "image_alt": "Úvodní stránka orangeorange.net",
+     "video_url": null
+    },
+    {
+     "title": "Fitday 4U",
+     "body": "Rozvoz v Trutnově přes vlastní e-shop s kreditem a alergeny u jídel. Menu od 150 Kč.",
+     "image": "spoluprace/grillnor-konkurence-fitday.jpg",
+     "image_alt": "Stránka rozvozu jídla Fitday 4U",
+     "video_url": null
+    }
+   ]
+  }
+ ],
+ "principles": [
+  {
+   "title": "Nejdřív strávník, pak hezké věci",
+   "body": "Začínáme tím, co novému strávníkovi pomůže objednat první oběd: menu, které je vidět, telefon, na který jde klepnout, a registrace bez čekání. Nový vzhled je až druhý krok."
+  },
+  {
+   "title": "Rozhodujeme podle čísel",
+   "body": "Vlastní objednávky stavíme, jen když se vám vyplatí víc než strava.cz. Když máte provoz kolem ní dobře zaběhnutý, necháme ji a zlepšíme cestu k ní."
+  },
+  {
+   "title": "Skutečná jídla, skutečné fotky",
+   "body": "Fotky v návrhu jsou ilustrační. Na webu budou vaše jídla z vaší kuchyně, nafocená na talíři."
+  }
+ ]
+}

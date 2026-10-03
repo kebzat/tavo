@@ -36,6 +36,7 @@ class ProposalController extends Controller
             'findings' => $proposal->findingGroups(),
             'recommendations' => $proposal->recommendationItems(),
             'steps' => $proposal->stepGroups(),
+            'packages' => $proposal->packageItems(),
             'examples' => $proposal->examplesByPlacement(),
             'experiences' => $proposal->experienceItems(),
             'principles' => $proposal->principleItems(),
@@ -92,6 +93,10 @@ class ProposalController extends Controller
             'kroky' => [
                 'label' => text('spoluprace.nav_steps', 'Akční plán', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),
                 'shown' => $sections['steps']['now'] || $sections['steps']['later'],
+            ],
+            'spoluprace' => [
+                'label' => text('spoluprace.nav_packages', 'Měsíční spolupráce', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),
+                'shown' => (bool) $sections['packages'],
             ],
             'pristup' => [
                 'label' => text('spoluprace.nav_principles', 'Obecné doporučení', 'Potenciální spolupráce', 'Tlačítko v úvodu a položka menu'),

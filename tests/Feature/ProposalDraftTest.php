@@ -49,6 +49,15 @@ class ProposalDraftTest extends TestCase
         }
     }
 
+    public function test_grillnor_ma_i_mesicni_spolupraci(): void
+    {
+        $proposal = Proposal::firstWhere('slug', 'grillnor');
+
+        $this->assertSame(['Údržba', 'Rozvoj'], array_column($proposal->packageItems(), 'title'));
+        $this->assertTrue($proposal->packageItems()[1]['recommended']);
+        $this->assertNotEmpty($proposal->packages_intro);
+    }
+
     public function test_doplneni_vlozi_za_nadpis_a_nezdvoji(): void
     {
         $current = [['title' => 'A'], ['title' => 'B']];

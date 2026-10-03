@@ -33,6 +33,7 @@ class ProposalForm
                 self::findings(),
                 self::recommendations(),
                 self::steps(),
+                self::packages(),
                 self::examples(),
                 self::experiences(),
                 self::principles(),
@@ -222,6 +223,39 @@ class ProposalForm
                 ->itemLabel(fn (array $state): ?string => trim(($state['when'] ?? '').' '.($state['title'] ?? '')) ?: null)
                 ->defaultItems(0)
                 ->addActionLabel('Přidat krok')
+                ->reorderable(),
+        ]);
+    }
+
+    private static function packages(): Tab
+    {
+        return Tab::make('Měsíční spolupráce')->schema([
+            Textarea::make('packages_intro')
+                ->label('Perex sekce')
+                ->rows(2),
+
+            Repeater::make('packages')
+                ->label('Varianty')
+                ->helperText('Karty vedle sebe. Doporučená varianta je tmavá a má štítek.')
+                ->schema([
+                    TextInput::make('title')->label('Název')->required()->placeholder('Rozvoj'),
+                    TextInput::make('scope')->label('Rozsah')->placeholder('10–11 hodin práce měsíčně'),
+                    TextInput::make('price')->label('Cena')->placeholder('10 000 Kč'),
+                    TextInput::make('period')->label('Za co')->placeholder('měsíčně bez DPH'),
+                    Textarea::make('body')->label('Pro koho')->rows(2)->columnSpanFull(),
+                    Textarea::make('features')
+                        ->label('Co je v ceně')
+                        ->rows(5)
+                        ->columnSpanFull()
+                        ->helperText('Každý řádek jedna položka.'),
+                    Toggle::make('recommended')->label('Doporučujeme'),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->itemLabel(fn (array $state): ?string => trim(($state['title'] ?? '').' '.($state['price'] ?? '')) ?: null)
+                ->maxItems(3)
+                ->defaultItems(0)
+                ->addActionLabel('Přidat variantu')
                 ->reorderable(),
         ]);
     }

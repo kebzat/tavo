@@ -294,6 +294,31 @@ class ProposalTest extends TestCase
             ->assertSee('Meta Ads vrátí <strong class="font-extrabold text-brick whitespace-nowrap">3–10 Kč</strong> z koruny.', false);
     }
 
+    public function test_mesicni_spoluprace_ukaze_varianty_a_doporucenou(): void
+    {
+        $this->proposal(['packages' => [
+            ['title' => 'Údržba', 'price' => '4 900 Kč', 'period' => 'měsíčně', 'scope' => '5 hodin práce', 'features' => "Opravy\n\n  Aktualizace  "],
+            ['title' => 'Rozvoj', 'price' => '10 000 Kč', 'scope' => '10–11 hodin práce', 'features' => 'Nové funkce', 'recommended' => true],
+            ['title' => '', 'price' => '1 Kč'],
+        ]]);
+
+        $this->assertSame(['Opravy', 'Aktualizace'], Proposal::firstWhere('slug', 'hracky-zkouska')->packageItems()[0]['features']);
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertSee('href="#spoluprace"', false)
+            ->assertSeeInOrder(['Akční kroky', 'Měsíční spolupráce', 'Údržba', '4 900 Kč', '5 hodin práce', 'Rozvoj', 'Doporučujeme', '10 000 Kč'])
+            ->assertDontSee('1 Kč');
+    }
+
+    public function test_bez_variant_neni_sekce_spoluprace(): void
+    {
+        $this->proposal();
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertDontSee('href="#spoluprace"', false)
+            ->assertDontSee('id="spoluprace"', false);
+    }
+
     public function test_video_z_disku_se_nacte_az_po_kliknuti(): void
     {
         $this->proposal(['examples' => [[

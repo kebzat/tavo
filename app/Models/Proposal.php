@@ -188,6 +188,31 @@ class Proposal extends Model
     }
 
     /**
+     * Varianty měsíční spolupráce. Co je v ceně, píše správce po řádcích,
+     * prázdné řádky vypadnou.
+     *
+     * @return list<array{title: string, price: string, period: string, scope: string, body: string, features: list<string>, recommended: bool}>
+     */
+    public function packageItems(): array
+    {
+        return $this->rows('packages')
+            ->map(fn (array $row): array => [
+                'title' => (string) $row['title'],
+                'price' => (string) ($row['price'] ?? ''),
+                'period' => (string) ($row['period'] ?? ''),
+                'scope' => (string) ($row['scope'] ?? ''),
+                'body' => (string) ($row['body'] ?? ''),
+                'features' => collect(preg_split('/\R/', (string) ($row['features'] ?? '')) ?: [])
+                    ->map(fn (string $line): string => trim($line))
+                    ->filter()
+                    ->values()
+                    ->all(),
+                'recommended' => (bool) ($row['recommended'] ?? false),
+            ])
+            ->all();
+    }
+
+    /**
      * Ukázky podle místa na stránce. Obrázek je vyřešený na zmenšeniny,
      * `full_url` vede na originál (dlouhý návrh webu se dá otevřít celý).
      *
@@ -369,6 +394,7 @@ class Proposal extends Model
             'findings' => 'array',
             'recommendations' => 'array',
             'steps' => 'array',
+            'packages' => 'array',
             'examples' => 'array',
             'experiences' => 'array',
             'principles' => 'array',

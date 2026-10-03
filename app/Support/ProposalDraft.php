@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Proposal;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -57,6 +58,10 @@ class ProposalDraft
 
         // Zkušenosti jsou společné, berou se z první nabídky, pokud je soubor nemá.
         $data['experiences'] ??= Proposal::where('slug', 'iq-hracky')->value('experiences') ?? [];
+
+        // Starší migrace importují všechny soubory. Na čisté databázi tak
+        // narazí i na koncept s poli, pro která sloupec přibude až později.
+        $data = Arr::only($data, Schema::getColumnListing('proposals'));
 
         return Proposal::create([...Arr::except($data, ['id', 'client_id']), 'is_public' => false]);
     }
