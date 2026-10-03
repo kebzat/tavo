@@ -166,42 +166,42 @@
    "body": "Výživové hodnoty u jídel (nejsou povinné, ale lidé je hledají), SMS připomenutí, když na zítřek nemáte objednáno, a automatické dobíjení kreditu. Hlavně se zeptáme, co vás v provozu zdržuje nejvíc: přepisování menu, telefonáty kvůli odhlášení, nebo párování plateb. Tam se automatizace vyplatí nejvíc."
   }
  ],
- "steps_intro": "Prvních pár týdnů opravíme to, co jde na dnešním webu hned, a nad vašimi čísly rozhodneme, jestli objednávky stavět u vás, nebo nechat strava.cz. Zbytek přijde postupně.",
+ "steps_intro": "Rozvržené po měsících tak, jak by šla spolupráce ve variantě Rozvoj. V prvním týdnu opravíme na dnešním webu všechno, co jde hned. Nový web a případné vlastní objednávky naceníme zvlášť.",
  "steps": [
   {
-   "when": "1. týden",
-   "title": "Rychlé opravy a Search Console",
-   "body": "Klikací telefon, správný odkaz na registraci, úklid zbytků šablony, napojení Search Console.",
+   "when": "1. měsíc",
+   "title": "Opravy, měření a rozhodnutí",
+   "body": "Hned v prvním týdnu: telefon, na který jde na mobilu klepnout, jedno číslo pro objednávky, Registrace v menu na správné stránce, pryč s „Krátký text o jídle?“, mrtvým odkazem Recepty a © 2021, napojení Search Console a měření návštěvnosti. Do konce měsíce schůzka nad čísly ze strava.cz a schválený návrh nového webu.",
    "later": false
   },
   {
-   "when": "2. týden",
-   "title": "Schůzka nad čísly",
-   "body": "Poplatky za strava.cz, počet strávníků, jak chystáte menu a trasy. Rozhodneme, jestli stavět vlastní objednávky.",
-   "later": false
-  },
-  {
-   "when": "3.–4. týden",
-   "title": "Focení jídel",
-   "body": "Nejčastější jídla na talíři, rovnou pro web i sociální sítě.",
-   "later": false
-  },
-  {
-   "when": "Přes zimu",
+   "when": "2. měsíc",
    "title": "Nový web s jídelníčkem",
-   "body": "Menu na týden s alergeny, lišta s uzávěrkou, kontakty a e-shop s chlebíčky v novém vzhledu.",
+   "body": "Jídelníček na týden s alergeny a fotkami, lišta s uzávěrkou, cesta od výběru po talíř, kontakty a chlebíčky v novém vzhledu. Mezitím nafotíme jídla na talíři.",
+   "later": false
+  },
+  {
+   "when": "3. měsíc",
+   "title": "Registrace a účet strávníka",
+   "body": "Pokud vyjde vlastní systém: registrace bez čekání, účet s plánem na týden a kreditem, platba kartou a QR kódem. Když zůstane strava.cz, zjednodušíme cestu k ní: jeden odkaz, předvyplněné číslo jídelny a návod.",
+   "later": false
+  },
+  {
+   "when": "4. měsíc",
+   "title": "Jeden košík a převod strávníků",
+   "body": "Obědy i chlebíčky v jednom košíku a převod stávajících strávníků ze strava.cz s návodem pro ně.",
    "later": true
   },
   {
-   "when": "Potom",
-   "title": "Registrace, účet a platby",
-   "body": "Pokud vyjde vlastní systém: účet strávníka, kredit, platba kartou a QR, převod strávníků ze strava.cz.",
-   "later": true
-  },
-  {
-   "when": "Průběžně",
+   "when": "Od 5. měsíce",
    "title": "Rodiny, firmy a připomenutí",
-   "body": "Výhody za víc porcí, firemní fakturace, SMS před uzávěrkou.",
+   "body": "Výhody za víc porcí, firemní fakturace jednou za měsíc, SMS před uzávěrkou a další nápady z plánu.",
+   "later": true
+  },
+  {
+   "when": "Každý měsíc",
+   "title": "Údržba a sezona",
+   "body": "Aktualizace, nová jídla, Vánoce a firemní akce, přehled z měření.",
    "later": true
   }
  ],
@@ -241,8 +241,8 @@
   {
    "placement": "after_recommendations",
    "kind": "Návrh",
-   "title": "Registrace, účet a bannery",
-   "body": "Jak by vypadala cesta nového strávníka bez strava.cz: registrace na jednom formuláři s kontrolou adresy, účet s plánem na týden a kreditem a bannery, které jsou čitelné i na mobilu. Účet a registrace dávají smysl jen s vlastními objednávkami, o tom rozhodnou čísla.",
+   "title": "Na mobilu, v účtu a na bannerech",
+   "body": "Většina lidí si oběd vybírá na telefonu, proto je návrh nahoře přímo v mobilu a dá se v něm scrollovat. Vedle registrace na jednom formuláři s kontrolou adresy. Pod tím účet strávníka s plánem na týden a kreditem a bannery, čitelné i na mobilu. Účet a registrace dávají smysl jen s vlastními objednávkami, o tom rozhodnou čísla.",
    "image": null,
    "scroll": false,
    "link_url": null,
@@ -253,7 +253,8 @@
      "body": "Jídelníček po dnech, jídla A, B a C rozbalovací, košík stále po ruce.",
      "image": "spoluprace/grillnor-navrh-mobil.jpg",
      "image_alt": "Návrh úvodní stránky Grill NOR na mobilu",
-     "video_url": null
+     "video_url": null,
+     "phone": true
     },
     {
      "title": "Můj účet",
@@ -267,7 +268,8 @@
      "body": "Jeden formulář, správná klávesnice pro telefon a e-mail, kontrola adresy a 350 Kč hned.",
      "image": "spoluprace/grillnor-navrh-registrace.jpg",
      "image_alt": "Návrh registrace Grill NOR na mobilu",
-     "video_url": null
+     "video_url": null,
+     "phone": true
     },
     {
      "title": "Bannery",
@@ -325,5 +327,6 @@
    "title": "Skutečná jídla, skutečné fotky",
    "body": "Fotky v návrhu jsou ilustrační. Na webu budou vaše jídla z vaší kuchyně, nafocená na talíři."
   }
- ]
+ ],
+ "steps_title": "Plán po měsících"
 }

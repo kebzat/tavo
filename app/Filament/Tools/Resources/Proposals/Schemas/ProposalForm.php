@@ -204,6 +204,11 @@ class ProposalForm
     private static function steps(): Tab
     {
         return Tab::make('Akční kroky')->schema([
+            TextInput::make('steps_title')
+                ->label('Nadpis sekce')
+                ->placeholder('Akční kroky v prvních týdnech')
+                ->helperText('Prázdné = „Akční kroky v prvních týdnech“ ze Statických textů. Třeba „Plán po měsících“.'),
+
             Textarea::make('steps_intro')
                 ->label('Perex sekce')
                 ->rows(2),
@@ -305,6 +310,9 @@ class ProposalForm
                                 ->directory('spoluprace')
                                 ->helperText('Screenshot. U videa náhled, bez něj ho vezme Disk.'),
                             TextInput::make('image_alt')->label('Popisek obrázku (alt)'),
+                            Toggle::make('phone')
+                                ->label('V telefonu')
+                                ->helperText('Dlouhý screenshot z mobilu se ukáže v rámečku telefonu, ve kterém se dá scrollovat. Telefony jsou vedle sebe nad ostatními ukázkami.'),
                         ])
                         ->columns(2)
                         ->collapsible()

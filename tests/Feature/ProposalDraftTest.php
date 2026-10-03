@@ -56,6 +56,11 @@ class ProposalDraftTest extends TestCase
         $this->assertSame(['Údržba', 'Rozvoj'], array_column($proposal->packageItems(), 'title'));
         $this->assertTrue($proposal->packageItems()[1]['recommended']);
         $this->assertNotEmpty($proposal->packages_intro);
+        $this->assertSame('Plán po měsících', $proposal->steps_title);
+
+        $example = $proposal->examplesByPlacement()['after_recommendations'][0];
+        $this->assertSame(['Úvodní stránka na mobilu', 'Registrace'], array_column($example['phones'], 'title'));
+        $this->assertSame(['Můj účet', 'Bannery'], array_column($example['items'], 'title'));
     }
 
     public function test_doplneni_vlozi_za_nadpis_a_nezdvoji(): void

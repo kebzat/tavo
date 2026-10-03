@@ -245,24 +245,33 @@ class Proposal extends Model
      * Položka bez obrázku i bez videa nemá co ukázat, vypadne. `items_layout`
      * říká šabloně, jestli jde o samá videa na výšku, nebo o screenshoty.
      *
-     * @return array{items: list<array<string, mixed>>, items_layout: string}
+     * Screenshoty z mobilu označené „v telefonu“ jdou zvlášť do `phones`:
+     * šablona je ukáže vedle sebe v rámečku telefonu nad zbytkem mřížky.
+     *
+     * @return array{items: list<array<string, mixed>>, phones: list<array<string, mixed>>, items_layout: string}
      */
     private function exampleItems(mixed $rows): array
     {
-        $items = collect(is_array($rows) ? $rows : [])
+        $all = collect(is_array($rows) ? $rows : [])
             ->filter(fn ($row): bool => is_array($row))
             ->map(fn (array $row): array => [
                 'title' => (string) ($row['title'] ?? ''),
                 'body' => (string) ($row['body'] ?? ''),
                 ...$this->image($row),
                 'video' => self::driveVideo($row['video_url'] ?? null),
+                'phone' => (bool) ($row['phone'] ?? false),
             ])
-            ->filter(fn (array $item): bool => $item['image'] !== null || $item['video'] !== null)
-            ->values();
+            ->filter(fn (array $item): bool => $item['image'] !== null || $item['video'] !== null);
+
+        [$phones, $items] = $all->partition(fn (array $item): bool => $item['phone'] && $item['image'] !== null);
 
         $onlyVideos = $items->isNotEmpty() && $items->every(fn (array $item): bool => $item['video'] !== null);
 
-        return ['items' => $items->all(), 'items_layout' => $onlyVideos ? 'video' : 'image'];
+        return [
+            'items' => $items->values()->all(),
+            'phones' => $phones->values()->all(),
+            'items_layout' => $onlyVideos ? 'video' : 'image',
+        ];
     }
 
     /**

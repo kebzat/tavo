@@ -240,7 +240,7 @@
                 <div class="menu:sticky menu:top-30 menu:self-start">
                     <p class="text-sm font-bold tracking-[.14em] text-brick tabular-nums">03</p>
                     <h2 data-reveal class="mt-3 text-h2 font-extrabold tracking-[-.02em]">
-                        {{ text('spoluprace.steps_title', 'Akční kroky v prvních týdnech') }}
+                        {{ $proposal->steps_title ?: text('spoluprace.steps_title', 'Akční kroky v prvních týdnech') }}
                     </h2>
                     @if ($proposal->steps_intro)
                         <p data-reveal class="mt-5 max-w-[46ch] whitespace-pre-line text-perex text-body">{{ $proposal->steps_intro }}</p>
