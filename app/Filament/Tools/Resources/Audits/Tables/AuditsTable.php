@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Audits\Tables;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Models\Audit;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -18,6 +19,7 @@ class AuditsTable
     {
         return $table
             ->defaultSort('audited_at', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->with('reviews'))
             ->columns([
                 TextColumn::make('title')
                     ->label('Audit')
@@ -33,6 +35,8 @@ class AuditsTable
                 IconColumn::make('is_public')
                     ->label('Sdíleno')
                     ->boolean(),
+
+                ...Reviews::columns(),
 
                 IconColumn::make('is_teaser')
                     ->label('Omezený')

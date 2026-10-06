@@ -40,6 +40,11 @@ a drobné úpravy“ za oblast.
 `App\Support\Ads\Billing` bere paušál z `client_retainers`, když je klient má,
 jinak z nastavení reklam. Přehled i Fakturace proto ukazují stejná čísla.
 
+**Změna částky do budoucna** (teď 30 000, od ledna 10 000) = další řádek téže
+oblasti: starému Do, novému Od. **Předběžně** = zatím nedomluvené, počítá se jen
+do CRM → Výhled, nefakturuje se a klient ho v přehledu nevidí. Když na předběžný
+paušál dojde měsíc, Fakturace ho ukáže oranžově k potvrzení.
+
 **Hodin v paušálu prázdné** = hodiny jen ukazujeme, nad rámec se nic neúčtuje.
 Jakmile se u některé oblasti vyplní, hodiny nad součet se počítají sazbou
 z nastavení reklam.

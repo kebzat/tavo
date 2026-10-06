@@ -3,6 +3,7 @@
 namespace App\Filament\Tools\Resources\Checklists\Tables;
 
 use App\Enums\ChecklistItemStatus;
+use App\Filament\Tools\Actions\Reviews;
 use App\Filament\Tools\Resources\Checklists\Actions\CreateFromTemplateAction;
 use App\Models\Checklist;
 use Filament\Actions\BulkActionGroup;
@@ -20,7 +21,7 @@ class ChecklistsTable
             ->defaultSort('updated_at', 'desc')
             // Progres čteme z agregace v dotazu, ne z modelu — jinak by každý
             // řádek tabulky spustil vlastní dotaz na položky.
-            ->modifyQueryUsing(fn ($query) => $query->withCount([
+            ->modifyQueryUsing(fn ($query) => $query->with('reviews')->withCount([
                 'items',
                 'items as finished_items_count' => fn ($sub) => $sub->whereIn('status', [
                     ChecklistItemStatus::Done->value,
@@ -54,6 +55,8 @@ class ChecklistsTable
                 IconColumn::make('is_public')
                     ->label('Sdíleno')
                     ->boolean(),
+
+                ...Reviews::columns(),
 
                 TextColumn::make('updated_at')
                     ->label('Upraveno')

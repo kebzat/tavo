@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
@@ -57,6 +58,10 @@ class UserForm
                     ->helperText(fn (?User $record): string => $record?->getKey() === Auth::id()
                         ? 'Vlastní roli měnit nelze.'
                         : 'Správce vidí vše včetně nastavení a uživatelů. Redaktor jen obsah.'),
+
+                Toggle::make('is_reviewer')
+                    ->label('Kontroluje výstupy pro klienty')
+                    ->helperText('V nástrojích dostane u auditů, nabídek, checklistů a reportů vlastní sloupec „zkontrolováno“.'),
             ]),
         ]);
     }

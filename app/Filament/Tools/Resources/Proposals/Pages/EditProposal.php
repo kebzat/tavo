@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Proposals\Pages;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Filament\Tools\Resources\Proposals\ProposalResource;
 use App\Models\Proposal;
 use Filament\Actions\Action;
@@ -16,6 +17,8 @@ class EditProposal extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Reviews::action(),
+
             Action::make('openPublicUrl')
                 ->label('Otevřít sdílený odkaz')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)

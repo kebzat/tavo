@@ -49,6 +49,17 @@ class Deal extends Model
     }
 
     /**
+     * Vyhrané jednorázové zakázky, které patří do Fakturace. Průběžná správa
+     * se fakturuje paušálem u klienta, proto tu není.
+     */
+    public function scopeBillable(Builder $query): Builder
+    {
+        return $query->where('stage', DealStage::Won->value)
+            ->where('package', '!=', DealPackage::Retainer->value)
+            ->where('value_czk', '>', 0);
+    }
+
+    /**
      * Očekávaná hodnota. Nezaokrouhluje se po jednotlivých obchodech, ale
      * až v součtu sloupce — jinak se chyby zaokrouhlení nasčítají.
      */
@@ -75,6 +86,7 @@ class Deal extends Model
             'proposal_sent_at' => 'datetime',
             'won_at' => 'datetime',
             'lost_at' => 'datetime',
+            'invoiced_at' => 'datetime',
         ];
     }
 }

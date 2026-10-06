@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasReviews;
 use App\Models\Concerns\TracksClientViews;
 use App\Support\AuditMarkdown;
 use App\Support\UniqueSlug;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class Audit extends Model
 {
-    use TracksClientViews;
+    use HasReviews, TracksClientViews;
 
     /**
      * Řádek, od kterého je text v omezeném režimu zamčený. Klient vidí,

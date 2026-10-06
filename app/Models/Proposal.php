@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasReviews;
 use App\Models\Concerns\TracksClientViews;
 use App\Support\ResponsiveImage;
 use App\Support\UniqueSlug;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class Proposal extends Model
 {
-    use TracksClientViews;
+    use HasReviews, TracksClientViews;
 
     /** Kam na stránce ukázka patří. Mezi sekce, ne na konec. */
     public const EXAMPLE_PLACEMENTS = [

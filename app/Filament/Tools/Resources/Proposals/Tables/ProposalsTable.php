@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Proposals\Tables;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Models\Proposal;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -18,6 +19,7 @@ class ProposalsTable
     {
         return $table
             ->defaultSort('updated_at', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->with('reviews'))
             ->columns([
                 TextColumn::make('company_name')
                     ->label('Firma')
@@ -33,6 +35,8 @@ class ProposalsTable
                 IconColumn::make('is_public')
                     ->label('Sdíleno')
                     ->boolean(),
+
+                ...Reviews::columns(),
 
                 TextColumn::make('view_count')
                     ->label('Otevřeno')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Checklists\Schemas;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Models\Checklist;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -81,6 +82,8 @@ class ChecklistForm
                         ->visible(fn ($operation): bool => $operation === 'edit')
                         ->formatStateUsing(fn (?Checklist $record): ?string => $record?->publicUrl())
                         ->placeholder('Zapněte sdílení a uložte.'),
+
+                    Reviews::entry(),
                 ]),
         ]);
     }

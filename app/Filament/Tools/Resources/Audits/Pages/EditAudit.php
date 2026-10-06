@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Audits\Pages;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Filament\Tools\Resources\Audits\AuditResource;
 use App\Jobs\WriteDeepAudit;
 use App\Models\Audit;
@@ -21,6 +22,8 @@ class EditAudit extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Reviews::action(),
+
             Action::make('openPublicUrl')
                 ->label('Otevřít sdílený odkaz')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)

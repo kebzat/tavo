@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Checklists\Pages;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Filament\Tools\Resources\Checklists\Actions\CreateFromTemplateAction;
 use App\Filament\Tools\Resources\Checklists\ChecklistResource;
 use App\Models\Checklist;
@@ -17,6 +18,8 @@ class EditChecklist extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Reviews::action(),
+
             Action::make('openPublicUrl')
                 ->label('Otevřít sdílený odkaz')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)

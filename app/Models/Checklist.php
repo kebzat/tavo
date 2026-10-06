@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ChecklistItemStatus;
+use App\Models\Concerns\HasReviews;
 use App\Support\UniqueSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 
 class Checklist extends Model
 {
+    use HasReviews;
+
     protected $guarded = [];
 
     public function client(): BelongsTo

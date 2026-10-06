@@ -14,7 +14,7 @@ Panel nástrojů → skupina **Reklamy**:
 | Upozornění | `/nastroje/reklamy/upozorneni` | všechna živá upozornění, akce Řeším / Vyřešeno / Zamítnout |
 | Reporty | `/nastroje/reklamy/reporty` | koncepty a odeslané reporty |
 | Hodiny | `/nastroje/reklamy/hodiny` | zapsaný čas u klientů, filtr podle měsíce, hromadně „vyfakturováno“ |
-| Fakturace | `/nastroje/reklamy/fakturace` | paušál + hodiny nad paušál po klientech za měsíc, kdo kolik odpracoval |
+| Fakturace (v CRM) | `/nastroje/fakturace` | paušál + hodiny nad paušál po klientech za měsíc, vyhrané jednorázové zakázky, co je vyfakturované, kdo kolik odpracoval |
 | Nastavení reklam | `/nastroje/reklamy/nastaveni` | stav napojení, příjemci souhrnu, prahy upozornění, log synchronizace |
 
 ## Jak se napojí klient
@@ -244,9 +244,16 @@ Report se dá vytisknout do PDF z prohlížeče, graf je SVG a tisk ho zachová.
 - Čas se zapisuje na detailu klienta (Zapsat čas) nebo v Reklamy → Hodiny. Délka
   jako `1:30`, `1,5` nebo `45m`.
 - Paušál, hodiny v paušálu a sazba za práci navíc jsou u klienta v Cíle a paušál.
-- Fakturace ukáže za měsíc paušál, odpracované hodiny, hodiny navíc a částku.
-  Tlačítko Vyfakturováno označí záznamy měsíce. Nefakturovatelný čas (oprava naší
-  chyby, interní porada) se do částky nepočítá, jen do kapacity.
+- Fakturace (CRM → Fakturace) ukáže za měsíc paušál, odpracované hodiny, hodiny
+  navíc a částku. Tlačítko Vyfakturováno uloží měsíc do `client_invoices` i s částkou
+  a označí zapsané hodiny, takže jde i u klienta jen s paušálem. Hodiny dopsané
+  po faktuře svítí oranžově. Nefakturovatelný čas (oprava naší chyby, interní
+  porada) se do částky nepočítá, jen do kapacity.
+- Pod paušály jsou vyhrané jednorázové obchody z CRM (vše kromě Průběžné správy,
+  ta se fakturuje paušálem). Nevyfakturované visí, dokud je někdo neoznačí
+  (`crm_deals.invoiced_at`).
+- Číslo u Fakturace v menu = kolik klientů za minulý měsíc a kolik zakázek
+  ještě čeká na fakturu.
 - Pod tím kdo kolik odpracoval (kapacita Pavla a Toma, BRAND-STRATEGY §16.1).
 
 ## Čísla

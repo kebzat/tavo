@@ -4,6 +4,7 @@ namespace App\Filament\Tools\Resources\Clients\Schemas;
 
 use App\Enums\WorkArea;
 use App\Models\Client;
+use App\Support\Ads\Format;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -13,10 +14,26 @@ use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class ClientForm
 {
+    /** „Vývoj webu · 30 000 Kč · 1. 10. 2026 – 31. 12. 2026 · předběžně“ v hlavičce sbaleného řádku. */
+    private static function retainerLabel(array $state): ?string
+    {
+        $date = fn ($value): ?string => filled($value) ? Carbon::parse($value)->format('j. n. Y') : null;
+        $from = $date($state['starts_on'] ?? null);
+        $to = $date($state['ends_on'] ?? null);
+
+        return collect([
+            $state['label'] ?? null,
+            filled($state['monthly_fee'] ?? null) ? Format::money((float) $state['monthly_fee']) : null,
+            $from || $to ? ($from ?? 'od začátku').' – '.($to ?? 'bez konce') : null,
+            ! empty($state['is_tentative']) ? 'předběžně' : null,
+        ])->filter()->implode(' · ') ?: null;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
@@ -86,13 +103,15 @@ class ClientForm
 
                     Repeater::make('retainers')
                         ->label('Paušál')
+                        ->helperText('Změnu částky do budoucna zapište jako další řádek téže oblasti: starému dejte Do (konec měsíce), novému Od (začátek dalšího). Všechno je pak vidět v CRM → Výhled.')
                         ->relationship()
                         ->orderColumn('order_column')
                         ->addActionLabel('Přidat oblast')
                         ->defaultItems(0)
-                        ->columns(6)
+                        ->columns(4)
                         ->columnSpanFull()
-                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => self::retainerLabel($state))
                         ->schema([
                             Select::make('area')
                                 ->label('Oblast')
@@ -125,7 +144,12 @@ class ClientForm
                                 ->suffix('h')
                                 ->helperText('Prázdné = hodiny jen ukazujeme, nad rámec neúčtujeme.'),
                             DatePicker::make('starts_on')->label('Od')->native(false)->displayFormat('j. n. Y'),
-                            DatePicker::make('ends_on')->label('Do')->native(false)->displayFormat('j. n. Y'),
+                            DatePicker::make('ends_on')->label('Do')->native(false)->displayFormat('j. n. Y')->afterOrEqual('starts_on'),
+                            Toggle::make('is_tentative')
+                                ->label('Předběžně')
+                                ->inline(false)
+                                ->columnSpan(2)
+                                ->helperText('Zatím nedomluvené. Počítá se jen do Výhledu, nefakturuje se a klient ho nevidí.'),
                         ]),
                 ]),
         ]);

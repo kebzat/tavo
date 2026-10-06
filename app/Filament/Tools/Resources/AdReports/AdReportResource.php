@@ -4,6 +4,7 @@ namespace App\Filament\Tools\Resources\AdReports;
 
 use App\Enums\Ads\ReportStatus;
 use App\Enums\Ads\ReportType;
+use App\Filament\Tools\Actions\Reviews;
 use App\Filament\Tools\Resources\AdReports\Pages\CreateAdReport;
 use App\Filament\Tools\Resources\AdReports\Pages\EditAdReport;
 use App\Filament\Tools\Resources\AdReports\Pages\ListAdReports;
@@ -135,6 +136,7 @@ class AdReportResource extends Resource
                     TextEntry::make('views')
                         ->label('Otevřeno')
                         ->state(fn (?AdReport $record): string => $record?->viewSummary('Klient report zatím neotevřel.') ?? ''),
+                    Reviews::entry(),
                 ]),
         ]);
     }
@@ -143,7 +145,7 @@ class AdReportResource extends Resource
     {
         return $table
             ->defaultSort('period_end', 'desc')
-            ->modifyQueryUsing(fn ($query) => $query->with('client'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['client', 'reviews']))
             ->columns([
                 TextColumn::make('title')
                     ->label('Report')
@@ -153,6 +155,7 @@ class AdReportResource extends Resource
                 TextColumn::make('type')->label('Typ')->badge()->color('gray'),
                 TextColumn::make('period_end')->label('Do')->date('j. n. Y')->sortable(),
                 TextColumn::make('status')->label('Stav')->badge(),
+                ...Reviews::columns(),
                 TextColumn::make('view_count')
                     ->label('Otevřeno')
                     ->formatStateUsing(fn (int $state): string => $state > 0 ? $state.'×' : 'ne')

@@ -788,6 +788,6 @@ class AdsTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
 
         $this->get('/nastroje/reklamy/hodiny')->assertOk()->assertSee('Týdenní kontrola');
-        $this->get('/nastroje/reklamy/fakturace')->assertOk()->assertSee('Čajovna Zkouška')->assertSee("3\u{00A0}000\u{00A0}Kč");
+        $this->get('/nastroje/fakturace')->assertOk()->assertSee('Čajovna Zkouška')->assertSee("3\u{00A0}000\u{00A0}Kč");
     }
 }

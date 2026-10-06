@@ -3,6 +3,7 @@
 namespace App\Support\Ads;
 
 use App\Models\Client;
+use App\Models\ClientInvoice;
 use App\Models\ClientRetainer;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -14,6 +15,12 @@ use Carbon\CarbonInterface;
  *
  * Paušál se bere z rozdělení po oblastech (client_retainers), když ho klient
  * má, jinak z nastavení reklam. Bez hodin v paušálu se nad rámec neúčtuje.
+ *
+ * Předběžný paušál se nefakturuje. Když na něj dojde měsíc a pořád je
+ * předběžný, Fakturace ho ukáže jako „nepotvrzeno“, ať nezapadne.
+ *
+ * Vyfakturovaný měsíc drží client_invoices, i když klient nemá zapsané
+ * hodiny. Hodiny dopsané po vyfakturování se ukážou jako „dopsáno po faktuře“.
  */
 final class Billing
 {
@@ -27,6 +34,8 @@ final class Billing
         public readonly float $nonBillableHours,
         public readonly int $uninvoicedEntries,
         public readonly bool $capped = true,
+        public readonly ?ClientInvoice $invoice = null,
+        public readonly float $tentativeFee = 0,
     ) {}
 
     public static function for(Client $client, CarbonInterface $month): self
@@ -34,7 +43,8 @@ final class Billing
         $month = CarbonImmutable::parse($month)->startOfMonth();
         $settings = $client->adSettings;
         $entries = $client->timeEntries()->inMonth($month->year, $month->month)->get();
-        $retainers = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->activeIn($month));
+        $retainers = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->billedIn($month));
+        $tentative = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->is_tentative && $retainer->activeIn($month));
 
         return new self(
             client: $client,
@@ -46,6 +56,8 @@ final class Billing
             nonBillableHours: $entries->where('billable', false)->sum('minutes') / 60,
             uninvoicedEntries: $entries->where('billable', true)->whereNull('invoiced_at')->count(),
             capped: $retainers->isEmpty() || $retainers->contains(fn (ClientRetainer $retainer): bool => $retainer->included_hours !== null),
+            invoice: $client->invoices()->whereDate('month', $month->toDateString())->first(),
+            tentativeFee: (float) $tentative->sum('monthly_fee'),
         );
     }
 
@@ -77,14 +89,47 @@ final class Billing
         return $this->extraHours() > 0 && $this->hourlyRate <= 0;
     }
 
-    /** Označí fakturovatelné záznamy měsíce jako vyfakturované. */
-    public function markInvoiced(): int
+    public function isInvoiced(): bool
     {
+        return $this->invoice !== null;
+    }
+
+    /** Vyfakturováno, ale pak přibyly hodiny nebo se změnil paušál. */
+    public function changedSinceInvoice(): bool
+    {
+        return $this->invoice !== null
+            && ($this->uninvoicedEntries > 0 || (int) round($this->total()) !== $this->invoice->amount_czk);
+    }
+
+    /**
+     * Označí měsíc jako vyfakturovaný na současnou částku, i se zapsanými
+     * hodinami. Opakované označení částku přepíše, třeba po dopsaných hodinách.
+     *
+     * @return int kolik záznamů hodin se nově označilo
+     */
+    public function markInvoiced(?int $userId = null): int
+    {
+        ClientInvoice::query()->updateOrCreate(
+            ['client_id' => $this->client->getKey(), 'month' => $this->month->toDateString()],
+            ['amount_czk' => (int) round($this->total()), 'invoiced_at' => now(), 'user_id' => $userId],
+        );
+
         return $this->client->timeEntries()
             ->inMonth($this->month->year, $this->month->month)
             ->where('billable', true)
             ->whereNull('invoiced_at')
             ->update(['invoiced_at' => now()]);
+    }
+
+    /** Zpět, když se kliklo omylem. Hodiny měsíce zase čekají na fakturu. */
+    public function unmarkInvoiced(): void
+    {
+        $this->invoice?->delete();
+
+        $this->client->timeEntries()
+            ->inMonth($this->month->year, $this->month->month)
+            ->whereNotNull('invoiced_at')
+            ->update(['invoiced_at' => null]);
     }
 
     /** @return array{fee: string, hours: string, extra: string, extra_amount: string, total: string, remaining: string} */

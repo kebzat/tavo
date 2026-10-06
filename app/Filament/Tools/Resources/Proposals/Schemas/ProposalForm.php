@@ -3,6 +3,7 @@
 namespace App\Filament\Tools\Resources\Proposals\Schemas;
 
 use App\Filament\Schemas\ImageUpload;
+use App\Filament\Tools\Actions\Reviews;
 use App\Models\Proposal;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -395,6 +396,8 @@ class ProposalForm
                         ->visible(fn ($operation): bool => $operation === 'edit')
                         ->formatStateUsing(fn (?Proposal $record): ?string => $record?->publicUrl())
                         ->placeholder('Zapněte sdílení a uložte.'),
+
+                    Reviews::entry(),
                 ]),
         ]);
     }

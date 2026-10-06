@@ -1,8 +1,12 @@
 <?php
 
-namespace App\Filament\Tools\Pages\Ads;
+namespace App\Filament\Tools\Pages;
 
+use App\Filament\Tools\Pages\Ads\AdsClient;
+use App\Filament\Tools\Resources\Clients\ClientResource;
+use App\Filament\Tools\Resources\Deals\DealResource;
 use App\Models\Client;
+use App\Models\Crm\Deal;
 use App\Models\TimeEntry;
 use App\Models\User;
 use App\Support\Ads\Billing;
@@ -13,13 +17,16 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 
 /**
- * Co za měsíc fakturovat: paušál a hodiny nad paušál po klientech.
- * Pod tím kapacita, kolik kdo odpracoval (BRAND-STRATEGY §16.1).
+ * Co za měsíc fakturovat: paušály klientů s hodinami nad rámec
+ * a vyhrané jednorázové zakázky z CRM. U každého řádku je vidět,
+ * jestli už faktura odešla. Pod tím kapacita, kolik kdo odpracoval
+ * (BRAND-STRATEGY §16.1).
  */
-class AdsBilling extends Page
+class Invoicing extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
@@ -27,13 +34,13 @@ class AdsBilling extends Page
 
     protected static ?string $title = 'Fakturace';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reklamy';
+    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 45;
 
-    protected static ?string $slug = 'reklamy/fakturace';
+    protected static ?string $slug = 'fakturace';
 
-    protected string $view = 'filament.tools.pages.ads.billing';
+    protected string $view = 'filament.tools.pages.invoicing';
 
     /** Měsíc ve tvaru Y-m. V adrese, ať se dá poslat odkaz. */
     #[Url]
@@ -42,6 +49,27 @@ class AdsBilling extends Page
     public function mount(): void
     {
         $this->month ??= now()->format('Y-m');
+    }
+
+    /**
+     * Kolik věcí z minulého měsíce a z vyhraných zakázek ještě čeká na fakturu.
+     * Paušál se fakturuje po skončení měsíce, proto minulý.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        $count = self::pending(now()->subMonthNoOverflow()->startOfMonth());
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): string
+    {
+        return 'danger';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Nevyfakturováno za '.now()->subMonthNoOverflow()->translatedFormat('F').' a vyhrané zakázky bez faktury';
     }
 
     public function getSubheading(): ?string
@@ -64,41 +92,81 @@ class AdsBilling extends Page
         $this->month = $this->monthDate()->addMonthNoOverflow()->format('Y-m');
     }
 
+    /** @return array<string, mixed> */
+    protected function getViewData(): array
+    {
+        $rows = $this->rows();
+        $deals = $this->deals();
+
+        $total = $rows->sum('total_raw') + $deals->sum('value_raw');
+        $invoiced = $rows->sum('invoiced_raw') + $deals->where('invoiced', true)->sum('value_raw');
+
+        return [
+            'rows' => $rows,
+            'deals' => $deals,
+            'capacity' => $this->capacity(),
+            'total' => Format::money($total),
+            'invoiced' => Format::money($invoiced),
+            'remaining' => Format::money(max(0, $total - $invoiced)),
+            'remaining_raw' => max(0, $total - $invoiced),
+        ];
+    }
+
     /**
-     * Klienti s paušálem nebo s odpracovaným časem v měsíci.
+     * Paušály a hodiny po klientech.
      *
      * @return Collection<int, array<string, mixed>>
      */
     public function rows(): Collection
     {
-        $month = $this->monthDate();
-        $withTime = TimeEntry::query()->inMonth($month->year, $month->month)->distinct()->pluck('client_id');
-
-        return Client::query()
-            ->with(['adSettings', 'retainers'])
-            ->where(fn ($query) => $query
-                ->whereIn('id', $withTime)
-                ->orWhereHas('adSettings', fn ($query) => $query->where('fee_czk', '>', 0))
-                ->orWhereHas('retainers'))
-            ->orderBy('name')
-            ->get()
-            ->map(function (Client $client) use ($month): array {
-                $billing = Billing::for($client, $month);
-
-                return [
-                    'id' => $client->getKey(),
-                    'name' => $client->name,
-                    'url' => AdsClient::getUrl(['client' => $client->getKey()]),
-                    'uninvoiced' => $billing->uninvoicedEntries,
-                    'missing_rate' => $billing->missingRate(),
-                    'total_raw' => $billing->total(),
-                ] + $billing->formatted();
-            });
+        return self::billings($this->monthDate())->map(fn (Billing $billing): array => [
+            'id' => $billing->client->getKey(),
+            'name' => $billing->client->name,
+            'url' => ClientResource::getUrl('edit', ['record' => $billing->client]),
+            'ads_url' => $billing->client->adSettings ? AdsClient::getUrl(['client' => $billing->client->getKey()]) : null,
+            'missing_rate' => $billing->missingRate(),
+            'total_raw' => $billing->total(),
+            'invoiced' => $billing->isInvoiced(),
+            'invoiced_raw' => $billing->invoice?->amount_czk ?? 0,
+            'invoiced_note' => $billing->invoice
+                ? 'Vyfakturováno '.$billing->invoice->invoiced_at->format('j. n.').' na '.Format::money($billing->invoice->amount_czk)
+                    .($billing->invoice->user ? ' ('.$billing->invoice->user->name.')' : '')
+                : null,
+            'changed' => $billing->changedSinceInvoice(),
+            'tentative' => $billing->tentativeFee > 0 ? Format::money($billing->tentativeFee) : null,
+        ] + $billing->formatted());
     }
 
-    public function total(): string
+    /**
+     * Vyhrané jednorázové zakázky: všechny ještě nevyfakturované, bez ohledu
+     * na měsíc (ať žádná nezapadne), a ty vyfakturované v zobrazeném měsíci.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function deals(): Collection
     {
-        return Format::money($this->rows()->sum('total_raw'));
+        $month = $this->monthDate();
+
+        return Deal::query()
+            ->billable()
+            ->with('company')
+            ->where(fn ($query) => $query
+                ->whereNull('invoiced_at')
+                ->orWhereBetween('invoiced_at', [$month, $month->copy()->endOfMonth()]))
+            ->orderBy('won_at')
+            ->get()
+            ->map(fn (Deal $deal): array => [
+                'id' => $deal->getKey(),
+                'company' => $deal->company?->name,
+                'title' => $deal->title,
+                'package' => $deal->package?->getLabel(),
+                'url' => DealResource::getUrl('edit', ['record' => $deal]),
+                'won' => $deal->won_at?->format('j. n. Y'),
+                'value' => Format::money($deal->value_czk),
+                'value_raw' => (int) $deal->value_czk,
+                'invoiced' => $deal->invoiced_at !== null,
+                'invoiced_note' => $deal->invoiced_at ? 'Vyfakturováno '.$deal->invoiced_at->format('j. n.') : null,
+            ]);
     }
 
     /**
@@ -124,8 +192,68 @@ class AdsBilling extends Page
 
     public function markInvoiced(int $clientId): void
     {
-        $count = Billing::for(Client::findOrFail($clientId), $this->monthDate())->markInvoiced();
+        $client = Client::findOrFail($clientId);
+        Billing::for($client, $this->monthDate())->markInvoiced(Auth::id());
 
-        Notification::make()->success()->title("Označeno {$count} záznamů jako vyfakturované")->send();
+        Notification::make()->success()->title($client->name.': vyfakturováno')->send();
+    }
+
+    public function unmarkInvoiced(int $clientId): void
+    {
+        $client = Client::findOrFail($clientId);
+        Billing::for($client, $this->monthDate())->unmarkInvoiced();
+
+        Notification::make()->title($client->name.': zase čeká na fakturu')->send();
+    }
+
+    public function markDealInvoiced(int $dealId): void
+    {
+        $deal = Deal::query()->billable()->findOrFail($dealId);
+        $deal->update(['invoiced_at' => now()]);
+
+        Notification::make()->success()->title($deal->title.': vyfakturováno')->send();
+    }
+
+    public function unmarkDealInvoiced(int $dealId): void
+    {
+        $deal = Deal::query()->billable()->findOrFail($dealId);
+        $deal->update(['invoiced_at' => null]);
+
+        Notification::make()->title($deal->title.': zase čeká na fakturu')->send();
+    }
+
+    /**
+     * Klienti s paušálem nebo s odpracovaným časem v měsíci. Bez nulových
+     * řádků, kromě těch, které už někdo označil.
+     *
+     * @return Collection<int, Billing>
+     */
+    private static function billings(Carbon $month): Collection
+    {
+        $withTime = TimeEntry::query()->inMonth($month->year, $month->month)->distinct()->pluck('client_id');
+
+        return Client::query()
+            ->with(['adSettings', 'retainers'])
+            ->where(fn ($query) => $query
+                ->whereIn('id', $withTime)
+                ->orWhereHas('adSettings', fn ($query) => $query->where('fee_czk', '>', 0))
+                ->orWhereHas('retainers')
+                ->orWhereHas('invoices', fn ($query) => $query->whereDate('month', $month->toDateString())))
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Client $client): Billing => Billing::for($client, $month))
+            ->filter(fn (Billing $billing): bool => $billing->total() > 0 || $billing->billableHours > 0 || $billing->isInvoiced() || $billing->tentativeFee > 0)
+            ->values();
+    }
+
+    /** Kolik řádků čeká na fakturu: klienti za měsíc a všechny nevyfakturované zakázky. */
+    private static function pending(Carbon $month): int
+    {
+        $clients = self::billings($month)
+            ->filter(fn (Billing $billing): bool => $billing->tentativeFee > 0
+                || ($billing->total() > 0 && (! $billing->isInvoiced() || $billing->changedSinceInvoice())))
+            ->count();
+
+        return $clients + Deal::query()->billable()->whereNull('invoiced_at')->count();
     }
 }

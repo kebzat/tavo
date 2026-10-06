@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\Audits\Schemas;
 
+use App\Filament\Tools\Actions\Reviews;
 use App\Models\Audit;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\MarkdownEditor;
@@ -116,6 +117,8 @@ class AuditForm
                         ->visible(fn ($operation): bool => $operation === 'edit')
                         ->formatStateUsing(fn (?Audit $record): ?string => $record?->publicUrl())
                         ->placeholder('Zapněte sdílení a uložte.'),
+
+                    Reviews::entry(),
                 ]),
         ]);
     }

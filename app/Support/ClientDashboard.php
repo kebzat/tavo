@@ -140,7 +140,7 @@ final class ClientDashboard
     /** @return Collection<int, ClientRetainer> */
     private function retainersInMonth(): Collection
     {
-        return $this->client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->activeIn($this->month))->values();
+        return $this->client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->billedIn($this->month))->values();
     }
 
     public function totalHours(): string

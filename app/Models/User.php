@@ -9,12 +9,13 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'is_reviewer'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -40,6 +41,12 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === UserRole::Admin;
     }
 
+    /** Kdo kontroluje audity, nabídky a reporty před odesláním. Viz App\Models\Concerns\HasReviews. */
+    public function scopeReviewers(Builder $query): Builder
+    {
+        return $query->where('is_reviewer', true)->orderBy('id');
+    }
+
     /**
      * Nikdo nesmaže sám sebe — ani hromadnou akcí v tabulce, kde se
      * neuplatní skrytí tlačítka na detailu. U posledního správce by se
@@ -63,6 +70,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'is_reviewer' => 'boolean',
         ];
     }
 }

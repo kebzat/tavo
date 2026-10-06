@@ -5,6 +5,7 @@ namespace App\Models\Ads;
 use App\Enums\Ads\ReportStatus;
 use App\Enums\Ads\ReportType;
 use App\Models\Client;
+use App\Models\Concerns\HasReviews;
 use App\Models\Concerns\TracksClientViews;
 use App\Support\UniqueSlug;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +23,7 @@ use Illuminate\Support\Str;
  */
 class AdReport extends Model
 {
-    use TracksClientViews;
+    use HasReviews, TracksClientViews;
 
     protected $guarded = [];
 

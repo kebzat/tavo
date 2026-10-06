@@ -3,6 +3,7 @@
 namespace App\Filament\Tools\Resources\AdReports\Pages;
 
 use App\Enums\Ads\ReportStatus;
+use App\Filament\Tools\Actions\Reviews;
 use App\Filament\Tools\Pages\Ads\AdsClient;
 use App\Filament\Tools\Resources\AdReports\AdReportResource;
 use App\Mail\AdReportMail;
@@ -35,6 +36,8 @@ class EditAdReport extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Reviews::action(),
+
             Action::make('preview')
                 ->label('Náhled')
                 ->icon(Heroicon::OutlinedEye)
@@ -69,7 +72,8 @@ class EditAdReport extends EditRecord
                 ->modalDescription(fn (AdReport $record, ReportBuilder $builder): string => 'E-mail s odkazem půjde na '
                     .implode(', ', $builder->recipients($record->client))
                     .'. Odkaz na report začne fungovat bez přihlášení.'
-                    .(blank($record->summary) ? ' Report zatím nemá komentář.' : ''))
+                    .(blank($record->summary) ? ' Report zatím nemá komentář.' : '')
+                    .Reviews::warning($record))
                 ->modalSubmitActionLabel('Odeslat')
                 ->action(function (AdReport $record, ReportBuilder $builder): void {
                     // Neuložené úpravy komentáře nejdřív uložíme, ať klient dostane to, co je na obrazovce.

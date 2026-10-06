@@ -82,6 +82,12 @@ class Client extends Model
         return $this->hasMany(ClientMonth::class);
     }
 
+    /** Vyfakturované měsíce, viz App\Support\Ads\Billing. */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(ClientInvoice::class);
+    }
+
     /** Odkaz na přehled spolupráce. Null, dokud ho nezapneme. */
     public function dashboardUrl(): ?string
     {

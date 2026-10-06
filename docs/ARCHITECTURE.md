@@ -288,3 +288,16 @@ a dat, ne vykreslený `<img>`.
   Pište celé literály, nebo použijte `style=""`.
 - **Media přes Spatie MediaLibrary**, alt text v `custom_properties`, ne jako sloupec.
 - **Seznamy mají vlastní model**, singletonový obsah stránky jde do settings třídy.
+
+## Kontrola před odesláním
+
+Audity, nabídky, checklisty a reporty reklam mají u výpisu sloupec
+„{jméno} – zkontrolováno“ pro každého uživatele se zapnutým `is_reviewer`
+(administrace → Uživatelé). Svou kontrolu si každý přepne kliknutím do svého
+sloupce nebo tlačítkem na detailu. Stav je v tabulce `reviews`
+(`App\Models\Concerns\HasReviews`, `App\Filament\Tools\Actions\Reviews`).
+
+Změna obsahu po kontrole kontrolu nesmaže, jen ji zastará (oranžová ikona).
+Kontrola toho, kdo změnu udělal, platí dál. Zobrazení klientem, zapnutí sdílení
+ani odeslání kontrolu neshodí. Změny v napojených tabulkách (položky checklistu)
+se nehlídají.
