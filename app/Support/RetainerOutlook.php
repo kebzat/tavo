@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\WorkArea;
 use App\Filament\Tools\Resources\Clients\ClientResource;
 use App\Models\Client;
 use App\Models\ClientRetainer;
@@ -15,6 +16,10 @@ use Illuminate\Support\Collection;
  * podle paušálů s daty Od a Do. Předběžné částky zvlášť, ať je vidět,
  * co je domluvené a co jen plán.
  *
+ * S oblastí jen její paušály (vývoj fakturuje Tom, marketing Pavel, viz
+ * users.billing_area). Paušál z nastavení reklam patří marketingu, jako
+ * ve Fakturaci.
+ *
  * Hodiny nad paušál ani jednorázové zakázky sem nepatří, dopředu je
  * neznáme. Rozjednané obchody má Přehled.
  */
@@ -26,7 +31,7 @@ final class RetainerOutlook
     /** @var Collection<int, Client> */
     private Collection $clients;
 
-    public function __construct(int $count = 12, ?CarbonImmutable $from = null)
+    public function __construct(int $count = 12, ?CarbonImmutable $from = null, public readonly ?WorkArea $area = null)
     {
         $from = ($from ?? CarbonImmutable::now())->startOfMonth();
         $this->months = array_map(fn (int $offset): CarbonImmutable => $from->addMonthsNoOverflow($offset), range(0, $count - 1));
@@ -35,8 +40,10 @@ final class RetainerOutlook
             ->active()
             ->with(['retainers', 'adSettings'])
             ->where(fn ($query) => $query
-                ->whereHas('retainers')
-                ->orWhereHas('adSettings', fn ($query) => $query->where('fee_czk', '>', 0)))
+                ->whereHas('retainers', fn ($query) => $query->when($area, fn ($query) => $query->where('area', $area->value)))
+                ->when($area !== WorkArea::Web, fn ($query) => $query->orWhere(fn ($query) => $query
+                    ->whereDoesntHave('retainers')
+                    ->whereHas('adSettings', fn ($query) => $query->where('fee_czk', '>', 0)))))
             ->orderBy('name')
             ->get();
     }
@@ -50,10 +57,11 @@ final class RetainerOutlook
     private function amount(Client $client, CarbonImmutable $month): array
     {
         if ($client->retainers->isEmpty()) {
-            return ['confirmed' => (int) ($client->adSettings?->fee_czk ?? 0), 'tentative' => 0];
+            return ['confirmed' => $this->area === WorkArea::Web ? 0 : (int) ($client->adSettings?->fee_czk ?? 0), 'tentative' => 0];
         }
 
-        $active = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->activeIn($month));
+        $active = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->activeIn($month)
+            && ($this->area === null || $retainer->area === $this->area));
 
         return [
             'confirmed' => (int) $active->where('is_tentative', false)->sum('monthly_fee'),

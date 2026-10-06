@@ -44,6 +44,8 @@ jinak z nastavení reklam. Přehled i Fakturace proto ukazují stejná čísla.
 oblasti: starému Do, novému Od. **Předběžně** = zatím nedomluvené, počítá se jen
 do CRM → Výhled, nefakturuje se a klient ho v přehledu nevidí. Když na předběžný
 paušál dojde měsíc, Fakturace ho ukáže oranžově k potvrzení.
+Výhled jde stejně jako Fakturace přepnout na vývoj (Tom) nebo marketing (Pavel),
+přihlášenému se otevře jeho oblast podle `users.billing_area`.
 
 **Hodin v paušálu prázdné** = hodiny jen ukazujeme, nad rámec se nic neúčtuje.
 Jakmile se u některé oblasti vyplní, hodiny nad součet se počítají sazbou

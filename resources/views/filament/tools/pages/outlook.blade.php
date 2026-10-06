@@ -1,7 +1,17 @@
 <x-filament-panels::page>
+    <div class="flex justify-end">
+        <x-filament::tabs>
+            @foreach ($filters as $filter)
+                <x-filament::tabs.item :active="$filter['active']" wire:click="showArea('{{ $filter['key'] }}')">
+                    {{ $filter['label'] }}
+                </x-filament::tabs.item>
+            @endforeach
+        </x-filament::tabs>
+    </div>
+
     @if ($rows->isEmpty())
         <x-filament::section>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Zatím žádný klient s paušálem. Paušál se zadává u klienta v sekci Pravidelná spolupráce.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">V téhle oblasti zatím žádný klient s paušálem. Paušál se zadává u klienta v sekci Pravidelná spolupráce.</p>
         </x-filament::section>
     @else
         <div class="grid gap-4 sm:grid-cols-3">

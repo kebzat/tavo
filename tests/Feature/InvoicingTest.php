@@ -7,6 +7,7 @@ use App\Enums\Crm\DealStage;
 use App\Enums\UserRole;
 use App\Enums\WorkArea;
 use App\Filament\Tools\Pages\Invoicing;
+use App\Filament\Tools\Pages\Outlook;
 use App\Models\Client;
 use App\Models\ClientInvoice;
 use App\Models\Crm\Deal;
@@ -194,5 +195,29 @@ class InvoicingTest extends TestCase
         $this->assertTrue(Billing::for($client, now(), WorkArea::Web)->isInvoiced());
         $this->assertFalse(Billing::for($client, now(), WorkArea::Marketing)->isInvoiced());
         $this->assertSame(1, $client->timeEntries()->whereNotNull('invoiced_at')->count(), 'Označí jen hodiny webu.');
+    }
+
+    public function test_vyhled_jde_rozdelit_na_vyvoj_a_marketing(): void
+    {
+        Client::query()->update(['is_archived' => true]);
+        $client = Client::create(['name' => 'Výhled Oblasti Zkouška', 'slug' => 'vyhled-oblasti-zkouska']);
+        $client->retainers()->createMany([
+            ['area' => WorkArea::Web, 'label' => 'Vývoj webu', 'monthly_fee' => 30000],
+            ['area' => WorkArea::Marketing, 'label' => 'Marketing', 'monthly_fee' => 5000],
+        ]);
+        $ads = Client::create(['name' => 'Jen Reklamy Zkouška', 'slug' => 'jen-reklamy-zkouska']);
+        $ads->adSettings()->create(['fee_czk' => 3000]);
+
+        $this->assertSame(Format::money(38000), (new RetainerOutlook)->summary()['now']);
+        $this->assertSame(Format::money(30000), (new RetainerOutlook(area: WorkArea::Web))->summary()['now']);
+        $this->assertSame(Format::money(8000), (new RetainerOutlook(area: WorkArea::Marketing))->summary()['now']);
+        $this->assertNull((new RetainerOutlook(area: WorkArea::Web))->rows()->firstWhere('name', 'Jen Reklamy Zkouška'));
+
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin, 'billing_area' => WorkArea::Marketing]));
+        Livewire::test(Outlook::class)
+            ->assertSet('oblast', 'marketing')
+            ->assertSee('Jen Reklamy Zkouška')
+            ->call('showArea', 'web')
+            ->assertDontSee('Jen Reklamy Zkouška');
     }
 }
