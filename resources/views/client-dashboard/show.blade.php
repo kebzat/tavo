@@ -195,6 +195,40 @@
         </section>
     @endif
 
+    @if ($pricing)
+        <section class="section-x pt-12">
+            <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
+                <div>
+                    <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ text('client_dashboard.pricing', 'Cena spolupráce') }}</h2>
+                    <p class="mt-2 text-sm text-muted">{{ text('client_dashboard.pricing_note', 'Měsíční paušál podle toho, na čem jsme se domluvili. Předběžné částky spolu ještě upřesníme.') }}</p>
+                </div>
+                <ol class="divide-y divide-ink/14 rounded-card border border-ink/14 print:break-inside-avoid">
+                    @foreach ($pricing as $period)
+                        <li class="flex flex-col gap-1 px-5 py-4 menu:flex-row menu:items-baseline menu:justify-between menu:gap-6">
+                            <div>
+                                <p class="font-extrabold text-ink first-letter:uppercase">{{ $period['label'] }}</p>
+                                @if ($period['parts'])
+                                    <p class="mt-0.5 text-sm text-muted">
+                                        @foreach ($period['parts'] as $part)
+                                            {{ $part['label'] }} {{ $part['fee'] }}@if (! $loop->last), @endif
+                                        @endforeach
+                                    </p>
+                                @endif
+                            </div>
+                            <p class="menu:text-right">
+                                <span class="font-extrabold text-ink tabular-nums">{{ $period['total'] }}</span>
+                                <span class="text-sm text-muted">{{ text('client_dashboard.per_month', 'měsíčně') }}</span>
+                                @if ($period['tentative'])
+                                    <span class="block text-xs font-bold tracking-[.08em] text-brick uppercase">{{ text('client_dashboard.pricing_tentative', 'předběžně') }}</span>
+                                @endif
+                            </p>
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        </section>
+    @endif
+
     @if ($documents)
         <section class="section-x pt-12">
             <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">

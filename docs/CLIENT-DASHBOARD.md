@@ -47,6 +47,12 @@ paušál dojde měsíc, Fakturace ho ukáže oranžově k potvrzení.
 Výhled jde stejně jako Fakturace přepnout na vývoj (Tom) nebo marketing (Pavel),
 přihlášenému se otevře jeho oblast podle `users.billing_area`.
 
+**Klient vidí plán ceny** (`clients.dashboard_shows_pricing`, výchozí vypnuto)
+přidá do přehledu sekci Cena spolupráce: paušál od tohoto měsíce po obdobích,
+i s předběžnými částkami (`App\Support\RetainerSchedule`). Ukáže se, jen když
+se cena v čase mění. Dva řádky téže oblasti platné ve stejném měsíci formulář
+neuloží, sečetly by se.
+
 **Hodin v paušálu prázdné** = hodiny jen ukazujeme, nad rámec se nic neúčtuje.
 Jakmile se u některé oblasti vyplní, hodiny nad součet se počítají sazbou
 z nastavení reklam.

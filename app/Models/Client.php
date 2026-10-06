@@ -162,6 +162,7 @@ class Client extends Model
         return [
             'is_archived' => 'boolean',
             'dashboard_enabled' => 'boolean',
+            'dashboard_shows_pricing' => 'boolean',
             'started_on' => 'date',
         ];
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Support\ClientDashboard;
+use App\Support\RetainerSchedule;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -35,6 +36,8 @@ class ClientDashboardController extends Controller
             'legend' => $dashboard->legend(),
             'documents' => $dashboard->documents(),
             'summary' => $dashboard->summary(),
+            // Plán ceny jen když ho u klienta zapneme a cena se v čase mění.
+            'pricing' => $client->dashboard_shows_pricing && RetainerSchedule::changes($client) ? RetainerSchedule::for($client) : [],
             'months' => $this->withUrls($dashboard->months(), $token),
             'monthsUrl' => route('client-dashboard.show', $token),
             'isDraft' => ! $client->dashboard_enabled,

@@ -6,13 +6,17 @@ use App\Enums\TaskStatus;
 use App\Enums\UserRole;
 use App\Enums\WorkArea;
 use App\Filament\Tools\Actions\Ads\LogTimeAction;
+use App\Filament\Tools\Resources\Clients\Pages\EditClient;
 use App\Models\Client;
 use App\Models\User;
 use App\Support\Ads\Billing;
 use App\Support\ClientDashboard;
 use App\Support\ClientDashboardDemo;
+use App\Support\RetainerSchedule;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ClientDashboardTest extends TestCase
@@ -245,5 +249,72 @@ class ClientDashboardTest extends TestCase
         $this->get('/nastroje/clients/'.$client->id.'/edit')->assertOk()->assertSee('Pravidelná spolupráce')->assertSee('Úkoly');
         $this->get('/nastroje/fakturace')->assertOk()->assertSee('Bylinky Zkouška')->assertSee("10\u{00A0}000\u{00A0}Kč", false)->assertSee("5\u{00A0}000\u{00A0}Kč", false);
         $this->get('/nastroje/reklamy/hodiny')->assertOk();
+    }
+
+    /** 30 000 do listopadu, od prosince 10 000 do ledna, od února předběžně 5 000. */
+    private function klientSPlanem(): Client
+    {
+        $client = Client::create(['name' => 'Plán Zkouška', 'slug' => 'plan-zkouska', 'started_on' => '2026-09-01', 'dashboard_enabled' => true]);
+        $client->retainers()->createMany([
+            ['area' => WorkArea::Web, 'label' => 'Vývoj webu', 'monthly_fee' => 30000, 'starts_on' => '2026-09-01', 'ends_on' => '2026-11-30'],
+            ['area' => WorkArea::Web, 'label' => 'Vývoj webu', 'monthly_fee' => 10000, 'starts_on' => '2026-12-01', 'ends_on' => '2027-01-31'],
+            ['area' => WorkArea::Web, 'label' => 'Vývoj webu', 'monthly_fee' => 5000, 'starts_on' => '2027-02-01', 'is_tentative' => true],
+        ]);
+
+        return $client;
+    }
+
+    public function test_plan_ceny_se_slije_do_obdobi(): void
+    {
+        $periods = RetainerSchedule::for($this->klientSPlanem());
+
+        $this->assertSame(['říjen – listopad 2026', 'prosinec 2026 – leden 2027', 'od února 2027'], array_column($periods, 'label'));
+        $this->assertSame([false, false, true], array_column($periods, 'tentative'));
+        $this->assertSame("5\u{00A0}000\u{00A0}Kč", $periods[2]['total']);
+    }
+
+    public function test_plan_ceny_vidi_klient_jen_kdyz_ho_zapneme(): void
+    {
+        $client = $this->klientSPlanem();
+
+        $this->get($this->url($client))->assertOk()->assertDontSee('Cena spolupráce');
+
+        $client->update(['dashboard_shows_pricing' => true]);
+
+        $this->get($this->url($client))
+            ->assertOk()
+            ->assertSee('Cena spolupráce')
+            ->assertSee('prosinec 2026 – leden 2027')
+            ->assertSee('od února 2027')
+            ->assertSee('předběžně');
+    }
+
+    public function test_prekryv_pausalu_neprojde(): void
+    {
+        $client = $this->klientSPlanem();
+        Filament::setCurrentPanel('tools');
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
+
+        Livewire::test(EditClient::class, ['record' => $client->getRouteKey()])
+            ->fillForm(['retainers' => [
+                ['area' => 'web', 'label' => 'Vývoj webu', 'monthly_fee' => 10000, 'starts_on' => '2026-12-01', 'ends_on' => '2027-02-28', 'is_tentative' => false],
+                ['area' => 'web', 'label' => 'Vývoj webu', 'monthly_fee' => 5000, 'starts_on' => '2027-02-01', 'ends_on' => null, 'is_tentative' => true],
+            ]])
+            ->call('save')
+            ->assertHasFormErrors(['retainers']);
+
+        Livewire::test(EditClient::class, ['record' => $client->getRouteKey()])
+            ->fillForm(['retainers' => [
+                ['area' => 'web', 'label' => 'Vývoj webu', 'monthly_fee' => 10000, 'starts_on' => '2026-12-01', 'ends_on' => '2027-01-31', 'is_tentative' => false],
+                ['area' => 'web', 'label' => 'Vývoj webu', 'monthly_fee' => 5000, 'starts_on' => '2027-02-01', 'ends_on' => null, 'is_tentative' => true],
+                ['area' => 'marketing', 'label' => 'Marketing', 'monthly_fee' => 5000, 'starts_on' => '2026-12-01', 'ends_on' => null, 'is_tentative' => false],
+            ]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(3, $client->retainers()->count());
+
+        Livewire::test(EditClient::class, ['record' => $client->getRouteKey()])
+            ->assertSee('Plán ceny, jak ho uvidí klient');
     }
 }
