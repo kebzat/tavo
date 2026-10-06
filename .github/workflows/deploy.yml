@@ -90,8 +90,10 @@ jobs:
 
           for i in 1 2 3 4 5; do
             # Nejdřív jen ed25519 (jedno spojení), kdyby ho server neměl, ostatní typy.
-            ssh-keyscan -t ed25519 -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-            [ -s ~/.ssh/known_hosts ] || ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+            # `|| true`: krok běží s `bash -e`, takže neúspěšný keyscan by skript
+            # ukončil hned při prvním pokusu a opakování by se nikdy nespustilo.
+            ssh-keyscan -t ed25519 -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+            [ -s ~/.ssh/known_hosts ] || ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
             [ -s ~/.ssh/known_hosts ] && break
             echo "Klíč serveru se nenačetl, pokus $i."; sleep $((i * 5))
           done
@@ -110,6 +112,7 @@ jobs:
           echo "Spojení se serverem se nepodařilo navázat."; exit 1
 
       - name: Zapnout režim údržby
+        id: maintenance
         run: |
           ssh "$REMOTE" \
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan down --render=errors::503 --retry=15 || true"
@@ -167,8 +170,10 @@ jobs:
             fi
           REMOTE_SCRIPT
 
+      # Jen když už se web stihl shodit. Spadne-li nasazení dřív (třeba
+      # na SSH), web běží dál a tenhle krok by jen přidal druhou chybu.
       - name: Nahodit web zpět, když nasazení spadlo
-        if: failure()
+        if: failure() && steps.maintenance.outcome != 'skipped'
         run: |
           ssh "$REMOTE" \
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan up || true"
