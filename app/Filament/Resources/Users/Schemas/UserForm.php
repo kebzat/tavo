@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Enums\UserRole;
+use App\Enums\WorkArea;
 use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -62,6 +63,13 @@ class UserForm
                 Toggle::make('is_reviewer')
                     ->label('Kontroluje výstupy pro klienty')
                     ->helperText('V nástrojích dostane u auditů, nabídek, checklistů a reportů vlastní sloupec „zkontrolováno“.'),
+
+                Select::make('billing_area')
+                    ->label('Fakturuje oblast')
+                    ->options(WorkArea::class)
+                    ->native(false)
+                    ->placeholder('Nic')
+                    ->helperText('Fakturace v nástrojích mu otevře tuhle oblast a počítá mu nevyfakturované. Až se bude fakturovat společně, nechte u všech prázdné.'),
             ]),
         ]);
     }

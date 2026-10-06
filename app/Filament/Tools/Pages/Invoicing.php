@@ -2,9 +2,11 @@
 
 namespace App\Filament\Tools\Pages;
 
+use App\Enums\WorkArea;
 use App\Filament\Tools\Pages\Ads\AdsClient;
 use App\Filament\Tools\Resources\Clients\ClientResource;
 use App\Filament\Tools\Resources\Deals\DealResource;
+use App\Filament\Tools\Resources\TimeEntries\TimeEntryResource;
 use App\Models\Client;
 use App\Models\Crm\Deal;
 use App\Models\TimeEntry;
@@ -21,9 +23,10 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 
 /**
- * Co za měsíc fakturovat: paušály klientů s hodinami nad rámec
- * a vyhrané jednorázové zakázky z CRM. U každého řádku je vidět,
- * jestli už faktura odešla. Pod tím kapacita, kolik kdo odpracoval
+ * Co za měsíc fakturovat, rozdělené po oblastech: vývoj fakturuje Tom,
+ * marketing Pavel (users.billing_area). V každé oblasti paušály klientů
+ * s hodinami nad rámec a vyhrané jednorázové zakázky z CRM, u každého
+ * řádku stav faktury. Pod tím kapacita, kolik kdo odpracoval
  * (BRAND-STRATEGY §16.1).
  */
 class Invoicing extends Page
@@ -46,18 +49,25 @@ class Invoicing extends Page
     #[Url]
     public ?string $month = null;
 
+    /** web, marketing nebo vse. Výchozí je oblast, kterou přihlášený fakturuje. */
+    #[Url]
+    public ?string $oblast = null;
+
     public function mount(): void
     {
         $this->month ??= now()->format('Y-m');
+        $this->oblast ??= Auth::user()?->billing_area?->value ?? 'vse';
     }
 
     /**
-     * Kolik věcí z minulého měsíce a z vyhraných zakázek ještě čeká na fakturu.
-     * Paušál se fakturuje po skončení měsíce, proto minulý.
+     * Kolik věcí z minulého měsíce a z vyhraných zakázek ještě čeká na fakturu,
+     * v oblasti přihlášeného. Paušál se fakturuje po skončení měsíce, proto minulý.
      */
     public static function getNavigationBadge(): ?string
     {
-        $count = self::pending(now()->subMonthNoOverflow()->startOfMonth());
+        $area = Auth::user()?->billing_area;
+        $count = collect($area ? [$area] : WorkArea::cases())
+            ->sum(fn (WorkArea $area): int => self::pending(now()->subMonthNoOverflow()->startOfMonth(), $area));
 
         return $count > 0 ? (string) $count : null;
     }
@@ -69,7 +79,10 @@ class Invoicing extends Page
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Nevyfakturováno za '.now()->subMonthNoOverflow()->translatedFormat('F').' a vyhrané zakázky bez faktury';
+        $area = Auth::user()?->billing_area;
+
+        return 'Nevyfakturováno za '.now()->subMonthNoOverflow()->translatedFormat('F').' a vyhrané zakázky bez faktury'
+            .($area ? ' ('.$area->getLabel().')' : '');
     }
 
     public function getSubheading(): ?string
@@ -92,18 +105,22 @@ class Invoicing extends Page
         $this->month = $this->monthDate()->addMonthNoOverflow()->format('Y-m');
     }
 
+    public function showArea(string $area): void
+    {
+        $this->oblast = WorkArea::tryFrom($area)?->value ?? 'vse';
+    }
+
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
-        $rows = $this->rows();
-        $deals = $this->deals();
-
-        $total = $rows->sum('total_raw') + $deals->sum('value_raw');
-        $invoiced = $rows->sum('invoiced_raw') + $deals->where('invoiced', true)->sum('value_raw');
+        $sections = collect($this->shownAreas())->map(fn (WorkArea $area): array => $this->section($area));
+        $total = $sections->sum('total_raw');
+        $invoiced = $sections->sum('invoiced_raw');
 
         return [
-            'rows' => $rows,
-            'deals' => $deals,
+            'filters' => $this->filters(),
+            'sections' => $sections,
+            'unassigned' => $this->unassigned(),
             'capacity' => $this->capacity(),
             'total' => Format::money($total),
             'invoiced' => Format::money($invoiced),
@@ -112,15 +129,65 @@ class Invoicing extends Page
         ];
     }
 
+    /** @return list<WorkArea> */
+    private function shownAreas(): array
+    {
+        $area = WorkArea::tryFrom((string) $this->oblast);
+
+        return $area ? [$area] : WorkArea::cases();
+    }
+
     /**
-     * Paušály a hodiny po klientech.
+     * Přepínač nahoře: Vše, Vývoj webu · Tom, Marketing · Pavel.
+     *
+     * @return list<array{key: string, label: string, active: bool}>
+     */
+    private function filters(): array
+    {
+        $filters = [['key' => 'vse', 'label' => 'Vše', 'active' => WorkArea::tryFrom((string) $this->oblast) === null]];
+
+        foreach (WorkArea::cases() as $area) {
+            $invoicer = self::invoicer($area);
+            $filters[] = [
+                'key' => $area->value,
+                'label' => $area->getLabel().($invoicer ? ' · '.$invoicer : ''),
+                'active' => $this->oblast === $area->value,
+            ];
+        }
+
+        return $filters;
+    }
+
+    /** @return array<string, mixed> */
+    private function section(WorkArea $area): array
+    {
+        $rows = $this->rows($area);
+        $deals = $this->deals($area);
+        $total = $rows->sum('total_raw') + $deals->sum('value_raw');
+        $invoiced = $rows->sum('invoiced_raw') + $deals->where('invoiced', true)->sum('value_raw');
+        $invoicer = self::invoicer($area);
+
+        return [
+            'key' => $area->value,
+            'heading' => $area->getLabel().($invoicer ? ' · fakturuje '.$invoicer : ''),
+            'summary' => 'K fakturaci '.Format::money($total).' · vyfakturováno '.Format::money($invoiced).' · zbývá '.Format::money(max(0, $total - $invoiced)),
+            'rows' => $rows,
+            'deals' => $deals,
+            'total_raw' => $total,
+            'invoiced_raw' => $invoiced,
+        ];
+    }
+
+    /**
+     * Paušály a hodiny po klientech v jedné oblasti.
      *
      * @return Collection<int, array<string, mixed>>
      */
-    public function rows(): Collection
+    private function rows(WorkArea $area): Collection
     {
-        return self::billings($this->monthDate())->map(fn (Billing $billing): array => [
+        return self::billings($this->monthDate(), $area)->map(fn (Billing $billing): array => [
             'id' => $billing->client->getKey(),
+            'area' => $area->value,
             'name' => $billing->client->name,
             'url' => ClientResource::getUrl('edit', ['record' => $billing->client]),
             'ads_url' => $billing->client->adSettings ? AdsClient::getUrl(['client' => $billing->client->getKey()]) : null,
@@ -138,23 +205,15 @@ class Invoicing extends Page
     }
 
     /**
-     * Vyhrané jednorázové zakázky: všechny ještě nevyfakturované, bez ohledu
-     * na měsíc (ať žádná nezapadne), a ty vyfakturované v zobrazeném měsíci.
+     * Vyhrané jednorázové zakázky oblasti: všechny ještě nevyfakturované, bez
+     * ohledu na měsíc (ať žádná nezapadne), a ty vyfakturované v zobrazeném měsíci.
      *
      * @return Collection<int, array<string, mixed>>
      */
-    public function deals(): Collection
+    private function deals(?WorkArea $area): Collection
     {
-        $month = $this->monthDate();
-
-        return Deal::query()
-            ->billable()
-            ->with('company')
-            ->where(fn ($query) => $query
-                ->whereNull('invoiced_at')
-                ->orWhereBetween('invoiced_at', [$month, $month->copy()->endOfMonth()]))
-            ->orderBy('won_at')
-            ->get()
+        return $this->billableDeals()
+            ->filter(fn (Deal $deal): bool => $deal->billingArea() === $area)
             ->map(fn (Deal $deal): array => [
                 'id' => $deal->getKey(),
                 'company' => $deal->company?->name,
@@ -166,7 +225,51 @@ class Invoicing extends Page
                 'value_raw' => (int) $deal->value_czk,
                 'invoiced' => $deal->invoiced_at !== null,
                 'invoiced_note' => $deal->invoiced_at ? 'Vyfakturováno '.$deal->invoiced_at->format('j. n.') : null,
-            ]);
+            ])
+            ->values();
+    }
+
+    /** @return Collection<int, Deal> */
+    private function billableDeals(): Collection
+    {
+        $month = $this->monthDate();
+
+        return once(fn (): Collection => Deal::query()
+            ->billable()
+            ->with('company')
+            ->where(fn ($query) => $query
+                ->whereNull('invoiced_at')
+                ->orWhereBetween('invoiced_at', [$month, $month->copy()->endOfMonth()]))
+            ->orderBy('won_at')
+            ->get());
+    }
+
+    /**
+     * Co nejde přiřadit oblasti: hodiny bez oblasti u klienta s webem
+     * i marketingem a zakázky s balíčkem Jiné. Dokud se nedoplní, nejsou
+     * v žádné faktuře.
+     *
+     * @return array{hours: list<array{name: string, hours: string, url: string}>, deals: Collection<int, array<string, mixed>>}
+     */
+    private function unassigned(): array
+    {
+        $month = $this->monthDate();
+
+        $hours = self::clientsFor($month)
+            ->map(fn (Client $client): Billing => Billing::for($client, $month, WorkArea::Web))
+            ->filter(fn (Billing $billing): bool => $billing->unassignedHours > 0)
+            ->map(fn (Billing $billing): array => [
+                'name' => $billing->client->name,
+                'hours' => Format::number($billing->unassignedHours, 1).' h',
+                'url' => TimeEntryResource::getUrl().'?'.http_build_query(['filters' => [
+                    'client' => ['value' => $billing->client->getKey()],
+                    'month' => ['value' => $month->format('Y-m')],
+                ]]),
+            ])
+            ->values()
+            ->all();
+
+        return ['hours' => $hours, 'deals' => $this->deals(null)];
     }
 
     /**
@@ -174,7 +277,7 @@ class Invoicing extends Page
      *
      * @return list<array{name: string, billable: string, other: string}>
      */
-    public function capacity(): array
+    private function capacity(): array
     {
         $month = $this->monthDate();
         $entries = TimeEntry::query()->inMonth($month->year, $month->month)->get()->groupBy('user_id');
@@ -190,20 +293,22 @@ class Invoicing extends Page
             ->all();
     }
 
-    public function markInvoiced(int $clientId): void
+    public function markInvoiced(int $clientId, string $area): void
     {
         $client = Client::findOrFail($clientId);
-        Billing::for($client, $this->monthDate())->markInvoiced(Auth::id());
+        $area = WorkArea::from($area);
+        Billing::for($client, $this->monthDate(), $area)->markInvoiced(Auth::id());
 
-        Notification::make()->success()->title($client->name.': vyfakturováno')->send();
+        Notification::make()->success()->title($client->name.' · '.$area->getLabel().': vyfakturováno')->send();
     }
 
-    public function unmarkInvoiced(int $clientId): void
+    public function unmarkInvoiced(int $clientId, string $area): void
     {
         $client = Client::findOrFail($clientId);
-        Billing::for($client, $this->monthDate())->unmarkInvoiced();
+        $area = WorkArea::from($area);
+        Billing::for($client, $this->monthDate(), $area)->unmarkInvoiced();
 
-        Notification::make()->title($client->name.': zase čeká na fakturu')->send();
+        Notification::make()->title($client->name.' · '.$area->getLabel().': zase čeká na fakturu')->send();
     }
 
     public function markDealInvoiced(int $dealId): void
@@ -222,13 +327,18 @@ class Invoicing extends Page
         Notification::make()->title($deal->title.': zase čeká na fakturu')->send();
     }
 
+    /** Jméno toho, kdo oblast fakturuje. Null, když ji nikdo nemá (fakturuje se společně). */
+    private static function invoicer(WorkArea $area): ?string
+    {
+        return User::query()->where('billing_area', $area->value)->orderBy('id')->pluck('name')->implode(', ') ?: null;
+    }
+
     /**
-     * Klienti s paušálem nebo s odpracovaným časem v měsíci. Bez nulových
-     * řádků, kromě těch, které už někdo označil.
+     * Klienti s paušálem, s odpracovaným časem v měsíci nebo s fakturou za něj.
      *
-     * @return Collection<int, Billing>
+     * @return Collection<int, Client>
      */
-    private static function billings(Carbon $month): Collection
+    private static function clientsFor(Carbon $month): Collection
     {
         $withTime = TimeEntry::query()->inMonth($month->year, $month->month)->distinct()->pluck('client_id');
 
@@ -240,20 +350,34 @@ class Invoicing extends Page
                 ->orWhereHas('retainers')
                 ->orWhereHas('invoices', fn ($query) => $query->whereDate('month', $month->toDateString())))
             ->orderBy('name')
-            ->get()
-            ->map(fn (Client $client): Billing => Billing::for($client, $month))
+            ->get();
+    }
+
+    /**
+     * Klienti oblasti v měsíci. Bez nulových řádků, kromě už označených.
+     *
+     * @return Collection<int, Billing>
+     */
+    private static function billings(Carbon $month, WorkArea $area): Collection
+    {
+        return self::clientsFor($month)
+            ->map(fn (Client $client): Billing => Billing::for($client, $month, $area))
             ->filter(fn (Billing $billing): bool => $billing->total() > 0 || $billing->billableHours > 0 || $billing->isInvoiced() || $billing->tentativeFee > 0)
             ->values();
     }
 
-    /** Kolik řádků čeká na fakturu: klienti za měsíc a všechny nevyfakturované zakázky. */
-    private static function pending(Carbon $month): int
+    /** Kolik řádků oblasti čeká na fakturu: klienti za měsíc a všechny nevyfakturované zakázky. */
+    private static function pending(Carbon $month, WorkArea $area): int
     {
-        $clients = self::billings($month)
+        $clients = self::billings($month, $area)
             ->filter(fn (Billing $billing): bool => $billing->tentativeFee > 0
                 || ($billing->total() > 0 && (! $billing->isInvoiced() || $billing->changedSinceInvoice())))
             ->count();
 
-        return $clients + Deal::query()->billable()->whereNull('invoiced_at')->count();
+        $deals = Deal::query()->billable()->whereNull('invoiced_at')->get()
+            ->filter(fn (Deal $deal): bool => $deal->billingArea() === $area)
+            ->count();
+
+        return $clients + $deals;
     }
 }

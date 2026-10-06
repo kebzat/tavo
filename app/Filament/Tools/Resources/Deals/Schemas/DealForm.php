@@ -4,6 +4,7 @@ namespace App\Filament\Tools\Resources\Deals\Schemas;
 
 use App\Enums\Crm\DealPackage;
 use App\Enums\Crm\DealStage;
+use App\Enums\WorkArea;
 use App\Models\Crm\Company;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
@@ -44,6 +45,13 @@ class DealForm
                         ->numeric()
                         ->minValue(0)
                         ->suffix('Kč'),
+
+                    Select::make('area')
+                        ->label('Fakturuje oblast')
+                        ->options(WorkArea::class)
+                        ->native(false)
+                        ->placeholder('Podle balíčku')
+                        ->helperText('Vyhraná zakázka se ve Fakturaci objeví u této oblasti. Prázdné = podle balíčku: audit měření marketing, ostatní vývoj, Jiné bez oblasti.'),
                 ]),
 
             Section::make('Postup')

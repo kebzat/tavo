@@ -252,8 +252,15 @@ Report se dá vytisknout do PDF z prohlížeče, graf je SVG a tisk ho zachová.
 - Pod paušály jsou vyhrané jednorázové obchody z CRM (vše kromě Průběžné správy,
   ta se fakturuje paušálem). Nevyfakturované visí, dokud je někdo neoznačí
   (`crm_deals.invoiced_at`).
+- Fakturace je rozdělená po oblastech (vývoj webu, marketing), protože zatím
+  fakturuje každý sám: kdo kterou oblast, říká `users.billing_area` (administrace →
+  Uživatelé → Fakturuje oblast). Přihlášenému se otevře jeho oblast. Paušál
+  z nastavení reklam patří marketingu. Hodina patří oblasti podle úkolu, zápisu,
+  nebo jediné oblasti klienta; u klienta s oběma oblastmi bez vyplněné oblasti
+  spadne do „Bez oblasti“ a není v žádné faktuře, dokud se nedoplní. Zakázka
+  bere oblast z obchodu, jinak z balíčku (`DealPackage::area()`).
 - Číslo u Fakturace v menu = kolik klientů za minulý měsíc a kolik zakázek
-  ještě čeká na fakturu.
+  ještě čeká na fakturu, v oblasti přihlášeného.
 - Pod tím kdo kolik odpracoval (kapacita Pavla a Toma, BRAND-STRATEGY §16.1).
 
 ## Čísla

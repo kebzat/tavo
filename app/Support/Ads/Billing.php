@@ -2,11 +2,14 @@
 
 namespace App\Support\Ads;
 
+use App\Enums\WorkArea;
 use App\Models\Client;
 use App\Models\ClientInvoice;
 use App\Models\ClientRetainer;
+use App\Models\TimeEntry;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use LogicException;
 
 /**
  * Kolik za měsíc fakturovat: paušál plus hodiny nad rámec paušálu sazbou
@@ -19,11 +22,12 @@ use Carbon\CarbonInterface;
  * Předběžný paušál se nefakturuje. Když na něj dojde měsíc a pořád je
  * předběžný, Fakturace ho ukáže jako „nepotvrzeno“, ať nezapadne.
  *
- * Vyfakturovaný měsíc drží client_invoices, i když klient nemá zapsané
- * hodiny. Hodiny dopsané po vyfakturování se ukážou jako „dopsáno po faktuře“.
+ * Vyfakturovaný měsíc drží client_invoices po oblastech, i když klient nemá
+ * zapsané hodiny. Hodiny dopsané po vyfakturování se ukážou jako „dopsáno po faktuře“.
  */
 final class Billing
 {
+    /** @param  list<int>  $entryIds  fakturovatelné záznamy hodin, které do výpočtu patří */
     private function __construct(
         public readonly Client $client,
         public readonly CarbonImmutable $month,
@@ -36,29 +40,80 @@ final class Billing
         public readonly bool $capped = true,
         public readonly ?ClientInvoice $invoice = null,
         public readonly float $tentativeFee = 0,
+        public readonly ?WorkArea $area = null,
+        public readonly array $entryIds = [],
+        public readonly float $unassignedHours = 0,
     ) {}
 
-    public static function for(Client $client, CarbonInterface $month): self
+    /**
+     * Bez oblasti celý klient dohromady (detail klienta v reklamách).
+     * S oblastí jen její paušál a hodiny, tak jak se fakturuje: vývoj
+     * a marketing zvlášť, viz users.billing_area.
+     */
+    public static function for(Client $client, CarbonInterface $month, ?WorkArea $area = null): self
     {
         $month = CarbonImmutable::parse($month)->startOfMonth();
         $settings = $client->adSettings;
-        $entries = $client->timeEntries()->inMonth($month->year, $month->month)->get();
-        $retainers = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->billedIn($month));
-        $tentative = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->is_tentative && $retainer->activeIn($month));
+        $billed = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->billedIn($month));
+        $retainers = $area ? $billed->filter(fn (ClientRetainer $retainer): bool => $retainer->area === $area) : $billed;
+        $tentative = $client->retainers->filter(fn (ClientRetainer $retainer): bool => $retainer->is_tentative
+            && $retainer->activeIn($month)
+            && ($area === null || $retainer->area === $area));
+
+        // Paušál z nastavení reklam platí, jen když klient nemá paušál po oblastech.
+        // Reklamy dělá marketing, proto patří tam.
+        $usesAdsFee = $billed->isEmpty() && ($area === null || $area === WorkArea::Marketing);
+
+        $areas = self::areasOf($client, $month);
+        $all = $client->timeEntries()->with('task')->inMonth($month->year, $month->month)->get();
+        $entries = $area ? $all->filter(fn (TimeEntry $entry): bool => self::areaOf($entry, $areas) === $area) : $all;
+        $billable = $entries->where('billable', true);
 
         return new self(
             client: $client,
             month: $month,
-            fee: $retainers->isNotEmpty() ? (float) $retainers->sum('monthly_fee') : (float) ($settings?->fee_czk ?? 0),
-            includedHours: $retainers->isNotEmpty() ? (float) $retainers->sum('included_hours') : (float) ($settings?->included_hours ?? 0),
+            fee: $retainers->isNotEmpty() ? (float) $retainers->sum('monthly_fee') : ($usesAdsFee ? (float) ($settings?->fee_czk ?? 0) : 0),
+            includedHours: $retainers->isNotEmpty() ? (float) $retainers->sum('included_hours') : ($usesAdsFee ? (float) ($settings?->included_hours ?? 0) : 0),
             hourlyRate: (float) ($settings?->hourly_rate ?? 0),
-            billableHours: $entries->where('billable', true)->sum('minutes') / 60,
+            billableHours: $billable->sum('minutes') / 60,
             nonBillableHours: $entries->where('billable', false)->sum('minutes') / 60,
-            uninvoicedEntries: $entries->where('billable', true)->whereNull('invoiced_at')->count(),
+            uninvoicedEntries: $billable->whereNull('invoiced_at')->count(),
             capped: $retainers->isEmpty() || $retainers->contains(fn (ClientRetainer $retainer): bool => $retainer->included_hours !== null),
-            invoice: $client->invoices()->whereDate('month', $month->toDateString())->first(),
+            invoice: $area ? $client->invoices()->whereDate('month', $month->toDateString())->where('area', $area->value)->first() : null,
             tentativeFee: (float) $tentative->sum('monthly_fee'),
+            area: $area,
+            entryIds: $billable->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            unassignedHours: $all->where('billable', true)->filter(fn (TimeEntry $entry): bool => self::areaOf($entry, $areas) === null)->sum('minutes') / 60,
         );
+    }
+
+    /**
+     * Oblasti, ve kterých klient v měsíci platí paušál. Klient jen s paušálem
+     * z reklam platí marketing.
+     *
+     * @return list<WorkArea>
+     */
+    public static function areasOf(Client $client, CarbonInterface $month): array
+    {
+        $areas = $client->retainers
+            ->filter(fn (ClientRetainer $retainer): bool => $retainer->billedIn($month))
+            ->map(fn (ClientRetainer $retainer): WorkArea => $retainer->area)
+            ->unique()
+            ->values()
+            ->all();
+
+        return $areas === [] && ($client->adSettings?->fee_czk ?? 0) > 0 ? [WorkArea::Marketing] : $areas;
+    }
+
+    /**
+     * Oblast zápisu: z úkolu, ze zápisu, a když nic, tak jediná oblast
+     * klienta. U klienta s webem i marketingem zůstane bez oblasti.
+     *
+     * @param  list<WorkArea>  $areas
+     */
+    public static function areaOf(TimeEntry $entry, array $areas): ?WorkArea
+    {
+        return $entry->task?->area ?? $entry->area ?? (count($areas) === 1 ? $areas[0] : null);
     }
 
     /** Hodiny nad paušál. Paušál bez stropu hodin žádné nemá. */
@@ -102,34 +157,32 @@ final class Billing
     }
 
     /**
-     * Označí měsíc jako vyfakturovaný na současnou částku, i se zapsanými
-     * hodinami. Opakované označení částku přepíše, třeba po dopsaných hodinách.
+     * Označí oblast v měsíci jako vyfakturovanou na současnou částku, i se
+     * zapsanými hodinami. Opakované označení částku přepíše, třeba po
+     * dopsaných hodinách.
      *
      * @return int kolik záznamů hodin se nově označilo
      */
     public function markInvoiced(?int $userId = null): int
     {
+        if ($this->area === null) {
+            throw new LogicException('Fakturuje se po oblastech, Billing::for() potřebuje oblast.');
+        }
+
         ClientInvoice::query()->updateOrCreate(
-            ['client_id' => $this->client->getKey(), 'month' => $this->month->toDateString()],
+            ['client_id' => $this->client->getKey(), 'month' => $this->month->toDateString(), 'area' => $this->area->value],
             ['amount_czk' => (int) round($this->total()), 'invoiced_at' => now(), 'user_id' => $userId],
         );
 
-        return $this->client->timeEntries()
-            ->inMonth($this->month->year, $this->month->month)
-            ->where('billable', true)
-            ->whereNull('invoiced_at')
-            ->update(['invoiced_at' => now()]);
+        return TimeEntry::query()->whereKey($this->entryIds)->whereNull('invoiced_at')->update(['invoiced_at' => now()]);
     }
 
-    /** Zpět, když se kliklo omylem. Hodiny měsíce zase čekají na fakturu. */
+    /** Zpět, když se kliklo omylem. Hodiny oblasti zase čekají na fakturu. */
     public function unmarkInvoiced(): void
     {
         $this->invoice?->delete();
 
-        $this->client->timeEntries()
-            ->inMonth($this->month->year, $this->month->month)
-            ->whereNotNull('invoiced_at')
-            ->update(['invoiced_at' => null]);
+        TimeEntry::query()->whereKey($this->entryIds)->update(['invoiced_at' => null]);
     }
 
     /** @return array{fee: string, hours: string, extra: string, extra_amount: string, total: string, remaining: string} */

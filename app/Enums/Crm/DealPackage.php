@@ -2,6 +2,7 @@
 
 namespace App\Enums\Crm;
 
+use App\Enums\WorkArea;
 use Filament\Support\Contracts\HasLabel;
 
 /** Co konkrétně firmě prodáváme. */
@@ -15,6 +16,19 @@ enum DealPackage: string implements HasLabel
     case Retainer = 'retainer';
     case Subcontracting = 'subcontracting';
     case Other = 'other';
+
+    /**
+     * Kdo zakázku fakturuje, když u obchodu není oblast vyplněná ručně.
+     * Jiné nechává na obchodu.
+     */
+    public function area(): ?WorkArea
+    {
+        return match ($this) {
+            self::MeasurementAudit => WorkArea::Marketing,
+            self::Other => null,
+            default => WorkArea::Web,
+        };
+    }
 
     public function getLabel(): string
     {

@@ -243,7 +243,7 @@ class ClientDashboardTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
 
         $this->get('/nastroje/clients/'.$client->id.'/edit')->assertOk()->assertSee('Pravidelná spolupráce')->assertSee('Úkoly');
-        $this->get('/nastroje/fakturace')->assertOk()->assertSee('Bylinky Zkouška')->assertSee("15\u{00A0}000\u{00A0}Kč", false);
+        $this->get('/nastroje/fakturace')->assertOk()->assertSee('Bylinky Zkouška')->assertSee("10\u{00A0}000\u{00A0}Kč", false)->assertSee("5\u{00A0}000\u{00A0}Kč", false);
         $this->get('/nastroje/reklamy/hodiny')->assertOk();
     }
 }

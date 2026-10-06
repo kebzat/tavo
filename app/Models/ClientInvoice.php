@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\WorkArea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** Za tenhle měsíc je klientovi vyfakturováno, na tuhle částku. Viz App\Support\Ads\Billing. */
+/** Za tenhle měsíc a oblast je klientovi vyfakturováno, na tuhle částku. Viz App\Support\Ads\Billing. */
 class ClientInvoice extends Model
 {
     protected $guarded = [];
@@ -29,6 +30,7 @@ class ClientInvoice extends Model
     {
         return [
             'month' => 'date',
+            'area' => WorkArea::class,
             'amount_czk' => 'integer',
             'invoiced_at' => 'datetime',
         ];

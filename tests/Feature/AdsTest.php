@@ -8,6 +8,7 @@ use App\Enums\Ads\PrimaryGoal;
 use App\Enums\Ads\ReportStatus;
 use App\Enums\Ads\ReportType;
 use App\Enums\UserRole;
+use App\Enums\WorkArea;
 use App\Filament\Tools\Pages\Ads\AdsClient;
 use App\Jobs\BackfillAdAccount;
 use App\Mail\AdReportMail;
@@ -761,7 +762,7 @@ class AdsTest extends TestCase
         $this->assertEqualsWithDelta(1.0, $billing->extraHours(), 0.001);
         $this->assertEquals(1200, $billing->extraAmount());
         $this->assertEquals(4200, $billing->total());
-        $this->assertSame(2, $billing->markInvoiced());
+        $this->assertSame(2, Billing::for($client, now(), WorkArea::Marketing)->markInvoiced());
         $this->assertSame(0, Billing::for($client, now())->uninvoicedEntries);
     }
 

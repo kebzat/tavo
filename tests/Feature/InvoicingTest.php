@@ -46,29 +46,29 @@ class InvoicingTest extends TestCase
     {
         $client = $this->klient();
 
-        $this->assertFalse(Billing::for($client, now())->isInvoiced());
+        $this->assertFalse(Billing::for($client, now(), WorkArea::Web)->isInvoiced());
 
-        Livewire::test(Invoicing::class)->call('markInvoiced', $client->id);
+        Livewire::test(Invoicing::class)->call('markInvoiced', $client->id, 'web');
 
-        $billing = Billing::for($client, now());
+        $billing = Billing::for($client, now(), WorkArea::Web);
         $this->assertTrue($billing->isInvoiced());
         $this->assertSame(8000, $billing->invoice->amount_czk);
         $this->assertFalse($billing->changedSinceInvoice());
 
         // Jiný měsíc čeká dál.
-        $this->assertFalse(Billing::for($client, now()->subMonth())->isInvoiced());
+        $this->assertFalse(Billing::for($client, now()->subMonth(), WorkArea::Web)->isInvoiced());
     }
 
     public function test_hodiny_dopsane_po_fakture_se_ukazou(): void
     {
         $client = $this->klient();
-        Billing::for($client, now())->markInvoiced();
+        Billing::for($client, now(), WorkArea::Web)->markInvoiced();
 
         $client->timeEntries()->create(['worked_on' => now(), 'minutes' => 60, 'description' => 'Oprava košíku', 'billable' => true]);
 
-        $this->assertTrue(Billing::for($client, now())->changedSinceInvoice());
+        $this->assertTrue(Billing::for($client, now(), WorkArea::Web)->changedSinceInvoice());
 
-        Livewire::test(Invoicing::class)->call('unmarkInvoiced', $client->id);
+        Livewire::test(Invoicing::class)->call('unmarkInvoiced', $client->id, 'web');
 
         $this->assertSame(0, ClientInvoice::count());
     }
@@ -96,7 +96,7 @@ class InvoicingTest extends TestCase
         $client = $this->klient();
         $before = (int) Invoicing::getNavigationBadge();
 
-        Billing::for($client, now()->subMonth())->markInvoiced();
+        Billing::for($client, now()->subMonth(), WorkArea::Web)->markInvoiced();
 
         $this->assertSame($before - 1, (int) Invoicing::getNavigationBadge());
     }
@@ -109,7 +109,8 @@ class InvoicingTest extends TestCase
             ->assertOk()
             ->assertSee('Paušál Zkouška')
             ->assertSee('Zbývá vyfakturovat')
-            ->assertSee('Jednorázové zakázky');
+            ->assertSee('Vývoj webu')
+            ->assertSee('Marketing');
     }
 
     /** Teď 30 000 na web do prosince, od ledna předběžně 10 000. */
@@ -155,5 +156,43 @@ class InvoicingTest extends TestCase
         $this->assertSame(Format::money(30000), $summary['gap']);
 
         $this->get('/nastroje/vyhled')->assertOk()->assertSee('Výhled Zkouška')->assertSee('Domluveno do prosince 2026');
+    }
+
+    public function test_vyvoj_a_marketing_se_fakturuji_zvlast(): void
+    {
+        $tom = User::factory()->create(['name' => 'Tom Zkouška', 'role' => UserRole::Admin, 'billing_area' => WorkArea::Web]);
+        User::factory()->create(['name' => 'Pavel Zkouška', 'role' => UserRole::Admin, 'billing_area' => WorkArea::Marketing]);
+
+        $client = Client::create(['name' => 'Dvě Oblasti Zkouška', 'slug' => 'dve-oblasti-zkouska']);
+        $client->retainers()->createMany([
+            ['area' => WorkArea::Web, 'label' => 'Vývoj webu', 'monthly_fee' => 10000, 'included_hours' => 1],
+            ['area' => WorkArea::Marketing, 'label' => 'Marketing', 'monthly_fee' => 5000],
+        ]);
+        $client->adSettings()->create(['hourly_rate' => 1000]);
+        $client->timeEntries()->createMany([
+            ['worked_on' => now(), 'minutes' => 120, 'description' => 'Web', 'billable' => true, 'area' => WorkArea::Web],
+            ['worked_on' => now(), 'minutes' => 60, 'description' => 'Kampaně', 'billable' => true, 'area' => WorkArea::Marketing],
+            ['worked_on' => now(), 'minutes' => 30, 'description' => 'Nevím', 'billable' => true],
+        ]);
+        $client->load('retainers', 'adSettings');
+
+        $web = Billing::for($client, now(), WorkArea::Web);
+        $marketing = Billing::for($client, now(), WorkArea::Marketing);
+
+        $this->assertEquals(11000, $web->total(), 'Hodina nad paušál webu sazbou 1 000 Kč.');
+        $this->assertEquals(5000, $marketing->total());
+        $this->assertEqualsWithDelta(0.5, $web->unassignedHours, 0.001);
+
+        $this->actingAs($tom);
+        Livewire::test(Invoicing::class)
+            ->assertSet('oblast', 'web')
+            ->assertSee('Vývoj webu · fakturuje Tom Zkouška')
+            ->assertDontSee('Marketing · fakturuje Pavel Zkouška')
+            ->assertSee('Bez oblasti')
+            ->call('markInvoiced', $client->id, 'web');
+
+        $this->assertTrue(Billing::for($client, now(), WorkArea::Web)->isInvoiced());
+        $this->assertFalse(Billing::for($client, now(), WorkArea::Marketing)->isInvoiced());
+        $this->assertSame(1, $client->timeEntries()->whereNotNull('invoiced_at')->count(), 'Označí jen hodiny webu.');
     }
 }

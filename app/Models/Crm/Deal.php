@@ -4,6 +4,7 @@ namespace App\Models\Crm;
 
 use App\Enums\Crm\DealPackage;
 use App\Enums\Crm\DealStage;
+use App\Enums\WorkArea;
 use App\Models\User;
 use App\Observers\Crm\DealObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -59,6 +60,12 @@ class Deal extends Model
             ->where('value_czk', '>', 0);
     }
 
+    /** Kdo zakázku fakturuje: ručně vybraná oblast, jinak podle balíčku. */
+    public function billingArea(): ?WorkArea
+    {
+        return $this->area ?? $this->package?->area();
+    }
+
     /**
      * Očekávaná hodnota. Nezaokrouhluje se po jednotlivých obchodech, ale
      * až v součtu sloupce — jinak se chyby zaokrouhlení nasčítají.
@@ -79,6 +86,7 @@ class Deal extends Model
         return [
             'stage' => DealStage::class,
             'package' => DealPackage::class,
+            'area' => WorkArea::class,
             'probability' => 'integer',
             'value_czk' => 'integer',
             'expected_close_at' => 'date',
