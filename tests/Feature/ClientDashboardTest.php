@@ -317,4 +317,32 @@ class ClientDashboardTest extends TestCase
         Livewire::test(EditClient::class, ['record' => $client->getRouteKey()])
             ->assertSee('Plán ceny, jak ho uvidí klient');
     }
+
+    public function test_citelna_adresa_a_stary_odkaz_presmeruje(): void
+    {
+        $client = $this->klient();
+        $client->forceFill(['dashboard_token' => str_repeat('a', 40)])->saveQuietly();
+
+        $this->assertMatchesRegularExpression('#/klient/bylinky-zkouska-[a-z0-9]{6}$#', $client->dashboardPreviewUrl());
+
+        $this->get('/klient/'.str_repeat('a', 40).'?mesic=2026-09')
+            ->assertRedirect($client->dashboardPreviewUrl(['mesic' => '2026-09']))
+            ->assertStatus(301);
+
+        $this->get($client->dashboardPreviewUrl())->assertOk()->assertSee('Přehled spolupráce');
+        $this->get('/klient/bylinky-zkouska-xxxxxx')->assertNotFound();
+    }
+
+    public function test_plan_ma_vyrazne_mesice(): void
+    {
+        $client = $this->klient();
+        $client->tasks()->createMany([
+            ['title' => 'Úkol na říjen', 'area' => WorkArea::Web, 'status' => TaskStatus::Planned, 'planned_for' => '2026-10-01'],
+            ['title' => 'Úkol na listopad', 'area' => WorkArea::Web, 'status' => TaskStatus::Planned, 'planned_for' => '2026-11-01'],
+        ]);
+
+        $this->get($this->url($client))
+            ->assertOk()
+            ->assertSeeInOrder(['Tento měsíc', 'Říjen 2026', '1 úkol', 'Příští měsíc', 'Listopad 2026']);
+    }
 }

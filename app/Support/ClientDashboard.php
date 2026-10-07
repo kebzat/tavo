@@ -282,6 +282,13 @@ final class ClientDashboard
                 'label' => $key === 'later'
                     ? text('client_dashboard.plan_later', 'Později')
                     : Str::ucfirst(CarbonImmutable::parse($key.'-01')->translatedFormat('F Y')),
+                // Nad měsícem „Tento měsíc“ nebo „Příští měsíc“, ať se v plánu hned zorientuje.
+                'eyebrow' => match ($key) {
+                    $current->format('Y-m') => text('client_dashboard.plan_this_month', 'Tento měsíc'),
+                    $current->addMonthNoOverflow()->format('Y-m') => text('client_dashboard.plan_next_month', 'Příští měsíc'),
+                    default => null,
+                },
+                'count' => trans_choice('{1} :count úkol|[2,4] :count úkoly|[5,*] :count úkolů', $tasks->count(), ['count' => $tasks->count()]),
                 'tasks' => $tasks
                     ->sortBy(fn (ClientTask $task): int => $this->statusOrder($task->status))
                     ->map(fn (ClientTask $task): array => $this->taskRow($task, collect()))

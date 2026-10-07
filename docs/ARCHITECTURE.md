@@ -159,7 +159,7 @@ u checklistů a auditů. Podrobnosti, přístupy a plánované běhy v [ADS.md](
 
 ### Přehled spolupráce
 
-Klient na paušál dostane odkaz `/klient/{token}`: paušál po oblastech, hodiny
+Klient na paušál dostane odkaz `/klient/{nazev-klienta}-{6 znaků}`: paušál po oblastech, hodiny
 sečtené po úkolech, co čeká na něj, plán po měsících a sdílené dokumenty.
 Úkoly a cíle měsíců se plní u klienta v nástrojích. Podrobnosti
 v [CLIENT-DASHBOARD.md](CLIENT-DASHBOARD.md).

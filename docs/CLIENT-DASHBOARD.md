@@ -1,6 +1,9 @@
 # Přehled spolupráce pro klienta
 
-Stránka `/klient/{token}` pro klienty na měsíční paušál. Ukazuje, za co platí,
+Stránka `/klient/{nazev-klienta}-{6 náhodných znaků}` (například
+`/klient/svet-cejlonu-k7f2q9`) pro klienty na měsíční paušál. Náhodná část chrání
+stránku před uhodnutím, adresa se po přejmenování klienta nemění. Starý odkaz
+se 40znakovým tokenem přesměruje (301) na novou adresu. Ukazuje, za co platí,
 kolik hodin jsme odpracovali, co je hotové, co čeká na klienta a co je v plánu.
 Odpovídá na tři otázky z BRAND-STRATEGY §5: co bylo dokončeno, co jsme zjistili,
 co následuje.
@@ -65,7 +68,7 @@ ho zatím nemají domluvený (BRAND-STRATEGY §7.4).
 | Soubor | K čemu |
 |---|---|
 | `App\Support\ClientDashboard` | skládá data za měsíc, šablona jen vypisuje |
-| `App\Http\Controllers\ClientDashboardController` | token, náhled pro přihlášené, `?mesic=2026-10` |
+| `App\Http\Controllers\ClientDashboardController` | adresa (`clients.dashboard_slug`, starý token přesměruje), náhled pro přihlášené, `?mesic=2026-10` |
 | `resources/views/client-dashboard/show.blade.php` | stránka, layout sdílených dokumentů (noindex) |
 | `App\Models\ClientRetainer`, `ClientTask`, `ClientMonth` | paušál, úkoly, měsíce |
 | `App\Enums\WorkArea`, `TaskStatus` | oblasti (vývoj webu, marketing) a stavy úkolu |

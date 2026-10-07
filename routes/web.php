@@ -102,8 +102,11 @@ Route::get('/audit/{key}', AuditController::class)->name('audit.show');
 Route::get('/report/{key}', AdReportController::class)->name('ad-report.show');
 
 // Přehled spolupráce pro klienta na paušál: hodiny, hotová práce, plán.
-// Ukazuje peníze, proto náhodný token místo čitelné adresy.
-Route::get('/klient/{token}', ClientDashboardController::class)->name('client-dashboard.show');
+// Ukazuje peníze, proto má adresa za názvem klienta náhodnou část
+// (/klient/svet-cejlonu-k7f2q9). Omezení počtu pokusů brání ji hádat.
+Route::get('/klient/{token}', ClientDashboardController::class)
+    ->middleware('throttle:60,1')
+    ->name('client-dashboard.show');
 
 // Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
 Route::get('/potencialni-spoluprace/{slug}', ProposalController::class)->name('proposal.show');

@@ -147,11 +147,19 @@
         <section class="section-x pt-12">
             <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
                 <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ text('client_dashboard.plan', 'Co následuje') }}</h2>
-                <div class="flex flex-col gap-8">
+                <div class="flex flex-col gap-12">
                     @foreach ($plan as $group)
                         <div>
-                            <h3 class="mb-1 text-sm font-bold text-muted">{{ $group['label'] }}</h3>
-                            <x-client-dashboard.task-list :rows="$group['tasks']" />
+                            <div class="mb-3 flex items-end justify-between gap-4">
+                                <div>
+                                    @if ($group['eyebrow'])
+                                        <p class="mb-1 text-xs font-bold tracking-[.14em] text-brick uppercase">{{ $group['eyebrow'] }}</p>
+                                    @endif
+                                    <h3 class="text-2xl font-extrabold tracking-[-.02em] text-ink menu:text-h3-sm">{{ $group['label'] }}</h3>
+                                </div>
+                                <p class="shrink-0 pb-1 text-sm font-semibold text-muted">{{ $group['count'] }}</p>
+                            </div>
+                            <x-client-dashboard.task-list :rows="$group['tasks']" class="border-t-2 border-t-ink" />
                         </div>
                     @endforeach
                 </div>

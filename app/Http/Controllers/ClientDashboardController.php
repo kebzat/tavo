@@ -6,22 +6,28 @@ use App\Models\Client;
 use App\Support\ClientDashboard;
 use App\Support\RetainerSchedule;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * Přehled spolupráce pro klienta. Odkaz chrání náhodný token, stránka se
- * nesmí indexovat (noindex v layoutu a robots.txt).
+ * Přehled spolupráce pro klienta. Odkaz chrání náhodná část adresy, stránka
+ * se nesmí indexovat (noindex v layoutu a robots.txt). Starý token přesměruje
+ * na čitelnou adresu.
  */
 class ClientDashboardController extends Controller
 {
-    public function __invoke(Request $request, string $token): View
+    public function __invoke(Request $request, string $token): View|RedirectResponse
     {
         // Přihlášený správce otevře i vypnutý přehled, aby ho před sdílením zkontroloval.
         $client = Client::query()
-            ->where('dashboard_token', $token)
+            ->dashboardAt($token)
             ->when($request->user() === null, fn ($query) => $query->where('dashboard_enabled', true))
             ->with(['retainers', 'months'])
             ->firstOrFail();
+
+        if ($token !== $client->dashboardKey()) {
+            return redirect()->to($client->dashboardPreviewUrl($request->query()), 301);
+        }
 
         $dashboard = ClientDashboard::for($client, $request->query('mesic'));
 
@@ -38,8 +44,8 @@ class ClientDashboardController extends Controller
             'summary' => $dashboard->summary(),
             // Plán ceny jen když ho u klienta zapneme a cena se v čase mění.
             'pricing' => $client->dashboard_shows_pricing && RetainerSchedule::changes($client) ? RetainerSchedule::for($client) : [],
-            'months' => $this->withUrls($dashboard->months(), $token),
-            'monthsUrl' => route('client-dashboard.show', $token),
+            'months' => $this->withUrls($dashboard->months(), $client),
+            'monthsUrl' => $client->dashboardPreviewUrl(),
             'isDraft' => ! $client->dashboard_enabled,
         ]);
     }
@@ -50,9 +56,9 @@ class ClientDashboardController extends Controller
      * @param  array<string, mixed>  $months
      * @return array<string, mixed>
      */
-    private function withUrls(array $months, string $token): array
+    private function withUrls(array $months, Client $client): array
     {
-        $link = fn (array $month): array => $month + ['url' => route('client-dashboard.show', [$token, 'mesic' => $month['key']])];
+        $link = fn (array $month): array => $month + ['url' => $client->dashboardPreviewUrl(['mesic' => $month['key']])];
 
         return ['recent' => array_map($link, $months['recent']), 'older' => array_map($link, $months['older'])] + $months;
     }

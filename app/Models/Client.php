@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Client extends Model
@@ -97,18 +98,45 @@ class Client extends Model
     /**
      * Náhled pro přihlášeného správce, funguje i u vypnutého přehledu.
      *
-     * Přehled ukazuje peníze a hodiny, proto náhodný token místo čitelné
-     * adresy, jakou mají audity. Vzniká až tady: starší datové migrace
-     * zakládají klienty dřív, než sloupec existuje, hook při zakládání
-     * by je na čisté databázi shodil.
+     * Adresa je název klienta a šest náhodných znaků (/klient/svet-cejlonu-k7f2q9).
+     * Přehled ukazuje peníze a hodiny, náhodná část ho chrání před uhodnutím.
+     * Vzniká až tady: starší datové migrace zakládají klienty dřív, než sloupec
+     * existuje, hook při zakládání by je na čisté databázi shodil. Po přejmenování
+     * klienta zůstává stejná, ať odkaz, který už klient má, funguje dál.
      */
-    public function dashboardPreviewUrl(): string
+    public function dashboardPreviewUrl(array $query = []): string
     {
-        if (! $this->dashboard_token) {
-            $this->forceFill(['dashboard_token' => Str::random(40)])->saveQuietly();
+        return route('client-dashboard.show', [$this->dashboardKey()] + $query);
+    }
+
+    public function dashboardKey(): string
+    {
+        // Starší datové migrace (ukázkový klient) volají adresu dřív, než
+        // sloupec dashboard_slug vznikne. Do té doby platí jen token.
+        static $hasSlug = false;
+        $hasSlug = $hasSlug || Schema::hasColumn('clients', 'dashboard_slug');
+
+        if (! $hasSlug) {
+            if (! $this->dashboard_token) {
+                $this->forceFill(['dashboard_token' => Str::random(40)])->saveQuietly();
+            }
+
+            return $this->dashboard_token;
         }
 
-        return route('client-dashboard.show', $this->dashboard_token);
+        if (! $this->dashboard_slug) {
+            $this->forceFill([
+                'dashboard_slug' => Str::limit(Str::slug($this->name), 60, '').'-'.Str::lower(Str::random(6)),
+            ])->saveQuietly();
+        }
+
+        return $this->dashboard_slug;
+    }
+
+    /** Najde klienta podle adresy přehledu, i podle starého 40znakového tokenu. */
+    public function scopeDashboardAt(Builder $query, string $key): Builder
+    {
+        return $query->where(fn (Builder $query) => $query->where('dashboard_slug', $key)->orWhere('dashboard_token', $key));
     }
 
     public function scopeActive(Builder $query): Builder
