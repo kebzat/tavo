@@ -13,6 +13,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -24,6 +25,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 /**
  * Úkoly klienta. Na přehledu pro klienta je vidí podle stavu: hotové
@@ -58,10 +60,10 @@ class TasksRelationManager extends RelationManager
                 ->maxLength(255)
                 ->placeholder('Zrychlit načítání úvodní stránky na mobilu')
                 ->columnSpanFull(),
-            Textarea::make('description')
+            RichEditor::make('description')
                 ->label('Popis pro klienta')
-                ->rows(2)
-                ->helperText('Co a proč, jednou dvěma větami. Klient ho vidí na přehledu.')
+                ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
+                ->helperText('Co a proč, jednou dvěma větami. Klient ho vidí na přehledu. Enter = nový odstavec, Shift+Enter = nový řádek.')
                 ->columnSpanFull(),
             Grid::make(2)->schema([
                 Select::make('area')
@@ -107,7 +109,7 @@ class TasksRelationManager extends RelationManager
                     ->weight('bold')
                     ->wrap()
                     ->searchable()
-                    ->description(fn (ClientTask $record): ?string => $record->description),
+                    ->description(fn (ClientTask $record): ?HtmlString => $record->descriptionHtml()),
                 TextColumn::make('area')->label('Oblast')->badge(),
                 TextColumn::make('status')->label('Stav')->badge(),
                 TextColumn::make('planned_for')->label('Měsíc')->date('F Y')->placeholder('–')->sortable(),

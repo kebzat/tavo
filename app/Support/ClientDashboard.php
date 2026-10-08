@@ -187,8 +187,9 @@ final class ClientDashboard
     }
 
     /**
-     * Práce v měsíci: úkoly s odpracovaným časem nebo dokončené v měsíci,
-     * na konci čas mimo úkoly sečtený po oblastech.
+     * Práce v měsíci: úkoly s odpracovaným časem nebo dokončené v měsíci.
+     * Čas zapsaný bez úkolu se do seznamu nepropisuje, klient ho vidí jen
+     * v čerpání paušálu nahoře.
      *
      * @return list<array<string, mixed>>
      */
@@ -209,25 +210,7 @@ final class ClientDashboard
                 fn (ClientTask $a, ClientTask $b): int => ($byTask->get($b->id)?->sum('minutes') ?? 0) <=> ($byTask->get($a->id)?->sum('minutes') ?? 0),
             ]);
 
-        $rows = $tasks->map(fn (ClientTask $task): array => $this->taskRow($task, $byTask->get($task->id, collect())))->values()->all();
-
-        $loose = $this->entries()->whereNull('task_id')->groupBy(fn (TimeEntry $entry): string => $this->areaOf($entry)?->value ?? '');
-
-        foreach ($loose as $area => $entries) {
-            $area = WorkArea::tryFrom($area);
-            $rows[] = [
-                'title' => text('client_dashboard.loose_work', 'Komunikace, konzultace a drobné úpravy'),
-                'description' => null,
-                'area' => $area?->getLabel(),
-                'area_classes' => $area?->badgeClasses(),
-                'status' => null,
-                'status_classes' => null,
-                'people' => $this->people($entries),
-                'hours' => self::hours($entries->sum('minutes') / 60),
-            ];
-        }
-
-        return $rows;
+        return $tasks->map(fn (ClientTask $task): array => $this->taskRow($task, $byTask->get($task->id, collect())))->values()->all();
     }
 
     /**
@@ -409,7 +392,7 @@ final class ClientDashboard
     {
         return [
             'title' => $task->title,
-            'description' => $task->description,
+            'description' => $task->descriptionHtml(),
             'area' => $task->area->getLabel(),
             'area_classes' => $task->area->badgeClasses(),
             'status' => $task->status->clientLabel(),

@@ -57,7 +57,7 @@ class LogTimeAction
                 ->live()
                 ->createOptionForm(fn (Get $get): array => TasksRelationManager::fields($client ?? Client::find($get('client_id'))))
                 ->createOptionUsing(fn (array $data, Get $get): int => ClientTask::create($data + ['client_id' => $client?->getKey() ?? $get('client_id')])->getKey())
-                ->helperText('Klient na přehledu vidí čas sečtený po úkolech. Bez úkolu spadne do „Komunikace, konzultace a drobné úpravy“.'),
+                ->helperText('Klient na přehledu vidí čas sečtený po úkolech. Bez úkolu se započte jen do čerpání paušálu nahoře.'),
             Select::make('area')
                 ->label('Oblast')
                 ->options(WorkArea::class)

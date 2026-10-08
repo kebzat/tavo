@@ -22,8 +22,8 @@ Nástroje → Checklisty → **Klienti** → klient:
 | Hodiny | Reklamy → Hodiny nebo Zapsat čas | sečtené po úkolech a oblastech |
 
 Při zápisu času se vybírá úkol (jde ho rovnou založit tlačítkem +). Oblast se pak
-bere z úkolu. Čas bez úkolu klient vidí jako jeden řádek „Komunikace, konzultace
-a drobné úpravy“ za oblast.
+bere z úkolu. Čas bez úkolu se v seznamu úkolů neukazuje, klient ho vidí jen
+v čerpání paušálu nahoře (rozhodnutí z 8. 10. 2026).
 
 ## Co klient vidí a co ne
 

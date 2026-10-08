@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\Proposal;
+use App\Models\User;
 use App\Support\ProposalAdditions;
 use App\Support\ProposalDraft;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,6 +63,30 @@ class ProposalDraftTest extends TestCase
         $example = $proposal->examplesByPlacement()['after_recommendations'][0];
         $this->assertSame(['Úvodní stránka na mobilu', 'Registrace'], array_column($example['phones'], 'title'));
         $this->assertSame(['Můj účet', 'Bannery'], array_column($example['items'], 'title'));
+    }
+
+    public function test_tt_reality_ma_mobil_navrh_detailu_a_videa(): void
+    {
+        $proposal = Proposal::firstWhere('slug', 'tt-reality');
+        $examples = $proposal->examplesByPlacement();
+
+        $mobile = collect($examples['after_findings'])->firstWhere('title', 'Takhle web vidí většina návštěvníků');
+        $this->assertSame(['Úvodní stránka', 'Detail bytu 4+kk'], array_column($mobile['phones'], 'title'));
+        $this->assertSame(['Starý web na www.ttreal.cz'], array_column($mobile['items'], 'title'));
+
+        $detail = $examples['after_recommendations'][0];
+        $this->assertSame(['Na telefonu'], array_column($detail['phones'], 'title'));
+        $this->assertNotNull($detail['items'][0]['image']);
+
+        $videos = $examples['after_steps'][0];
+        $this->assertSame('video', $videos['items_layout']);
+        $this->assertCount(4, $videos['items']);
+
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))
+            ->get('/potencialni-spoluprace/tt-reality')
+            ->assertOk()
+            ->assertSee('Na staré adrese ttreal.cz běží starý web se skrytým spamem')
+            ->assertSee('Videa, která Pavel připravoval pro jinou realitku');
     }
 
     public function test_doplneni_vlozi_za_nadpis_a_nezdvoji(): void

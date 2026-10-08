@@ -68,12 +68,13 @@ class ProposalDraft
 
     /**
      * Zkopíruje obrázky na veřejný disk. Obrázek, který v podkladech chybí,
-     * se vynechá, ať stránka neukazuje rozbitý náhled.
+     * se vynechá, ať stránka neukazuje rozbitý náhled. Používá ho i
+     * ProposalAdditions u ukázek doplněných migrací.
      *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
+     * @param  array<array-key, mixed>  $data
+     * @return array<array-key, mixed>
      */
-    private static function withImages(array $data): array
+    public static function withImages(array $data): array
     {
         foreach ($data as $key => $value) {
             if ($key === 'image' && is_string($value)) {

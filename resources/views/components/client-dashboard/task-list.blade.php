@@ -12,7 +12,8 @@
                     <p class="text-lg font-extrabold tracking-[-.01em] text-ink">{{ $row['title'] }}</p>
 
                     @if ($row['description'])
-                        <p class="mt-1.5 text-[15px] leading-relaxed text-body">{{ $row['description'] }}</p>
+                        {{-- Popis je HTML z editoru, očištěný v ClientTask::descriptionHtml(). --}}
+                        <div class="mt-1.5 text-[15px] leading-relaxed text-body [&_a]:font-semibold [&_a]:text-brick [&_a]:underline [&_a]:underline-offset-2 [&_a]:break-words [&_li]:mt-1 [&_ol]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-2 [&_strong]:font-bold [&_strong]:text-ink [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">{{ $row['description'] }}</div>
                     @endif
 
                     @if ($row['area'] || $row['status'])

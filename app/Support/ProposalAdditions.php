@@ -11,11 +11,14 @@ use App\Models\Proposal;
  * Položka se stejným nadpisem, jaký už v sekci je, se přeskočí. Klíč
  * `_after` s nadpisem existující položky ji vloží hned za ni, jinak jde
  * na konec. Nic se nemaže.
+ *
+ * Obrázky ukázek se zkopírují z database/seeders/assets/ na veřejný disk
+ * stejně jako při importu konceptu (ProposalDraft).
  */
 class ProposalAdditions
 {
     /**
-     * @param  array{findings?: list<array<string, mixed>>, recommendations?: list<array<string, mixed>>, steps?: list<array<string, mixed>>}  $sections
+     * @param  array{findings?: list<array<string, mixed>>, recommendations?: list<array<string, mixed>>, steps?: list<array<string, mixed>>, examples?: list<array<string, mixed>>}  $sections
      */
     public static function apply(string $slug, array $sections): ?Proposal
     {
@@ -23,6 +26,10 @@ class ProposalAdditions
 
         if (! $proposal) {
             return null;
+        }
+
+        if (isset($sections['examples'])) {
+            $sections['examples'] = ProposalDraft::withImages($sections['examples']);
         }
 
         $proposal->update(collect($sections)

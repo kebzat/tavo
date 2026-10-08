@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Enums\WorkArea;
 use App\Filament\Tools\Actions\Ads\LogTimeAction;
 use App\Filament\Tools\Resources\Clients\Pages\EditClient;
+use App\Filament\Tools\Resources\Clients\RelationManagers\TasksRelationManager;
 use App\Models\Client;
 use App\Models\User;
 use App\Support\Ads\Billing;
@@ -93,7 +94,7 @@ class ClientDashboardTest extends TestCase
             ->assertSee('Rychlejší mobilní web')
             ->assertSee('Úvodní stránka se načítala přes 6 sekund.')
             ->assertSee("2,5\u{00A0}h", false)
-            ->assertSee('Komunikace, konzultace a drobné úpravy')
+            ->assertDontSee('Komunikace, konzultace a drobné úpravy')
             ->assertSee('Pavel')
             ->assertDontSee('TAJNÁ POZNÁMKA')
             ->assertDontSee('Interní popis zápisu')
@@ -128,6 +129,58 @@ class ClientDashboardTest extends TestCase
             ->assertSee('mesic=2026-10', false)
             ->assertDontSee('Poslat fotky produktů')
             ->assertDontSee('Co následuje');
+    }
+
+    public function test_popis_ukolu_drzi_odstavce_odkazy_a_tucne_pismo(): void
+    {
+        $client = $this->klient();
+        $plain = $client->tasks()->create([
+            'title' => 'Starý popis',
+            'area' => WorkArea::Web,
+            'status' => TaskStatus::Waiting,
+            'description' => "Doby pěstování <2 týdny?\nRozdělení jemné / ostré.\n\nVidět zde: https://www.ceskalouka.cz/moje-predplatne/.",
+        ]);
+        $client->tasks()->create([
+            'title' => 'Nový popis',
+            'area' => WorkArea::Web,
+            'status' => TaskStatus::Waiting,
+            'description' => '<p><strong>Tučně</strong> a <a href="https://taveo.cz">odkaz</a></p><script>alert(1)</script>',
+        ]);
+
+        // Prostý text v databázi zůstane, editor i přehled dostanou HTML.
+        $this->assertStringStartsWith('Doby', $plain->getRawOriginal('description'));
+        $this->assertSame(
+            '<p>Doby pěstování &lt;2 týdny?<br>Rozdělení jemné / ostré.</p><p>Vidět zde: <a href="https://www.ceskalouka.cz/moje-predplatne/">https://www.ceskalouka.cz/moje-predplatne/</a>.</p>',
+            $plain->description,
+        );
+
+        $this->get($this->url($client))
+            ->assertOk()
+            ->assertSee('týdny?<br />Rozdělení', false)
+            ->assertSee('<a target="_blank" rel="noopener" href="https://www.ceskalouka.cz/moje-predplatne/">', false)
+            ->assertSee('<strong>Tučně</strong>', false)
+            ->assertDontSee('<script>alert(1)</script>', false);
+    }
+
+    public function test_ulozeni_stareho_ukolu_v_editoru_zachova_radky(): void
+    {
+        Filament::setCurrentPanel('tools');
+        $client = $this->klient();
+        $task = $client->tasks()->create([
+            'title' => 'Otázky',
+            'area' => WorkArea::Web,
+            'status' => TaskStatus::Waiting,
+            'description' => "První řádek\nDruhý řádek https://taveo.cz",
+        ]);
+
+        Livewire::actingAs(User::factory()->create(['role' => UserRole::Admin]))
+            ->test(TasksRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
+            ->callTableAction('edit', $task, ['title' => 'Otázky na klienta'])
+            ->assertHasNoTableActionErrors();
+
+        $saved = $task->fresh()->getRawOriginal('description');
+        $this->assertStringContainsString('První řádek<br>Druhý řádek', $saved);
+        $this->assertStringContainsString('href="https://taveo.cz"', $saved);
     }
 
     public function test_starsi_mesice_jsou_v_seznamu(): void
