@@ -345,4 +345,15 @@ class ClientDashboardTest extends TestCase
             ->assertOk()
             ->assertSeeInOrder(['Tento měsíc', 'Říjen 2026', '1 úkol', 'Příští měsíc', 'Listopad 2026']);
     }
+
+    public function test_plan_ceny_se_ukaze_i_u_stale_ceny(): void
+    {
+        $client = Client::create(['name' => 'Stálá Cena Zkouška', 'slug' => 'stala-cena-zkouska', 'started_on' => '2026-10-01', 'dashboard_enabled' => true, 'dashboard_shows_pricing' => true]);
+        $client->retainers()->create(['area' => WorkArea::Web, 'label' => 'Vývoj webu', 'monthly_fee' => 5000, 'starts_on' => '2026-10-01', 'ends_on' => '2027-03-31']);
+
+        $this->get($this->url($client))
+            ->assertOk()
+            ->assertSee('Cena spolupráce')
+            ->assertSee('říjen 2026 – březen 2027');
+    }
 }

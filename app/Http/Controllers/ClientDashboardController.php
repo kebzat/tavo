@@ -42,8 +42,8 @@ class ClientDashboardController extends Controller
             'legend' => $dashboard->legend(),
             'documents' => $dashboard->documents(),
             'summary' => $dashboard->summary(),
-            // Plán ceny jen když ho u klienta zapneme a cena se v čase mění.
-            'pricing' => $client->dashboard_shows_pricing && RetainerSchedule::changes($client) ? RetainerSchedule::for($client) : [],
+            // Plán ceny jen když ho u klienta zapneme.
+            'pricing' => $client->dashboard_shows_pricing ? RetainerSchedule::for($client) : [],
             'months' => $this->withUrls($dashboard->months(), $client),
             'monthsUrl' => $client->dashboardPreviewUrl(),
             'isDraft' => ! $client->dashboard_enabled,

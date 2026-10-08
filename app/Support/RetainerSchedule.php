@@ -68,12 +68,6 @@ final class RetainerSchedule
             ->all();
     }
 
-    /** Má smysl sekci ukazovat? Jen když se cena v čase mění. */
-    public static function changes(Client $client): bool
-    {
-        return count(self::for($client)) > 1;
-    }
-
     /** „prosinec 2026 – leden 2027“, „říjen – listopad 2026“, „březen 2027“, „od února 2027“ */
     private static function label(CarbonImmutable $from, ?CarbonImmutable $to): string
     {

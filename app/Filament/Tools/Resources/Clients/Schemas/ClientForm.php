@@ -142,7 +142,7 @@ class ClientForm
 
                     Toggle::make('dashboard_shows_pricing')
                         ->label('Klient vidí plán ceny')
-                        ->helperText('V přehledu přibude sekce Cena spolupráce s paušálem po obdobích, i s předběžnými částkami. Ukáže se, jen když se cena v čase mění.'),
+                        ->helperText('V přehledu přibude sekce Cena spolupráce s paušálem po obdobích (Od a Do u paušálu), i s předběžnými částkami.'),
 
                     TextEntry::make('pricing_preview')
                         ->label('Plán ceny, jak ho uvidí klient')

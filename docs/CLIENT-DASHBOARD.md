@@ -52,8 +52,8 @@ přihlášenému se otevře jeho oblast podle `users.billing_area`.
 
 **Klient vidí plán ceny** (`clients.dashboard_shows_pricing`, výchozí vypnuto)
 přidá do přehledu sekci Cena spolupráce: paušál od tohoto měsíce po obdobích,
-i s předběžnými částkami (`App\Support\RetainerSchedule`). Ukáže se, jen když
-se cena v čase mění. Dva řádky téže oblasti platné ve stejném měsíci formulář
+i s předběžnými částkami (`App\Support\RetainerSchedule`). Období se berou z Od
+a Do u paušálu, takže i stálá cena „říjen 2026 – březen 2027“ se ukáže. Dva řádky téže oblasti platné ve stejném měsíci formulář
 neuloží, sečetly by se.
 
 **Hodin v paušálu prázdné** = hodiny jen ukazujeme, nad rámec se nic neúčtuje.
