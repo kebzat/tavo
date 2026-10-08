@@ -70,6 +70,11 @@ class ProposalDraftTest extends TestCase
         $proposal = Proposal::firstWhere('slug', 'tt-reality');
         $examples = $proposal->examplesByPlacement();
 
+        $this->assertSame(
+            [['value' => '3 z 5', 'label' => 'Web'], ['value' => '1 z 5', 'label' => 'Sociální sítě'], ['value' => '1 z 5', 'label' => 'Výkonnostní marketing']],
+            $proposal->highlightTiles(),
+        );
+
         $mobile = collect($examples['after_findings'])->firstWhere('title', 'Takhle web vidí většina návštěvníků');
         $this->assertSame(['Úvodní stránka', 'Detail bytu 4+kk'], array_column($mobile['phones'], 'title'));
         $this->assertSame(['Starý web na www.ttreal.cz'], array_column($mobile['items'], 'title'));
