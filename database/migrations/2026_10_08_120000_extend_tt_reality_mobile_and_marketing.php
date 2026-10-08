@@ -25,6 +25,10 @@ use Illuminate\Database\Migrations\Migration;
  *
  * Videa jsou Pavlova práce pro jinou realitku, sdílená z Disku.
  *
+ * Screenshoty z telefonu mají 600 px na šířku (rámeček telefonu má 320 px).
+ * První nasazení s 780 × 12 000 px spadlo na limitu paměti 128 MB při
+ * výrobě zmenšenin, proto i vyšší limit níž.
+ *
  * Jen přidává, úpravy z nástrojů zůstanou (viz ProposalAdditions).
  *
  * Pravidla pro psaní textů: .claude/skills/tavo-copy/SKILL.md
@@ -33,6 +37,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Dlouhé screenshoty z telefonu GD rozbalí celé do paměti.
+        ini_set('memory_limit', '512M');
+
         ProposalAdditions::apply('tt-reality', [
             'findings' => [
                 [
@@ -197,7 +204,7 @@ return new class extends Migration
                         [
                             'title' => 'Úvodní stránka',
                             'body' => 'Přes sedm obrazovek, Milan oříznutý, žádný formulář.',
-                            'image' => 'spoluprace/tt-reality-mobil-uvod.jpg',
+                            'image' => 'spoluprace/tt-reality-telefon-uvod.jpg',
                             'image_alt' => 'Dnešní úvodní stránka TTreality na mobilu',
                             'video_url' => null,
                             'phone' => true,
@@ -205,7 +212,7 @@ return new class extends Migration
                         [
                             'title' => 'Detail bytu 4+kk',
                             'body' => 'Fotky až po čtyřech obrazovkách, na konci jen PDF.',
-                            'image' => 'spoluprace/tt-reality-mobil-detail.jpg',
+                            'image' => 'spoluprace/tt-reality-telefon-detail.jpg',
                             'image_alt' => 'Dnešní detail inzerátu TTreality na mobilu',
                             'video_url' => null,
                             'phone' => true,
@@ -235,7 +242,7 @@ return new class extends Migration
                         [
                             'title' => 'Na telefonu',
                             'body' => 'Fotka, cena a prohlídka na první obrazovce, mapa a formulář bez dlouhého hledání.',
-                            'image' => 'spoluprace/tt-reality-navrh-detail-mobil.jpg',
+                            'image' => 'spoluprace/tt-reality-navrh-detail-telefon.jpg',
                             'image_alt' => 'Návrh detailu nemovitosti TTreality na mobilu',
                             'video_url' => null,
                             'phone' => true,

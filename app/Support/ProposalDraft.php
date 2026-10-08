@@ -91,7 +91,11 @@ class ProposalDraft
     {
         $disk = Storage::disk('public');
 
+        // Soubor už může na disku být z nasazení, které spadlo před
+        // dokončením. Chybějící zmenšeniny se dovyrobí, hotové se přeskočí.
         if ($disk->exists($path)) {
+            ResponsiveImage::generate($path);
+
             return $path;
         }
 
