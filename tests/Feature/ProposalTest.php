@@ -359,4 +359,27 @@ class ProposalTest extends TestCase
             ->assertOk()
             ->assertSee('object-contain', false);
     }
+
+    public function test_jeden_telefon_a_screenshot_jsou_vedle_sebe(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('spoluprace/mobil.jpg', UploadedFile::fake()->image('mobil.jpg', 600, 3000)->getContent());
+        Storage::disk('public')->put('spoluprace/pocitac.jpg', UploadedFile::fake()->image('pocitac.jpg', 1440, 3000)->getContent());
+
+        $phone = ['title' => 'Na telefonu', 'image' => 'spoluprace/mobil.jpg', 'phone' => true];
+        $desktop = ['title' => 'Na počítači', 'image' => 'spoluprace/pocitac.jpg'];
+        $proposal = $this->proposal(['examples' => [
+            ['placement' => 'after_principles', 'title' => 'Detail', 'items' => [$phone, $desktop]],
+            ['placement' => 'after_steps', 'title' => 'Dva telefony', 'items' => [$phone, $phone, $desktop]],
+        ]]);
+
+        $examples = $proposal->examplesByPlacement();
+        $this->assertTrue($examples['after_principles'][0]['side_by_side']);
+        $this->assertFalse($examples['after_steps'][0]['side_by_side']);
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertOk()
+            ->assertSee('menu:grid-cols-[320px_minmax(0,1fr)]', false)
+            ->assertSeeInOrder(['Na telefonu', 'Na počítači']);
+    }
 }

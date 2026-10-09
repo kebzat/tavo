@@ -79,32 +79,49 @@
             </div>
         @endif
 
+        @if ($example['side_by_side'])
+            {{-- Jeden telefon a vedle něj okno prohlížeče se screenshotem z počítače,
+                 obojí stejně vysoké a se scrollováním. Typicky návrh na mobilu a na počítači. --}}
+            <div data-reveal class="grid min-w-0 items-start gap-12 menu:grid-cols-[320px_minmax(0,1fr)]">
+                <x-proposal.phone :phone="$example['phones'][0]" :light="$light" class="mx-auto w-[280px] menu:w-[320px]" />
+
+                @foreach ($example['items'] as $item)
+                    <div class="flex min-w-0 flex-col">
+                        <div class="overflow-hidden rounded-card border border-cream/12 bg-ink-soft shadow-[0_30px_80px_-30px_rgba(0,0,0,.8)]">
+                            <div aria-hidden="true" class="flex items-center gap-1.5 border-b border-cream/10 px-4 py-3">
+                                <span class="size-2.5 rounded-full bg-cream/20"></span>
+                                <span class="size-2.5 rounded-full bg-cream/20"></span>
+                                <span class="size-2.5 rounded-full bg-cream/20"></span>
+                            </div>
+                            <div tabindex="0" aria-label="{{ $item['image']['alt'] ?: $item['title'] }}"
+                                 class="h-[540px] overflow-y-auto overscroll-contain focus-visible:outline-2 focus-visible:outline-brick menu:h-[635px]">
+                                <x-media :image="$item['image']" fit="natural" radius="rounded-none"
+                                         sizes="(min-width: 861px) 60vw, 88vw" />
+                            </div>
+                        </div>
+                        @if ($item['title'])
+                            <h3 class="mt-5 text-step font-extrabold tracking-[-.01em]">{{ $item['title'] }}</h3>
+                        @endif
+                        @if ($item['body'])
+                            <p @class([
+                                'mt-2 max-w-[56ch] whitespace-pre-line text-perex',
+                                'text-cream/60' => ! $light,
+                                'text-body' => $light,
+                            ])>{{ $item['body'] }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+            <p @class(['-mt-4 text-sm', 'text-cream/50' => ! $light, 'text-muted' => $light])>
+                {{ text('spoluprace.phone_and_window_hint', 'V telefonu i v okně se dá scrollovat.') }}
+            </p>
+        @else
         @if ($example['phones'])
             <div data-reveal class="min-w-0">
                 <ul class="-mx-[6vw] flex snap-x snap-mandatory gap-6 overflow-x-auto px-[6vw] pb-4 menu:mx-0 menu:justify-center menu:gap-12 menu:overflow-visible menu:px-0">
                     @foreach ($example['phones'] as $phone)
-                        <li class="flex w-[280px] shrink-0 snap-center flex-col menu:w-[320px]">
-                            <div class="rounded-[46px] bg-[#0d0c0b] p-2.5 shadow-[0_30px_80px_-30px_rgba(0,0,0,.8)] ring-1 ring-cream/15">
-                                <div class="overflow-hidden rounded-[37px] bg-white">
-                                    <div aria-hidden="true" class="flex h-8 items-center justify-center">
-                                        <span class="h-5 w-20 rounded-full bg-[#0d0c0b]"></span>
-                                    </div>
-                                    <div tabindex="0" aria-label="{{ $phone['image']['alt'] ?: $phone['title'] }}"
-                                         class="h-[540px] overflow-y-auto overscroll-contain [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-brick menu:h-[620px]">
-                                        <x-media :image="$phone['image']" fit="natural" radius="rounded-none" sizes="320px" />
-                                    </div>
-                                </div>
-                            </div>
-                            @if ($phone['title'])
-                                <h3 class="mt-5 text-step font-extrabold tracking-[-.01em]">{{ $phone['title'] }}</h3>
-                            @endif
-                            @if ($phone['body'])
-                                <p @class([
-                                    'mt-2 whitespace-pre-line text-perex',
-                                    'text-cream/60' => ! $light,
-                                    'text-body' => $light,
-                                ])>{{ $phone['body'] }}</p>
-                            @endif
+                        <li class="w-[280px] shrink-0 snap-center menu:w-[320px]">
+                            <x-proposal.phone :phone="$phone" :light="$light" />
                         </li>
                     @endforeach
                 </ul>
@@ -199,6 +216,8 @@
                     </li>
                 @endforeach
             </ul>
+
+        @endif
 
         @endif
 

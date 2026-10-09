@@ -250,7 +250,7 @@ class Proposal extends Model
      * Screenshoty z mobilu označené „v telefonu“ jdou zvlášť do `phones`:
      * šablona je ukáže vedle sebe v rámečku telefonu nad zbytkem mřížky.
      *
-     * @return array{items: list<array<string, mixed>>, phones: list<array<string, mixed>>, items_layout: string}
+     * @return array{items: list<array<string, mixed>>, phones: list<array<string, mixed>>, items_layout: string, side_by_side: bool}
      */
     private function exampleItems(mixed $rows): array
     {
@@ -275,6 +275,10 @@ class Proposal extends Model
             'items' => $items->values()->all(),
             'phones' => $phones->values()->all(),
             'items_layout' => $onlyVideos ? 'video' : 'image',
+            // Jeden telefon a k němu screenshoty bez videa (návrh na mobilu
+            // a na počítači): šablona je dá vedle sebe, ne pod sebe.
+            'side_by_side' => $phones->count() === 1 && $items->isNotEmpty()
+                && $items->every(fn (array $item): bool => $item['image'] !== null && $item['video'] === null),
         ];
     }
 
