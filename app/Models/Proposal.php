@@ -244,7 +244,8 @@ class Proposal extends Model
     /**
      * Mřížka ukázek pod textem: screenshoty e-shopů, videa z Google Disku.
      * Položka bez obrázku i bez videa nemá co ukázat, vypadne. `items_layout`
-     * říká šabloně, jestli jde o samá videa na výšku, nebo o screenshoty.
+     * je `video`, když jsou v mřížce jen videa a obrázky na výšku (bannery
+     * do stories), jinak `image` (screenshoty).
      *
      * Screenshoty z mobilu označené „v telefonu“ jdou zvlášť do `phones`:
      * šablona je ukáže vedle sebe v rámečku telefonu nad zbytkem mřížky.
@@ -266,7 +267,9 @@ class Proposal extends Model
 
         [$phones, $items] = $all->partition(fn (array $item): bool => $item['phone'] && $item['image'] !== null);
 
-        $onlyVideos = $items->isNotEmpty() && $items->every(fn (array $item): bool => $item['video'] !== null);
+        // Videa a bannery na výšku (stories, reels) jdou do jedné úzké mřížky.
+        $onlyVideos = $items->isNotEmpty() && $items->every(fn (array $item): bool => $item['video'] !== null
+            || ($item['image'] && $item['image']['height'] > $item['image']['width']));
 
         return [
             'items' => $items->values()->all(),

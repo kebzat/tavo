@@ -155,6 +155,19 @@
                                             class="absolute inset-0 h-full w-full border-0"></iframe>
                                 </template>
                             </div>
+                        @elseif ($item['image'] && $example['items_layout'] === 'video')
+                            {{-- Banner na výšku mezi videi: stejný rámeček, obrázek celý. --}}
+                            <a href="{{ $item['full_url'] }}" target="_blank" rel="noopener"
+                               @class([
+                                   'relative block aspect-[9/16] overflow-hidden rounded-card transition duration-300 ease-tavo hover:-translate-y-1',
+                                   'bg-ink-soft' => ! $light,
+                                   'bg-ink' => $light,
+                               ])>
+                                <img src="{{ $item['image']['src'] }}"
+                                     @if ($item['image']['srcset']) srcset="{{ $item['image']['srcset'] }}" sizes="(min-width: 861px) 22vw, 44vw" @endif
+                                     alt="{{ $item['image']['alt'] }}" loading="lazy" decoding="async"
+                                     class="absolute inset-0 h-full w-full object-contain">
+                            </a>
                         @elseif ($item['image'])
                             <a href="{{ $item['full_url'] }}" target="_blank" rel="noopener"
                                @class([

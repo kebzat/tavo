@@ -16,6 +16,8 @@ use App\Models\Proposal;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -335,5 +337,26 @@ class ProposalTest extends TestCase
             ->assertSee('https://drive.google.com/thumbnail?id=1WnBwA_3Lcz8GRLc6iK2htmjU4TNtINR3', false)
             ->assertSee('<template x-if="playing">', false)
             ->assertDontSee('Bez videa i obrázku');
+    }
+
+    public function test_bannery_na_vysku_jdou_do_mrizky_s_videi(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('spoluprace/banner.jpg', UploadedFile::fake()->image('banner.jpg', 338, 600)->getContent());
+        Storage::disk('public')->put('spoluprace/sirokej.jpg', UploadedFile::fake()->image('sirokej.jpg', 1200, 800)->getContent());
+
+        $video = ['title' => 'Reels', 'video_url' => 'https://drive.google.com/file/d/1WnBwA_3Lcz8GRLc6iK2htmjU4TNtINR3/view'];
+        $proposal = $this->proposal(['examples' => [
+            ['placement' => 'after_principles', 'title' => 'Videa a bannery', 'items' => [$video, ['title' => 'Story', 'image' => 'spoluprace/banner.jpg']]],
+            ['placement' => 'after_steps', 'title' => 'Se screenshotem', 'items' => [$video, ['title' => 'Web', 'image' => 'spoluprace/sirokej.jpg']]],
+        ]]);
+
+        $examples = $proposal->examplesByPlacement();
+        $this->assertSame('video', $examples['after_principles'][0]['items_layout']);
+        $this->assertSame('image', $examples['after_steps'][0]['items_layout']);
+
+        $this->get('/potencialni-spoluprace/hracky-zkouska')
+            ->assertOk()
+            ->assertSee('object-contain', false);
     }
 }
