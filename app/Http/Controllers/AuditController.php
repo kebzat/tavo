@@ -31,7 +31,7 @@ class AuditController extends Controller
 
         // Přihlášený správce si audit kontroluje, to otevření klientem není.
         if ($request->user() === null) {
-            $audit->recordView($request->userAgent());
+            $audit->recordView($request->userAgent(), $request->ip());
         }
 
         $rendered = $audit->rendered();

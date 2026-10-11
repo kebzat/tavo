@@ -4,12 +4,21 @@ namespace App\Models\Concerns;
 
 use App\Enums\Crm\ActivityType;
 use App\Enums\Crm\CompanyStatus;
+use App\Models\ClientView;
+use App\Support\OurIps;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Počítá, kolikrát klient otevřel sdílený dokument (audit, nabídku spolupráce).
  *
- * Model potřebuje sloupce `view_count`, `first_viewed_at`, `last_viewed_at`,
- * vztah `client` a atribut `title`.
+ * Každé otevření se zapíše do client_views i s IP adresou. Sloupce
+ * `view_count`, `first_viewed_at` a `last_viewed_at` se z nich dopočítají
+ * bez našich adres (OurIps), takže ukazují jen klienta.
+ *
+ * Starší otevření bez IP adresy leží jen jako archiv ve `views_before_log`
+ * a nepočítají se.
+ *
+ * Model potřebuje ty tři sloupce, vztah `client` a atribut `title`.
  */
 trait TracksClientViews
 {
@@ -21,27 +30,42 @@ trait TracksClientViews
      */
     abstract protected function viewActivitySubject(bool $first): string;
 
+    /** @return MorphMany<ClientView, $this> */
+    public function clientViews(): MorphMany
+    {
+        return $this->morphMany(ClientView::class, 'viewable');
+    }
+
     /**
      * Zapíše otevření odkazu. První otevření (a další po půl dni ticha)
      * se propíše do CRM jako aktivita s follow-upem na příští pracovní
      * den, protože právě tehdy má smysl zavolat.
      *
      * Roboti a náhledy odkazů se nepočítají, správce si dokument otevírá
-     * přihlášený a ten volající nepředá.
+     * přihlášený a ten volající nepředá. Otevření z naší adresy se zapíše,
+     * ale do počtu ani do CRM se nepropíše.
      */
-    public function recordView(?string $userAgent): void
+    public function recordView(?string $userAgent, ?string $ip = null): void
     {
         if (blank($userAgent) || preg_match(self::BOT_PATTERN, $userAgent)) {
             return;
         }
 
+        $view = $this->clientViews()->create([
+            'ip' => $ip,
+            'network' => OurIps::network($ip),
+            'user_agent' => mb_substr($userAgent, 0, 500),
+            'viewed_at' => now(),
+        ]);
+
+        if (app(OurIps::class)->oursIds(collect([$view])) !== []) {
+            return;
+        }
+
+        $first = $this->first_viewed_at === null;
         $worthLogging = $this->last_viewed_at === null || $this->last_viewed_at->lt(now()->subHours(12));
 
-        $this->forceFill([
-            'view_count' => $this->view_count + 1,
-            'first_viewed_at' => $this->first_viewed_at ?? now(),
-            'last_viewed_at' => now(),
-        ])->saveQuietly();
+        $this->recountViews();
 
         $company = $this->client?->crmCompany;
 
@@ -53,11 +77,41 @@ trait TracksClientViews
 
         $company->activities()->create([
             'type' => ActivityType::Note,
-            'subject' => $this->viewActivitySubject($this->view_count === 1),
+            'subject' => $this->viewActivitySubject($first),
             'body' => $this->title.' · otevřeno '.$this->view_count.'×',
             'happened_at' => now(),
             'follow_up_at' => $closed ? null : now()->nextWeekday()->setTime(9, 0),
         ]);
+    }
+
+    /** Dopočítá počet a data otevření ze zápisů, bez našich adres. */
+    public function recountViews(): void
+    {
+        $views = app(OurIps::class)->withoutOurs($this->clientViews()->orderBy('viewed_at')->orderBy('id')->get());
+
+        $this->forceFill([
+            'view_count' => $views->count(),
+            'first_viewed_at' => $views->first()?->viewed_at,
+            'last_viewed_at' => $views->last()?->viewed_at,
+        ])->saveQuietly();
+    }
+
+    /**
+     * Poslední otevření pro výpis v administraci, i ta naše (označená).
+     *
+     * @return list<string>
+     */
+    public function viewLog(int $limit = 20): array
+    {
+        $views = $this->clientViews()->latest('viewed_at')->latest('id')->limit($limit)->get();
+        $ours = app(OurIps::class)->oursIds($views);
+
+        return $views
+            ->map(fn (ClientView $view): string => $view->viewed_at->format('j. n. Y H:i')
+                .' · '.$view->device()
+                .' · '.($view->ip ?? 'bez IP')
+                .(in_array($view->id, $ours, true) ? ' · my, nepočítá se' : ''))
+            ->all();
     }
 
     /** Řádek „Otevřeno" v administraci. */

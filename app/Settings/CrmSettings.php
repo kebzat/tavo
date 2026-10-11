@@ -15,6 +15,9 @@ class CrmSettings extends Settings
     /** Komu chodí ranní souhrn. Prázdné = všem účtům v CRM. */
     public array $digest_recipients;
 
+    /** Naše IP adresy. Otevření sdíleného dokumentu z nich se klientovi nepočítá. */
+    public array $ignored_ips;
+
     public static function group(): string
     {
         return 'crm';

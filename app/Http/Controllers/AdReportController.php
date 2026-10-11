@@ -30,7 +30,7 @@ class AdReportController extends Controller
         }
 
         if ($request->user() === null) {
-            $report->recordView($request->userAgent());
+            $report->recordView($request->userAgent(), $request->ip());
         }
 
         $view = new PerformanceView($report->snapshot);

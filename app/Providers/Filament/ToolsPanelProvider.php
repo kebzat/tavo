@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Tools\Pages\Today;
 use App\Http\Middleware\NoIndex;
+use App\Http\Middleware\RememberStaffIp;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -83,6 +84,7 @@ class ToolsPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                RememberStaffIp::class,
             ]);
     }
 }

@@ -136,6 +136,13 @@ class AdReportResource extends Resource
                     TextEntry::make('views')
                         ->label('Otevřeno')
                         ->state(fn (?AdReport $record): string => $record?->viewSummary('Klient report zatím neotevřel.') ?? ''),
+
+                    TextEntry::make('view_log')
+                        ->label('Jednotlivá otevření')
+                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v CRM → Nastavení CRM.')
+                        ->listWithLineBreaks()
+                        ->placeholder('Zatím žádné.')
+                        ->state(fn (?AdReport $record): array => $record?->viewLog() ?? []),
                     Reviews::entry(),
                 ]),
         ]);

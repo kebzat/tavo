@@ -389,6 +389,14 @@ class ProposalForm
                         ->visible(fn ($operation): bool => $operation === 'edit')
                         ->state(fn (?Proposal $record): string => $record?->viewSummary('Klient stránku zatím neotevřel.') ?? ''),
 
+                    TextEntry::make('view_log')
+                        ->label('Jednotlivá otevření')
+                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v CRM → Nastavení CRM.')
+                        ->listWithLineBreaks()
+                        ->placeholder('Zatím žádné.')
+                        ->visible(fn ($operation): bool => $operation === 'edit')
+                        ->state(fn (?Proposal $record): array => $record?->viewLog() ?? []),
+
                     TextInput::make('share_url')
                         ->label('Odkaz pro klienta')
                         ->disabled()

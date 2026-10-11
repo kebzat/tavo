@@ -26,7 +26,7 @@ class ProposalController extends Controller
             ->firstOrFail();
 
         if ($request->user() === null) {
-            $proposal->recordView($request->userAgent());
+            $proposal->recordView($request->userAgent(), $request->ip());
         }
 
         $sections = [

@@ -195,6 +195,24 @@ režimu se zpřístupní celý text i checklisty klienta.
 k firmě jako poznámka *Otevřeli audit* s follow-upem na příští pracovní den
 v 9:00. Nepočítá se přihlášený správce ani náhledy odkazů a roboti.
 
+Každé otevření auditu, nabídky spolupráce i reportu se zapíše zvlášť
+do `client_views` s IP adresou. Počty na dokumentu se z nich dopočítají
+bez **našich adres** (`App\Support\OurIps`), takže ukazují jen klienta:
+
+- adresy, ze kterých byl někdo z nás přihlášený (`staff_ips`, zapisuje
+  middleware `RememberStaffIp`). Platí měsíc před a po přihlášení, domácí
+  a mobilní adresy se časem přidělí někomu jinému. Nová adresa zpětně
+  odečte i dřívější nepřihlášená otevření z ní.
+- ruční seznam v Nastavení CRM (`crm.ignored_ips`), platí napořád. Uložení
+  přepočítá všechny dokumenty.
+
+IPv6 se porovnává podle sítě /64. Dokument má v administraci výpis
+Jednotlivá otevření (datum, zařízení, IP, naše označená). Otevření z doby
+před zápisem po jednom (do 11. 10. 2026) IP adresu nemají, takže nejde poznat,
+která byla naše. Počty proto začínají od nuly. Původní čísla leží jen jako
+archiv ve `views_before_log` (+ data prvního a posledního) a nikde se
+nezobrazují.
+
 ### Hledání nových firem
 
 ```bash

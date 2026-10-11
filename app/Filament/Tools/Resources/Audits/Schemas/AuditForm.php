@@ -100,6 +100,14 @@ class AuditForm
                         ->visible(fn ($operation): bool => $operation === 'edit')
                         ->state(fn (?Audit $record): string => $record?->viewSummary('Klient audit zatím neotevřel.') ?? ''),
 
+                    TextEntry::make('view_log')
+                        ->label('Jednotlivá otevření')
+                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v CRM → Nastavení CRM.')
+                        ->listWithLineBreaks()
+                        ->placeholder('Zatím žádné.')
+                        ->visible(fn ($operation): bool => $operation === 'edit')
+                        ->state(fn (?Audit $record): array => $record?->viewLog() ?? []),
+
                     // Slug vznikne sám z názvu klienta, tady se dá jen přepsat.
                     TextInput::make('slug')
                         ->label('Adresa')

@@ -155,6 +155,8 @@ class Audit extends Model
             'is_teaser' => 'boolean',
             'first_viewed_at' => 'datetime',
             'last_viewed_at' => 'datetime',
+            'first_viewed_before_log_at' => 'datetime',
+            'last_viewed_before_log_at' => 'datetime',
         ];
     }
 }
