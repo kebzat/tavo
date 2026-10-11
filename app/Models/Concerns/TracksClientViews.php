@@ -15,10 +15,9 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * `view_count`, `first_viewed_at` a `last_viewed_at` se z nich dopočítají
  * bez našich adres (OurIps), takže ukazují jen klienta.
  *
- * Starší otevření bez IP adresy leží jen jako archiv ve `views_before_log`
- * a nepočítají se.
- *
- * Model potřebuje ty tři sloupce, vztah `client` a atribut `title`.
+ * Model potřebuje ty tři sloupce, k nim `views_before_log`,
+ * `first_viewed_before_log_at` a `last_viewed_before_log_at`, vztah `client`
+ * a atribut `title`.
  */
 trait TracksClientViews
 {
@@ -84,15 +83,19 @@ trait TracksClientViews
         ]);
     }
 
-    /** Dopočítá počet a data otevření ze zápisů, bez našich adres. */
+    /**
+     * Dopočítá počet a data otevření ze zápisů, bez našich adres. Otevření
+     * z doby před zápisem po jednom (`views_before_log`) se jen přičtou,
+     * IP adresu nemají a vyčistit nejdou.
+     */
     public function recountViews(): void
     {
         $views = app(OurIps::class)->withoutOurs($this->clientViews()->orderBy('viewed_at')->orderBy('id')->get());
 
         $this->forceFill([
-            'view_count' => $views->count(),
-            'first_viewed_at' => $views->first()?->viewed_at,
-            'last_viewed_at' => $views->last()?->viewed_at,
+            'view_count' => $this->views_before_log + $views->count(),
+            'first_viewed_at' => collect([$this->first_viewed_before_log_at, $views->first()?->viewed_at])->filter()->min(),
+            'last_viewed_at' => collect([$this->last_viewed_before_log_at, $views->last()?->viewed_at])->filter()->max(),
         ])->saveQuietly();
     }
 

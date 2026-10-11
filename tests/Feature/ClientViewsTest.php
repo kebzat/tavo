@@ -148,10 +148,13 @@ class ClientViewsTest extends TestCase
             ->assertSee('89.24.10.5 · naposledy');
     }
 
-    public function test_starsi_otevreni_bez_ip_se_nepocitaji(): void
+    public function test_starsi_otevreni_bez_ip_zustanou(): void
     {
         $audit = $this->audit();
         $audit->forceFill([
+            'view_count' => 9,
+            'first_viewed_at' => '2026-09-30 11:13:00',
+            'last_viewed_at' => '2026-10-02 07:29:00',
             'views_before_log' => 9,
             'first_viewed_before_log_at' => '2026-09-30 11:13:00',
             'last_viewed_before_log_at' => '2026-10-02 07:29:00',
@@ -162,7 +165,8 @@ class ClientViewsTest extends TestCase
         $this->open($audit, '89.24.10.5');
 
         $audit->refresh();
-        $this->assertSame(1, $audit->view_count);
-        $this->assertTrue($audit->first_viewed_at->isToday());
+        $this->assertSame(10, $audit->view_count);
+        $this->assertSame('2026-09-30 11:13', $audit->first_viewed_at->format('Y-m-d H:i'));
+        $this->assertTrue($audit->last_viewed_at->isToday());
     }
 }

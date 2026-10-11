@@ -208,10 +208,9 @@ bez **našich adres** (`App\Support\OurIps`), takže ukazují jen klienta:
 
 IPv6 se porovnává podle sítě /64. Dokument má v administraci výpis
 Jednotlivá otevření (datum, zařízení, IP, naše označená). Otevření z doby
-před zápisem po jednom (do 11. 10. 2026) IP adresu nemají, takže nejde poznat,
-která byla naše. Počty proto začínají od nuly. Původní čísla leží jen jako
-archiv ve `views_before_log` (+ data prvního a posledního) a nikde se
-nezobrazují.
+před zápisem po jednom (do 11. 10. 2026) IP adresu nemají a vyčistit nejdou.
+Leží ve `views_before_log` (+ data prvního a posledního) a přepočet je
+k novým jen přičte.
 
 ### Hledání nových firem
 
