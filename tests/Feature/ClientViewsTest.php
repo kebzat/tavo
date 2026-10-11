@@ -169,4 +169,25 @@ class ClientViewsTest extends TestCase
         $this->assertSame('2026-09-30 11:13', $audit->first_viewed_at->format('Y-m-d H:i'));
         $this->assertTrue($audit->last_viewed_at->isToday());
     }
+
+    public function test_migrace_vrati_vynulovane_pocty(): void
+    {
+        $audit = $this->audit();
+        $audit->forceFill([
+            'view_count' => 0,
+            'first_viewed_at' => null,
+            'last_viewed_at' => null,
+            'views_before_log' => 9,
+            'first_viewed_before_log_at' => '2026-09-30 11:13:00',
+            'last_viewed_before_log_at' => '2026-10-02 07:29:00',
+        ])->saveQuietly();
+        $audit->clientViews()->create(['ip' => '193.85.1.1', 'network' => '193.85.1.1', 'user_agent' => 'Mozilla/5.0', 'viewed_at' => now()]);
+
+        (require database_path('migrations/2026_10_11_200000_restore_view_counts.php'))->up();
+
+        $audit->refresh();
+        $this->assertSame(10, $audit->view_count);
+        $this->assertSame('2026-09-30 11:13', $audit->first_viewed_at->format('Y-m-d H:i'));
+        $this->assertTrue($audit->last_viewed_at->isToday());
+    }
 }
