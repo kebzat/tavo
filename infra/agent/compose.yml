@@ -1,0 +1,28 @@
+# Spouští se z /srv/agent/docker na serveru: `docker compose up -d --build`.
+# Běžně ho ovládá příkaz `agent` (viz agent.sh), ručně sem není třeba sahat.
+
+services:
+  agent:
+    build: .
+    image: taveo-agent
+    container_name: taveo-agent
+    hostname: taveo-agent
+    restart: unless-stopped
+    volumes:
+      - /srv/agent/domov:/home/agent
+      # rslave: projekt přidaný na serveru (připojená složka webu) se v běžícím
+      # kontejneru objeví hned, bez restartu, který by ukončil rozpracovaná vlákna.
+      - type: bind
+        source: /srv/agent/projekty
+        target: /projekty
+        bind:
+          propagation: rslave
+      - /srv/agent/snimky:/snimky
+    # Strop, ať agent při buildu nebo testech nepřidusí weby na stejném serveru.
+    cpus: 4
+    mem_limit: 8g
+    pids_limit: 2048
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

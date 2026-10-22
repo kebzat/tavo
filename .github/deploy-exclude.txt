@@ -32,3 +32,4 @@
 /package-lock.json
 /CLAUDE.md
 /*.png
+/infra/

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "deny": [
+      "Bash(*migrate:fresh*)",
+      "Bash(*migrate:reset*)",
+      "Bash(*migrate:refresh*)",
+      "Bash(*db:wipe*)",
+      "Bash(*DROP DATABASE*)",
+      "Bash(*DROP TABLE*)",
+      "Bash(*TRUNCATE*)",
+      "Bash(*drop database*)",
+      "Bash(*drop table*)",
+      "Bash(*truncate table*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf ./)",
+      "Bash(rm -rf *)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Read(//**/.ssh/**)",
+      "Edit(//**/.ssh/**)",
+      "Edit(//**/.env)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(*artisan migrate*)",
+      "Bash(composer update*)",
+      "Bash(composer require*)",
+      "Bash(npm install *)",
+      "Bash(rm *)",
+      "Bash(curl * -X *)",
+      "Bash(curl * --data*)",
+      "Bash(curl * -d *)"
+    ]
+  }
+}

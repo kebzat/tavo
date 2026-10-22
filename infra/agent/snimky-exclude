@@ -1,0 +1,22 @@
+# Co se do snímků webu neukládá: dá se stáhnout znovu, je to cache, nebo
+# jsou v tom hesla. Média a databázi drží zálohy hostingu a `agent zaloha`.
+.env
+.env.*
+!.env.example
+vendor/
+node_modules/
+storage/
+bootstrap/cache/
+public/storage
+public/build/
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/backups*/
+wp-content/ai1wm-backups/
+*.log
+*.sql
+*.sql.gz
+*.zip
+*.tar.gz
+.DS_Store
