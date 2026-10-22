@@ -1,6 +1,6 @@
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { WebLinksAddon } from '@xterm/addon-web-links';
+import { ClipboardAddon } from '@xterm/addon-clipboard';
 import '@xterm/xterm/css/xterm.css';
 
 /**
@@ -39,14 +39,56 @@ class TavoAgentTerminal {
 
         this.fit = new FitAddon();
         this.term.loadAddon(this.fit);
-        // Odkazy jdou otevřít kliknutím (přihlášení Clauda vypíše adresu).
-        this.term.loadAddon(new WebLinksAddon((event, uri) => window.open(uri, '_blank', 'noopener')));
+        // „c to copy“ u Clauda posílá text do schránky přes OSC 52 (tmux ho propouští).
+        this.term.loadAddon(new ClipboardAddon());
+        // Odkazy jdou otevřít kliknutím, i když je Claude zalomil do více řádků.
+        this.term.registerLinkProvider({ provideLinks: (y, callback) => callback(this.links(y)) });
         this.term.open(element);
         this.resize();
 
         this.term.onData((data) => this.send({ t: 'i', d: data }));
 
         new ResizeObserver(() => this.resize()).observe(element);
+    }
+
+    /**
+     * Odkazy na řádku `y` (číslováno od 1). Claude dlouhé adresy láme natvrdo
+     * na šířku terminálu (přihlašovací odkaz má tři řádky), takže se řádky,
+     * které končí na plné šířce, spojí s dalšími a odkaz se hledá v celku.
+     */
+    links(y) {
+        const buffer = this.term.buffer.active;
+        const text = (row) => buffer.getLine(row - 1)?.translateToString(true) ?? '';
+        const full = (row) => text(row).length >= this.term.cols - 1;
+
+        let start = y;
+        while (start > 1 && full(start - 1) && /^\S/.test(text(start))) start--;
+
+        // Spojený text a ke každému znaku jeho řádek a sloupec.
+        let joined = '';
+        const position = [];
+        for (let row = start; row <= buffer.length; row++) {
+            const line = text(row);
+            for (let x = 0; x < line.length; x++) position.push({ x: x + 1, y: row });
+            joined += line;
+            if (! full(row) || ! /^\S/.test(text(row + 1))) break;
+        }
+
+        const links = [];
+        for (const match of joined.matchAll(/https?:\/\/[^\s"'<>`]+/g)) {
+            const uri = match[0].replace(/[.,;:!?)\]]+$/, '');
+            const from = position[match.index];
+            const to = position[match.index + uri.length - 1];
+            if (! from || ! to || y < from.y || y > to.y) continue;
+
+            links.push({
+                range: { start: from, end: to },
+                text: uri,
+                activate: () => window.open(uri, '_blank', 'noopener'),
+            });
+        }
+
+        return links;
     }
 
     send(message) {
