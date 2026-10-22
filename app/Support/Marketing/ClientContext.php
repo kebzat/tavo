@@ -258,11 +258,27 @@ final class ClientContext
     /** @return list<array<string, mixed>> */
     private function reportDrafts(): array
     {
+        $ids = $this->client->activeAdAccountIds();
+        $goal = $this->client->adGoal();
+        $currency = $this->client->adCurrency();
+
+        // Čísla za období reportu, ať agent píše fakta z nich, ne z posledních 7 dní.
         return $this->client->adReports()->draft()->whereNull('facts')->latest('period_end')->limit(2)->get()
-            ->map(fn (AdReport $report): array => [
-                'id' => $report->getKey(),
-                'nazev' => $report->title,
-                'obdobi' => $report->period_start->toDateString().' – '.$report->period_end->toDateString(),
-            ])->all();
+            ->map(function (AdReport $report) use ($ids, $goal, $currency): array {
+                $period = Period::between($report->period_start, $report->period_end);
+
+                return [
+                    'id' => $report->getKey(),
+                    'nazev' => $report->title,
+                    'obdobi' => $period->label(),
+                    'srovnani_s' => $period->previous()->label(),
+                    'cisla' => $ids === [] ? null : $this->metrics(Stats::totals($ids, $period), $goal, $currency, Stats::totals($ids, $period->previous())),
+                    'kampane' => $ids === [] ? [] : Stats::campaigns($ids, $period)->take(self::TOP_CAMPAIGNS)->map(fn (array $row): array => [
+                        'kampan' => $row['name'],
+                        'cisla' => $this->metrics($row['metrics'], $goal, $currency),
+                    ])->values()->all(),
+                    'komentar_pavla' => $report->summary,
+                ];
+            })->all();
     }
 }

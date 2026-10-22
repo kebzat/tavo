@@ -554,7 +554,7 @@ async function ranniPrehled({ vynutit = false } = {}) {
 
     console.log(`${new Date().toISOString()} ranní přehled: start`);
 
-    execFile('claude', [
+    const proces = execFile('claude', [
         '-p', zadani,
         '--permission-mode', 'dontAsk',
         '--allowedTools', 'Bash(taveo *)', 'Read', 'Glob', 'Grep',
@@ -567,6 +567,8 @@ async function ranniPrehled({ vynutit = false } = {}) {
         const limit = /usage limit|limit reached|rate limit/i.test(`${stdout}${stderr}`);
         console.log(`${new Date().toISOString()} ranní přehled: ${chyba ? 'skončil chybou' : 'hotovo'}${limit ? ' (limit předplatného, dnes se nic neopakuje)' : ''}`);
     });
+    // Zadání jde v argumentu, vstup nic nenese. Bez zavření by Claude čekal na data.
+    proces.stdin?.end();
 }
 
 setInterval(() => ranniPrehled().catch((e) => console.error(e.message)), 60 * 1000);

@@ -303,6 +303,11 @@ class MarketingTest extends TestCase
             'snapshot' => [], 'status' => 'draft', 'causes' => 'Pavel už napsal', 'public_token' => str_repeat('a', 40),
         ]);
 
+        $this->dny($client, '2026-10-13', '2026-10-19', ['spend' => 100, 'impressions' => 1000, 'purchases' => 1, 'purchase_value' => 400]);
+        $draft = $this->getJson('/nastroje/api/agent/klienti/cajovna-zkouska', $this->api())->json('reporty_k_doplneni.0');
+        $this->assertSame($report->id, $draft['id']);
+        $this->assertEquals(700, $draft['cisla']['Útrata']['hodnota']);
+
         $this->postJson("/nastroje/api/agent/reporty/{$report->id}", ['facts' => 'Útrata 1 050 Kč', 'causes' => 'Přepsat?'], $this->api())->assertOk();
         $this->assertSame('Útrata 1 050 Kč', $report->fresh()->facts);
         $this->assertSame('Pavel už napsal', $report->fresh()->causes);

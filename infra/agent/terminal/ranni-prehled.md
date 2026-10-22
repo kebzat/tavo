@@ -2,10 +2,16 @@ Připrav ranní přehled pro klienty TAVEO. Řiď se CLAUDE.md v této složce.
 
 Postup:
 1. `taveo klienti`. Zpracuj jen klienty, kteří mají `reklamy: true` nebo `karta_vyplnena: true`.
-2. Pro každého zvlášť, jednoho po druhém: `taveo klient <slug>`, pak `taveo prehled <slug>` s přehledem
-   (Markdown přes heredoc). Nejdřív dokonči jednoho klienta, pak teprve další.
-3. Když má klient v `reporty_k_doplneni` koncept reportu, připrav k němu JSON {"facts","causes","recommendations"}
-   (Markdown v každém poli) a ulož `taveo report <id>`. Fakta jen z čísel, příčiny jako hypotézy.
+2. Pro každého zvlášť, jednoho po druhém: `taveo klient <slug>`, pak přehled uložit takhle (heredoc přímo za
+   příkazem, ne přes rouru ani soubor, jinak ho oprávnění nepustí):
+   taveo prehled <slug> <<'EOF'
+   …Markdown…
+   EOF
+   Nejdřív dokonči jednoho klienta, pak teprve další.
+3. Když má klient v `reporty_k_doplneni` koncept reportu, napiš k němu tři části z čísel za období reportu
+   (pole `cisla` a `kampane` u reportu) a ulož každou zvlášť stejným způsobem:
+   taveo report <id> fakta <<'EOF' … EOF, taveo report <id> priciny <<'EOF' … EOF, taveo report <id> doporuceni <<'EOF' … EOF
+   Fakta jen z čísel, příčiny jako hypotézy, doporučení jako návrhy ke schválení. Komentář Pavla neopakuj.
 
 Přehled jednoho klienta, nejvýš 200 slov, přesně tyhle nadpisy (### …):
 ### Co se změnilo
