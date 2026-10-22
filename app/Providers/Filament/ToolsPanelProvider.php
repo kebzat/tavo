@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Tools\Pages\Today;
 use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\RememberStaffIp;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -36,6 +37,14 @@ class ToolsPanelProvider extends PanelProvider
             ->id('tools')
             ->path('nastroje')
             ->login()
+            // Dvoufázové ověření je povinné: kdo se přihlásí bez něj, musí si ho
+            // nejdřív nastavit. Jen lokálně se vynechává, ať vývoj nezdržuje
+            // telefon. Spravuje se v profilu (záložní kódy, vypnutí, nový klíč).
+            ->multiFactorAuthentication(
+                [AppAuthentication::make()->recoverable()->brandName('Taveo')],
+                isRequired: fn (): bool => ! app()->isLocal(),
+            )
+            ->profile()
             ->brandName('Taveo nástroje')
             ->brandLogo(asset('images/taveo-logo-dark.svg'))
             ->darkModeBrandLogo(asset('images/taveo-logo-cream.svg'))

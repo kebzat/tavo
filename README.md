@@ -54,6 +54,7 @@ Pomocné wrappery `./bin/php`, `./bin/art` a `./bin/composer` volají správnou 
 | [docs/CONTENT-MODEL.md](docs/CONTENT-MODEL.md) | mapa „pole v administraci → místo na webu" |
 | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) | barvy, typografie, komponenty, animace |
 | [docs/CRM.md](docs/CRM.md) | interní obchodní CRM v panelu `/nastroje` |
+| [docs/SECURITY.md](docs/SECURITY.md) | 2FA, tokeny agentů, hlavičky, co nastavit ručně na serveru |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | příprava serveru, CI/CD, rollback |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | rozhodnutí učiněná při stavbě a proč |
 | [CLAUDE.md](CLAUDE.md) | konvence projektu pro AI asistenty |

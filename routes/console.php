@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ApiTokenCall;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -71,5 +72,11 @@ Schedule::command('ads:reports monthly')
 // Ukázkový přehled spolupráce ukazuje aktuální měsíc. Viz docs/CLIENT-DASHBOARD.md.
 Schedule::command('clients:dashboard-demo --refresh')
     ->monthlyOn(1, '05:00')
+    ->timezone('Europe/Prague')
+    ->onOneServer();
+
+// Historie volání strojového rozhraní CRM. Na dohledání stačí čtvrt roku.
+Schedule::command('model:prune', ['--model' => [ApiTokenCall::class]])
+    ->dailyAt('04:00')
     ->timezone('Europe/Prague')
     ->onOneServer();

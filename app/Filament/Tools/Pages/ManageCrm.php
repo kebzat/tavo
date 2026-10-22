@@ -77,14 +77,14 @@ class ManageCrm extends SettingsPage
                 ]),
 
             Section::make('Strojové rozhraní')
-                ->description('Token pro import poptávek a export pipeline se nastavuje v .env jako CRM_IMPORT_TOKEN.')
+                ->description('Agenti mají vlastní tokeny v CRM → Přístupy agentů.')
                 ->schema([
                     TextEntry::make('import_token')
-                        ->label('Stav tokenu')
+                        ->label('Starý společný token (CRM_IMPORT_TOKEN v .env)')
                         ->state(fn (): string => filled(config('crm.import_token'))
-                            ? 'Nastavený — strojové endpointy fungují.'
-                            : 'Chybí — /nastroje/api/… vrací 404.')
-                        ->color(fn (): string => filled(config('crm.import_token')) ? 'success' : 'danger'),
+                            ? 'Pořád platí a smí všechno. Až budou mít všichni agenti vlastní token, smaž ho z .env na serveru.'
+                            : 'Vypnutý. Rozhraní pouští jen tokeny agentů.')
+                        ->color(fn (): string => filled(config('crm.import_token')) ? 'danger' : 'success'),
                 ]),
         ]);
     }

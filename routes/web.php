@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ApiAbility;
 use App\Http\Controllers\AdReportController;
 use App\Http\Controllers\Agent\AgentApiController;
 use App\Http\Controllers\AuditController;
@@ -65,10 +66,10 @@ Route::prefix('nastroje/api/agent')
     });
 
 // Strojové rozhraní interního CRM. Bez session a CSRF — volá ho automatizace,
-// ne prohlížeč — a ověřené sdíleným tokenem z .env. Musí být nad catch-all
-// routou /{slug} níž, i když by ji dvousegmentová adresa stejně minula.
+// ne prohlížeč — a ověřené tokenem agenta s oprávněním pro danou routu
+// (Nástroje → Přístupy agentů). Musí být nad catch-all routou /{slug} níž,
+// i když by ji dvousegmentová adresa stejně minula.
 Route::prefix('nastroje/api')
-    ->middleware(VerifyCrmToken::class)
     ->withoutMiddleware([
         EncryptCookies::class,
         AddQueuedCookiesToResponse::class,
@@ -78,19 +79,19 @@ Route::prefix('nastroje/api')
     ])
     ->group(function () {
         Route::post('/audits/import', AuditImportController::class)
-            ->middleware('throttle:20,1')
+            ->middleware([VerifyCrmToken::class.':'.ApiAbility::AuditsImport->value, 'throttle:20,1'])
             ->name('crm.audits.import');
 
         Route::post('/companies/import', CandidateImportController::class)
-            ->middleware('throttle:60,1')
+            ->middleware([VerifyCrmToken::class.':'.ApiAbility::CompaniesImport->value, 'throttle:60,1'])
             ->name('crm.companies.import');
 
         Route::get('/companies/scout', CompanyScoutController::class)
-            ->middleware('throttle:120,1')
+            ->middleware([VerifyCrmToken::class.':'.ApiAbility::CompaniesScout->value, 'throttle:120,1'])
             ->name('crm.companies.scout');
 
         Route::get('/export/pipeline', PipelineExportController::class)
-            ->middleware('throttle:60,1')
+            ->middleware([VerifyCrmToken::class.':'.ApiAbility::PipelineExport->value, 'throttle:60,1'])
             ->name('crm.export.pipeline');
     });
 

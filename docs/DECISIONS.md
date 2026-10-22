@@ -231,6 +231,18 @@ mřížka drátěnek.
   kolem něj není. Pravidla proto míří na `img.fi-icon`; s `.fi-icon img` se nechytí nic.
   Rozsah drží `:has(img.fi-icon)`, takže ostatní rozbalovací nabídky zůstávají beze změny.
 
+## Zabezpečení panelů a rozhraní pro agenty (23. 10. 2026)
+
+- **2FA povinné v obou panelech, ne jen v nástrojích.** Správce v administraci
+  spouští údržbu (migrace) a spravuje účty, heslo samo na to nestačí. Lokálně
+  vypnuté, ať vývoj nezdržuje telefon.
+- **Vlastní tokeny místo Sanctum.** Rozhraní volají jen agenti, ne uživatelé.
+  Stačí tabulka s otiskem, oprávněními a historií, bez vazby na účet.
+- **Starý `CRM_IMPORT_TOKEN` dočasně platí**, aby nasazení nerozbilo běžící
+  agenty. Odstraní se z `.env` po přechodu, kód s ním pak nepočítá.
+- **Bez plné CSP.** Filament a Livewire stojí na inline skriptech. Z CSP je jen
+  `frame-ancestors`. Podrobnosti v [SECURITY.md](SECURITY.md).
+
 ## Drobnosti k dořešení
 
 - `contact.phone` je zatím `+420 000 000 000` z designu — doplnit reálné číslo
