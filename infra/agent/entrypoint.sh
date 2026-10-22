@@ -13,5 +13,5 @@ if [ ! -f "$HOME/.gitconfig" ]; then
     git config --global init.defaultBranch main
 fi
 
-# Kontejner jen drží svazky a tmux. Sezení se otevírají příkazem `agent` na serveru.
-exec sleep infinity
+# Služba pro nástroje (vlákna, terminál). Sezení jde otevřít i příkazem `agent`.
+exec node /opt/terminal/server.js

@@ -1,0 +1,9 @@
+[Unit]
+Description=Fronta požadavků agenta TAVEO (zálohy, nové projekty)
+
+[Path]
+DirectoryNotEmpty=/srv/agent/fronta/pozadavky
+PathChanged=/srv/agent/fronta/pozadavky
+
+[Install]
+WantedBy=multi-user.target

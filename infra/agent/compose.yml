@@ -8,6 +8,11 @@ services:
     container_name: taveo-agent
     hostname: taveo-agent
     restart: unless-stopped
+    # Jen pro server: Laravel volá API, LiteSpeed sem posílá terminál z prohlížeče.
+    ports:
+      - "127.0.0.1:7681:7681"
+    env_file:
+      - /srv/agent/terminal.env
     volumes:
       - /srv/agent/domov:/home/agent
       # rslave: projekt přidaný na serveru (připojená složka webu) se v běžícím
@@ -18,6 +23,8 @@ services:
         bind:
           propagation: rslave
       - /srv/agent/snimky:/snimky
+      - /srv/agent/fronta:/fronta
+      - /srv/agent/projekty.tsv:/etc/taveo-agent/projekty.tsv:ro
     # Strop, ať agent při buildu nebo testech nepřidusí weby na stejném serveru.
     cpus: 4
     mem_limit: 8g

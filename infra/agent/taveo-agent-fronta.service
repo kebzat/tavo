@@ -1,0 +1,6 @@
+[Unit]
+Description=Zpracování fronty agenta TAVEO
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /srv/agent/docker/agent-fronta.py

@@ -141,7 +141,11 @@ zalohovat_db() {
     local slug=$1 db=$2
     install -d -m 700 "$ZALOHY/$slug"
     local soubor=$ZALOHY/$slug/$(date +%F-%H%M%S).sql.gz
-    ( umask 077; mysqldump --single-transaction --quick "$db" | gzip > "$soubor" )
+    # Údaje roota výslovně: systemd (fronta z nástrojů) nemá HOME=/root.
+    if ! ( umask 077; set -o pipefail; mysqldump --defaults-extra-file=/root/.my.cnf --single-transaction --quick "$db" | gzip > "$soubor" ); then
+        rm -f "$soubor"
+        chyba "záloha databáze $db se nepovedla"
+    fi
     ls -1t "$ZALOHY/$slug"/*.sql.gz | tail -n +21 | xargs -r rm --
     echo "Záloha databáze: $soubor"
 }
@@ -215,7 +219,8 @@ odebrat() {
     fi
     install -d -m 700 "$ROOT/archiv"
     mv "$PROJEKTY/$slug" "$ROOT/archiv/$slug-$(date +%F-%H%M%S)"
-    awk -F'\t' -v s="$slug" '$1 != s' "$SEZNAM" > "$SEZNAM.tmp" && mv "$SEZNAM.tmp" "$SEZNAM"
+    # Přepsat obsah, ne soubor: kontejner má seznam připojený a mv by ho odpojilo.
+    awk -F'\t' -v s="$slug" '$1 != s' "$SEZNAM" > "$SEZNAM.tmp" && cat "$SEZNAM.tmp" > "$SEZNAM" && rm "$SEZNAM.tmp"
     echo "Projekt $slug odebrán. Snímky: $SNIMKY/$slug.git, zálohy: $ZALOHY/$slug, paměť a kód: $ROOT/archiv/"
 }
 

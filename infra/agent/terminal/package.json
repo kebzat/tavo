@@ -1,0 +1,11 @@
+{
+  "name": "taveo-agent-terminal",
+  "private": true,
+  "description": "Vlákna a terminál agenta pro nástroje TAVEO",
+  "main": "server.js",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "node-pty": "1.1.0",
+    "ws": "8.22.0"
+  }
+}

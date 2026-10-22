@@ -9,6 +9,7 @@ use App\Settings\SiteSettings;
 use App\Support\Ads\Ai\AdsAdvisor;
 use App\Support\Ads\Ai\ClaudeAdsAdvisor;
 use App\Support\Ads\Ai\NullAdsAdvisor;
+use App\Support\Agent\AgentServer;
 use App\Support\Crm\Ai\ClaudeProspectAi;
 use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
@@ -22,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Claude Code na serveru (docs/AGENT.md). Nahrazuje se v testech.
+        $this->app->bind(AgentServer::class, fn (): AgentServer => AgentServer::fromConfig());
+
         // Claude jen s klíčem a zapnutým ANTHROPIC_ENABLED. Jinak proklepnutí
         // webu a audit jedou z měření, nic se nerozbije a nic se neplatí.
         $this->app->bind(ProspectAi::class, fn (): ProspectAi => config('services.anthropic.enabled') && filled(config('services.anthropic.key'))

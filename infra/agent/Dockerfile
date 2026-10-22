@@ -14,7 +14,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl gnupg software-properties-common tini \
-        git tmux less nano rsync ripgrep jq unzip openssh-client locales tzdata \
+        git tmux less nano rsync ripgrep jq unzip openssh-client locales tzdata ncurses-term \
+        build-essential python3 \
     && add-apt-repository -y ppa:ondrej/php \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
@@ -27,6 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # u složek webů připojených zvenku. Ubuntu 24.04 má v obrazu uživatele
 # `ubuntu` s UID 1000, ten nevadí.
 RUN useradd --uid ${AGENT_UID} --create-home --home-dir /home/agent --shell /bin/bash agent
+
+# Služba pro nástroje TAVEO: vlákna a terminál v prohlížeči (node-pty se překládá).
+COPY terminal/package.json /opt/terminal/package.json
+RUN cd /opt/terminal && npm install --omit=dev --no-audit --no-fund
+COPY terminal/server.js /opt/terminal/server.js
 
 COPY managed-settings.json /etc/claude-code/managed-settings.json
 COPY tmux.conf /etc/tmux.conf

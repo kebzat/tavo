@@ -5,7 +5,42 @@ Claude Code běží na serveru TAVEO (88.198.31.29) v Docker kontejneru
 která běží dál i po zavření terminálu. Soubory instalace jsou v
 [`infra/agent/`](../infra/agent/), na web se nenasazují.
 
-## Každodenní práce
+## V nástrojích
+
+**Nástroje → Agent** (`/nastroje/agent`): projekty, u každého vlákna a terminál
+s Claudem přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel).
+
+- **Nové vlákno** založí okno s Claudem. U živého webu před tím proběhne snímek
+  souborů a záloha databáze. „Navázat na poslední konverzaci“ pustí `claude --continue`.
+- Vlákno běží dál i po zavření stránky. Ve stejném vlákně může být víc lidí
+  zároveň a každý vidí totéž. Každý si ale přepíná vlákna sám.
+- **Ukončit** zavře okno. Konverzace zůstane uložená, v novém vlákně jde navázat.
+- **Přidat projekt** umí repozitář z GitHubu a projekt bez kódu. Web na serveru
+  připojí jen root přes SSH, protože dává agentovi přístup k živému webu.
+- Klient má v kartě pole **Projekt agenta**, pak se v seznamu ukazuje jeho jméno
+  a z karty klienta vede tlačítko Agent.
+- Přihlášení Clauda: v prvním vlákně se Claude sám zeptá, odkaz na přihlášení
+  jde otevřít kliknutím a kód se vloží do terminálu.
+
+Jak to drží pohromadě:
+
+| Kus | Kde | K čemu |
+|---|---|---|
+| Služba v kontejneru | `infra/agent/terminal/server.js`, port 7681 jen na 127.0.0.1 | API pro vlákna (tajemství `AGENT_SECRET`) a WebSocket terminálu (vstupenka platná minutu) |
+| LiteSpeed | `websocket /agent-terminal/` ve `vhost.conf` webu taveo.cz | pošle terminál z prohlížeče do kontejneru |
+| Fronta | `/srv/agent/fronta`, `taveo-agent-fronta.path` + `agent-fronta.py` | co potřebuje roota (záloha databáze, nový projekt), kontejner jen popíše |
+| Nástroje | `App\Support\Agent\AgentServer`, stránky `Filament/Tools/Pages/Agent` | seznam, vlákna, terminál (`resources/js/agent-terminal.js`) |
+
+Tajemství je na serveru v `/srv/agent/terminal.env` a v `.env` webu (`AGENT_SECRET`).
+Lokálně jde stránka vyzkoušet přes SSH tunel: `ssh -N -L 7681:127.0.0.1:7681 root@88.198.31.29`
+a do `.env` `AGENT_SECRET` ze serveru a `AGENT_WS_URL=ws://127.0.0.1:7681/`.
+
+**Pozor na CyberPanel:** úprava webu taveo.cz v panelu (PHP, SSL) může `vhost.conf`
+přepsat a blok `websocket` zmizí. Terminál pak neodpoví, zbytek stránky funguje.
+Blok stačí vrátit na konec souboru a restartovat LiteSpeed (`/usr/local/lsws/bin/lswsctrl restart`).
+Záloha konfigurace před úpravou: `/root/opravy-prav-2026-10-22/taveo-vhost.conf.pred-agentem`.
+
+## Z terminálu přes SSH
 
 Z Macu (přístup roota má klíč `~/.ssh/id_rsa`):
 

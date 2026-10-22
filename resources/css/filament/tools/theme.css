@@ -5,6 +5,11 @@
 /* Grafy a sparklines reklam, sdílené se sdílenou stránkou reportu. */
 @source '../../../../resources/views/components/ads/**/*';
 
+/* Pozadí terminálu agenta: barva ink z webu, stejná jako v xterm.js (agent-terminal.js). */
+@theme {
+    --color-terminal: #131110;
+}
+
 /* Návrh úprav od Clauda na detailu klienta v reklamách. Markdown bez typografického pluginu. */
 .ads-advice > * + * {
     margin-top: 0.75em;

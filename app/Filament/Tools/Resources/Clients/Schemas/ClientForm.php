@@ -5,6 +5,8 @@ namespace App\Filament\Tools\Resources\Clients\Schemas;
 use App\Enums\WorkArea;
 use App\Models\Client;
 use App\Support\Ads\Format;
+use App\Support\Agent\AgentServer;
+use App\Support\Agent\AgentUnavailable;
 use App\Support\RetainerSchedule;
 use Closure;
 use Filament\Forms\Components\DatePicker;
@@ -21,6 +23,23 @@ use Illuminate\Support\Str;
 
 class ClientForm
 {
+    /**
+     * Projekty agenta na serveru. Když agent neodpovídá, nabídne aspoň
+     * uložený projekt, ať se výběr při uložení formuláře nesmaže.
+     *
+     * @return array<string, string>
+     */
+    private static function agentProjects(?string $current): array
+    {
+        try {
+            $projects = collect(app(AgentServer::class)->projects())->pluck('slug')->all();
+        } catch (AgentUnavailable) {
+            $projects = [];
+        }
+
+        return collect($projects)->push($current)->filter()->unique()->sort()->mapWithKeys(fn (string $slug): array => [$slug => $slug])->all();
+    }
+
     /** „říjen – listopad 2026: 30 000 Kč · od února 2027: 5 000 Kč (předběžně)“ */
     private static function pricingPreview(Client $client): string
     {
@@ -107,6 +126,12 @@ class ClientForm
                         ->label('Web')
                         ->url()
                         ->placeholder('https://'),
+
+                    Select::make('agent_project')
+                        ->label('Projekt agenta')
+                        ->options(fn (?Client $record): array => self::agentProjects($record?->agent_project))
+                        ->placeholder('Bez agenta')
+                        ->helperText('Vlákna Clauda u tohoto klienta. Projekty se přidávají v nástrojích → Agent.'),
 
                     Toggle::make('is_archived')
                         ->label('Archivovaný')
