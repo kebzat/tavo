@@ -443,6 +443,66 @@ function prepisProgres(selektor, progres) {
     });
 }
 
+/**
+ * Sdílený dotazník. Chvíli po psaní pošle na pozadí celý formulář, server
+ * odpovědi přepíše a vrátí nový počet zodpovězených. Při odchodu ze stránky
+ * dopošle rozepsané přes sendBeacon, ať se poslední věta neztratí.
+ */
+Alpine.data('tavoQuestionnaire', (stavZeServeru) => ({
+    ...stavZeServeru,
+    stav: 'idle',
+    ulozeno: null,
+    casovac: null,
+
+    init() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && this.stav === 'dirty') {
+                clearTimeout(this.casovac);
+                navigator.sendBeacon(this.$refs.formular.action, new FormData(this.$refs.formular));
+            }
+        });
+    },
+
+    zmena() {
+        this.stav = 'dirty';
+        clearTimeout(this.casovac);
+        this.casovac = setTimeout(() => this.ulozit(), 900);
+    },
+
+    async ulozit(odeslat = false) {
+        clearTimeout(this.casovac);
+        this.stav = 'saving';
+
+        const data = new FormData(this.$refs.formular);
+        if (odeslat) data.set('odeslat', '1');
+
+        try {
+            const odpoved = await fetch(this.$refs.formular.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: data,
+            });
+
+            if (! odpoved.ok) throw new Error(odpoved.status);
+
+            const vysledek = await odpoved.json();
+            this.zodpovezeno = vysledek.answered;
+            this.procenta = vysledek.percent;
+            this.ulozeno = new Date().toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' });
+            // Mezitím mohl přibýt další text, ten se teprve uloží.
+            if (this.stav === 'saving') this.stav = 'saved';
+
+            if (odeslat && ! this.odeslano) {
+                this.odeslano = true;
+                this.$refs.potvrzeni.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                this.$nextTick(() => this.$refs.potvrzeni.focus({ preventScroll: true }));
+            }
+        } catch {
+            this.stav = 'error';
+        }
+    },
+}));
+
 registerConsent(Alpine);
 
 window.Alpine = Alpine;

@@ -16,6 +16,7 @@ use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\VerifyCrmToken;
@@ -110,6 +111,17 @@ Route::get('/klient/{token}', ClientDashboardController::class)
 
 // Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
 Route::get('/potencialni-spoluprace/{slug}', ProposalController::class)->name('proposal.show');
+
+// Dotazník (pro Pavla, pro klienta před spoluprací). Adresa má náhodnou část
+// jako přehled klienta. Ukládání je bez CSRF: oprávnění dává adresa, ne
+// přihlášení, a rozepsané odpovědi nesmí shodit vypršelá session.
+Route::get('/dotaznik/{slug}', [QuestionnaireController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('questionnaire.show');
+Route::post('/dotaznik/{slug}', [QuestionnaireController::class, 'save'])
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->name('questionnaire.save');
 
 // Náhled e-mailového podpisu. Jen lokálně, na ostrém webu nemá co dělat.
 if (app()->isLocal()) {

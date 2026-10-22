@@ -63,6 +63,7 @@ design-source/                 původní Claude design (needitovat, jen referenc
 | GET | `/checklist/{key}/{slug}` | `ChecklistController@category` | `checklist/category` |
 | GET | `/audit/{key}` | `AuditController` | `audit/show` |
 | GET | `/potencialni-spoluprace/{slug}` | `ProposalController` | `proposal/show` |
+| GET / POST | `/dotaznik/{slug}` | `QuestionnaireController` | `questionnaire/show`. Odpovědi se ukládají průběžně, POST je bez CSRF (oprávnění dává adresa). Správa v nástrojích → Dotazníky, odpovědi jdou stáhnout jako Markdown. |
 | GET | `/report/{key}` | `AdReportController` | `ad-report/show` |
 | GET | `/{slug}` | `PageController@show` | `pages/show`, nebo `eshop/show` pro nabídku pro e-shopy |
 
