@@ -177,8 +177,8 @@ podrobný audit vyjde zhruba na 1 až 2 dolary. Totéž jde udělat v Claude Cod
 které jede na předplatném: skill **`/audit-eshopu <doména>`** web změří
 (`crm:measure`), projde ho v prohlížeči i na mobilu, napíše audit ve stejném
 formátu a nahraje ho přes `POST /nastroje/api/audits/import` do ostrého CRM.
-Potřebuje v lokálním `.env` `TAVEO_PROD_CRM_TOKEN` (hodnota `CRM_IMPORT_TOKEN`
-ze serveru). Audit vznikne stejně jako z tlačítka a firma se v CRM založí,
+Potřebuje v lokálním `.env` `TAVEO_PROD_CRM_TOKEN`: token agenta z Přístupů agentů
+s oprávněním „Zjistit, jestli firma už je v CRM“ a „Nahrávat audity“. Audit vznikne stejně jako z tlačítka a firma se v CRM založí,
 když tam není.
 
 Audit je **neveřejný a v omezeném režimu**. Než odkaz odejde, Tom nebo Pavel
@@ -280,14 +280,16 @@ náhled prvních pěti řádků a po importu souhrn.
 
 ## Strojové rozhraní
 
-Obojí ověřuje token z `.env`. **Bez nastaveného tokenu endpointy vracejí 404**, aby
-zapomenutý řádek v `.env` neudělal z dat veřejná data.
+Každý agent má **vlastní token** s výčtem toho, co smí (Nástroje → CRM →
+Přístupy agentů). Token se ukáže jednou při založení, jde zrušit jedním kliknutím
+a u každého je historie volání. Bez platného tokenu vrací rozhraní 401, s tokenem
+bez potřebného oprávnění 403. Podrobnosti v [SECURITY.md](SECURITY.md).
 
-```dotenv
-CRM_IMPORT_TOKEN=nahodny-dlouhy-retezec
-```
+Token se posílá **jen hlavičkou** `X-Crm-Token` nebo jako Bearer token. Parametr
+`?token=` už neplatí, adresa by skončila v logu serveru.
 
-Token se posílá hlavičkou `X-Crm-Token`, jako Bearer token, nebo v parametru `?token=`.
+Starý společný `CRM_IMPORT_TOKEN` z `.env` zatím platí na všechno. Až mají všichni
+agenti vlastní token, smaž ho z `.env` na serveru.
 
 ### Firmy k proklepnutí
 
@@ -298,7 +300,7 @@ a posoudí je ranní `crm:scout`.
 ```bash
 curl -X POST https://taveo.cz/nastroje/api/companies/import \
   -H "Content-Type: application/json" \
-  -H "X-Crm-Token: $CRM_IMPORT_TOKEN" \
+  -H "X-Crm-Token: $CRM_TOKEN" \
   -d '{"companies": [{"website": "eshop.cz", "name": "E-shop", "city": "Hradec Králové", "segment": "eshop", "note": "Proč sedí"}]}'
 ```
 
@@ -323,7 +325,7 @@ Skill `/audit-eshopu` si odsud bere PageSpeed.
 `GET /nastroje/api/export/pipeline` — firmy, obchody a aktivity za posledních 30 dní.
 
 ```bash
-curl "https://taveo.cz/nastroje/api/export/pipeline?token=$CRM_IMPORT_TOKEN"
+curl https://taveo.cz/nastroje/api/export/pipeline -H "X-Crm-Token: $CRM_TOKEN"
 ```
 
 ## Ranní souhrn e-mailem

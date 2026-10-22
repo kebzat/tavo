@@ -6,6 +6,10 @@ namespace App\Models;
 use App\Enums\UserRole;
 use App\Enums\WorkArea;
 use Database\Factories\UserFactory;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,10 +22,15 @@ use Illuminate\Support\Facades\Auth;
 
 #[Fillable(['name', 'email', 'password', 'role', 'is_reviewer', 'billing_area'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+/**
+ * Přihlášení do obou panelů vyžaduje kód z aplikace (Google Authenticator,
+ * 1Password…), viz oba PanelProvidery. Tajný klíč i záložní
+ * kódy drží traity Filamentu šifrovaně ve sloupcích app_authentication_*.
+ */
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, InteractsWithAppAuthentication, InteractsWithAppAuthenticationRecovery, Notifiable;
 
     /**
      * Do administrace se dostane každý účet. Co uvnitř uvidí, rozhoduje role —

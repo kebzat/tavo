@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ApiAbility;
 use App\Enums\Crm\CompanySegment;
 use App\Enums\Crm\Priority;
+use App\Models\ApiToken;
 use App\Models\Crm\Company;
 use App\Support\Crm\CompanyCsvImporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -161,17 +163,16 @@ class CrmImportTest extends TestCase
 
     private function token(): string
     {
-        config()->set('crm.import_token', 'testovaci-token');
-
-        return 'testovaci-token';
+        return ApiToken::issue('Export', [ApiAbility::PipelineExport])[1];
     }
 
-    public function test_bez_nastaveneho_tokenu_endpointy_neexistuji(): void
+    public function test_bez_tokenu_endpointy_nic_nepusti(): void
     {
         config()->set('crm.import_token', null);
 
-        $this->postJson('/nastroje/api/companies/import', ['companies' => [['website' => 'a.cz']]])->assertNotFound();
-        $this->getJson('/nastroje/api/export/pipeline?token=cokoliv')->assertNotFound();
+        $this->postJson('/nastroje/api/companies/import', ['companies' => [['website' => 'a.cz']]])->assertUnauthorized();
+        $this->getJson('/nastroje/api/export/pipeline', ['X-Crm-Token' => 'cokoliv'])->assertUnauthorized();
+        $this->assertSame(0, Company::count());
     }
 
     /** Zástupné znaky z ručně psané rešerše nejsou hodnoty. */
@@ -205,7 +206,7 @@ class CrmImportTest extends TestCase
         // Aktivita starší než 30 dní do exportu nepatří.
         $company->activities()->create(['type' => 'email', 'subject' => 'Prehistorie', 'happened_at' => now()->subDays(45)]);
 
-        $response = $this->getJson('/nastroje/api/export/pipeline?token='.$token)->assertOk();
+        $response = $this->getJson('/nastroje/api/export/pipeline', ['X-Crm-Token' => $token])->assertOk();
 
         $this->assertCount(1, $response->json('companies'));
         $this->assertCount(1, $response->json('deals'));
