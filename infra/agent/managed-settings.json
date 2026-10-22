@@ -69,5 +69,19 @@
         ]
       }
     ]
+  },
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Organization: TAVEO, a two-person web agency (Tomáš Kebza, development; Pavel Včeliš, marketing). Primary use: maintaining and editing client websites and e-shops, including content changes requested by non-technical marketers who expect the change to be made, not a question back.",
+      "Host containment: Claude Code runs in an isolated Docker container (taveo-agent) on the agency's own server. It sees only /projekty (client projects the agency attached on purpose), /snimky and /home/agent. Other websites on the server, mail and the host system are not mounted.",
+      "Key internal services: the MariaDB server of the agency's own server, reachable only through the socket /run/mysqld/mysqld.sock. It holds the databases of the client websites attached under /projekty. Each website is accessed with its own credentials from its own .env, which reach only that website's database.",
+      "Sensitive remote targets: the attached client websites are the agent's assigned work, maintained by this agency, not someone else's production. Anything outside /projekty and the attached websites' own databases stays out of bounds."
+    ],
+    "allow": [
+      "$defaults",
+      "Website content and settings changes: changing data of the website attached in the current project (/projekty/<project>/kod, also reachable under its server path /home/<site>/<folder>) through php artisan (tinker, settings, db:seed, migrate) or wp-cli, using that website's own .env credentials, is allowed. It is the agent's assigned routine job and the agency explicitly wants such changes made without asking. An automatic hook backs up the website's database and files right before every such command, so every change is reversible.",
+      "Editing, adding and deleting files of the website attached in the current project is allowed for the same reason: the files are snapshotted before each conversation and again right before deletions."
+    ]
   }
 }
