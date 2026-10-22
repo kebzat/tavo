@@ -36,10 +36,16 @@
                          full: false,
                          term: null,
                          started: false,
+                         copied: null,
                          init() {
                              const start = () => {
                                  this.term = new window.TavoAgentTerminal(this.$refs.screen, {
                                      url: () => this.$wire.terminalUrl(),
+                                 onCopy: (result) => {
+                                     this.copied = result;
+                                     clearTimeout(this.copiedTimer);
+                                     if (result === 'copied') this.copiedTimer = setTimeout(() => this.copied = null, 2500);
+                                 },
                                      onState: (state) => {
                                          this.state = state;
                                          // Žádná konverzace neběží: založit novou, ať se dá hned psát.
@@ -65,6 +71,8 @@
                     <div x-ref="screen" x-bind:class="full ? 'h-[calc(100vh-1.5rem)]' : 'h-[calc(100vh-22rem)] min-h-[26rem]'"></div>
 
                     <div class="absolute top-3 right-4 flex items-center gap-3 rounded-md bg-terminal/90 px-2 py-1 text-xs text-gray-400">
+                        <span x-show="copied === 'copied'" x-cloak class="font-semibold text-success-400">Zkopírováno</span>
+                        <span x-show="copied === 'pending'" x-cloak class="font-semibold text-primary-400">Zkopírujete stiskem ⌘C</span>
                         <span x-show="state !== 'open'" x-text="{
                             connecting: 'Připojuji…',
                             starting: 'Připravuji konverzaci…',

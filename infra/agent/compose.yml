@@ -25,6 +25,9 @@ services:
       - /srv/agent/snimky:/snimky
       - /srv/agent/fronta:/fronta
       - /srv/agent/projekty.tsv:/etc/taveo-agent/projekty.tsv:ro
+      # Databáze serveru přes socket. Agent se přihlásí jen údaji z .env
+      # připojeného webu, root databáze přes socket chce root serveru.
+      - /run/mysqld:/run/mysqld:ro
     # Strop, ať agent při buildu nebo testech nepřidusí weby na stejném serveru.
     cpus: 4
     mem_limit: 8g

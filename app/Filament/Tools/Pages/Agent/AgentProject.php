@@ -209,6 +209,15 @@ class AgentProject extends Page
     protected function getHeaderActions(): array
     {
         return [
+            // Serverový režim Remote Control: v aplikaci Claude (desktop, web,
+            // mobil) jde v tomhle projektu zakládat konverzace, které běží tady.
+            Action::make('claudeApp')
+                ->label('Otevřít v aplikaci Claude')
+                ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                ->color('gray')
+                ->url(fn (): ?string => $this->details()['aplikace'] ?? null, shouldOpenInNewTab: true)
+                ->visible(fn (): bool => filled($this->details()['aplikace'] ?? null)),
+
             Action::make('client')
                 ->label('Klient')
                 ->icon(Heroicon::OutlinedUser)

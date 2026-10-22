@@ -24,6 +24,20 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
   k živému webu.
 - Klient má v kartě pole **Projekt agenta**, pak se v seznamu ukazuje jeho jméno
   a z karty klienta vede tlačítko Agent.
+- **Aplikace Claude (desktop, claude.ai/code, mobil):** každá konverzace z nástrojů
+  se do ní sama připojí (Remote Control, `remoteControlAtStartup` v
+  `managed-settings.json`) a dá se v ní pokračovat. Každý projekt má navíc okno
+  se serverovým režimem (`claude remote-control`, relace „TAVEO · projekt“), takže
+  v aplikaci jde zakládat i nové konverzace, které běží na serveru. Tlačítko
+  **Otevřít v aplikaci Claude** na stránce projektu. Když serverový režim spadne,
+  služba ho do tří minut spustí znovu.
+- **Kopírování:** výběr myší text rovnou zkopíruje (v rohu se ukáže „Zkopírováno“).
+  Když prohlížeč zápis odmítne (Safari), dokončí ho ⌘C. Výběr s ⌥ funguje klasicky.
+  Dlouhé odkazy zalomené přes více řádků jdou otevřít kliknutím kamkoli na ně.
+- **Databáze webu na serveru:** kontejner má socket databáze serveru (jen pro čtení
+  souboru, `/run/mysqld`). Agent se přihlásí údaji z `.env` připojeného webu,
+  takže `php artisan` a `wp` fungují jen pro jeho databázi. Web je v kontejneru
+  i pod serverovou cestou (`/home/taveo.cz/grillnor`), kvůli cache konfigurace.
 - **Poprvé** se Claude zeptá na vzhled (Enter) a přihlášení: zvolit předplatné,
   otevřít odkaz, přihlásit se a vložit kód do terminálu. Pak už nikdy. Důvěru
   ke složkám projektů a tmavý vzhled nastavuje služba předem.

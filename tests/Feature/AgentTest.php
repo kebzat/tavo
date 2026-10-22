@@ -39,7 +39,7 @@ class AgentTest extends TestCase
     private function projekty(array $vlakna = []): array
     {
         return [
-            ['slug' => 'grillnor', 'typ' => 'server', 'zdroj' => '/home/taveo.cz/grillnor', 'vlakna' => $vlakna],
+            ['slug' => 'grillnor', 'typ' => 'server', 'zdroj' => '/home/taveo.cz/grillnor', 'vlakna' => $vlakna, 'aplikace' => 'https://claude.ai/code?environment=env_grillnor'],
             ['slug' => 'taveo', 'typ' => 'git', 'zdroj' => 'git@github.com:kebzat/tavo.git', 'vlakna' => []],
         ];
     }
@@ -191,7 +191,9 @@ class AgentTest extends TestCase
             ->assertSee('Claude ukončen')
             ->assertSee('Uložená')
             ->assertSee('Navázat')
-            ->assertSee('Živý web na serveru');
+            ->assertSee('Živý web na serveru')
+            ->assertActionVisible('claudeApp')
+            ->assertActionHasUrl('claudeApp', 'https://claude.ai/code?environment=env_grillnor');
 
         $this->assertStringContainsString('wss://', $page->instance()->terminalUrl());
     }

@@ -7,6 +7,11 @@
  *   - zakládají novou konverzaci nebo navazují na uloženou,
  *   - připojují terminál v prohlížeči (WebSocket přes LiteSpeed).
  *
+ * Každý projekt má navíc okno s `claude remote-control` (serverový režim):
+ * v aplikaci Claude (desktop, claude.ai/code, mobil) se pak dají zakládat
+ * konverzace, které běží tady. Konverzace z nástrojů se do aplikace připojují
+ * samy (remoteControlAtStartup v managed-settings.json).
+ *
  * Běžící konverzace = okno tmuxu. Každé má ID konverzace Clauda (@session),
  * takže jde poznat, která uložená konverzace právě běží, a navázat na ni.
  *
@@ -115,14 +120,17 @@ async function okna(slug) {
         return [];
     }
 
-    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}'].join('\t');
+    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}'].join('\t');
     const vystup = await tmux(['list-windows', '-t', `=${slug}`, '-F', format]);
 
     return vystup.trim().split('\n').filter(Boolean).map((r) => {
-        const [id, session, autor, aktivita, pid] = r.split('\t');
-        return { id, session: session || null, autor: autor || null, aktivita: Number(aktivita) || null, claude: bezi(pid, 'claude') };
+        const [id, session, autor, aktivita, pid, rc] = r.split('\t');
+        return { id, session: session || null, autor: autor || null, aktivita: Number(aktivita) || null, claude: bezi(pid, 'claude'), rc: rc === '1' };
     });
 }
+
+/** Okna s konverzacemi, bez okna serverového režimu pro aplikaci Claude. */
+const konverzacniOkna = async (slug) => (await okna(slug)).filter((o) => !o.rc);
 
 // ---------------------------------------------------------------- uložené konverzace
 
@@ -199,7 +207,7 @@ function ulozene(p) {
 
 /** Běžící i uložené konverzace dohromady: běžící nahoře, pak od nejnovější. */
 async function konverzace(p) {
-    const bezici = await okna(p.slug);
+    const bezici = await konverzacniOkna(p.slug);
     const disk = ulozene(p);
     const autori = cteniJson(AUTORI, {});
 
@@ -276,7 +284,7 @@ function prostredi(p) {
 }
 
 async function zalozit(p, { autor, session, nahradit }) {
-    const bezici = await okna(p.slug);
+    const bezici = await konverzacniOkna(p.slug);
 
     if (session) {
         if (!UUID.test(String(session)) || !ulozene(p).some((k) => k.session === session)) {
@@ -299,7 +307,7 @@ async function zalozit(p, { autor, session, nahradit }) {
 
     const id = session || crypto.randomUUID();
     const prikaz = `bash -lc 'claude ${session ? '--resume' : '--session-id'} ${id}; exec bash'`;
-    const existuje = bezici.length > 0;
+    const existuje = (await okna(p.slug)).length > 0;
 
     const args = existuje
         ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', slozka(p), ...prostredi(p), '-n', 'konverzace', prikaz]
@@ -357,7 +365,7 @@ async function api(req, res) {
     }
 
     if (req.method === 'GET' && url.pathname === '/api/projekty') {
-        const seznam = await Promise.all(projekty().map(async (p) => ({ ...p, vlakna: await okna(p.slug) })));
+        const seznam = await Promise.all(projekty().map(async (p) => ({ ...p, vlakna: await konverzacniOkna(p.slug), aplikace: await adresaAplikace(p) })));
         return odpoved(res, 200, seznam);
     }
 
@@ -385,7 +393,7 @@ async function api(req, res) {
 
     if (req.method === 'DELETE' && casti[3] === 'okna' && casti.length === 5) {
         // Okno musí patřit tomuhle projektu, ID oken jsou společná pro všechny.
-        const okno = (await okna(p.slug)).find((o) => o.id === casti[4]);
+        const okno = (await konverzacniOkna(p.slug)).find((o) => o.id === casti[4]);
         if (!okno) {
             return odpoved(res, 404, { chyba: 'Konverzace už neběží.' });
         }
@@ -396,6 +404,79 @@ async function api(req, res) {
 
     return odpoved(res, 404, { chyba: 'Neznámá akce.' });
 }
+
+// ---------------------------------------------------------------- aplikace Claude (Remote Control)
+
+const prihlasen = () => fs.existsSync(path.join(HOME, '.claude', '.credentials.json'));
+
+/** Adresa projektu v aplikaci Claude, kterou vypsal serverový režim. */
+async function adresaAplikace(p) {
+    const rc = (await okna(p.slug)).find((o) => o.rc);
+    if (!rc) return null;
+
+    try {
+        const obsah = await tmux(['capture-pane', '-p', '-J', '-t', rc.id, '-S', '-200']);
+        return obsah.match(/https:\/\/claude\.ai\/code\?environment=[\w-]+/)?.[0] ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Web na serveru má v cache konfigurace absolutní cesty serveru
+ * (/home/taveo.cz/grillnor/storage/…). Stejná cesta proto v kontejneru
+ * vede odkazem na připojenou složku, jinak `php artisan` spadne.
+ */
+function zrcadlitCesty() {
+    for (const p of projekty().filter((p) => p.typ === 'server' && /^\/home\/[^/]+\/[^/]+/.test(p.zdroj))) {
+        let cil = null;
+        try { cil = fs.readlinkSync(p.zdroj); } catch { /* odkaz ještě není */ }
+        if (cil === slozka(p)) continue;
+
+        try {
+            fs.mkdirSync(path.dirname(p.zdroj), { recursive: true });
+            try { fs.unlinkSync(p.zdroj); } catch { /* nebylo co mazat */ }
+            fs.symlinkSync(slozka(p), p.zdroj);
+        } catch (e) {
+            console.error(`cesta ${p.zdroj}: ${e.message}`);
+        }
+    }
+}
+
+/**
+ * Každý projekt má okno se serverovým režimem. Když neběží (restart
+ * kontejneru, Claude to po výpadku sítě vzdal), založí se znovu.
+ * Bez přihlášení nemá smysl, Remote Control potřebuje předplatné.
+ */
+async function hlidatAplikaci() {
+    zrcadlitCesty();
+    if (!prihlasen()) return;
+
+    for (const p of projekty()) {
+        const rc = (await okna(p.slug)).find((o) => o.rc);
+        if (rc?.claude) continue;
+        if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
+
+        pripravitClaude(slozka(p));
+        const prikaz = `bash -lc 'claude remote-control --name "TAVEO · ${p.slug}" --spawn same-dir; exec bash'`;
+        const existuje = (await okna(p.slug)).length > 0;
+        const args = existuje
+            ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', slozka(p), ...prostredi(p), '-n', 'aplikace-claude', prikaz]
+            : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', slozka(p), ...prostredi(p), '-n', 'aplikace-claude', prikaz];
+
+        try {
+            const okno = (await tmux(args)).trim();
+            await tmux(['set-option', '-w', '-t', okno, '@rc', '1']);
+            await tmux(['set-option', '-w', '-t', okno, 'automatic-rename', 'off']);
+            console.log(`${new Date().toISOString()} aplikace Claude: spuštěno pro ${p.slug}`);
+        } catch (e) {
+            console.error(`aplikace Claude pro ${p.slug}: ${e.message}`);
+        }
+    }
+}
+
+setTimeout(() => hlidatAplikaci().catch((e) => console.error(e.message)), 5000);
+setInterval(() => hlidatAplikaci().catch((e) => console.error(e.message)), 3 * 60 * 1000);
 
 const server = http.createServer((req, res) => {
     api(req, res).catch((e) => odpoved(res, e.status || 500, { chyba: e.message }));

@@ -19,7 +19,10 @@ Na web změnu dostane člověk sloučením do `main`.
 **server:** složka je **živý web**. Každá úprava je hned vidět.
 Před sezením se uložil snímek souborů a záloha databáze. Dělej malé kroky,
 po každé úpravě ověř, že web odpovídá (`curl -sI https://…`).
-Do databáze z kontejneru nevidíš.
+K databázi webu se dostaneš jeho vlastními údaji z `.env`:
+`php artisan` (Laravel) nebo `wp` (WordPress) fungují jako na serveru,
+web je dostupný i pod svou serverovou cestou. Měň data jen tam, kde to
+úkol opravdu potřebuje, a předem řekni, co uděláš.
 
 **prazdny:** projekt bez kódu (Shoptet, Upgates, marketing).
 Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.

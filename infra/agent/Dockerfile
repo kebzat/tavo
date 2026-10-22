@@ -22,12 +22,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         php8.4-cli php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-gd \
         php8.4-intl php8.4-bcmath php8.4-mysql php8.4-sqlite3 \
     && curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod 755 /usr/local/bin/wp \
     && rm -rf /var/lib/apt/lists/*
 
 # Uživatel se stejným UID jako `agent` na serveru, ať sedí práva (ACL)
 # u složek webů připojených zvenku. Ubuntu 24.04 má v obrazu uživatele
 # `ubuntu` s UID 1000, ten nevadí.
 RUN useradd --uid ${AGENT_UID} --create-home --home-dir /home/agent --shell /bin/bash agent
+
+# Weby na serveru mají v cache konfigurace své serverové cesty
+# (/home/taveo.cz/grillnor/…). Služba je v kontejneru zrcadlí odkazem,
+# proto smí agent zakládat složky v /home (jen uvnitř kontejneru).
+RUN chmod 1777 /home
 
 # Služba pro nástroje TAVEO: vlákna a terminál v prohlížeči (node-pty se překládá).
 COPY terminal/package.json /opt/terminal/package.json

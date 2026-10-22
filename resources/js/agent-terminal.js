@@ -14,11 +14,13 @@ import '@xterm/xterm/css/xterm.css';
  * Zprávy dovnitř: výstup terminálu jako text.
  */
 class TavoAgentTerminal {
-    constructor(element, { url, onState }) {
+    constructor(element, { url, onState, onCopy }) {
         this.url = url;
         this.onState = onState ?? (() => {});
+        this.onCopy = onCopy ?? (() => {});
         this.socket = null;
         this.attempts = 0;
+        this.pendingCopy = null;
 
         this.term = new Terminal({
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
@@ -27,6 +29,8 @@ class TavoAgentTerminal {
             cursorBlink: true,
             scrollback: 5000,
             allowProposedApi: true,
+            // Výběr myší zachytává tmux (kvůli posouvání). S ⌥ jde klasický výběr pro ⌘C.
+            macOptionClickForcesSelection: true,
             // Barvy webu: tmavé pozadí ink, krémový text, cihlový kurzor.
             theme: {
                 background: '#131110',
@@ -39,8 +43,13 @@ class TavoAgentTerminal {
 
         this.fit = new FitAddon();
         this.term.loadAddon(this.fit);
-        // „c to copy“ u Clauda posílá text do schránky přes OSC 52 (tmux ho propouští).
-        this.term.loadAddon(new ClipboardAddon());
+        // Výběr myší (tmux) i „c to copy“ u Clauda posílají text přes OSC 52.
+        // Číst schránku aplikacím v terminálu nedovolíme.
+        this.term.loadAddon(new ClipboardAddon(undefined, {
+            readText: async () => '',
+            writeText: (selection, text) => this.copy(text),
+        }));
+        this.term.attachCustomKeyEventHandler((event) => this.copyOnKey(event));
         // Odkazy jdou otevřít kliknutím, i když je Claude zalomil do více řádků.
         this.term.registerLinkProvider({ provideLinks: (y, callback) => callback(this.links(y)) });
         this.term.open(element);
@@ -89,6 +98,29 @@ class TavoAgentTerminal {
         }
 
         return links;
+    }
+
+    /**
+     * Zápis do schránky. Safari ho bez kliknutí nebo klávesy odmítne (text
+     * přijde ze serveru se zpožděním), pak ho dokončí nejbližší ⌘C.
+     */
+    async copy(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            this.pendingCopy = null;
+            this.onCopy('copied');
+        } catch {
+            this.pendingCopy = text;
+            this.onCopy('pending');
+        }
+    }
+
+    copyOnKey(event) {
+        const shortcut = event.type === 'keydown' && event.key.toLowerCase() === 'c' && (event.metaKey || (event.ctrlKey && event.shiftKey));
+        if (! this.pendingCopy || ! shortcut) return true;
+
+        this.copy(this.pendingCopy);
+        return false;
     }
 
     send(message) {
