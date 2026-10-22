@@ -15,6 +15,7 @@ use App\Http\Controllers\EmailSignatureController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\MarketingGuideController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\QuestionnaireController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\VerifyAgentToken;
 use App\Http\Middleware\VerifyCrmToken;
+use App\Support\Marketing\MarketingGuide;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -144,6 +146,11 @@ Route::post('/dotaznik/{slug}', [QuestionnaireController::class, 'save'])
     ->middleware('throttle:60,1')
     ->withoutMiddleware(PreventRequestForgery::class)
     ->name('questionnaire.save');
+
+// Průvodce pro Pavla po nástrojích marketingu. Adresa s náhodnou částí jako dotazník.
+Route::get('/pruvodce/'.MarketingGuide::SLUG, MarketingGuideController::class)
+    ->middleware('throttle:60,1')
+    ->name('marketing-guide');
 
 // Náhled e-mailového podpisu. Jen lokálně, na ostrém webu nemá co dělat.
 if (app()->isLocal()) {

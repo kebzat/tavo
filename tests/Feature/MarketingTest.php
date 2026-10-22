@@ -27,6 +27,7 @@ use App\Support\Ads\Format;
 use App\Support\Ads\Period;
 use App\Support\ClientDashboard;
 use App\Support\Marketing\BillingStatement;
+use App\Support\Marketing\MarketingGuide;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -395,5 +396,22 @@ class MarketingTest extends TestCase
             ->callAction('statement', ['recipients' => 'ucetni@cajovna.test', 'body' => $statement->text()], ['client' => $client->id, 'area' => 'marketing']);
 
         Mail::assertSent(BillingStatementMail::class, fn (BillingStatementMail $mail): bool => $mail->hasTo('ucetni@cajovna.test'));
+    }
+
+    public function test_pruvodce_pro_pavla_ma_vsechny_obrazky_a_neni_ve_vyhledavacich(): void
+    {
+        $guide = MarketingGuide::content();
+
+        $this->get('/pruvodce/'.MarketingGuide::SLUG)
+            ->assertOk()
+            ->assertSee('noindex', false)
+            ->assertSee($guide['features'][0]['title']);
+
+        foreach ($guide['features'] as $feature) {
+            $this->assertFileExists(public_path(ltrim($feature['src'], '/')));
+            $this->assertGreaterThan(0, $feature['width']);
+        }
+
+        $this->get('/pruvodce/marketing')->assertNotFound();
     }
 }
