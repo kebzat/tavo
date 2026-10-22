@@ -16,7 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 
 /**
- * Projekty agenta na serveru (docs/AGENT.md). Každý má vlastní vlákna
+ * Projekty agenta na serveru (docs/AGENT.md). Každý má vlastní konverzace
  * s Claudem, otevírají se v detailu projektu.
  */
 class AgentProjects extends Page
@@ -44,7 +44,7 @@ class AgentProjects extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Claude Code na serveru. Každý projekt má svoje vlákna a paměť, vidí je Tom i Pavel.';
+        return 'Claude Code na serveru. Každý projekt má svoje konverzace a paměť, vidí je Tom i Pavel.';
     }
 
     /**
@@ -75,18 +75,16 @@ class AgentProjects extends Page
         ];
     }
 
-    /** „2 vlákna · naposledy před 5 minutami“ */
-    private static function threadsLabel(array $threads): string
+    /** „Běží 2 konverzace · naposledy před 5 minutami“ */
+    private static function threadsLabel(array $windows): string
     {
-        if ($threads === []) {
-            return 'Žádné běžící vlákno';
+        if ($windows === []) {
+            return 'Žádná konverzace teď neběží';
         }
 
-        $count = count($threads);
-        $label = $count.' '.match (true) {
-            $count === 1 => 'vlákno', $count < 5 => 'vlákna', default => 'vláken'
-        };
-        $last = self::ago(collect($threads)->max('aktivita'));
+        $count = count($windows);
+        $label = 'Běží '.$count.' '.($count < 5 ? 'konverzace' : 'konverzací');
+        $last = self::ago(collect($windows)->max('aktivita'));
 
         return $last ? $label.' · naposledy '.$last : $label;
     }

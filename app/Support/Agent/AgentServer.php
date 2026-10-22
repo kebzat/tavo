@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Http;
 /**
  * Služba agenta v kontejneru taveo-agent (infra/agent/terminal/server.js).
  *
- * Projekty a vlákna (okna tmuxu) čte a mění přes API na 127.0.0.1 se sdíleným
- * tajemstvím. Prohlížeč tajemství nikdy nedostane, jen vstupenku na jedno
- * vlákno platnou minutu ({@see terminalUrl()}).
+ * Projekty a konverzace s Claudem čte a otevírá přes API na 127.0.0.1 se
+ * sdíleným tajemstvím. Běžící konverzace je okno tmuxu. Prohlížeč tajemství
+ * nikdy nedostane, jen vstupenku na jedno okno platnou minutu ({@see terminalUrl()}).
  */
 class AgentServer
 {
@@ -41,7 +41,9 @@ class AgentServer
     }
 
     /**
-     * @return list<array{slug: string, typ: string, zdroj: string, vlakna: list<array{id: string, poradi: int, nazev: string, autor: ?string, aktivita: ?int, claude: bool}>}>
+     * Projekty a jejich běžící okna (pro přehled: kolik konverzací běží a kdy naposledy).
+     *
+     * @return list<array{slug: string, typ: string, zdroj: string, vlakna: list<array{id: string, session: ?string, autor: ?string, aktivita: ?int, claude: bool}>}>
      */
     public function projects(): array
     {
@@ -54,24 +56,35 @@ class AgentServer
         return collect($this->projects())->firstWhere('slug', $slug);
     }
 
-    /** Založí vlákno a vrátí jeho ID (@3). U webu na serveru před tím proběhne záloha. */
-    public function startThread(string $slug, string $name, string $author, bool $continue = false): string
+    /**
+     * Konverzace projektu: běžící (mají okno) nahoře, pak uložené od nejnovější.
+     *
+     * @return list<array{session: ?string, nazev: string, autor: ?string, aktualizace: ?int, okno: ?string, claude: bool, nova: bool}>
+     */
+    public function conversations(string $slug): array
     {
-        return $this->call(fn (PendingRequest $http) => $http->timeout(150)->post('/api/projekty/'.rawurlencode($slug).'/vlakna', [
-            'nazev' => $name,
+        return $this->call(fn (PendingRequest $http) => $http->get($this->projectPath($slug).'/konverzace'));
+    }
+
+    /**
+     * Otevře konverzaci a vrátí ID okna (@3). Bez `$session` založí novou,
+     * se `$session` naváže na uloženou (běží-li už, vrátí její okno).
+     * `$replace` je prázdná nová konverzace, ze které se navazuje: zavře se.
+     * U webu na serveru před novým oknem proběhne záloha.
+     */
+    public function openConversation(string $slug, string $author, ?string $session = null, ?string $replace = null): string
+    {
+        return $this->call(fn (PendingRequest $http) => $http->timeout(150)->post($this->projectPath($slug).'/konverzace', [
             'autor' => $author,
-            'navazat' => $continue,
-        ]))['id'];
+            'session' => $session,
+            'nahradit' => $replace,
+        ]))['okno'];
     }
 
-    public function renameThread(string $slug, string $thread, string $name): void
+    /** Ukončí běžící konverzaci (okno). Uložená konverzace zůstane. */
+    public function closeWindow(string $slug, string $window): void
     {
-        $this->call(fn (PendingRequest $http) => $http->post($this->threadPath($slug, $thread).'/prejmenovat', ['nazev' => $name]));
-    }
-
-    public function closeThread(string $slug, string $thread): void
-    {
-        $this->call(fn (PendingRequest $http) => $http->delete($this->threadPath($slug, $thread)));
+        $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/okna/'.rawurlencode($window)));
     }
 
     /**
@@ -98,12 +111,12 @@ class AgentServer
         ];
     }
 
-    /** Adresa WebSocketu s podepsanou vstupenkou na jedno vlákno. */
-    public function terminalUrl(string $slug, string $thread, string $user, ?string $host = null): string
+    /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. */
+    public function terminalUrl(string $slug, string $window, string $user, ?string $host = null): string
     {
         $payload = rtrim(strtr(base64_encode((string) json_encode([
             'p' => $slug,
-            'v' => $thread,
+            'v' => $window,
             'u' => $user,
             'exp' => time() + self::TICKET_TTL,
         ])), '+/', '-_'), '=');
@@ -117,9 +130,9 @@ class AgentServer
         return $base.'?t='.$payload.'.'.$signature;
     }
 
-    private function threadPath(string $slug, string $thread): string
+    private function projectPath(string $slug): string
     {
-        return '/api/projekty/'.rawurlencode($slug).'/vlakna/'.rawurlencode($thread);
+        return '/api/projekty/'.rawurlencode($slug);
     }
 
     private function request(): PendingRequest

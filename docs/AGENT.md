@@ -7,20 +7,26 @@ která běží dál i po zavření terminálu. Soubory instalace jsou v
 
 ## V nástrojích
 
-**Nástroje → Agent** (`/nastroje/agent`): projekty, u každého vlákna a terminál
-s Claudem přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel).
+**Nástroje → Agent** (`/nastroje/agent`): projekty a u každého terminál s Claudem
+přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel).
 
-- **Nové vlákno** založí okno s Claudem. U živého webu před tím proběhne snímek
-  souborů a záloha databáze. „Navázat na poslední konverzaci“ pustí `claude --continue`.
-- Vlákno běží dál i po zavření stránky. Ve stejném vlákně může být víc lidí
-  zároveň a každý vidí totéž. Každý si ale přepíná vlákna sám.
-- **Ukončit** zavře okno. Konverzace zůstane uložená, v novém vlákně jde navázat.
-- **Přidat projekt** umí repozitář z GitHubu a projekt bez kódu. Web na serveru
-  připojí jen root přes SSH, protože dává agentovi přístup k živému webu.
+- Po otevření projektu se terminál připojí k naposledy běžící konverzaci. Když
+  žádná neběží, sama se založí nová a dá se rovnou psát. U živého webu před tím
+  proběhne snímek souborů a záloha databáze (pár vteřin).
+- **Nová konverzace** nad terminálem založí další. Pod terminálem je seznam
+  konverzací: běžící jde **otevřít**, na uloženou **navázat** (`claude --resume`).
+  Název je první zpráva z konverzace.
+- Konverzace běží dál i po zavření stránky. V jedné může být víc lidí zároveň
+  a každý vidí totéž, mezi konverzacemi si ale každý přepíná sám.
+- **Ukončit** zavře běžící konverzaci. Zůstane uložená a dá se na ni navázat.
+- **Přidat projekt** (v seznamu projektů) umí repozitář z GitHubu a projekt bez
+  kódu. Web na serveru připojí jen root přes SSH, protože dává agentovi přístup
+  k živému webu.
 - Klient má v kartě pole **Projekt agenta**, pak se v seznamu ukazuje jeho jméno
   a z karty klienta vede tlačítko Agent.
-- Přihlášení Clauda: v prvním vlákně se Claude sám zeptá, odkaz na přihlášení
-  jde otevřít kliknutím a kód se vloží do terminálu.
+- **Poprvé** se Claude zeptá na vzhled (Enter) a přihlášení: zvolit předplatné,
+  otevřít odkaz, přihlásit se a vložit kód do terminálu. Pak už nikdy. Důvěru
+  ke složkám projektů a tmavý vzhled nastavuje služba předem.
 
 Jak to drží pohromadě:
 

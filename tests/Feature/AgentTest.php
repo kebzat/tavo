@@ -44,9 +44,32 @@ class AgentTest extends TestCase
         ];
     }
 
-    private function vlakno(string $id, string $nazev, int $aktivita, bool $claude = true): array
+    private function okno(string $id, int $aktivita, bool $claude = true): array
     {
-        return ['id' => $id, 'poradi' => (int) ltrim($id, '@'), 'nazev' => $nazev, 'autor' => 'Tom', 'aktivita' => $aktivita, 'claude' => $claude];
+        return ['id' => $id, 'session' => null, 'autor' => 'Tom', 'aktivita' => $aktivita, 'claude' => $claude];
+    }
+
+    private function konverzace(?string $okno, string $session, string $nazev, int $aktualizace, bool $claude = true, bool $nova = false): array
+    {
+        return ['session' => $session, 'nazev' => $nazev, 'autor' => 'Tom', 'aktualizace' => $aktualizace, 'okno' => $okno, 'claude' => $okno !== null && $claude, 'nova' => $nova];
+    }
+
+    /**
+     * Falešný agent: projekty, konverzace grillnoru a zápis (POST/DELETE).
+     *
+     * @param  list<array<string, mixed>>  $konverzace
+     */
+    private function falesnyAgent(array $konverzace, mixed $zapis = null): void
+    {
+        Http::fake(function (Request $request) use ($konverzace, $zapis) {
+            if ($request->method() !== 'GET') {
+                return $zapis ?? Http::response(['ok' => true]);
+            }
+
+            return str_ends_with($request->url(), '/konverzace')
+                ? Http::response($konverzace)
+                : Http::response($this->projekty());
+        });
     }
 
     private function spravce(): User
@@ -77,10 +100,10 @@ class AgentTest extends TestCase
         }
 
         config(['services.agent.secret' => self::SECRET]);
-        Http::fake(['agent.test/*' => Http::response(['chyba' => 'Záloha před vláknem se nepovedla.'], 500)]);
+        Http::fake(['agent.test/*' => Http::response(['chyba' => 'Záloha webu se nepovedla.'], 500)]);
 
-        $this->expectExceptionMessage('Záloha před vláknem se nepovedla.');
-        app(AgentServer::class)->startThread('grillnor', 'Test', 'Tom');
+        $this->expectExceptionMessage('Záloha webu se nepovedla.');
+        app(AgentServer::class)->openConversation('grillnor', 'Tom');
     }
 
     public function test_vstupenka_do_terminalu_je_podepsana_a_kratka(): void
@@ -98,12 +121,12 @@ class AgentTest extends TestCase
         $this->assertLessThanOrEqual(time() + 60, $obsah['exp']);
     }
 
-    public function test_seznam_projektu_ukaze_klienta_a_vlakna(): void
+    public function test_seznam_projektu_ukaze_klienta_a_konverzace(): void
     {
         Client::create(['name' => 'Grillnor s.r.o.', 'slug' => 'grillnor', 'agent_project' => 'grillnor']);
         Http::fake(['agent.test/api/projekty' => Http::response($this->projekty([
-            $this->vlakno('@1', 'Banner', now()->subMinutes(5)->timestamp),
-            $this->vlakno('@2', 'Filtry', now()->subHour()->timestamp),
+            $this->okno('@1', now()->subMinutes(5)->timestamp),
+            $this->okno('@2', now()->subHour()->timestamp),
         ]))]);
 
         Livewire::actingAs($this->spravce())
@@ -111,8 +134,8 @@ class AgentTest extends TestCase
             ->assertOk()
             ->assertSee('Grillnor s.r.o.')
             ->assertSee('živý web')
-            ->assertSee('2 vlákna · naposledy před 5 minutami')
-            ->assertSee('Žádné běžící vlákno');
+            ->assertSee('Běží 2 konverzace · naposledy před 5 minutami')
+            ->assertSee('Žádná konverzace teď neběží');
     }
 
     public function test_nedostupny_agent_stranku_neshodi(): void
@@ -152,83 +175,114 @@ class AgentTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
     }
 
-    public function test_detail_projektu_otevre_posledni_vlakno_a_zalozi_nove(): void
+    public function test_detail_otevre_posledni_bezici_konverzaci_a_ukaze_ulozene(): void
     {
-        Http::fake(function (Request $request) {
-            if ($request->method() === 'POST') {
-                return Http::response(['id' => '@7'], 201);
-            }
-
-            return Http::response($this->projekty([
-                $this->vlakno('@1', 'Banner', now()->subHour()->timestamp),
-                $this->vlakno('@2', 'Filtry v kategorii', now()->subMinute()->timestamp, claude: false),
-            ]));
-        });
+        $this->falesnyAgent([
+            $this->konverzace('@2', 'aaaaaaaa-0000-4000-8000-000000000002', 'Změň nadpis na úvodní stránce', now()->subMinute()->timestamp),
+            $this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Oprav filtry', now()->subHour()->timestamp, claude: false),
+            $this->konverzace(null, 'aaaaaaaa-0000-4000-8000-000000000003', 'Banner na Black Friday', now()->subDay()->timestamp),
+        ]);
 
         $page = Livewire::actingAs($this->spravce())
             ->test(AgentProject::class, ['project' => 'grillnor'])
             ->assertOk()
-            ->assertSet('thread', '@2')
-            ->assertSee('Filtry v kategorii')
+            ->assertSet('window', '@2')
+            ->assertSee('Změň nadpis na úvodní stránce')
+            ->assertSee('Claude ukončen')
+            ->assertSee('Uložená')
+            ->assertSee('Navázat')
             ->assertSee('Živý web na serveru');
 
         $this->assertStringContainsString('wss://', $page->instance()->terminalUrl());
-
-        $page->callAction('newThread', ['name' => 'Úprava košíku', 'continue' => true])
-            ->assertSet('thread', '@7')
-            ->assertDispatched('agent-thread-selected');
-
-        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
-            && str_ends_with($request->url(), '/api/projekty/grillnor/vlakna')
-            && $request['nazev'] === 'Úprava košíku'
-            && $request['autor'] === 'Tom'
-            && $request['navazat'] === true);
     }
 
-    public function test_cizi_vlakno_ani_neznamy_projekt_neprojdou(): void
+    public function test_bez_bezici_konverzace_se_hned_zalozi_nova(): void
     {
-        Http::fake(['agent.test/api/projekty' => Http::response($this->projekty([$this->vlakno('@1', 'Banner', time())]))]);
+        $this->falesnyAgent([
+            $this->konverzace(null, 'aaaaaaaa-0000-4000-8000-000000000003', 'Banner', now()->subDay()->timestamp),
+        ], Http::response(['okno' => '@7'], 201));
+
+        Livewire::actingAs($this->spravce())
+            ->test(AgentProject::class, ['project' => 'grillnor'])
+            ->assertSet('window', null)
+            ->call('autoStart')
+            ->assertSet('window', '@7')
+            ->assertDispatched('agent-window-selected');
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/api/projekty/grillnor/konverzace')
+            && $request['autor'] === 'Tom'
+            && $request['session'] === null);
+    }
+
+    public function test_navazani_z_prazdne_nove_konverzace_ji_nahradi(): void
+    {
+        $this->falesnyAgent([
+            $this->konverzace('@5', 'aaaaaaaa-0000-4000-8000-000000000005', 'Nová konverzace', time(), nova: true),
+            $this->konverzace(null, 'aaaaaaaa-0000-4000-8000-000000000003', 'Banner', now()->subDay()->timestamp),
+        ], Http::response(['okno' => '@6'], 201));
+
+        Livewire::actingAs($this->spravce())
+            ->test(AgentProject::class, ['project' => 'grillnor'])
+            ->assertSet('window', '@5')
+            ->call('newConversation')
+            ->assertSet('window', '@5')
+            ->call('select', null, 'aaaaaaaa-0000-4000-8000-000000000003')
+            ->assertSet('window', '@6');
+
+        // „Nová konverzace“ nad prázdnou novou druhou nezaložila.
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST' && $request['session'] === null);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request['session'] === 'aaaaaaaa-0000-4000-8000-000000000003'
+            && $request['nahradit'] === '@5');
+    }
+
+    public function test_cizi_okno_ani_neznamy_projekt_neprojdou(): void
+    {
+        $this->falesnyAgent([$this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Banner', time())]);
         $spravce = $this->spravce();
 
         Livewire::actingAs($spravce)
             ->test(AgentProject::class, ['project' => 'grillnor'])
-            ->call('selectThread', '@99')
-            ->assertSet('thread', '@1')
-            ->callAction('closeThread', arguments: ['thread' => '@99']);
+            ->call('select', '@99')
+            ->call('select', null, 'cizi-session')
+            ->assertSet('window', '@1')
+            ->callAction('closeWindow', arguments: ['window' => '@99']);
 
-        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'DELETE');
+        Http::assertNotSent(fn (Request $request): bool => $request->method() !== 'GET');
 
         $this->actingAs($spravce)->get(AgentProject::getUrl(['project' => 'neexistuje'], panel: 'tools'))->assertNotFound();
     }
 
-    public function test_ukonceni_a_prejmenovani_vlakna(): void
+    public function test_ukonceni_konverzace_prepne_na_dalsi_bezici(): void
     {
-        Http::fake(fn (Request $request) => $request->method() === 'GET'
-            ? Http::response($this->projekty([$this->vlakno('@1', 'Banner', time()), $this->vlakno('@2', 'Filtry', time() - 60)]))
-            : Http::response(['ok' => true]));
+        $this->falesnyAgent([
+            $this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Banner', time()),
+            $this->konverzace('@2', 'aaaaaaaa-0000-4000-8000-000000000002', 'Filtry', time() - 60),
+        ]);
 
         Livewire::actingAs($this->spravce())
             ->test(AgentProject::class, ['project' => 'grillnor'])
-            ->callAction('renameThread', ['name' => 'Banner na Black Friday'], ['thread' => '@2'])
-            ->callAction('closeThread', arguments: ['thread' => '@1']);
+            ->assertSet('window', '@1')
+            ->callAction('closeWindow', arguments: ['window' => '@2'])
+            ->assertSet('window', '@1');
 
-        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/vlakna/%402/prejmenovat') && $request['nazev'] === 'Banner na Black Friday');
-        Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE' && str_ends_with($request->url(), '/vlakna/%401'));
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE' && str_ends_with($request->url(), '/api/projekty/grillnor/okna/%402'));
     }
 
-    public function test_neuspesne_ukonceni_nezmeni_otevrene_vlakno(): void
+    public function test_neuspesne_ukonceni_nezmeni_otevrenou_konverzaci(): void
     {
-        Http::fake(fn (Request $request) => $request->method() === 'GET'
-            ? Http::response($this->projekty([$this->vlakno('@1', 'Banner', time()), $this->vlakno('@2', 'Filtry', time() - 60)]))
-            : Http::response(['chyba' => 'Vlákno neexistuje.'], 404));
+        $this->falesnyAgent(
+            [$this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Banner', time())],
+            Http::response(['chyba' => 'Konverzace už neběží.'], 404),
+        );
 
         Livewire::actingAs($this->spravce())
             ->test(AgentProject::class, ['project' => 'grillnor'])
-            ->assertSet('thread', '@1')
-            ->callAction('closeThread', arguments: ['thread' => '@1'])
+            ->callAction('closeWindow', arguments: ['window' => '@1'])
             ->assertNotified('Nepovedlo se')
-            ->assertSet('thread', '@1')
-            ->assertNotDispatched('agent-thread-selected');
+            ->assertSet('window', '@1')
+            ->assertNotDispatched('agent-window-selected');
     }
 
     public function test_klient_s_projektem_ma_odkaz_na_agenta(): void
