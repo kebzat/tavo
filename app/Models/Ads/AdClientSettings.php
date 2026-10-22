@@ -39,6 +39,7 @@ class AdClientSettings extends Model
             'weekly_report' => 'boolean',
             'monthly_report' => 'boolean',
             'advice_at' => 'datetime',
+            'alert_overrides' => 'array',
         ];
     }
 }

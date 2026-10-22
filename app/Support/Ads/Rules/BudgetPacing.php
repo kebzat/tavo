@@ -39,7 +39,7 @@ class BudgetPacing implements Rule
             'projected' => $pace->projected(),
         ];
 
-        if ($percent < $context->settings->budget_under_pct) {
+        if ($percent < $context->threshold('budget_under_pct')) {
             return [new Finding(
                 AlertSeverity::Warning,
                 'Rozpočet se čerpá pomalu ('.Format::number($percent).' % plánu)',
@@ -48,7 +48,7 @@ class BudgetPacing implements Rule
             )];
         }
 
-        if ($percent > $context->settings->budget_over_pct) {
+        if ($percent > $context->threshold('budget_over_pct')) {
             $projected = $pace->projected() ?? 0;
 
             return [new Finding(

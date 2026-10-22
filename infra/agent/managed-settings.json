@@ -7,7 +7,8 @@
       "Bash(php artisan *)",
       "Bash(wp *)",
       "Bash(rm *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(taveo *)"
     ],
     "ask": [
       "Bash(composer update*)",
@@ -66,7 +67,8 @@
       "Organization: TAVEO, a two-person web agency (Tomáš Kebza, development; Pavel Včeliš, marketing). Primary use: maintaining and editing client websites and e-shops, including content changes requested by non-technical marketers who expect the change to be made, not a question back.",
       "Host containment: Claude Code runs in an isolated Docker container (taveo-agent) on the agency's own server. It sees only /projekty (client projects the agency attached on purpose), /snimky and /home/agent. Other websites on the server, mail and the host system are not mounted.",
       "Key internal services: the MariaDB server of the agency's own server, reachable only through the socket /run/mysqld/mysqld.sock. It holds the databases of the client websites attached under /projekty. Each website is accessed with its own credentials from its own .env, which reach only that website's database.",
-      "Sensitive remote targets: the attached client websites are the agent's assigned work, maintained by this agency, not someone else's production. Anything outside /projekty and the attached websites' own databases stays out of bounds."
+      "Sensitive remote targets: the attached client websites are the agent's assigned work, maintained by this agency, not someone else's production. Anything outside /projekty and the attached websites' own databases stays out of bounds.",
+      "Trusted internal domains: taveo.cz is the agency's own tools. The `taveo` command reads client data from https://taveo.cz/nastroje/api/agent and writes only drafts there (morning briefing, task proposals, decisions, report drafts), which a human reviews; calling it is routine."
     ],
     "allow": [
       "$defaults",

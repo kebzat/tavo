@@ -1,14 +1,34 @@
 <x-mail::message>
 # Dobré ráno, {{ $recipient->name }}
 
-@if ($alerts->isNotEmpty())
-## Upozornění ({{ $alerts->count() }})
+@if ($newAlerts->isNotEmpty())
+## Nové ({{ $newAlerts->count() }})
 
-@foreach ($alerts as $alert)
+@foreach ($newAlerts as $alert)
 - **{{ $alert->client->name }}**: {{ $alert->title }} ({{ $alert->severity->getLabel() }})
 @endforeach
-@else
-Žádné nové upozornění. Reklamy běží, jak mají.
+@endif
+
+@if ($ongoingAlerts->isNotEmpty())
+## Trvá beze změny ({{ $ongoingAlerts->count() }})
+
+@foreach ($ongoingAlerts as $alert)
+- {{ $alert->client->name }}: {{ $alert->title }}, od {{ $alert->detected_on->format('j. n.') }}
+@endforeach
+@endif
+
+@if ($alerts->isEmpty())
+Žádné upozornění. Reklamy běží, jak mají.
+@endif
+
+@if ($briefings > 0)
+## Ranní přehled od agenta
+
+Pro {{ $briefings }} {{ $briefings === 1 ? 'klienta' : 'klientů' }}: co se změnilo, jestli jsou data spolehlivá a navržený další krok ke schválení.
+
+<x-mail::button :url="$briefingsUrl">
+Otevřít ranní přehled
+</x-mail::button>
 @endif
 
 @if ($rows)

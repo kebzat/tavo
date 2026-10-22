@@ -34,8 +34,8 @@ class CreativeFatigue implements Rule
         $frequency = $week->frequency();
 
         $ctrDropped = $ctr !== null && $previousCtr !== null && $previousCtr > 0
-            && ($previousCtr - $ctr) / $previousCtr * 100 >= $context->settings->ctr_drop_pct;
-        $tooFrequent = $frequency !== null && $frequency >= $context->settings->frequency_max;
+            && ($previousCtr - $ctr) / $previousCtr * 100 >= $context->threshold('ctr_drop_pct');
+        $tooFrequent = $frequency !== null && $frequency >= $context->threshold('frequency_max');
 
         if (! $ctrDropped && ! $tooFrequent) {
             return [];

@@ -2,16 +2,25 @@
 
 namespace App\Support\Ads;
 
+use App\Enums\Ads\AlertSeverity;
 use App\Enums\Ads\AlertStatus;
 use App\Models\Ads\AdAlert;
 use App\Models\Client;
 use App\Settings\AdsSettings;
 use App\Support\Ads\Rules\AccountStatus;
+use App\Support\Ads\Rules\AdsWithIssues;
 use App\Support\Ads\Rules\AlertContext;
+use App\Support\Ads\Rules\AnalyticsMismatch;
 use App\Support\Ads\Rules\BudgetPacing;
 use App\Support\Ads\Rules\CostAboveTarget;
 use App\Support\Ads\Rules\CreativeFatigue;
+use App\Support\Ads\Rules\Finding;
+use App\Support\Ads\Rules\LandingPageProblem;
+use App\Support\Ads\Rules\LandingPixelMissing;
+use App\Support\Ads\Rules\LeadFeedbackMissing;
 use App\Support\Ads\Rules\NoSpendYesterday;
+use App\Support\Ads\Rules\PurchasesAboveCheckouts;
+use App\Support\Ads\Rules\PurchasesWithoutValue;
 use App\Support\Ads\Rules\RoasBelowTarget;
 use App\Support\Ads\Rules\Rule;
 use App\Support\Ads\Rules\SpendSpike;
@@ -44,9 +53,40 @@ class AlertEngine
         RoasBelowTarget::class,
         CreativeFatigue::class,
         SpendSpike::class,
+        PurchasesWithoutValue::class,
+        PurchasesAboveCheckouts::class,
+        AnalyticsMismatch::class,
+        AdsWithIssues::class,
+        LandingPageProblem::class,
+        LandingPixelMissing::class,
+        LeadFeedbackMissing::class,
     ];
 
+    /** Bez těchhle by se nedalo poznat, že data nechodí. Nejdou ztlumit ani zmírnit. */
+    public const ALWAYS_ON = ['sync_failed', 'account_status'];
+
     public function __construct(private readonly AdsSettings $settings) {}
+
+    /**
+     * Naléhavost u klienta: „high“ zvedne Pozor na Hoří (velký rozpočet,
+     * akce s termínem), „low“ sníží Pozor na Tip (malý účet, awareness).
+     */
+    private function withUrgency(Finding $finding, string $urgency, string $rule): Finding
+    {
+        if (in_array($rule, self::ALWAYS_ON, true)) {
+            return $finding;
+        }
+
+        $severity = match (true) {
+            $urgency === 'high' && $finding->severity === AlertSeverity::Warning => AlertSeverity::Critical,
+            $urgency === 'low' && $finding->severity === AlertSeverity::Warning => AlertSeverity::Info,
+            default => $finding->severity,
+        };
+
+        return $severity === $finding->severity
+            ? $finding
+            : new Finding($severity, $finding->title, $finding->recommendation, $finding->snapshot, $finding->account);
+    }
 
     /** @return array{opened: int, updated: int, resolved: int} */
     public function run(?CarbonInterface $today = null): array
@@ -72,10 +112,19 @@ class AlertEngine
         $counts = ['opened' => 0, 'updated' => 0, 'resolved' => 0];
         $seen = [];
 
+        $muted = $context->overrides()['muted'] ?? [];
+
         foreach (self::RULES as $class) {
             $rule = app($class);
 
+            // Pravidlo ztlumené jen u tohoto klienta (např. boosting bez cílové ceny).
+            // Výpadek stahování a stav účtu se ztlumit nedají.
+            if (in_array($rule->key(), (array) $muted, true) && ! in_array($rule->key(), self::ALWAYS_ON, true)) {
+                continue;
+            }
+
             foreach ($rule->evaluate($context) as $finding) {
+                $finding = $this->withUrgency($finding, $context->overrides()['urgency'] ?? 'normal', $rule->key());
                 $fingerprint = implode(':', [$rule->key(), $client->getKey(), $finding->account?->getKey() ?? 0]);
                 $seen[] = $fingerprint;
 

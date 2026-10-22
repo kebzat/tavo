@@ -18,6 +18,7 @@ use App\Models\Ads\AdDailyStat;
 use App\Models\Ads\AdReport;
 use App\Models\Client;
 use App\Models\TimeEntry;
+use App\Settings\AdsSettings;
 use App\Support\Ads\AccountSync;
 use App\Support\Ads\Ai\AdsAdvisor;
 use App\Support\Ads\Billing;
@@ -344,7 +345,7 @@ class AdsClient extends Page
                 $goal = $this->client->adGoal();
                 $data = $settings?->only([
                     'primary_goal', 'monthly_budget', 'target_cpa', 'target_roas', 'fee_czk',
-                    'included_hours', 'hourly_rate', 'report_recipients', 'weekly_report', 'monthly_report',
+                    'included_hours', 'hourly_rate', 'report_recipients', 'weekly_report', 'monthly_report', 'alert_overrides',
                 ]) ?? ['primary_goal' => PrimaryGoal::Purchases->value, 'weekly_report' => true, 'monthly_report' => true];
 
                 // Bez uloženého výběru výchozí dlaždice podle cíle a všechny sekce.
@@ -386,6 +387,33 @@ class AdsClient extends Page
                             ->options(PerformanceView::SECTIONS)
                             ->columns(3),
                     ]),
+                Section::make('Upozornění pro tohoto klienta')
+                    ->description('Prázdné = platí Nastavení reklam. Výpadek stahování a stav účtu se ztlumit nedají.')
+                    ->collapsed()
+                    ->schema([
+                        Select::make('alert_overrides.urgency')
+                            ->label('Naléhavost')
+                            ->options([
+                                'high' => 'Vysoká: Pozor se hlásí jako Hoří (velký rozpočet, akce s termínem)',
+                                'normal' => 'Běžná',
+                                'low' => 'Nízká: Pozor se hlásí jako Tip (malý účet, awareness)',
+                            ])
+                            ->placeholder('Běžná'),
+                        CheckboxList::make('alert_overrides.muted')
+                            ->label('Ztlumená pravidla')
+                            ->options(fn (): array => self::mutableRules())
+                            ->columns(2),
+                        Grid::make(4)->schema([
+                            TextInput::make('alert_overrides.budget_under_pct')->label('Čerpání pod (%)')->numeric()->minValue(1)->maxValue(100)->placeholder((string) $this->settings()->budget_under_pct),
+                            TextInput::make('alert_overrides.budget_over_pct')->label('Čerpání nad (%)')->numeric()->minValue(100)->maxValue(300)->placeholder((string) $this->settings()->budget_over_pct),
+                            TextInput::make('alert_overrides.cpa_over_pct')->label('Cena za konverzi nad cíl o (%)')->numeric()->minValue(1)->placeholder((string) $this->settings()->cpa_over_pct),
+                            TextInput::make('alert_overrides.roas_under_pct')->label('ROAS pod cíl o (%)')->numeric()->minValue(1)->maxValue(100)->placeholder((string) $this->settings()->roas_under_pct),
+                            TextInput::make('alert_overrides.min_conversions')->label('Hodnotit od konverzí za týden')->numeric()->minValue(1)->placeholder((string) $this->settings()->min_conversions),
+                            TextInput::make('alert_overrides.no_conversion_days')->label('Dní útraty bez konverze')->numeric()->minValue(1)->maxValue(14)->placeholder((string) $this->settings()->no_conversion_days),
+                            TextInput::make('alert_overrides.spend_spike_pct')->label('Skok útraty o (%)')->numeric()->minValue(10)->placeholder((string) $this->settings()->spend_spike_pct),
+                            TextInput::make('alert_overrides.frequency_max')->label('Frekvence nad')->numeric()->minValue(1)->step(0.1)->placeholder((string) $this->settings()->frequency_max),
+                        ]),
+                    ]),
                 Section::make('Reporty')->schema([
                     TagsInput::make('report_recipients')
                         ->label('Komu posílat')
@@ -409,10 +437,47 @@ class AdsClient extends Page
                     'sections' => $allSections ? null : array_values($data['dashboard']['sections'] ?? []),
                 ];
 
+                // Prázdné prahy se neukládají, ať platí globální nastavení i po jeho změně.
+                $overrides = collect($data['alert_overrides'] ?? [])
+                    ->reject(fn ($value, string $key): bool => blank($value) || ($key === 'urgency' && $value === 'normal'))
+                    ->map(fn ($value, string $key) => is_numeric($value) ? $value + 0 : $value)
+                    ->all();
+                $data['alert_overrides'] = $overrides ?: null;
+
                 $this->client->adSettings()->updateOrCreate(['client_id' => $this->client->getKey()], $data);
 
                 Notification::make()->success()->title('Uloženo')->send();
             });
+    }
+
+    /**
+     * Pravidla, která jde u klienta ztlumit, s lidským popisem.
+     *
+     * @return array<string, string>
+     */
+    private static function mutableRules(): array
+    {
+        return [
+            'no_conversions' => 'Útrata bez konverzí',
+            'no_spend' => 'Včera nulová útrata',
+            'budget_pacing' => 'Čerpání rozpočtu',
+            'cost_above_target' => 'Cena za konverzi nad cílem',
+            'roas_below_target' => 'ROAS pod cílem',
+            'creative_fatigue' => 'Únava kreativ',
+            'spend_spike' => 'Skok útraty',
+            'measurement_value' => 'Měření: nákupy bez hodnoty',
+            'measurement_duplicates' => 'Měření: víc nákupů než pokladen',
+            'analytics_mismatch' => 'Měření: reklamy vs. web (GA4)',
+            'ad_issues' => 'Zamítnuté reklamy',
+            'landing_page' => 'Cílová stránka nefunguje',
+            'landing_pixel' => 'Na cílové stránce chybí pixel',
+            'lead_feedback' => 'Chybí zpětná vazba k leadům',
+        ];
+    }
+
+    private function settings(): AdsSettings
+    {
+        return app(AdsSettings::class);
     }
 
     /** Pauza mezi ručními načteními u jednoho klienta, v minutách. */
@@ -436,7 +501,7 @@ class AdsClient extends Page
             ->requiresConfirmation()
             ->modalHeading('Načíst čísla znovu?')
             ->modalDescription('Čísla se stahují samy každé ráno v 6:00. Ručně je načtěte, jen když potřebujete aktuální stav hned. '
-                .'Stáhne se posledních '.config('ads.sync_days').' dní a dosah za přednastavená období, nejvýš tři dotazy na účet. Další ruční načtení půjde za '.self::MANUAL_SYNC_COOLDOWN.' minut.')
+                .'Stáhne se posledních '.config('ads.sync_days').' dní a dosah za přednastavená období a zamítnuté reklamy, nejvýš čtyři dotazy na účet. Další ruční načtení půjde za '.self::MANUAL_SYNC_COOLDOWN.' minut.')
             ->modalSubmitActionLabel('Načíst')
             ->action(function (AccountSync $sync): void {
                 // Cache::add projde jen jednou za pauzu, i při dvojkliku nebo ve dvou oknech.

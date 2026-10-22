@@ -3,7 +3,6 @@
 namespace App\Support\Ads\Rules;
 
 use App\Enums\Ads\AlertSeverity;
-use App\Enums\Ads\PrimaryGoal;
 use App\Support\Ads\Format;
 
 /**
@@ -23,7 +22,7 @@ class CostAboveTarget implements Rule
         $goal = $context->goal();
         $target = $context->clientSettings()?->target_cpa;
 
-        if ($goal === PrimaryGoal::Traffic || ! $target) {
+        if (! $goal->isPerformance() || ! $target) {
             return [];
         }
 
@@ -31,11 +30,11 @@ class CostAboveTarget implements Rule
         $conversions = $week->conversions($goal);
         $cost = $week->costPerConversion($goal);
 
-        if ($conversions < $context->settings->min_conversions || $cost === null) {
+        if ($conversions < $context->threshold('min_conversions') || $cost === null) {
             return [];
         }
 
-        $limit = $target * (1 + $context->settings->cpa_over_pct / 100);
+        $limit = $target * (1 + $context->threshold('cpa_over_pct') / 100);
 
         if ($cost <= $limit) {
             return [];

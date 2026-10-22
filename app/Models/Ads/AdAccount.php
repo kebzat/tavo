@@ -104,6 +104,8 @@ class AdAccount extends Model
             'platform' => AdPlatform::class,
             'is_active' => 'boolean',
             'last_synced_at' => 'datetime',
+            'issues' => 'array',
+            'issues_checked_at' => 'datetime',
         ];
     }
 }

@@ -112,6 +112,7 @@ class LogTimeAction
 
         return ClientTask::query()
             ->where('client_id', $clientId)
+            ->where('is_proposal', false)
             ->where(fn ($query) => $query->open()->when(filled($selected), fn ($query) => $query->orWhere('id', $selected)))
             ->orderBy('title')
             ->pluck('title', 'id')

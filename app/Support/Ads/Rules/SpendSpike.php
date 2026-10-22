@@ -28,7 +28,7 @@ class SpendSpike implements Rule
 
         $increase = ($yesterday - $average) / $average * 100;
 
-        if ($increase < $context->settings->spend_spike_pct) {
+        if ($increase < $context->threshold('spend_spike_pct')) {
             return [];
         }
 

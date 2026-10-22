@@ -93,6 +93,7 @@ final class Metrics
             PrimaryGoal::Purchases => $this->sums['purchases'],
             PrimaryGoal::Leads => $this->sums['leads'],
             PrimaryGoal::Traffic => $this->sums['link_clicks'],
+            PrimaryGoal::Awareness => $this->sums['engagements'],
         };
     }
 
@@ -186,13 +187,13 @@ final class Metrics
     /** Konverze (nákupy, poptávky) na zobrazení cílové stránky, v procentech. */
     public function landingPageConversionRate(PrimaryGoal $goal): ?float
     {
-        return $goal === PrimaryGoal::Traffic ? null : self::percent($this->conversions($goal), $this->sums['landing_page_views']);
+        return ! $goal->isPerformance() ? null : self::percent($this->conversions($goal), $this->sums['landing_page_views']);
     }
 
     /** Podíl prokliků, které skončily konverzí, v procentech. */
     public function conversionRate(PrimaryGoal $goal): ?float
     {
-        if ($goal === PrimaryGoal::Traffic) {
+        if (! $goal->isPerformance()) {
             return null;
         }
 

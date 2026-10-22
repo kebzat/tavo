@@ -236,7 +236,9 @@ class AdsMetricsTest extends TestCase
         $this->artisan('ads:sync')->assertSuccessful();
 
         $ranges = PeriodReach::ranges();
-        Http::assertSentCount(3);
+        // Stav účtu, čísla, dosah a zamítnuté reklamy: čtyři dotazy na účet a den, ne víc.
+        Http::assertSentCount(4);
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/ads?') && str_contains(urldecode($request->url()), 'DISAPPROVED'));
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'level=account')
             && str_contains(urldecode($request->url()), '"since":"2026-09-23","until":"2026-09-29"')
             && str_contains($request->url(), 'unique_inline_link_clicks'));

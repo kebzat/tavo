@@ -86,6 +86,23 @@ class TasksRelationManager extends RelationManager
                     ->label('Kdo vede')
                     ->options(fn (): array => User::query()->orderBy('name')->pluck('name', 'id')->all())
                     ->default(auth()->id()),
+                Select::make('priority')
+                    ->label('Priorita')
+                    ->options(['high' => 'Vysoká', 'normal' => 'Běžná', 'low' => 'Nízká'])
+                    ->placeholder('Běžná'),
+                DatePicker::make('due_on')
+                    ->label('Termín')
+                    ->native(false)
+                    ->displayFormat('j. n. Y')
+                    ->helperText('Konkrétní den, kdy to musí být hotové. Ranní přehled na něj upozorní.'),
+                TextInput::make('waiting_for')
+                    ->label('Čeká se na')
+                    ->placeholder('podklady od klienta, schválení textů…')
+                    ->maxLength(255),
+                TextInput::make('source')
+                    ->label('Odkud úkol je')
+                    ->placeholder('schůzka 22. 10., e-mail, WhatsApp')
+                    ->maxLength(255),
             ]),
             Textarea::make('internal_note')
                 ->label('Interní poznámka')
@@ -113,6 +130,9 @@ class TasksRelationManager extends RelationManager
                 TextColumn::make('area')->label('Oblast')->badge(),
                 TextColumn::make('status')->label('Stav')->badge(),
                 TextColumn::make('planned_for')->label('Měsíc')->date('F Y')->placeholder('–')->sortable(),
+                TextColumn::make('due_on')->label('Termín')->date('j. n. Y')->placeholder('–')->sortable()
+                    ->color(fn (ClientTask $record): ?string => $record->due_on?->isPast() && $record->status->isOpen() ? 'danger' : null),
+                TextColumn::make('waiting_for')->label('Čeká se na')->placeholder('–')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('time_entries_sum_minutes')
                     ->label('Čas')
                     ->formatStateUsing(fn ($state): string => Billing::formatMinutes((int) $state))

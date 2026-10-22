@@ -45,6 +45,23 @@ final class AlertContext
         return $this->client->adSettings;
     }
 
+    /**
+     * Práh pravidla: vlastní hodnota klienta (Cíle a paušál → Upozornění),
+     * jinak globální z Nastavení reklam. Klíče jsou názvy vlastností AdsSettings.
+     */
+    public function threshold(string $key): int|float
+    {
+        $own = $this->overrides()[$key] ?? null;
+
+        return is_numeric($own) ? $own + 0 : $this->settings->{$key};
+    }
+
+    /** @return array<string, mixed> */
+    public function overrides(): array
+    {
+        return $this->clientSettings()?->alert_overrides ?? [];
+    }
+
     public function goal(): PrimaryGoal
     {
         return $this->client->adGoal();

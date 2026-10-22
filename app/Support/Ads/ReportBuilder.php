@@ -21,6 +21,7 @@ class ReportBuilder
             'period_end' => $period->to,
             'title' => $type->title().' '.$period->label(),
             'snapshot' => ClientPerformance::build($client, $period),
+            'sources' => self::sources($client),
             'status' => ReportStatus::Draft,
         ]);
     }
@@ -30,9 +31,26 @@ class ReportBuilder
     {
         $report->update([
             'snapshot' => ClientPerformance::build($report->client, Period::between($report->period_start, $report->period_end)),
+            'sources' => self::sources($report->client),
         ]);
 
         return $report;
+    }
+
+    /**
+     * Odkud čísla jsou a jak čerstvá: platforma, účet a kdy se naposledy
+     * stáhl. Klient i Pavel vidí, že chybějící data nejsou nula.
+     *
+     * @return list<array{platform: string, account: string, synced_at: ?string, error: ?string}>
+     */
+    public static function sources(Client $client): array
+    {
+        return $client->adAccounts()->where('is_active', true)->get()->map(fn ($account): array => [
+            'platform' => $account->platform->getLabel(),
+            'account' => $account->name,
+            'synced_at' => $account->last_synced_at?->toIso8601String(),
+            'error' => $account->last_sync_error,
+        ])->values()->all();
     }
 
     /** Existuje už report téhož typu za stejné období? Pondělní běh ho pak nezakládá znovu. */

@@ -65,6 +65,8 @@ class ClientTask extends Model
             'status' => TaskStatus::class,
             'planned_for' => 'date',
             'done_on' => 'date',
+            'due_on' => 'date',
+            'is_proposal' => 'boolean',
         ];
     }
 

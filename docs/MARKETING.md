@@ -1,0 +1,81 @@
+# Automatizace marketingu
+
+Postavené podle dotazníku Pavla (22. 10. 2026, nástroje → Dotazníky). Princip:
+**čísla počítá systém, agent je jen vykládá.** Kampaně spouští a rozpočty mění
+Pavel ručně, nic neodchází klientovi bez člověka.
+
+## Co kde je
+
+| Co | Kde | K čemu |
+|---|---|---|
+| Karta klienta („mozek“) | Klienti → klient → Karta klienta | cíle, KPI, rozsah, rozpočet, zdroj pravdy, omezení, schvalování, tón, sezona, kontakty, rozhodnutí se zdrojem a platností, cílové stránky, vyúčtování hodin |
+| Ranní přehled | Nástroje → Ranní přehled | co agent ráno zjistil u klientů + moje priority (termíny, vysoká priorita) + návrhy úkolů ke schválení |
+| Návrhy úkolů | Klient → Návrhy úkolů | agent je připraví ze schůzek a zpráv, klient je nevidí, dokud je někdo neschválí |
+| Kvalita leadů | Klient → Kvalita leadů | zpětná vazba od klienta (ozvali se, relevantní, obchody, hodnota) |
+| Kreativní testy | Klient → Kreativní testy | co jsme testovali, proč, výsledek, „málo dat“ ≠ neúspěch |
+| Upozornění pro klienta | Reklamy → klient → Cíle a paušál → Upozornění | vlastní prahy, ztlumená pravidla, naléhavost |
+| Podklad k vyúčtování | Fakturace → klient → Podklad k vyúčtování | text podle přání klienta, zkopírovat nebo odeslat tlačítkem |
+| Checklisty | Checklisty → šablony | Onboarding marketingového klienta, Kontrola před spuštěním kampaně |
+| Fakta / příčiny / doporučení | Reporty → koncept | agent předvyplní, Pavel upraví, klient je vidí pod komentářem |
+| Boosting / awareness | Cíl klienta „Dosah a interakce“ | dosah, frekvence, CPM, interakce; bez pravidel ceny za konverzi |
+
+## Ráno, krok za krokem (Europe/Prague)
+
+| Čas | Co | Kde běží |
+|---|---|---|
+| 6:00 | `ads:sync` stáhne čísla | Laravel (cron uživatele `taveo1015`) |
+| 6:20 | `marketing:landing-check` zkontroluje cílové stránky | Laravel |
+| 6:40 | `ads:alerts` vyhodnotí pravidla | Laravel |
+| 6:45 | koncepty reportů (pondělí, 1. v měsíci) | Laravel |
+| 6:50 | **ranní přehled od agenta** (všední dny) | kontejner `taveo-agent`, `claude -p` |
+| 7:15 | ranní e-mail: nová vs. trvající upozornění + odkaz na ranní přehled | Laravel |
+
+## Limity a ban: rozpočet všech automatických dotazů
+
+Nesmíme dostat ban od Mety, Googlu ani Anthropicu. Proto má každý automat
+pevný rozpočet a pojistku, která ho zastaví dřív, než by se k limitu přiblížil.
+
+| Kam | Běžně za den | Pojistka |
+|---|---|---|
+| **Meta** (jen čtení, `ads_read`) | 4 dotazy na účet: stav, čísla, dosah, zamítnuté reklamy. 13 klientů ≈ 52 | `ApiGuard`: strop 200/den, při vytížení nad 75 % nebo „moc dotazů“ pauza do rána, žádné opakování. Ruční načtení u klienta jednou za 30 min. Nikdy nezapisujeme do reklamních účtů. |
+| **Google Ads** | 2 na účet | stejná pojistka, strop 200/den |
+| **GA4** | 2 na property | stejná pojistka, strop 200/den |
+| **Weby klientů** (kontrola stránek) | 1 dotaz na adresu, nejvýš 5 adres na klienta, pauza 0,5 s | timeout 20 s, žádné opakování, vlastní User-Agent |
+| **Claude (předplatné)** | 1 automatický běh ve všední dny (ranní přehled), postupně klient po klientu | značka „hotovo“ na den hned na startu (ani pád nespustí druhý běh), strop 150 kroků, limit 40 min, jen `taveo` a čtení souborů (`--permission-mode dontAsk`). Narazí-li na limit předplatného, zaloguje to a nic neopakuje. |
+| **Rozhraní agenta** `/nastroje/api/agent` | desítky dotazů ráno | vlastní token `AGENT_API_TOKEN`, 120 dotazů/min |
+
+Co ban riskuje i tak, a není to technika:
+
+- **Sdílený účet Claude.** Pavel pracuje pod předplatným Toma. Podmínky
+  Anthropicu sdílení účtu nepovolují, je to největší riziko banu. Řešení:
+  Team plán s místem pro každého (viz konverzace 22. 10.).
+- **Osobní údaje zákazníků v AI.** Pavel podle dotazníku nemá s klienty
+  zpracovatelské smlouvy. Agent pracuje s agregovanými čísly a pravidla
+  mu osobní údaje zakazují, ale exporty zákazníků do AI nepatří vůbec.
+
+## Agent
+
+- Projekt `marketing` (prázdný, bez kódu): paměť `infra/agent/marketing/CLAUDE.md`
+  (Pavlova pravidla: fakta vs. hypotézy, zdroj a období u každého závěru,
+  měření ≠ výkon, nic nedomýšlet, nic neposílat). Poznámky ze schůzek ukládá
+  do `kod/klienti/<slug>/`.
+- Příkaz `taveo` v kontejneru (`infra/agent/taveo.sh`) volá rozhraní
+  `App\Http\Controllers\Agent\AgentApiController`. Data pro agenta skládá
+  `App\Support\Marketing\ClientContext` se zdrojem a čerstvostí u každého bloku.
+- Ranní běh: `infra/agent/terminal/server.js` (`ranniPrehled`), zadání
+  `infra/agent/terminal/ranni-prehled.md`. Log v kontejneru `~/.taveo-ranni/<den>.log`.
+  Ručně (ověření): `curl -X POST -H "Authorization: Bearer <AGENT_SECRET>" http://127.0.0.1:7681/api/ranni-prehled`
+  na serveru. Běží nejvýš jednou denně.
+- Pavel v nástrojích → Agent → `marketing`: „tady je zápis ze schůzky
+  s MIRNIX…“ a agent uloží poznámku, dohody do karty a návrhy úkolů.
+
+## Co zatím chybí a proč
+
+- **Sklik**: potřebuje API token a společné vyzkoušení, odhad bez přístupu
+  by byl kód naslepo.
+- **Objednávky z e-shopů (Shoptet, Upgates)** jako zdroj pravdy: každý e-shop
+  potřebuje vlastní přístup k API, domluvit u konkrétních klientů.
+- **Fronta příspěvků k boostnutí** a čísla po jednotlivých reklamách: Meta
+  k tomu chce další oprávnění (stránky, App Review) a víc dotazů. Než do toho
+  půjdeme, vyhodnotit dopad na limity.
+- **Vyprodané produkty a končící akce** v upozorněních: potřebují data z e-shopu.

@@ -23,6 +23,7 @@ final class DailyStat
         public readonly float $checkouts = 0,
         public readonly float $landingPageViews = 0,
         public readonly array $raw = [],
+        public readonly float $engagements = 0,
     ) {}
 
     /** @return array<string, mixed> Sloupce tabulky ad_daily_stats. */
@@ -41,6 +42,7 @@ final class DailyStat
             'add_to_cart' => $this->addToCart,
             'checkouts' => $this->checkouts,
             'landing_page_views' => $this->landingPageViews,
+            'engagements' => $this->engagements,
         ];
     }
 }

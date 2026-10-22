@@ -39,6 +39,8 @@ class MetaAds implements AdsPlatform
         'add_to_cart' => ['omni_add_to_cart', 'add_to_cart', 'offsite_conversion.fb_pixel_add_to_cart'],
         'checkouts' => ['omni_initiated_checkout', 'initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout'],
         'landing_page_views' => ['landing_page_view', 'omni_landing_page_view'],
+        // Interakce s příspěvkem (boosting): reakce, komentáře, sdílení, kliknutí.
+        'engagements' => ['post_engagement', 'page_engagement'],
     ];
 
     /**
@@ -144,6 +146,7 @@ class MetaAds implements AdsPlatform
             checkouts: $this->pick($actions, self::ACTIONS['checkouts']),
             landingPageViews: $this->pick($actions, self::ACTIONS['landing_page_views']),
             raw: ['actions' => $actions, 'action_values' => $values],
+            engagements: $this->pick($actions, self::ACTIONS['engagements']),
         );
     }
 
@@ -161,6 +164,30 @@ class MetaAds implements AdsPlatform
             'fields' => self::REACH_FIELDS,
             'limit' => 50,
         ])->map(fn (array $row): ReachStat => $this->reachStat($row))->values();
+    }
+
+    /**
+     * Zamítnuté a problémové reklamy účtu. Jeden dotaz, jedna stránka
+     * (nejvýš 50 reklam): na upozornění stačí, víc stránek by jen přidalo dotazy.
+     *
+     * @return list<array{name: string, status: string, feedback: ?string}>
+     */
+    public function adIssues(AdAccount $account): array
+    {
+        $body = $this->request('act_'.$account->external_id.'/ads', [
+            'fields' => 'name,effective_status,ad_review_feedback',
+            'effective_status' => json_encode(['DISAPPROVED', 'WITH_ISSUES']),
+            'limit' => 50,
+        ]);
+
+        return collect($body['data'] ?? [])
+            ->map(fn (array $ad): array => [
+                'name' => (string) ($ad['name'] ?? 'Reklama '.($ad['id'] ?? '')),
+                'status' => (string) ($ad['effective_status'] ?? ''),
+                'feedback' => collect($ad['ad_review_feedback'] ?? [])->flatten()->filter(fn ($value): bool => is_string($value))->first(),
+            ])
+            ->values()
+            ->all();
     }
 
     /** @param  array<string, mixed>  $row */

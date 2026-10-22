@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdReportController;
+use App\Http\Controllers\Agent\AgentApiController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\VerifyAgentToken;
 use App\Http\Middleware\VerifyCrmToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -41,6 +43,26 @@ Route::withoutMiddleware([
     Route::get('/install', [InstallController::class, 'show'])->name('install.show');
     Route::post('/install', [InstallController::class, 'run'])->name('install.run');
 });
+
+// Rozhraní pro agenta v kontejneru taveo-agent (docs/MARKETING.md). Čte data
+// klientů a zapisuje jen koncepty. Vlastní token, bez session a CSRF.
+Route::prefix('nastroje/api/agent')
+    ->middleware([VerifyAgentToken::class, 'throttle:120,1'])
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->group(function () {
+        Route::get('/klienti', [AgentApiController::class, 'clients'])->name('agent.api.clients');
+        Route::get('/klienti/{slug}', [AgentApiController::class, 'client'])->name('agent.api.client');
+        Route::post('/klienti/{slug}/prehled', [AgentApiController::class, 'briefing'])->name('agent.api.briefing');
+        Route::post('/klienti/{slug}/ukoly', [AgentApiController::class, 'tasks'])->name('agent.api.tasks');
+        Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
+        Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
+    });
 
 // Strojové rozhraní interního CRM. Bez session a CSRF — volá ho automatizace,
 // ne prohlížeč — a ověřené sdíleným tokenem z .env. Musí být nad catch-all

@@ -38,6 +38,7 @@ final class MetricCatalog
         'purchases' => ['spend', 'conversions', 'cost_per_conversion', 'roas', 'purchase_value', 'link_clicks', 'ctr', 'cpm'],
         'leads' => ['spend', 'conversions', 'cost_per_conversion', 'conversion_rate', 'link_clicks', 'cpc', 'ctr', 'cpm'],
         'traffic' => ['spend', 'conversions', 'cost_per_conversion', 'impressions', 'ctr', 'cpm'],
+        'awareness' => ['spend', 'reach', 'frequency', 'cpm', 'conversions', 'cost_per_conversion', 'impressions', 'ctr_all'],
     ];
 
     private const SHOP = ['purchases'];

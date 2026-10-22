@@ -11,6 +11,7 @@ use App\Support\Ads\Platforms\AdsApiException;
 use App\Support\Ads\Platforms\AdsPlatform;
 use App\Support\Ads\Platforms\AnalyticsPlatform;
 use App\Support\Ads\Platforms\DailyStat;
+use App\Support\Ads\Platforms\MetaAds;
 use App\Support\Ads\Platforms\Platforms;
 use App\Support\Ads\Platforms\TrafficStat;
 use Illuminate\Support\Collection;
@@ -92,6 +93,10 @@ class AccountSync
             if ($withReach && $platform instanceof AdsPlatform && $account->platform->hasPeriodReach()) {
                 $this->syncReach($account, $platform);
             }
+
+            if ($withReach && $platform instanceof MetaAds) {
+                $this->syncIssues($account, $platform);
+            }
         } catch (AdsApiException $e) {
             $account->forceFill(['last_sync_error' => $e->getMessage()])->save();
             $run->update(['status' => 'failed', 'error' => $e->getMessage(), 'finished_at' => now()]);
@@ -126,6 +131,22 @@ class AccountSync
         }
 
         DB::transaction(fn () => PeriodReach::store($account, $periods, $stats));
+    }
+
+    /**
+     * Zamítnuté reklamy pro upozornění, jeden dotaz na účet Mety a den.
+     * Když se nepovede, čísla platí dál a upozornění vychází ze včerejška.
+     */
+    private function syncIssues(AdAccount $account, MetaAds $platform): void
+    {
+        try {
+            $account->forceFill(['issues' => $platform->adIssues($account), 'issues_checked_at' => now()])->save();
+        } catch (AdsApiException $e) {
+            Log::warning('Reklamy: zamítnuté reklamy se nestáhly.', [
+                'account' => $account->external_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** @param  Collection<int, DailyStat>  $stats */

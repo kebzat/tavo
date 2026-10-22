@@ -8,6 +8,10 @@ use App\Models\Ads\AdAlert;
 use App\Models\Ads\AdClientSettings;
 use App\Models\Ads\AdReport;
 use App\Models\Crm\Company;
+use App\Models\Marketing\ClientBriefing;
+use App\Models\Marketing\CreativeTest;
+use App\Models\Marketing\LandingCheck;
+use App\Models\Marketing\LeadFeedback;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +22,27 @@ use Illuminate\Support\Str;
 
 class Client extends Model
 {
+    /**
+     * Karta klienta („mozek“). Klíč v JSON sloupci `profile` => popisek.
+     * Čte ji agent i správce v nástrojích, viz docs/MARKETING.md.
+     */
+    public const PROFILE_FIELDS = [
+        'cooperation' => 'Typ spolupráce',
+        'goals' => 'Cíle',
+        'kpis' => 'KPI a jak je měříme',
+        'scope' => 'Rozsah spolupráce',
+        'budget' => 'Rozpočet',
+        'source_of_truth' => 'Zdroj pravdy pro čísla',
+        'constraints' => 'Omezení a co nesmíme',
+        'approvals' => 'Schvalování',
+        'brand_voice' => 'Tón komunikace a zakázaná slova',
+        'season' => 'Sezona, marže a priority',
+        'notes' => 'Další poznámky',
+    ];
+
+    /** Víc cílových stránek denně nekontrolujeme, ať weby klientů zbytečně nezatěžujeme. */
+    public const MAX_LANDING_PAGES = 5;
+
     protected $guarded = [];
 
     /** Firma v CRM, pro kterou jsme klienta založili kvůli auditu. */
@@ -73,9 +98,19 @@ class Client extends Model
         return $this->hasMany(ClientRetainer::class)->orderBy('order_column')->orderBy('id');
     }
 
+    /**
+     * Schválené úkoly. Návrhy od agenta sem nepatří, dokud je člověk
+     * neschválí: jinak by se ukázaly klientovi na přehledu spolupráce.
+     */
     public function tasks(): HasMany
     {
-        return $this->hasMany(ClientTask::class);
+        return $this->hasMany(ClientTask::class)->where('is_proposal', false);
+    }
+
+    /** Návrhy úkolů od agenta (ze schůzek, e-mailů), čekají na schválení. */
+    public function taskProposals(): HasMany
+    {
+        return $this->hasMany(ClientTask::class)->where('is_proposal', true);
     }
 
     public function months(): HasMany
@@ -87,6 +122,58 @@ class Client extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(ClientInvoice::class);
+    }
+
+    /** Ranní přehledy od agenta, nejnovější první. */
+    public function briefings(): HasMany
+    {
+        return $this->hasMany(ClientBriefing::class)->orderByDesc('date');
+    }
+
+    /** Zpětná vazba ke kvalitě leadů od klienta. */
+    public function leadFeedback(): HasMany
+    {
+        return $this->hasMany(LeadFeedback::class)->orderByDesc('period_to');
+    }
+
+    public function creativeTests(): HasMany
+    {
+        return $this->hasMany(CreativeTest::class)->orderByDesc('started_on');
+    }
+
+    public function landingChecks(): HasMany
+    {
+        return $this->hasMany(LandingCheck::class);
+    }
+
+    /**
+     * Pole karty klienta (cíle, KPI, rozsah…), prázdná vynechaná.
+     *
+     * @return array<string, string>
+     */
+    public function profileFields(): array
+    {
+        return collect(self::PROFILE_FIELDS)
+            ->mapWithKeys(fn (string $label, string $key): array => [$label => trim((string) ($this->profile[$key] ?? ''))])
+            ->filter()
+            ->all();
+    }
+
+    /** Cílové stránky ke kontrole: vyplněné v kartě, jinak web klienta. */
+    public function landingUrls(): array
+    {
+        $urls = collect($this->landing_pages ?? [])->pluck('url')->filter();
+
+        if ($urls->isEmpty() && filled($this->website_url)) {
+            $urls = collect([$this->website_url]);
+        }
+
+        return $urls->map(fn ($url): string => trim((string) $url))
+            ->filter(fn (string $url): bool => (bool) preg_match('~^https?://~i', $url))
+            ->unique()
+            ->take(self::MAX_LANDING_PAGES)
+            ->values()
+            ->all();
     }
 
     /** Odkaz na přehled spolupráce. Null, dokud ho nezapneme. */
@@ -192,6 +279,11 @@ class Client extends Model
             'dashboard_enabled' => 'boolean',
             'dashboard_shows_pricing' => 'boolean',
             'started_on' => 'date',
+            'profile' => 'array',
+            'contacts' => 'array',
+            'decisions' => 'array',
+            'landing_pages' => 'array',
+            'billing_statement' => 'array',
         ];
     }
 }

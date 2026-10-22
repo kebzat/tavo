@@ -74,6 +74,9 @@ return [
         'secret' => env('AGENT_SECRET'),
         // Prázdné = wss:// na adrese webu. Lokálně přes SSH tunel ws://127.0.0.1:7681/.
         'ws_url' => env('AGENT_WS_URL'),
+        // Token, kterým agent v kontejneru volá /nastroje/api/agent (čtení dat
+        // klientů, zápis konceptů). Jiný než AGENT_SECRET i CRM_IMPORT_TOKEN.
+        'api_token' => env('AGENT_API_TOKEN'),
     ],
 
 ];

@@ -7,19 +7,25 @@ use App\Filament\Tools\Pages\Ads\AdsClient;
 use App\Filament\Tools\Resources\Clients\ClientResource;
 use App\Filament\Tools\Resources\Deals\DealResource;
 use App\Filament\Tools\Resources\TimeEntries\TimeEntryResource;
+use App\Mail\BillingStatementMail;
 use App\Models\Client;
 use App\Models\Crm\Deal;
 use App\Models\TimeEntry;
 use App\Models\User;
 use App\Support\Ads\Billing;
 use App\Support\Ads\Format;
+use App\Support\Marketing\BillingStatement;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Url;
 
 /**
@@ -291,6 +297,52 @@ class Invoicing extends Page
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Podklad k vyúčtování hodin podle toho, jak ho klient chce (karta klienta).
+     * Text jde upravit a zkopírovat do faktury, e-mailem odejde jen tlačítkem.
+     */
+    public function statementAction(): Action
+    {
+        $statement = fn (array $arguments): BillingStatement => BillingStatement::for(
+            Billing::for(Client::findOrFail($arguments['client']), $this->monthDate(), WorkArea::from($arguments['area'])),
+        );
+
+        return Action::make('statement')
+            ->label('Vyúčtování')
+            ->modalHeading(fn (array $arguments): string => $statement($arguments)->subject())
+            ->modalDescription(fn (array $arguments): string => 'Klient ho chce '.$statement($arguments)->modeLabel()
+                .(filled($note = $statement($arguments)->note()) ? '. '.$note : '.')
+                .' Popisy zápisů času jsou interní, v textu jsou jen úkoly.')
+            ->fillForm(fn (array $arguments): array => [
+                'recipients' => implode(', ', $statement($arguments)->recipients()),
+                'body' => $statement($arguments)->text(),
+            ])
+            ->schema([
+                TextInput::make('recipients')->label('Komu')->helperText('E-maily oddělené čárkou. Bez nich jde text jen zkopírovat.'),
+                Textarea::make('body')->label('Text')->rows(16)->required(),
+            ])
+            ->modalSubmitActionLabel('Odeslat e-mailem')
+            ->action(function (array $data, array $arguments) use ($statement): void {
+                $recipients = collect(explode(',', (string) $data['recipients']))->map(fn (string $email): string => trim($email))
+                    ->filter(fn (string $email): bool => (bool) filter_var($email, FILTER_VALIDATE_EMAIL))->values();
+
+                if ($recipients->isEmpty()) {
+                    Notification::make()->warning()->title('Chybí adresa, nic se neodeslalo')->body('Text zkopírujte, nebo doplňte e-mail.')->send();
+
+                    return;
+                }
+
+                Mail::to($recipients->all())->send(new BillingStatementMail(
+                    $statement($arguments)->subject(),
+                    $data['body'],
+                    Auth::user()?->email,
+                    Auth::user()?->name,
+                ));
+
+                Notification::make()->success()->title('Vyúčtování odesláno')->body($recipients->implode(', '))->send();
+            });
     }
 
     public function markInvoiced(int $clientId, string $area): void

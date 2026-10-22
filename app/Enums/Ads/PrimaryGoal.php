@@ -14,12 +14,16 @@ enum PrimaryGoal: string implements HasLabel
     case Leads = 'leads';
     case Traffic = 'traffic';
 
+    /** Boosting obsahu a awareness: dosah, frekvence, CPM a interakce. */
+    case Awareness = 'awareness';
+
     public function getLabel(): string
     {
         return match ($this) {
             self::Purchases => 'Nákupy (e-shop)',
             self::Leads => 'Poptávky a kontakty',
             self::Traffic => 'Návštěvnost webu',
+            self::Awareness => 'Dosah a interakce (boosting, awareness)',
         };
     }
 
@@ -30,6 +34,7 @@ enum PrimaryGoal: string implements HasLabel
             self::Purchases => 'Nákupy',
             self::Leads => 'Poptávky',
             self::Traffic => 'Prokliky na web',
+            self::Awareness => 'Interakce',
         };
     }
 
@@ -40,6 +45,7 @@ enum PrimaryGoal: string implements HasLabel
             self::Purchases => 'Cena za nákup',
             self::Leads => 'Cena za poptávku',
             self::Traffic => 'Cena za proklik',
+            self::Awareness => 'Cena za interakci',
         };
     }
 
@@ -47,5 +53,14 @@ enum PrimaryGoal: string implements HasLabel
     public function hasValue(): bool
     {
         return $this === self::Purchases;
+    }
+
+    /**
+     * Jde o výkon (nákupy, poptávky), nebo o dosah a návštěvnost? U dosahu
+     * nedávají smysl pravidla „útrata bez konverzí“ ani cílová cena za konverzi.
+     */
+    public function isPerformance(): bool
+    {
+        return in_array($this, [self::Purchases, self::Leads], true);
     }
 }

@@ -6,7 +6,11 @@ use App\Filament\Tools\Resources\Clients\Pages\CreateClient;
 use App\Filament\Tools\Resources\Clients\Pages\EditClient;
 use App\Filament\Tools\Resources\Clients\Pages\ListClients;
 use App\Filament\Tools\Resources\Clients\RelationManagers\AdAccountsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\BriefingsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\CreativeTestsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\LeadFeedbackRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\MonthsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\TaskProposalsRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\TasksRelationManager;
 use App\Filament\Tools\Resources\Clients\Schemas\ClientForm;
 use App\Filament\Tools\Resources\Clients\Tables\ClientsTable;
@@ -49,8 +53,12 @@ class ClientResource extends Resource
     {
         return [
             TasksRelationManager::class,
+            TaskProposalsRelationManager::class,
+            BriefingsRelationManager::class,
             MonthsRelationManager::class,
             AdAccountsRelationManager::class,
+            LeadFeedbackRelationManager::class,
+            CreativeTestsRelationManager::class,
         ];
     }
 

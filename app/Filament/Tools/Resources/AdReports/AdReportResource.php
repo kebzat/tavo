@@ -116,6 +116,19 @@ class AdReportResource extends Resource
                         ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
                 ]),
 
+            Section::make('Fakta, příčiny, doporučení')
+                ->visibleOn('edit')
+                ->description('Ranní agent je u konceptu předvyplní z čísel. Fakta jen z čísel reportu, příčiny jako hypotézy, doporučení k vaší kontrole. Klient je vidí pod komentářem, prázdné sekce se neukazují.')
+                ->columnSpanFull()
+                ->schema([
+                    MarkdownEditor::make('facts')->label('Co se stalo')
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
+                    MarkdownEditor::make('causes')->label('Možné příčiny')
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
+                    MarkdownEditor::make('recommendations')->label('Co doporučujeme')
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
+                ]),
+
             Section::make('Sdílení')
                 ->visibleOn('edit')
                 ->columns(2)

@@ -25,11 +25,11 @@ class RoasBelowTarget implements Rule
         $week = $context->totals($context->week());
         $roas = $week->roas();
 
-        if ($week->get('purchases') < $context->settings->min_conversions || $roas === null) {
+        if ($week->get('purchases') < $context->threshold('min_conversions') || $roas === null) {
             return [];
         }
 
-        if ($roas >= $target * (1 - $context->settings->roas_under_pct / 100)) {
+        if ($roas >= $target * (1 - $context->threshold('roas_under_pct') / 100)) {
             return [];
         }
 

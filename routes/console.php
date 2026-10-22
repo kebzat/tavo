@@ -38,6 +38,13 @@ Schedule::command('ads:sync')
     ->withoutOverlapping(60)
     ->onOneServer();
 
+// Cílové stránky klientů: odpovídají a mají Meta pixel? Jeden dotaz na adresu za den.
+Schedule::command('marketing:landing-check')
+    ->dailyAt('06:20')
+    ->timezone('Europe/Prague')
+    ->withoutOverlapping(30)
+    ->onOneServer();
+
 Schedule::command('ads:alerts')
     ->dailyAt('06:40')
     ->timezone('Europe/Prague')
@@ -49,14 +56,15 @@ Schedule::command('ads:digest')
     ->timezone('Europe/Prague')
     ->onOneServer();
 
-// Koncepty reportů. Neodesílají se, čekají na komentář Pavla.
+// Koncepty reportů. Neodesílají se, čekají na komentář Pavla. V 6:45, ať je
+// agent v ranním běhu (6:50) najde a připraví k nim fakta, příčiny a doporučení.
 Schedule::command('ads:reports weekly')
-    ->weeklyOn(1, '07:30')
+    ->weeklyOn(1, '06:45')
     ->timezone('Europe/Prague')
     ->onOneServer();
 
 Schedule::command('ads:reports monthly')
-    ->monthlyOn(1, '07:30')
+    ->monthlyOn(1, '06:45')
     ->timezone('Europe/Prague')
     ->onOneServer();
 

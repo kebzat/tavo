@@ -73,7 +73,7 @@ final class PerformanceView
         $targets = $this->snapshot['targets'] ?? [];
 
         return match (true) {
-            $key === 'cost_per_conversion' && filled($targets['target_cpa'] ?? null) && $this->goal !== PrimaryGoal::Traffic => 'cíl '.Format::unitPrice((float) $targets['target_cpa'], $this->currency),
+            $key === 'cost_per_conversion' && filled($targets['target_cpa'] ?? null) && $this->goal->isPerformance() => 'cíl '.Format::unitPrice((float) $targets['target_cpa'], $this->currency),
             $key === 'roas' && filled($targets['target_roas'] ?? null) => 'cíl '.Format::roas((float) $targets['target_roas']),
             MetricCatalog::needsPeriodReach($key) && ! $this->totals->hasPeriodReach() => PeriodReach::UNAVAILABLE_HINT,
             default => null,
@@ -224,6 +224,10 @@ final class PerformanceView
             PrimaryGoal::Traffic => [
                 'Zobrazení' => $m->get('impressions'),
                 'Prokliky na web' => $m->get('link_clicks'),
+            ],
+            PrimaryGoal::Awareness => [
+                'Zobrazení' => $m->get('impressions'),
+                'Interakce' => $m->get('engagements'),
             ],
         };
 

@@ -33,7 +33,7 @@ return [
 
         /*
          * Pojistka: nejvýš tolik dotazů na Metu za den (App\Support\Ads\Platforms\ApiGuard).
-         * Ranní synchronizace dělá dva dotazy na účet, 20 klientů = asi 40 dotazů.
+         * Ranní synchronizace dělá čtyři dotazy na účet, 20 klientů = 80 dotazů.
          * Strop je jen pro případ chyby, běžně se k němu nepřiblížíme.
          */
         'daily_call_limit' => (int) env('META_DAILY_CALL_LIMIT', 200),

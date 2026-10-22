@@ -3,7 +3,6 @@
 namespace App\Support\Ads\Rules;
 
 use App\Enums\Ads\AlertSeverity;
-use App\Enums\Ads\PrimaryGoal;
 use App\Support\Ads\Format;
 use App\Support\Ads\Metrics;
 use App\Support\Ads\Period;
@@ -23,11 +22,11 @@ class SpendWithoutConversions implements Rule
     {
         $goal = $context->goal();
 
-        if ($goal === PrimaryGoal::Traffic) {
+        if (! $goal->isPerformance()) {
             return [];
         }
 
-        $days = max(1, $context->settings->no_conversion_days);
+        $days = max(1, $context->threshold('no_conversion_days'));
         $recent = $context->lastDays($days);
         $daily = $context->daily($recent);
 

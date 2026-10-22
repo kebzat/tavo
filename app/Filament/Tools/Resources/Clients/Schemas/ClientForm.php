@@ -23,6 +23,102 @@ use Illuminate\Support\Str;
 
 class ClientForm
 {
+    /** Pole karty, která potřebují víc řádků. Ostatní stačí na jeden. */
+    private const LONG_PROFILE_FIELDS = ['goals', 'kpis', 'scope', 'constraints', 'approvals', 'brand_voice', 'season', 'notes'];
+
+    /**
+     * Karta klienta („mozek“): z ní vychází agent i my. U rozhodnutí se drží
+     * zdroj a platnost, ať se staré dohody nepletou s novými. Viz docs/MARKETING.md.
+     */
+    private static function card(): Section
+    {
+        $profile = collect(Client::PROFILE_FIELDS)->map(fn (string $label, string $key) => in_array($key, self::LONG_PROFILE_FIELDS, true)
+            ? Textarea::make('profile.'.$key)->label($label)->rows(3)->columnSpanFull()
+            : TextInput::make('profile.'.$key)->label($label)->maxLength(500))->values()->all();
+
+        return Section::make('Karta klienta')
+            ->description('Cíle, rozsah, omezení a dohody. Čte ji agent v ranním přehledu i při psaní textů, takže co tu není, si nemá domýšlet. Osobní údaje zákazníků sem nepatří.')
+            ->columnSpanFull()
+            ->collapsible()
+            ->columns(2)
+            ->schema([
+                ...$profile,
+
+                Repeater::make('contacts')
+                    ->label('Kontakty a kdo co schvaluje')
+                    ->schema([
+                        TextInput::make('name')->label('Jméno')->required(),
+                        TextInput::make('role')->label('Role / co schvaluje'),
+                        TextInput::make('email')->label('E-mail')->email(),
+                        TextInput::make('phone')->label('Telefon'),
+                    ])
+                    ->columns(4)
+                    ->defaultItems(0)
+                    ->addActionLabel('Přidat kontakt')
+                    ->columnSpanFull(),
+
+                Repeater::make('decisions')
+                    ->label('Rozhodnutí a dohody')
+                    ->helperText('Co jsme se s klientem domluvili, odkud to víme a do kdy to platí. Agent sem připisuje dohody ze schůzek a e-mailů, které mu dáte.')
+                    ->schema([
+                        DatePicker::make('date')->label('Kdy')->native(false)->displayFormat('j. n. Y')->required(),
+                        Textarea::make('decision')->label('Rozhodnutí')->rows(2)->required()->columnSpan(2),
+                        TextInput::make('source')->label('Zdroj')->placeholder('schůzka 22. 10., e-mail od…')->required(),
+                        DatePicker::make('valid_until')->label('Platí do')->native(false)->displayFormat('j. n. Y'),
+                    ])
+                    ->columns(5)
+                    ->defaultItems(0)
+                    ->addActionLabel('Přidat rozhodnutí')
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => filled($state['decision'] ?? null) ? Str::limit($state['decision'], 80) : null)
+                    ->columnSpanFull(),
+
+                Repeater::make('landing_pages')
+                    ->label('Cílové stránky ke kontrole')
+                    ->helperText('Každé ráno se zkontroluje, že odpovídají a mají Meta pixel (jeden dotaz na adresu za den, nejvýš '.Client::MAX_LANDING_PAGES.'). Bez vyplnění se kontroluje web klienta.')
+                    ->schema([
+                        TextInput::make('url')->label('Adresa')->url()->required()->placeholder('https://')->columnSpan(2),
+                        TextInput::make('note')->label('Poznámka')->placeholder('kampaň Black Friday'),
+                    ])
+                    ->columns(3)
+                    ->maxItems(Client::MAX_LANDING_PAGES)
+                    ->defaultItems(0)
+                    ->addActionLabel('Přidat stránku')
+                    ->columnSpanFull(),
+
+                Section::make('Vyúčtování hodin')
+                    ->description('Jak chce klient vidět odpracované hodiny. Podle toho Fakturace připraví podklad, odesílá se vždy ručně.')
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->schema([
+                        Select::make('billing_statement.mode')
+                            ->label('Kam')
+                            ->options([
+                                'invoice' => 'Do poznámky na faktuře',
+                                'email' => 'E-mailem zvlášť',
+                                'none' => 'Nechce, stačí faktura',
+                            ])
+                            ->placeholder('Nevyplněno'),
+                        Select::make('billing_statement.detail')
+                            ->label('Jak podrobně')
+                            ->options([
+                                'summary' => 'Jen součet hodin',
+                                'tasks' => 'Po úkolech',
+                                'entries' => 'Každý zápis s datem',
+                            ])
+                            ->placeholder('Po úkolech'),
+                        TextInput::make('billing_statement.recipients')
+                            ->label('Komu (e-maily oddělené čárkou)')
+                            ->placeholder('Jinak kontaktní e-mail'),
+                        Textarea::make('billing_statement.note')
+                            ->label('Poznámka k vyúčtování')
+                            ->placeholder('Chce číslo objednávky v předmětu, posílat do 3. dne v měsíci…')
+                            ->rows(2)
+                            ->columnSpanFull(),
+                    ]),
+            ]);
+    }
+
     /**
      * Projekty agenta na serveru. Když agent neodpovídá, nabídne aspoň
      * uložený projekt, ať se výběr při uložení formuláře nesmaže.
@@ -149,6 +245,8 @@ class ClientForm
                         ->columnSpanFull()
                         ->helperText('Vidíme jen my, na sdílené stránce se nezobrazuje.'),
                 ]),
+
+            self::card(),
 
             Section::make('Pravidelná spolupráce')
                 ->description('Paušál po oblastech a přehled pro klienta: hodiny, hotová práce, co čeká na něj a plán.')

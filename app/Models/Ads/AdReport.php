@@ -37,6 +37,12 @@ class AdReport extends Model
         return $query->where('is_public', true);
     }
 
+    /** Koncepty, které ještě neodešly klientovi. */
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('status', ReportStatus::Draft->value);
+    }
+
     /** Najde report podle čitelné adresy nebo náhodného tokenu. */
     public function scopeSharedAs(Builder $query, string $key): Builder
     {
@@ -86,6 +92,7 @@ class AdReport extends Model
             'period_start' => 'date',
             'period_end' => 'date',
             'snapshot' => 'array',
+            'sources' => 'array',
             'sent_to' => 'array',
             'is_public' => 'boolean',
             'sent_at' => 'datetime',

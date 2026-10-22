@@ -7,6 +7,7 @@ use App\Support\Ads\PerformanceView;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -44,10 +45,19 @@ class AdReportController extends Controller
             'campaigns' => $view->campaigns(),
             'byAccount' => $view->byAccount(),
             'analytics' => $view->analytics(),
-            'summary' => filled($report->summary)
-                ? new HtmlString(Str::markdown($report->summary, ['html_input' => 'strip', 'allow_unsafe_links' => false]))
-                : null,
+            'summary' => self::markdown($report->summary),
+            'facts' => self::markdown($report->facts),
+            'causes' => self::markdown($report->causes),
+            'recommendations' => self::markdown($report->recommendations),
+            'sources' => collect($report->sources ?? [])->map(fn (array $source): array => $source + [
+                'synced_label' => filled($source['synced_at'] ?? null) ? Carbon::parse($source['synced_at'])->timezone('Europe/Prague')->format('j. n. Y H:i') : null,
+            ])->all(),
             'isDraft' => ! $report->is_public,
         ]);
+    }
+
+    private static function markdown(?string $text): ?HtmlString
+    {
+        return filled($text) ? new HtmlString(Str::markdown($text, ['html_input' => 'strip', 'allow_unsafe_links' => false])) : null;
     }
 }

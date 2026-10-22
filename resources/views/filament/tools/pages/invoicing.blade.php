@@ -99,6 +99,9 @@
                                                 Vyfakturováno
                                             </x-filament::button>
                                         @endif
+                                        <div class="mt-1">
+                                            <x-filament::link tag="button" size="xs" color="gray" wire:click="mountAction('statement', { client: {{ $row['id'] }}, area: '{{ $row['area'] }}' })">Podklad k vyúčtování</x-filament::link>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

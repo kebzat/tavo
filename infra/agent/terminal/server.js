@@ -31,6 +31,9 @@ const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
 
 const SECRET = process.env.AGENT_SECRET || '';
+// Tajemství služby nemá skončit v prostředí konverzací (tmux dědí prostředí
+// služby): Claude v okně by jím mohl ovládat okna. Pro `taveo` stačí token API.
+delete process.env.AGENT_SECRET;
 const PORT = Number(process.env.PORT || 7681);
 const HOME = process.env.HOME || '/home/agent';
 const REGISTR = '/etc/taveo-agent/projekty.tsv';
@@ -387,6 +390,12 @@ async function api(req, res) {
         return odpoved(res, 200, seznam);
     }
 
+    // Ranní přehled ručně (ověření po nasazení). Jen jednou denně, jako plánovaný.
+    if (req.method === 'POST' && url.pathname === '/api/ranni-prehled') {
+        await ranniPrehled({ vynutit: true });
+        return odpoved(res, 202, { spusteno: ranniBezi });
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/projekty') {
         const data = await telo(req);
         const vysledek = await fronta({ akce: 'pridat', projekt: data.projekt, typ: data.typ, zdroj: data.zdroj }, 180);
@@ -504,6 +513,63 @@ async function hlidatAplikaci() {
         }
     }
 }
+
+// ---------------------------------------------------------------- ranní přehled
+
+const RANNI_CAS = process.env.RANNI_PREHLED_CAS || '06:50';
+const RANNI_SLOZKA = path.join(HOME, '.taveo-ranni');
+const MARKETING = 'marketing';
+let ranniBezi = false;
+
+/** Dnešní datum a čas v Praze (kontejner má TZ=Europe/Prague). */
+const ted = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return { den: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, cas: `${pad(d.getHours())}:${pad(d.getMinutes())}`, tyden: d.getDay() };
+};
+
+/**
+ * Ranní přehled od agenta: jeden headless běh Clauda denně ve všední dny,
+ * v projektu „marketing“. Smí jen `taveo` (čtení dat klientů, zápis konceptů)
+ * a čtení souborů, nic jiného. Pojistky kvůli předplatnému: jeden běh denně
+ * (značka v ~/.taveo-ranni), žádné opakování po chybě nebo limitu, časový
+ * limit a strop kroků. Výstup jde do logu vedle značky.
+ */
+async function ranniPrehled({ vynutit = false } = {}) {
+    const { den, cas, tyden } = ted();
+    const znacka = path.join(RANNI_SLOZKA, `${den}.hotovo`);
+
+    if (ranniBezi || fs.existsSync(znacka)) return;
+    if (!vynutit && (cas < RANNI_CAS || tyden === 0 || tyden === 6)) return;
+    if (!prihlasen() || !projekt(MARKETING)) return;
+
+    ranniBezi = true;
+    fs.mkdirSync(RANNI_SLOZKA, { recursive: true });
+    // Značka hned na začátku: ani pád uprostřed nevede k druhému běhu týž den.
+    fs.writeFileSync(znacka, new Date().toISOString());
+
+    const cwd = `/projekty/${MARKETING}/kod`;
+    pripravitClaude(cwd);
+    const zadani = fs.readFileSync('/opt/terminal/ranni-prehled.md', 'utf8');
+
+    console.log(`${new Date().toISOString()} ranní přehled: start`);
+
+    execFile('claude', [
+        '-p', zadani,
+        '--permission-mode', 'dontAsk',
+        '--allowedTools', 'Bash(taveo *)', 'Read', 'Glob', 'Grep',
+        '--max-turns', '150',
+    ], { cwd, timeout: 40 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 }, (chyba, stdout, stderr) => {
+        ranniBezi = false;
+        const log = path.join(RANNI_SLOZKA, `${den}.log`);
+        fs.writeFileSync(log, [stdout, stderr, chyba ? `CHYBA: ${chyba.message}` : ''].join('\n'));
+
+        const limit = /usage limit|limit reached|rate limit/i.test(`${stdout}${stderr}`);
+        console.log(`${new Date().toISOString()} ranní přehled: ${chyba ? 'skončil chybou' : 'hotovo'}${limit ? ' (limit předplatného, dnes se nic neopakuje)' : ''}`);
+    });
+}
+
+setInterval(() => ranniPrehled().catch((e) => console.error(e.message)), 60 * 1000);
 
 setTimeout(() => hlidatAplikaci().catch((e) => console.error(e.message)), 5000);
 setInterval(() => hlidatAplikaci().catch((e) => console.error(e.message)), 3 * 60 * 1000);

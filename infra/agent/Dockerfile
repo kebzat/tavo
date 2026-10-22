@@ -39,14 +39,15 @@ RUN chmod 1777 /home
 # Služba pro nástroje TAVEO: vlákna a terminál v prohlížeči (node-pty se překládá).
 COPY terminal/package.json /opt/terminal/package.json
 RUN cd /opt/terminal && npm install --omit=dev --no-audit --no-fund
-COPY terminal/server.js /opt/terminal/server.js
+COPY terminal/server.js terminal/ranni-prehled.md /opt/terminal/
+COPY taveo.sh /usr/local/bin/taveo
 
 COPY managed-settings.json /etc/claude-code/managed-settings.json
 COPY tmux.conf /etc/tmux.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY zaloha-pred-zmenou.sh /usr/local/bin/zaloha-pred-zmenou
 RUN chmod 644 /etc/claude-code/managed-settings.json /etc/tmux.conf \
-    && chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/zaloha-pred-zmenou
+    && chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/zaloha-pred-zmenou /usr/local/bin/taveo
 
 USER agent
 WORKDIR /projekty

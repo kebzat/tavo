@@ -75,6 +75,21 @@
         </section>
     @endif
 
+    @foreach ([
+        'facts' => [$facts, text('ads_report.facts', 'Co se stalo')],
+        'causes' => [$causes, text('ads_report.causes', 'Možné příčiny')],
+        'recommendations' => [$recommendations, text('ads_report.recommendations', 'Co doporučujeme')],
+    ] as $key => [$content, $heading])
+        @if ($content)
+            <section class="section-x pt-10" data-report-section="{{ $key }}">
+                <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
+                    <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ $heading }}</h2>
+                    <div class="prose-tavo max-w-[70ch] [&_ol]:list-decimal [&_ul]:list-disc">{{ $content }}</div>
+                </div>
+            </section>
+        @endif
+    @endforeach
+
     @if ($view->hasData())
         @if ($view->shows('chart') || ($funnel && $view->shows('funnel')))
         <section class="section-x pt-10">
@@ -243,6 +258,15 @@
             <p>
                 {{ text('ads_report.attribution', 'Konverze a jejich hodnotu přiřazuje reklamní systém podle svého nastavení atribuce. Nejsou to tržby z účetnictví ani zisk a jedna objednávka se může započítat víc kanálům. Slouží ke srovnání kampaní a období mezi sebou.') }}
             </p>
+            @if ($sources)
+                <p class="mt-3">
+                    {{ text('ads_report.sources', 'Odkud čísla jsou:') }}
+                    @foreach ($sources as $source)
+                        {{ $source['platform'] }} ({{ $source['account'] }}{{ $source['synced_label'] ? ', staženo '.$source['synced_label'] : ', zatím nestaženo' }}{{ $source['error'] ? ', poslední stažení selhalo' : '' }}){{ $loop->last ? '.' : ',' }}
+                    @endforeach
+                    {{ text('ads_report.missing_data', 'Kde data chybí, je pomlčka, ne nula.') }}
+                </p>
+            @endif
             <p class="mt-3">
                 {{ text('ads_report.questions', 'Když vám něco v číslech nesedí, napište nám.') }}
                 <a href="{{ $contact->emailHref() }}" class="font-semibold text-ink underline decoration-brick underline-offset-4">{{ $contact->email }}</a>

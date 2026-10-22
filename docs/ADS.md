@@ -125,8 +125,8 @@ nadměrný:
 | Pojistka | Jak funguje |
 |---|---|
 | Historie | Při propojení jednou 3 měsíce (1 dotaz), pak už nikdy. Delší historie je vypnutá. |
-| Jednou denně | `ads:sync` běží jen v 6:00. Na účet Mety jdou tři dotazy: stav účtu, čísla za 7 dní a dosah za přednastavená období. U 20 klientů zhruba 60 dotazů denně. |
-| Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. Stejné tři dotazy na účet. |
+| Jednou denně | `ads:sync` běží jen v 6:00. Na účet Mety jdou čtyři dotazy: stav účtu, čísla za 7 dní, dosah za přednastavená období a zamítnuté reklamy (jedna stránka, nejvýš 50). U 20 klientů zhruba 80 dotazů denně. |
+| Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. Stejné čtyři dotazy na účet. |
 | Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |
 | Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána (ruční tlačítko také). |
 | Denní strop | Nejvýš 200 dotazů na platformu za den (`META_DAILY_CALL_LIMIT`). Běžný provoz je necelá třetina. Strop chytí chybu v kódu dřív než Meta. |
@@ -148,8 +148,9 @@ facebookový profil Pavla ani Toma.
 | denně 6:00 | `ads:sync` | přepíše posledních 7 dní všech zapnutých účtů (Meta konverze zpětně dopočítává) |
 | denně 6:40 | `ads:alerts` | vyhodnotí pravidla, otevře nová upozornění, zavře ta, která přestala platit |
 | všední dny 7:15 | `ads:digest` | e-mail „Reklamy: N upozornění“ se včerejší útratou. Když není co hlásit, neodejde |
-| pondělí 7:30 | `ads:reports weekly` | koncepty týdenních reportů za minulý týden |
-| 1. v měsíci 7:30 | `ads:reports monthly` | koncepty měsíčních reportů |
+| pondělí 6:45 | `ads:reports weekly` | koncepty týdenních reportů za minulý týden |
+| 1. v měsíci 6:45 | `ads:reports monthly` | koncepty měsíčních reportů |
+| denně 6:20 | `marketing:landing-check` | kontrola cílových stránek (jeden dotaz na adresu) |
 
 Produkce nemá frontu, všechno běží přes scheduler (`schedule:run` v cronu).
 
@@ -217,6 +218,17 @@ vrací titulek a konkrétní doporučení, co udělat.
 | `roas_below_target` | ROAS za týden o 30 % pod cílem | Pozor |
 | `creative_fatigue` | CTR spadlo o 30 % proti minulému týdnu nebo frekvence ≥ 3,5 | Tip |
 | `spend_spike` | včera o 50 % víc než průměr týdne | Tip |
+| `measurement_value` | nákupy bez hodnoty objednávky (problém měření) | Hoří |
+| `measurement_duplicates` | výrazně víc nákupů než zahájených objednávek (zdvojené měření?) | Pozor |
+| `analytics_mismatch` | web (GA4) nehlásí nákupy, nebo si reklamy připisují mnohem víc | Hoří / Tip |
+| `ad_issues` | zamítnuté nebo problémové reklamy (ranní dotaz na Metu) | Pozor / Tip |
+| `landing_page` | cílová stránka neodpovídá (`marketing:landing-check`) | Hoří |
+| `landing_pixel` | na cílové stránce chybí Meta pixel | Pozor |
+| `lead_feedback` | leadová kampaň bez zpětné vazby od klienta přes 3 týdny | Tip |
+
+Prahy, ztlumení a naléhavost jde nastavit u každého klienta zvlášť (Cíle a paušál
+→ Upozornění pro tohoto klienta). Výpadek stahování a stav účtu ztlumit nejde.
+Ranní e-mail odděluje nová upozornění od trvajících. Viz docs/MARKETING.md.
 
 Prahy se mění v Nastavení reklam. Cena za konverzi a ROAS se hodnotí až od
 10 konverzí za týden, u malého účtu dělá jedna objednávka desítky procent.
