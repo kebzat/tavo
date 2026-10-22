@@ -99,10 +99,11 @@ na web se nedostane a vidí ji každý, kdo s projektem pracuje.
 | Agent sáhne na jiný web, poštu nebo databázi | Kontejner vidí jen `/srv/agent/projekty`. Weby, `/home`, pošta ani databáze serveru v něm nejsou. |
 | Rozbije živý web | Před každým otevřením vláken snímek souborů (git mimo složku webu) a záloha databáze. `agent vratit <projekt>` ukáže, jak se vrátit. |
 | Pošle změnu rovnou na produkci | Klíč v kontejneru umí jen číst. Na GitHub posílá server ze schránky jen větve `agent/…` (cron, `agent preposlat`). Do `main` se agent nedostane. |
+| Změní data na živém webu | Zápis do databáze, migrace a mazání jedou bez ptaní (zvládne to i marketér). Háček `zaloha-pred-zmenou` (PreToolUse) těsně před nimi uloží zálohu databáze a snímek souborů, nejvýš jednou za dvě minuty. Když záloha selže, příkaz se nespustí. |
 | Spustí ničivý příkaz | `/etc/claude-code/managed-settings.json` v kontejneru: zákaz `migrate:fresh`, `db:wipe`, `rm -rf`, force push, `ssh`; na push, migrace a mazání se ptá. Agent soubor nepřepíše. Režim „bez ptaní“ je vypnutý. Pravidla jsou druhá vrstva, hlavní je kontejner. |
 | Vytíží server | Strop 4 jádra, 8 GB RAM. |
 
-Zálohy databází: `/srv/agent/zalohy/<projekt>/` (posledních 20, jen root).
+Zálohy databází: `/srv/agent/zalohy/<projekt>/` (posledních 50, jen root).
 Snímky: `/srv/agent/snimky/<projekt>.git`. Log přeposílání: `/var/log/taveo-agent.log`.
 
 ## Úprava instalace

@@ -146,7 +146,7 @@ zalohovat_db() {
         rm -f "$soubor"
         chyba "záloha databáze $db se nepovedla"
     fi
-    ls -1t "$ZALOHY/$slug"/*.sql.gz | tail -n +21 | xargs -r rm --
+    ls -1t "$ZALOHY/$slug"/*.sql.gz | tail -n +51 | xargs -r rm --
     echo "Záloha databáze: $soubor"
 }
 

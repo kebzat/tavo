@@ -44,8 +44,9 @@ COPY terminal/server.js /opt/terminal/server.js
 COPY managed-settings.json /etc/claude-code/managed-settings.json
 COPY tmux.conf /etc/tmux.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY zaloha-pred-zmenou.sh /usr/local/bin/zaloha-pred-zmenou
 RUN chmod 644 /etc/claude-code/managed-settings.json /etc/tmux.conf \
-    && chmod 755 /usr/local/bin/entrypoint.sh
+    && chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/zaloha-pred-zmenou
 
 USER agent
 WORKDIR /projekty

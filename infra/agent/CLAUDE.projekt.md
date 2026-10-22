@@ -22,9 +22,9 @@ po každé úpravě ověř, že web odpovídá (`curl -sI https://…`).
 K databázi webu se dostaneš jeho vlastními údaji z `.env`:
 `php artisan` (Laravel) nebo `wp` (WordPress) fungují jako na serveru,
 web je dostupný i pod svou serverovou cestou. Měň data jen tam, kde to
-úkol opravdu potřebuje, a předem řekni, co uděláš. Zápis do databáze
-(`artisan tinker`, `wp … update` a podobně) se vždycky ptá člověka, to je
-záměr: potvrdí ho v terminálu.
+úkol opravdu potřebuje. Zápis do databáze, migrace i mazání souborů smíš
+bez ptaní: těsně před nimi se sama uloží záloha databáze a snímek souborů.
+Po změně ověř na webu, že funguje, a stručně napiš, co se změnilo.
 
 **prazdny:** projekt bez kódu (Shoptet, Upgates, marketing).
 Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.

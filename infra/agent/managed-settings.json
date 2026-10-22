@@ -3,6 +3,30 @@
   "remoteControlAtStartup": true,
   "permissions": {
     "disableBypassPermissionsMode": "disable",
+    "allow": [
+      "Bash(*artisan tinker*)",
+      "Bash(*artisan db:seed*)",
+      "Bash(*artisan settings:*)",
+      "Bash(*artisan migrate*)",
+      "Bash(wp db *)",
+      "Bash(wp search-replace *)",
+      "Bash(wp * create *)",
+      "Bash(wp * update *)",
+      "Bash(wp * delete *)",
+      "Bash(wp * set *)",
+      "Bash(wp * add *)",
+      "Bash(wp * import *)",
+      "Bash(rm *)",
+      "Bash(git push *)"
+    ],
+    "ask": [
+      "Bash(composer update*)",
+      "Bash(composer require*)",
+      "Bash(npm install *)",
+      "Bash(curl * -X *)",
+      "Bash(curl * --data*)",
+      "Bash(curl * -d *)"
+    ],
     "deny": [
       "Bash(*migrate:fresh*)",
       "Bash(*migrate:reset*)",
@@ -30,29 +54,20 @@
       "Read(//**/.ssh/**)",
       "Edit(//**/.ssh/**)",
       "Edit(//**/.env)"
-    ],
-    "ask": [
-      "Bash(git push *)",
-      "Bash(*artisan migrate*)",
-      "Bash(composer update*)",
-      "Bash(composer require*)",
-      "Bash(npm install *)",
-      "Bash(rm *)",
-      "Bash(curl * -X *)",
-      "Bash(curl * --data*)",
-      "Bash(curl * -d *)",
-      "Bash(*artisan tinker*)",
-      "Bash(*artisan db:seed*)",
-      "Bash(*artisan settings:*)",
-      "Bash(wp db *)",
-      "Bash(wp search-replace *)",
-      "Bash(wp * create *)",
-      "Bash(wp * update *)",
-      "Bash(wp * delete *)",
-      "Bash(wp * set *)",
-      "Bash(wp * add *)",
-      "Bash(wp * import *)",
-      "Bash(mysql *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/zaloha-pred-zmenou",
+            "timeout": 150
+          }
+        ]
+      }
     ]
   }
 }
