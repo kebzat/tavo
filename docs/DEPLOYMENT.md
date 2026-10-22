@@ -197,6 +197,13 @@ sudo certbot --nginx -d taveo.cz -d www.taveo.cz
 * * * * * cd /var/www/taveo && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+Na současném serveru (CyberPanel) je to v cronu uživatele `taveo1015`:
+`cd /home/taveo.cz/public_html && /usr/local/lsws/lsphp84/bin/php artisan schedule:run`.
+**Pozor:** stejný uživatel a cron patří i webu Grillnor (`/home/taveo.cz/grillnor`).
+Při jeho zakládání 22. 10. 2026 se řádek TAVEO z cronu ztratil a dva týdny
+neběželo stahování reklam, upozornění ani ranní souhrny. Přidávat řádky, nepřepisovat.
+Kontrola: `crontab -u taveo1015 -l` (root) a v administraci poslední synchronizace reklam.
+
 ## 3. Klíč pro deploy
 
 Na serveru:
