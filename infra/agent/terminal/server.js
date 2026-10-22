@@ -288,11 +288,17 @@ function pripravitClaude(cwd) {
     zapisJson(soubor, nastaveni);
 }
 
-/** Prostředí okna. U webu na serveru míří git do snímků mimo složku webu. */
+/**
+ * Prostředí okna. U webu na serveru míří git do snímků mimo složku webu.
+ * Konverzace v aplikaci Claude bez vlastního názvu začínají názvem projektu
+ * (grillnor-…), ne názvem serveru, ať se na mobilu projekty rozliší.
+ */
 function prostredi(p) {
+    const nazevVAplikaci = ['-e', `CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX=${p.slug}`];
+
     return p.typ === 'server'
-        ? ['-e', `GIT_DIR=/snimky/${p.slug}.git`, '-e', `GIT_WORK_TREE=/projekty/${p.slug}/kod`]
-        : [];
+        ? [...nazevVAplikaci, '-e', `GIT_DIR=/snimky/${p.slug}.git`, '-e', `GIT_WORK_TREE=/projekty/${p.slug}/kod`]
+        : nazevVAplikaci;
 }
 
 async function zalozit(p, { autor, session, nahradit }) {
@@ -482,7 +488,7 @@ async function hlidatAplikaci() {
         if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
 
         pripravitClaude(slozka(p));
-        const prikaz = `bash -lc 'claude remote-control --name "TAVEO · ${p.slug}" --spawn same-dir; exec bash'`;
+        const prikaz = `bash -lc 'claude remote-control --name "TAVEO · ${p.slug}" --remote-control-session-name-prefix ${p.slug} --spawn same-dir; exec bash'`;
         const existuje = (await okna(p.slug)).length > 0;
         const args = existuje
             ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', slozka(p), ...prostredi(p), '-n', 'aplikace-claude', prikaz]
