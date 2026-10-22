@@ -4,6 +4,7 @@ namespace App\Models\Ads;
 
 use App\Enums\Ads\AdPlatform;
 use App\Models\Client;
+use App\Support\Ads\Period;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -83,6 +84,18 @@ class AdAccount extends Model
         };
     }
 
+    /**
+     * Odkud stáhnout historii nově propojeného účtu (config ads.backfill_months).
+     * Stáhne ji až ranní `ads:sync`, nikdy hned po propojení.
+     */
+    public static function historyStart(): string
+    {
+        $months = min(Period::MAX_HISTORY_MONTHS, max(1, (int) config('ads.backfill_months')));
+
+        // Den rezervy, ať začátek přesně na hraně 37 měsíců Meta neodmítne.
+        return now()->subMonthsNoOverflow($months)->addDay()->toDateString();
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
@@ -106,6 +119,7 @@ class AdAccount extends Model
             'last_synced_at' => 'datetime',
             'issues' => 'array',
             'issues_checked_at' => 'datetime',
+            'backfill_from' => 'date',
         ];
     }
 }

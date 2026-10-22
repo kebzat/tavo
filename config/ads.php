@@ -33,7 +33,8 @@ return [
 
         /*
          * Pojistka: nejvýš tolik dotazů na Metu za den (App\Support\Ads\Platforms\ApiGuard).
-         * Ranní synchronizace dělá čtyři dotazy na účet, 20 klientů = 80 dotazů.
+         * Na Metu sahá jen ranní ads:sync: 1 dotaz na seznam účtů a 4 na účet,
+         * 20 klientů = 81 dotazů.
          * Strop je jen pro případ chyby, běžně se k němu nepřiblížíme.
          */
         'daily_call_limit' => (int) env('META_DAILY_CALL_LIMIT', 200),
@@ -88,7 +89,7 @@ return [
     'sync_days' => (int) env('ADS_SYNC_DAYS', 7),
 
     /*
-     * Historie, kterou stáhneme po připojení nového účtu, v měsících. Stahuje se
+     * Historie, kterou stáhne první ranní běh po připojení nového účtu, v měsících. Stahuje se
      * po čtvrtletích: 3 měsíce = 1 dotaz, 37 měsíců (maximum Mety) = asi 13 dotazů.
      * Delší historii zapneme až po domluvě s Pavlem kvůli zatížení API.
      */

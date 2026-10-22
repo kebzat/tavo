@@ -10,7 +10,6 @@ use App\Enums\Ads\ReportType;
 use App\Enums\UserRole;
 use App\Enums\WorkArea;
 use App\Filament\Tools\Pages\Ads\AdsClient;
-use App\Jobs\BackfillAdAccount;
 use App\Mail\AdReportMail;
 use App\Mail\AdsDailyDigest;
 use App\Models\Ads\AdAccount;
@@ -42,7 +41,6 @@ use Filament\Facades\Filament;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -59,6 +57,15 @@ class AdsTest extends TestCase
 
         Carbon::setTestNow('2026-09-30 09:00:00');
         config(['ads.meta.token' => 'test-token', 'ads.meta.app_secret' => null]);
+        // Testy synchronizace dělají, co ranní ads:sync. Mimo něj je platforma zavřená.
+        ApiGuard::openForSync();
+    }
+
+    protected function tearDown(): void
+    {
+        ApiGuard::close();
+
+        parent::tearDown();
     }
 
     /**
@@ -76,7 +83,7 @@ class AdsTest extends TestCase
             'external_id' => (string) random_int(100000, 999999),
             'name' => $name.' (Meta)',
             'status' => 'active',
-            'last_synced_at' => now(),
+            'last_synced_at' => now()->subDay(),
         ]);
         $account->campaigns()->create(['external_id' => '1', 'name' => 'Prospecting']);
 
@@ -261,7 +268,7 @@ class AdsTest extends TestCase
         Http::fake(['graph.facebook.com/*' => Http::response(['error' => ['message' => 'Invalid token', 'code' => 190]], 400)]);
         $directory = app(AccountDirectory::class);
 
-        $directory->options(AdPlatform::Meta);
+        $this->artisan('ads:sync')->assertSuccessful();
         $directory->options(AdPlatform::Meta);
         $problem = $directory->problem(AdPlatform::Meta);
 
@@ -269,16 +276,53 @@ class AdsTest extends TestCase
         $this->assertStringContainsString('Token Meta je neplatný', $problem);
     }
 
-    public function test_rucni_nacteni_ma_pauzu(): void
+    public function test_nabidka_uctu_se_cte_z_databaze(): void
     {
-        $client = Client::create(['name' => 'Demo', 'slug' => 'demo']);
-        $client->adAccounts()->create(['platform' => AdPlatform::Demo, 'external_id' => 'demo_listek_meta', 'name' => 'Demo']);
+        $this->klient();
+        Http::fake([
+            'graph.facebook.com/*/me/adaccounts*' => Http::response(['data' => [
+                ['account_id' => '555', 'name' => 'Nový klient', 'currency' => 'CZK', 'account_status' => 1],
+            ]]),
+            'graph.facebook.com/*' => Http::response(['data' => [], 'account_id' => '1', 'name' => 'Účet', 'currency' => 'CZK', 'account_status' => 1]),
+        ]);
+        $this->artisan('ads:sync')->assertSuccessful();
+        ApiGuard::close();
+        $sent = count(Http::recorded());
+
+        $options = app(AccountDirectory::class)->options(AdPlatform::Meta);
+
+        $this->assertSame(['555' => 'Nový klient · 555 · CZK'], $options);
+        $this->assertCount($sent, Http::recorded());
+    }
+
+    public function test_mimo_ranni_stazeni_se_na_metu_nesaha(): void
+    {
+        ApiGuard::close();
+        $client = $this->klient();
+        Http::fake();
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
         Filament::setCurrentPanel('tools');
 
-        Livewire::test(AdsClient::class, ['client' => $client])->callAction('sync');
-        Livewire::test(AdsClient::class, ['client' => $client])->callAction('sync');
+        $run = app(AccountSync::class)->sync($client->adAccounts->first(), Period::between('2026-09-23', '2026-09-29'));
+        Livewire::test(AdsClient::class, ['client' => $client])->assertActionDoesNotExist('sync');
+        app(AccountDirectory::class)->options(AdPlatform::Meta);
 
+        Http::assertNothingSent();
+        $this->assertSame('failed', $run->status);
+        $this->assertStringContainsString('mimo ranní stažení', $run->error);
+        $this->assertSame(0, ApiGuard::for('meta')->callsToday());
+    }
+
+    public function test_ucet_stazeny_dnes_se_podruhe_nestahuje(): void
+    {
+        $this->klient();
+        $this->fakeMeta([]);
+
+        $this->artisan('ads:sync')->assertSuccessful();
+        $first = count(Http::recorded());
+        $this->artisan('ads:sync')->assertSuccessful();
+
+        $this->assertCount($first, Http::recorded());
         $this->assertSame(1, AdSyncRun::query()->count());
     }
 
@@ -345,13 +389,17 @@ class AdsTest extends TestCase
     public function test_vychozi_historie_jsou_tri_mesice_a_doplneni_je_skryte(): void
     {
         $account = $this->klient()->adAccounts->first();
-        $this->fakeMeta([]);
+        $account->update(['backfill_from' => AdAccount::historyStart(), 'last_synced_at' => null]);
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
         Filament::setCurrentPanel('tools');
 
-        (new BackfillAdAccount($account->id))->handle(app(AccountSync::class));
+        $this->fakeMeta([]);
+        $this->artisan('ads:sync', ['--account' => $account->id])->assertSuccessful();
 
-        Http::assertSentCount(2);
+        // Posledních 7 dní (stav + čísla + dosah + zamítnuté) a historie (stav + 1 čtvrtletí).
+        Http::assertSentCount(6);
+        $this->assertSame('2026-07-01', AdSyncRun::query()->latest('id')->first()->date_from->toDateString());
+        $this->assertNull($account->refresh()->backfill_from);
         Livewire::test(AdsClient::class, ['client' => $account->client])->assertActionHidden('history');
     }
 
@@ -370,32 +418,44 @@ class AdsTest extends TestCase
             ->assertSee("1\u{00A0}000\u{00A0}Kč");
     }
 
-    public function test_pri_propojeni_se_stahne_cela_historie_po_ctvrtletich(): void
+    public function test_pri_propojeni_se_cela_historie_stahne_rano_po_ctvrtletich(): void
     {
         config(['ads.backfill_months' => 37]);
         $account = $this->klient()->adAccounts->first();
+        $account->update(['backfill_from' => AdAccount::historyStart()]);
         $this->fakeMeta([]);
 
-        (new BackfillAdAccount($account->id))->handle(app(AccountSync::class));
+        $this->artisan('ads:sync', ['--account' => $account->id])->assertSuccessful();
 
         $run = AdSyncRun::query()->latest('id')->first();
         $this->assertSame('2023-08-31', $run->date_from->toDateString());
-        // 37 měsíců po 92 dnech = 13 dotazů na čísla + 1 na stav účtu.
-        Http::assertSentCount(14);
+        // Běžný den 4 dotazy, historie 37 měsíců po 92 dnech = 13 dotazů na čísla + 1 na stav účtu.
+        Http::assertSentCount(18);
     }
 
-    public function test_doplneni_historie_stahne_jen_chybejici_usek(): void
+    public function test_doplneni_historie_jen_pozada_ranni_stazeni(): void
     {
         config(['ads.history_backfill' => true]);
-        Bus::fake([BackfillAdAccount::class]);
         $client = $this->klient();
         $this->dny($client, '2026-07-01', '2026-09-29', ['spend' => 100]);
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
         Filament::setCurrentPanel('tools');
+        Http::fake();
 
         Livewire::test(AdsClient::class, ['client' => $client])->callAction('history', ['months' => 12]);
 
-        Bus::assertDispatchedAfterResponse(BackfillAdAccount::class, fn (BackfillAdAccount $job): bool => $job->from === '2025-10-01' && $job->to === '2026-06-30');
+        Http::assertNothingSent();
+        $account = $client->adAccounts->first()->refresh();
+        $this->assertSame('2025-10-01', $account->backfill_from->toDateString());
+
+        $this->fakeMeta([]);
+        $this->artisan('ads:sync')->assertSuccessful();
+
+        $this->assertSame(['from' => '2025-10-01', 'to' => '2026-06-30'], [
+            'from' => AdSyncRun::query()->latest('id')->first()->date_from->toDateString(),
+            'to' => AdSyncRun::query()->latest('id')->first()->date_to->toDateString(),
+        ]);
+        $this->assertNull($account->refresh()->backfill_from);
     }
 
     /*

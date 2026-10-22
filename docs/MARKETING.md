@@ -32,12 +32,15 @@ Pavel ručně, nic neodchází klientovi bez člověka.
 
 ## Limity a ban: rozpočet všech automatických dotazů
 
-Nesmíme dostat ban od Mety, Googlu ani Anthropicu. Proto má každý automat
-pevný rozpočet a pojistku, která ho zastaví dřív, než by se k limitu přiblížil.
+Nesmíme dostat ban od Mety, Googlu ani Anthropicu. **Na Metu sahá jen ranní
+`ads:sync` v 6:00**, čísla ukládá do databáze a všechno ostatní (administrace,
+reporty, upozornění, agent) čte jen z ní. Jinde to `ApiGuard` nepustí (docs/ADS.md,
+Jediný vstup na platformy). Každý automat má navíc pevný rozpočet a pojistku, která
+ho zastaví dřív, než by se k limitu přiblížil.
 
 | Kam | Běžně za den | Pojistka |
 |---|---|---|
-| **Meta** (jen čtení, `ads_read`) | 4 dotazy na účet: stav, čísla, dosah, zamítnuté reklamy. 13 klientů ≈ 52 | `ApiGuard`: strop 200/den, při vytížení nad 75 % nebo „moc dotazů“ pauza do rána, žádné opakování. Ruční načtení u klienta jednou za 30 min. Nikdy nezapisujeme do reklamních účtů. |
+| **Meta** (jen čtení, `ads_read`) | jen v 6:00: 1 dotaz na seznam účtů + 4 na účet (stav, čísla, dosah, zamítnuté reklamy). 13 klientů ≈ 53 | `ApiGuard`: mimo ranní stažení nic neodejde, strop 200/den, při vytížení nad 75 % nebo „moc dotazů“ pauza do rána, žádné opakování, účet stažený ten den se podruhé nestahuje. Nikdy nezapisujeme do reklamních účtů. |
 | **Google Ads** | 2 na účet | stejná pojistka, strop 200/den |
 | **GA4** | 2 na property | stejná pojistka, strop 200/den |
 | **Weby klientů** (kontrola stránek) | 1 dotaz na adresu, nejvýš 5 adres na klienta, pauza 0,5 s | timeout 20 s, žádné opakování, vlastní User-Agent |

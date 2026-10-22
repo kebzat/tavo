@@ -77,7 +77,8 @@ a do `.env` `ADS_DEMO=false`. Znovu založit: `php artisan ads:demo`.
    META_API_VERSION=v25.0
    ```
 
-5. `php artisan config:cache` a v Nastavení reklam kliknout na **Otestovat spojení**.
+5. `php artisan config:cache`. Spojení ověří další ranní stažení, výsledek je v Nastavení
+   reklam → Napojení (kolik nasdílených účtů Meta ráno viděla, nebo chyba).
 
 Na denní čtení ~20 účtů stačí úroveň přístupu Limited (dřív Standard). Když
 začne Meta omezovat počet dotazů (chyba „Meta omezila počet dotazů“), požádat
@@ -115,6 +116,29 @@ web“: návštěvy, nákupy a tržby ze všech zdrojů a rozpad podle kanálů.
 kolik si nákupů připsaly reklamy. Rozdíl je normální, reklamní systémy si konverze
 připisují samy a často dvakrát.
 
+## Jediný vstup na platformy: ranní `ads:sync`
+
+**Na Metu, Google Ads a GA4 sahá jen příkaz `ads:sync` (denně v 6:00).** Stáhne čísla
+do databáze a všechno ostatní pracuje jen s ní: přehledy klientů, reporty, upozornění,
+ranní e-mail, rozhraní a ranní přehled agenta, „Návrh úprav od Clauda“. V administraci
+není žádné tlačítko, které by na Metu sáhlo.
+
+Vynucuje to `ApiGuard`: dotaz odejde jen v procesu, kde `ads:sync` zavolal
+`ApiGuard::openForSync()`. Odkudkoli jinud (web, Livewire, fronta, tinker) skončí
+výjimkou „mimo ranní stažení se na platformu nevolá“ a nic neodejde. Token Mety je
+jen v `.env` webu, agent v kontejneru ho nemá.
+
+| Co | Jak to jde bez Mety |
+|---|---|
+| Nabídka účtů při propojování | Ranní stažení uloží seznam nasdílených účtů do `ad_shared_accounts` (1 dotaz na platformu). Nově nasdílený účet se v nabídce objeví druhý den ráno. |
+| Nový účet | Propojení jen zapíše `backfill_from`. Čísla i historii stáhne další ranní běh, do té doby je přehled prázdný. |
+| Doplnit starší historii | Jen zapíše `backfill_from`, chybějící úsek stáhne ranní běh. |
+| Ověření spojení | Výsledek ranního stažení v Nastavení reklam → Napojení. |
+| Aktuálnější čísla přes den | Nejsou. Čísla jsou vždy k ránu, přehled u účtu ukazuje, kdy se stahovalo. |
+
+Ruční `./bin/art ads:sync` na serveru jde (je to tentýž příkaz), účty stažené ten den
+ale přeskočí. Znovu je stáhne jen `--force`, používat výjimečně.
+
 ## Ochrana před přetížením API
 
 Čísla čteme oficiálním Marketing API a pouze pro čtení (`ads_read`): nic v účtech
@@ -124,15 +148,14 @@ nadměrný:
 
 | Pojistka | Jak funguje |
 |---|---|
-| Historie | Při propojení jednou 3 měsíce (1 dotaz), pak už nikdy. Delší historie je vypnutá. |
-| Jednou denně | `ads:sync` běží jen v 6:00. Na účet Mety jdou čtyři dotazy: stav účtu, čísla za 7 dní, dosah za přednastavená období a zamítnuté reklamy (jedna stránka, nejvýš 50). U 20 klientů zhruba 80 dotazů denně. |
-| Ruční načtení | Tlačítko **Načíst čísla znovu** na detailu klienta, s potvrzením a pauzou 30 minut. Stejné čtyři dotazy na účet. |
+| Jen ranní stažení | Viz výše. Z webu ani od agenta na platformu nic neodejde. |
+| Historie | Nový účet jednou 3 měsíce (1 dotaz navíc v ranním běhu), pak už nikdy. Delší historie je vypnutá. |
+| Jednou denně | `ads:sync` běží jen v 6:00. Seznam nasdílených účtů 1 dotaz, na účet Mety čtyři: stav účtu, čísla za 7 dní, dosah za přednastavená období a zamítnuté reklamy (jedna stránka, nejvýš 50). U 20 klientů zhruba 80 dotazů denně. Účet stažený ten den se podruhé nestahuje. |
 | Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |
-| Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána (ruční tlačítko také). |
+| Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána. |
 | Denní strop | Nejvýš 200 dotazů na platformu za den (`META_DAILY_CALL_LIMIT`). Běžný provoz je necelá třetina. Strop chytí chybu v kódu dřív než Meta. |
 | Bez souběhu | Jeden účet se nikdy nestahuje dvakrát současně (zámek). |
 | Strop stránek | Nejvýš 20 stránek výsledku na dotaz, víc znamená chybu. |
-| Seznam účtů | Nabídka při propojování se drží 5 minut v paměti, i když skončí chybou. Test spojení jde jednou za 5 minut. |
 
 Stav je v Nastavení reklam → Ochrana před přetížením: kolik dotazů dnes odešlo
 a jestli je některá platforma pozastavená. Implementace:
@@ -145,7 +168,7 @@ facebookový profil Pavla ani Toma.
 
 | Čas | Příkaz | Co dělá |
 |---|---|---|
-| denně 6:00 | `ads:sync` | přepíše posledních 7 dní všech zapnutých účtů (Meta konverze zpětně dopočítává) |
+| denně 6:00 | `ads:sync` | jediný přístup na platformy: seznam nasdílených účtů, přepíše posledních 7 dní všech zapnutých účtů (Meta konverze zpětně dopočítává), doplní požadovanou historii |
 | denně 6:40 | `ads:alerts` | vyhodnotí pravidla, otevře nová upozornění, zavře ta, která přestala platit |
 | všední dny 7:15 | `ads:digest` | e-mail „Reklamy: N upozornění“ se včerejší útratou. Když není co hlásit, neodejde |
 | pondělí 6:45 | `ads:reports weekly` | koncepty týdenních reportů za minulý týden |
@@ -158,7 +181,7 @@ Ruční příkazy:
 
 ```bash
 ./bin/art ads:sync --account=123456789 --from=2026-01-01   # historie jednoho účtu
-./bin/art ads:sync --days=30                                # přepsat měsíc všem
+./bin/art ads:sync --days=30 --force                        # přepsat měsíc všem i po ranním běhu
 ./bin/art ads:alerts --date=2026-09-30
 ./bin/art ads:digest --dry-run
 ./bin/art ads:demo                                          # jen lokálně: ukázkoví klienti s vymyšlenými čísly

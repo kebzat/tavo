@@ -56,7 +56,7 @@
     @if (! $view->hasData())
         <x-filament::section>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-                Za tohle období nejsou žádná čísla. Když jste účet právě propojili, historie se stahuje na pozadí, obnovte stránku za minutu.
+                Za tohle období nejsou žádná čísla. Když jste účet právě propojili, čísla i historie se stáhnou zítra ráno v 6:00.
                 Jinak zkontrolujte stav účtů níž.
             </p>
         </x-filament::section>
@@ -331,7 +331,7 @@
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
                             {{ $account['platform'] }} ·
-                            {{ $account['active'] ? ($account['synced'] ? 'Staženo '.$account['synced'] : 'Zatím nestaženo') : 'Vypnutý, nestahuje se' }}
+                            {{ $account['active'] ? ($account['synced'] ? 'Staženo '.$account['synced'] : 'Stáhne se ráno v 6:00') : 'Vypnutý, nestahuje se' }}
                         </p>
                         @if ($account['error'])
                             <p class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ $account['error'] }}</p>

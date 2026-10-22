@@ -10,24 +10,44 @@ use Illuminate\Support\Facades\Log;
  * Pojistka proti přetížení reklamních API a zablokování účtu Taveo.
  *
  * Každý dotaz na platformu projde přes before(). Pojistka:
+ * - pustí dotaz jen z ranního stažení (`ads:sync` zavolá openForSync()). Web,
+ *   tlačítka, agent ani nic jiného na platformu nesáhne, všechno čte z databáze,
  * - počítá dotazy za den a po dosažení denního stropu (config ads.{platforma}.daily_call_limit)
  *   další dotazy do půlnoci odmítne,
  * - když platforma hlásí vytížení (hlavičky X-Business-Use-Case-Usage, X-Ad-Account-Usage
  *   nad 75 %) nebo vrátí chybu „moc dotazů“, stahování z ní pozastaví, podle Mety
  *   do obnovení přístupu, jinak do zítřka.
  *
- * Běžný provoz je o řád níž: ranní synchronizace dělá u Mety čtyři dotazy na účet
- * a den (stav účtu, čísla po kampaních, dosah za přednastavená období, zamítnuté
- * reklamy), u Google Ads a GA4 dva. Rozpočet dotazů je v docs/MARKETING.md.
- * Pojistka je tu pro případ chyby v kódu nebo opakovaného klikání, ne pro každodenní
- * provoz.
+ * Běžný provoz je o řád níž: ranní synchronizace dělá u Mety jeden dotaz na seznam
+ * účtů a čtyři na účet a den (stav účtu, čísla po kampaních, dosah za přednastavená
+ * období, zamítnuté reklamy), u Google Ads a GA4 dva. Rozpočet dotazů je
+ * v docs/MARKETING.md. Strop je tu pro případ chyby v kódu, ne pro každodenní provoz.
  */
 final class ApiGuard
 {
     /** Od kolika procent vytížení podle Mety přestaneme volat. */
     public const USAGE_LIMIT_PCT = 75;
 
+    /** Otevírá jen `ads:sync` po dobu svého běhu. */
+    private static bool $open = false;
+
     private function __construct(private readonly string $platform) {}
+
+    /** Jediný vstup na platformy: ranní stažení (AdsSync). Nic jiného to nevolá. */
+    public static function openForSync(): void
+    {
+        self::$open = true;
+    }
+
+    public static function close(): void
+    {
+        self::$open = false;
+    }
+
+    public static function isOpen(): bool
+    {
+        return self::$open;
+    }
 
     public static function for(string $platform): self
     {
@@ -42,6 +62,10 @@ final class ApiGuard
      */
     public function before(): void
     {
+        if (! self::$open) {
+            throw new AdsApiException($this->label().': mimo ranní stažení se na platformu nevolá, čísla jsou v databázi.');
+        }
+
         if ($until = $this->pausedUntil()) {
             throw new AdsApiException($this->label().': stahování je pozastavené do '.$until->format('j. n. H:i').' ('.Cache::get($this->key('pause_reason'), 'ochrana před přetížením').').');
         }

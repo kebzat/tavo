@@ -11,7 +11,6 @@ use App\Filament\Tools\Pages\Ads\Concerns\HasAdsPeriod;
 use App\Filament\Tools\Resources\AdReports\AdReportResource;
 use App\Filament\Tools\Resources\Clients\ClientResource;
 use App\Filament\Tools\Resources\TimeEntries\TimeEntryResource;
-use App\Jobs\BackfillAdAccount;
 use App\Models\Ads\AdAccount;
 use App\Models\Ads\AdAlert;
 use App\Models\Ads\AdDailyStat;
@@ -19,7 +18,6 @@ use App\Models\Ads\AdReport;
 use App\Models\Client;
 use App\Models\TimeEntry;
 use App\Settings\AdsSettings;
-use App\Support\Ads\AccountSync;
 use App\Support\Ads\Ai\AdsAdvisor;
 use App\Support\Ads\Billing;
 use App\Support\Ads\BudgetPace;
@@ -45,7 +43,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
@@ -258,7 +255,6 @@ class AdsClient extends Page
     {
         return [
             $this->createReportAction(),
-            $this->syncAction(),
             $this->logTimeAction(),
             $this->settingsAction(),
             ActionGroup::make([
@@ -480,78 +476,10 @@ class AdsClient extends Page
         return app(AdsSettings::class);
     }
 
-    /** Pauza mezi ručními načteními u jednoho klienta, v minutách. */
-    public const MANUAL_SYNC_COOLDOWN = 30;
-
-    /**
-     * Ruční načtení čísel. Čísla se stahují samy každé ráno. Tlačítko je pro
-     * chvíle, kdy je potřeba dnešní stav hned, a má pauzu, aby se na něj
-     * nedalo klikat dokola.
-     */
-    private function syncAction(): Action
-    {
-        return Action::make('sync')
-            ->label(fn (): string => ($wait = $this->manualSyncWait()) ? "Znovu za {$wait} min" : 'Načíst čísla znovu')
-            ->icon(Heroicon::OutlinedArrowPath)
-            ->color('gray')
-            ->disabled(fn (): bool => $this->manualSyncWait() !== null)
-            ->tooltip(fn (): ?string => ($synced = $this->client->adAccounts()->max('last_synced_at'))
-                ? 'Naposledy staženo '.Carbon::parse($synced)->format('j. n. H:i')
-                : null)
-            ->requiresConfirmation()
-            ->modalHeading('Načíst čísla znovu?')
-            ->modalDescription('Čísla se stahují samy každé ráno v 6:00. Ručně je načtěte, jen když potřebujete aktuální stav hned. '
-                .'Stáhne se posledních '.config('ads.sync_days').' dní a dosah za přednastavená období a zamítnuté reklamy, nejvýš čtyři dotazy na účet. Další ruční načtení půjde za '.self::MANUAL_SYNC_COOLDOWN.' minut.')
-            ->modalSubmitActionLabel('Načíst')
-            ->action(function (AccountSync $sync): void {
-                // Cache::add projde jen jednou za pauzu, i při dvojkliku nebo ve dvou oknech.
-                if (! Cache::add($this->manualSyncKey(), now()->timestamp, now()->addMinutes(self::MANUAL_SYNC_COOLDOWN))) {
-                    Notification::make()->warning()->title('Čísla se načítala před chvílí')->body('Znovu to půjde za '.$this->manualSyncWait().' min.')->send();
-
-                    return;
-                }
-
-                $days = (int) config('ads.sync_days');
-                $period = Period::between(now()->subDays($days), now()->subDay());
-                $errors = [];
-
-                foreach ($this->client->adAccounts()->active()->get() as $account) {
-                    $run = $sync->sync($account, $period, withReach: true);
-
-                    if ($run->status === 'failed') {
-                        $errors[] = "{$account->name}: {$run->error}";
-                    }
-                }
-
-                $errors
-                    ? Notification::make()->danger()->title('Něco se nenačetlo')->body(implode("\n", $errors))->persistent()->send()
-                    : Notification::make()->success()->title('Čísla za posledních '.$days.' dní jsou načtená')->send();
-            });
-    }
-
-    /** Za kolik minut půjde další ruční načtení. Null = hned. */
-    public function manualSyncWait(): ?int
-    {
-        $at = Cache::get($this->manualSyncKey());
-
-        if (! $at) {
-            return null;
-        }
-
-        $left = (int) ceil(($at + self::MANUAL_SYNC_COOLDOWN * 60 - now()->timestamp) / 60);
-
-        return $left > 0 ? $left : null;
-    }
-
-    private function manualSyncKey(): string
-    {
-        return 'ads.manual-sync.client.'.$this->client->getKey();
-    }
-
     /**
      * Doplnění starší historie u účtů, které mají jen část (propojené dřív,
-     * kdy se stahovalo 90 dní). Stáhne jen chybějící úsek před nejstarším
-     * dnem, který máme. Jednou za hodinu.
+     * kdy se stahovalo 90 dní). Jen zapíše přání, chybějící úsek před
+     * nejstarším dnem stáhne ranní `ads:sync`.
      */
     private function historyAction(): Action
     {
@@ -561,7 +489,7 @@ class AdsClient extends Page
             ->icon(Heroicon::OutlinedClock)
             ->modalHeading('Doplnit starší historii')
             ->modalDescription(fn (): string => ($this->dataSince() ? 'Čísla máme od '.Carbon::parse($this->dataSince())->format('j. n. Y').'. ' : '')
-                .'Stáhne se jen úsek, který chybí, po čtvrtletích: zhruba 1 dotaz na každé 3 měsíce a účet, jednou provždy. Meta vydá nejvýš '.Period::MAX_HISTORY_MONTHS.' měsíců zpátky.')
+                .'Stáhne se zítra ráno v 6:00, jen úsek, který chybí, po čtvrtletích: zhruba 1 dotaz na každé 3 měsíce a účet, jednou provždy. Meta vydá nejvýš '.Period::MAX_HISTORY_MONTHS.' měsíců zpátky.')
             ->schema([
                 Select::make('months')
                     ->label('Jak daleko zpátky')
@@ -571,31 +499,18 @@ class AdsClient extends Page
             ])
             ->modalSubmitActionLabel('Doplnit')
             ->action(function (array $data): void {
-                if (! Cache::add('ads.history.client.'.$this->client->getKey(), true, now()->addHour())) {
-                    Notification::make()->warning()->title('Historie se doplňovala před chvílí')->body('Znovu to půjde za hodinu.')->send();
-
-                    return;
-                }
-
                 $months = min(Period::MAX_HISTORY_MONTHS, (int) $data['months']);
-                $from = now()->subMonthsNoOverflow($months)->addDay()->startOfDay();
-                $queued = 0;
+                $from = now()->subMonthsNoOverflow($months)->addDay()->toDateString();
 
-                foreach ($this->client->adAccounts()->active()->get() as $account) {
-                    $earliest = $account->isAnalytics() ? $account->traffic()->min('date') : $account->stats()->min('date');
-                    $to = $earliest ? Carbon::parse($earliest)->subDay() : now()->subDay();
-
-                    if ($from->gt($to)) {
-                        continue;
-                    }
-
-                    BackfillAdAccount::dispatchAfterResponse($account->getKey(), $from->toDateString(), $to->toDateString());
-                    $queued++;
-                }
+                // Stáhne ji ranní ads:sync, odsud se na platformu nesahá.
+                $queued = $this->client->adAccounts()->active()->get()
+                    ->filter(fn (AdAccount $account): bool => $account->backfill_from === null || $account->backfill_from->toDateString() > $from)
+                    ->each(fn (AdAccount $account) => $account->update(['backfill_from' => $from]))
+                    ->count();
 
                 $queued > 0
-                    ? Notification::make()->success()->title('Historie se doplňuje na pozadí')->body('Za minutu obnovte stránku.')->send()
-                    : Notification::make()->info()->title('Historii za tohle období už máme')->send();
+                    ? Notification::make()->success()->title('Historie se stáhne zítra ráno v 6:00')->body('Stáhne se jen úsek, který chybí.')->send()
+                    : Notification::make()->info()->title('O tuhle historii už je požádáno')->send();
             });
     }
 

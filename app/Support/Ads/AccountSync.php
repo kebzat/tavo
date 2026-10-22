@@ -33,7 +33,7 @@ class AccountSync
 
     /**
      * @param  bool  $withReach  stáhnout i přesný dosah za přednastavená období
-     *                           (jeden dotaz navíc). Ranní běh a ruční načtení ano,
+     *                           (jeden dotaz navíc). Ranní běh ano,
      *                           doplňování historie ne.
      */
     public function sync(AdAccount $account, Period $period, bool $withReach = false): AdSyncRun

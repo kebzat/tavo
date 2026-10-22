@@ -19,6 +19,7 @@ use App\Support\Ads\Metrics;
 use App\Support\Ads\PerformanceView;
 use App\Support\Ads\Period;
 use App\Support\Ads\PeriodReach;
+use App\Support\Ads\Platforms\ApiGuard;
 use App\Support\Ads\Platforms\DemoAds;
 use App\Support\Ads\Platforms\MetaAds;
 use App\Support\Ads\ReportBuilder;
@@ -44,6 +45,15 @@ class AdsMetricsTest extends TestCase
 
         Carbon::setTestNow('2026-09-30 09:00:00');
         config(['ads.meta.token' => 'test-token', 'ads.meta.app_secret' => null]);
+        // Testy synchronizace dělají, co ranní ads:sync. Mimo něj je platforma zavřená.
+        ApiGuard::openForSync();
+    }
+
+    protected function tearDown(): void
+    {
+        ApiGuard::close();
+
+        parent::tearDown();
     }
 
     /** @param  array<string, mixed>  $settings */
@@ -57,7 +67,7 @@ class AdsMetricsTest extends TestCase
             'external_id' => (string) random_int(100000, 999999),
             'name' => $name.' (Meta)',
             'status' => 'active',
-            'last_synced_at' => now(),
+            'last_synced_at' => now()->subDay(),
         ]);
         $account->campaigns()->create(['external_id' => '1', 'name' => 'Prospecting']);
 
@@ -236,8 +246,9 @@ class AdsMetricsTest extends TestCase
         $this->artisan('ads:sync')->assertSuccessful();
 
         $ranges = PeriodReach::ranges();
-        // Stav účtu, čísla, dosah a zamítnuté reklamy: čtyři dotazy na účet a den, ne víc.
-        Http::assertSentCount(4);
+        // Seznam nasdílených účtů jednou za den, pak stav účtu, čísla, dosah
+        // a zamítnuté reklamy: čtyři dotazy na účet a den, ne víc.
+        Http::assertSentCount(5);
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/ads?') && str_contains(urldecode($request->url()), 'DISAPPROVED'));
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'level=account')
             && str_contains(urldecode($request->url()), '"since":"2026-09-23","until":"2026-09-29"')
@@ -259,7 +270,7 @@ class AdsMetricsTest extends TestCase
 
         // Další běh řádky přepíše, nezdvojí.
         Carbon::setTestNow('2026-09-30 10:00:00');
-        $this->artisan('ads:sync')->assertSuccessful();
+        $this->artisan('ads:sync', ['--force' => true])->assertSuccessful();
         $this->assertSame(count($ranges), AdPeriodReach::query()->count());
     }
 

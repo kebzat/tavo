@@ -8,16 +8,62 @@ use App\Support\Ads\Platforms\AccountInfo;
 use App\Support\Ads\Platforms\AdsApiException;
 use App\Support\Ads\Platforms\Ga4;
 use App\Support\Ads\Platforms\Platforms;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Účty, které nám klienti nasdíleli a které ještě nejsou u žádného klienta.
- * Seznam se na pět minut pamatuje, formulář se při psaní překresluje.
+ *
+ * Seznam stahuje jen ranní `ads:sync` (refresh(), jeden dotaz na platformu)
+ * a ukládá do ad_shared_accounts. Nabídka při propojování čte jen odsud, na
+ * Metu nesahá. Nově nasdílený účet se v nabídce objeví druhý den ráno.
+ * Ukázkové platformy nic nestahují, ty se čtou rovnou.
  */
 class AccountDirectory
 {
     public function __construct(private readonly Platforms $platforms) {}
+
+    /** Stáhne seznam z platformy. Volá jen ranní stažení. */
+    public function refresh(AdPlatform $platform): int
+    {
+        try {
+            $accounts = $this->platforms->for($platform)->accounts();
+        } catch (AdsApiException $e) {
+            Cache::forever($this->stateKey($platform), ['checked_at' => now()->timestamp, 'error' => $e->getMessage()]);
+
+            throw $e;
+        }
+
+        $now = now();
+
+        DB::transaction(function () use ($platform, $accounts, $now): void {
+            DB::table('ad_shared_accounts')->upsert(
+                $accounts->map(fn (AccountInfo $account): array => [
+                    'platform' => $platform->value,
+                    'external_id' => $account->externalId,
+                    'name' => $account->name,
+                    'currency' => $account->currency ?: null,
+                    'timezone' => $account->timezone,
+                    'status' => $account->status,
+                    'business' => $account->business,
+                    'seen_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all(),
+                ['platform', 'external_id'],
+                ['name', 'currency', 'timezone', 'status', 'business', 'seen_at', 'updated_at'],
+            );
+
+            // Co dnes platforma nevrátila, nám klient přestal sdílet.
+            DB::table('ad_shared_accounts')->where('platform', $platform->value)->where('seen_at', '<', $now)->delete();
+        });
+
+        Cache::forever($this->stateKey($platform), ['checked_at' => $now->timestamp, 'error' => null]);
+
+        return $accounts->count();
+    }
 
     /** @return Collection<int, AccountInfo> */
     public function available(AdPlatform $platform): Collection
@@ -32,11 +78,7 @@ class AccountDirectory
     /** @return array<string, string> external_id => popisek do výběru */
     public function options(AdPlatform $platform): array
     {
-        try {
-            return $this->available($platform)->mapWithKeys(fn (AccountInfo $account): array => [$account->externalId => $account->label()])->all();
-        } catch (AdsApiException) {
-            return [];
-        }
+        return $this->available($platform)->mapWithKeys(fn (AccountInfo $account): array => [$account->externalId => $account->label()])->all();
     }
 
     /** Proč je nabídka prázdná. Null, když je všechno v pořádku. */
@@ -46,20 +88,43 @@ class AccountDirectory
             return 'Chybí přístup k '.$platform->shortLabel().' v .env (viz docs/ADS.md).';
         }
 
-        try {
-            return $this->available($platform)->isEmpty() ? $this->howToShare($platform) : null;
-        } catch (AdsApiException $e) {
-            return $e->getMessage();
+        if ($error = $this->lastError($platform)) {
+            return 'Ranní stažení seznamu účtů selhalo: '.$error;
         }
+
+        if (! $platform->isDemo() && $this->checkedAt($platform) === null) {
+            return 'Seznam nasdílených účtů se stáhne zítra ráno v 6:00.';
+        }
+
+        return $this->available($platform)->isEmpty() ? $this->howToShare($platform) : null;
+    }
+
+    /** Kdy ranní stažení naposledy načetlo seznam. */
+    public function checkedAt(AdPlatform $platform): ?Carbon
+    {
+        $timestamp = $this->state($platform)['checked_at'] ?? null;
+
+        return $timestamp ? Carbon::createFromTimestamp($timestamp) : null;
+    }
+
+    /** Chyba posledního ranního stažení seznamu. */
+    public function lastError(AdPlatform $platform): ?string
+    {
+        return $this->state($platform)['error'] ?? null;
+    }
+
+    public function count(AdPlatform $platform): int
+    {
+        return $this->all($platform)->count();
     }
 
     /** Co musí klient udělat, aby se nám účet objevil v nabídce. */
     public function howToShare(AdPlatform $platform): string
     {
         return 'Žádný nový účet. '.match ($platform) {
-            AdPlatform::Meta => 'Klient ho musí nasdílet Business Manageru Taveo jako partnerovi a my ho přiřadit systémovému uživateli.',
-            AdPlatform::GoogleAds => 'Klient musí přijmout žádost o propojení s MCC Taveo.',
-            AdPlatform::Ga4 => 'Klient musí v GA4 přidat '.(app(Ga4::class)->serviceAccountEmail() ?? 'náš servisní účet').' jako čtenáře.',
+            AdPlatform::Meta => 'Klient ho musí nasdílet Business Manageru Taveo jako partnerovi a my ho přiřadit systémovému uživateli. V nabídce se objeví druhý den ráno.',
+            AdPlatform::GoogleAds => 'Klient musí přijmout žádost o propojení s MCC Taveo. V nabídce se objeví druhý den ráno.',
+            AdPlatform::Ga4 => 'Klient musí v GA4 přidat '.(app(Ga4::class)->serviceAccountEmail() ?? 'náš servisní účet').' jako čtenáře. V nabídce se objeví druhý den ráno.',
             AdPlatform::Demo, AdPlatform::DemoGa4 => 'Všechny ukázkové účty už jsou propojené.',
         };
     }
@@ -69,38 +134,36 @@ class AccountDirectory
         return $this->all($platform)->first(fn (AccountInfo $account): bool => $account->externalId === $externalId);
     }
 
-    public function forget(AdPlatform $platform): void
-    {
-        Cache::forget($this->cacheKey($platform));
-    }
-
     /** @return Collection<int, AccountInfo> */
     private function all(AdPlatform $platform): Collection
     {
-        // Cache smí držet jen prostá pole, objekty by se zpátky nerozbalily
-        // (cache.serializable_classes). Pamatuje se i chyba: formulář se
-        // překresluje při každé změně a bez toho by se Mety ptal pořád dokola.
-        $rows = Cache::remember(
-            $this->cacheKey($platform),
-            now()->addMinutes(5),
-            function () use ($platform): array {
-                try {
-                    return $this->platforms->for($platform)->accounts()->map(fn (AccountInfo $account): array => (array) $account)->all();
-                } catch (AdsApiException $e) {
-                    return ['error' => $e->getMessage()];
-                }
-            },
-        );
-
-        if (isset($rows['error'])) {
-            throw new AdsApiException($rows['error']);
+        // Ukázková data nikam nevolají, generují se na místě.
+        if ($platform->isDemo()) {
+            return $this->platforms->for($platform)->accounts();
         }
 
-        return collect($rows)->map(fn (array $row): AccountInfo => new AccountInfo(...$row));
+        return DB::table('ad_shared_accounts')
+            ->where('platform', $platform->value)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (object $row): AccountInfo => new AccountInfo(
+                externalId: $row->external_id,
+                name: $row->name,
+                currency: (string) $row->currency,
+                timezone: $row->timezone,
+                status: $row->status,
+                business: $row->business,
+            ));
     }
 
-    private function cacheKey(AdPlatform $platform): string
+    /** @return array{checked_at?: int, error?: ?string} */
+    private function state(AdPlatform $platform): array
     {
-        return 'ads.accounts.'.$platform->value;
+        return Cache::get($this->stateKey($platform), []);
+    }
+
+    private function stateKey(AdPlatform $platform): string
+    {
+        return 'ads.directory.'.$platform->value;
     }
 }

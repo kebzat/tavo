@@ -26,7 +26,7 @@ class SyncFailed implements Rule
                 AlertSeverity::Critical,
                 "Nestahují se čísla z účtu {$account->name}",
                 ($account->last_sync_error ? "Poslední chyba: {$account->last_sync_error}\n\n" : '')
-                    .'Dokud se to nespraví, nehlídáme rozpočet ani výkon. Zkontrolujte, jestli nám klient účet v Business Manageru nesebral a jestli platí token Meta (Reklamy → Nastavení → Otestovat spojení).',
+                    .'Dokud se to nespraví, nehlídáme rozpočet ani výkon. Zkontrolujte, jestli nám klient účet v Business Manageru nesebral a jestli platí token Meta (Reklamy → Nastavení → Napojení ukazuje výsledek ranního stažení).',
                 ['error' => $account->last_sync_error, 'last_synced_at' => $account->last_synced_at?->toIso8601String()],
                 $account,
             ))
