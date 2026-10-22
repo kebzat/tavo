@@ -40,6 +40,10 @@ class DbBackup extends Command
             return self::FAILURE;
         }
 
+        // Dump obsahuje celou databázi. Na sdíleném serveru ho nesmí číst
+        // uživatelé ostatních webů, proto jen vlastník (soubory 600).
+        umask(0077);
+
         $dir = storage_path('app/backups');
         File::ensureDirectoryExists($dir);
         $file = $dir.'/taveo-'.now()->format('Y-m-d-His').'.sql.gz';
