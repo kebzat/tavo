@@ -42,6 +42,8 @@ class ApiTokenResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $breadcrumb = 'Přístupy agentů';
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -77,7 +79,9 @@ class ApiTokenResource extends Resource
             ->recordClasses(fn (ApiToken $record): ?string => $record->isRevoked() ? 'opacity-50' : null)
             ->recordActions([
                 Action::make('calls')
-                    ->label('Historie')
+                    ->label('')
+                    ->tooltip('Historie volání')
+                    ->iconButton()
                     ->icon(Heroicon::OutlinedClock)
                     ->color('gray')
                     ->modalHeading(fn (ApiToken $record): string => 'Historie volání – '.$record->name)
@@ -86,10 +90,12 @@ class ApiTokenResource extends Resource
                     ]))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Zavřít'),
-                EditAction::make()->label('')->iconButton()
+                EditAction::make()->label('')->tooltip('Upravit')->iconButton()
                     ->visible(fn (ApiToken $record): bool => ! $record->isRevoked()),
                 Action::make('revoke')
-                    ->label('Zrušit')
+                    ->label('')
+                    ->tooltip('Zrušit token')
+                    ->iconButton()
                     ->icon(Heroicon::OutlinedNoSymbol)
                     ->color('danger')
                     ->visible(fn (ApiToken $record): bool => ! $record->isRevoked())

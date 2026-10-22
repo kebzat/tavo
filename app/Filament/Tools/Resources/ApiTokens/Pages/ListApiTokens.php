@@ -16,11 +16,15 @@ class ListApiTokens extends ListRecords
 {
     protected static string $resource = ApiTokenResource::class;
 
+    protected static ?string $title = 'Přístupy agentů';
+
     protected function getHeaderActions(): array
     {
         return [
             CreateAction::make()
                 ->label('Nový token')
+                ->modalHeading('Nový token pro agenta')
+                ->modalSubmitActionLabel('Vytvořit token')
                 ->createAnother(false)
                 ->successNotification(null)
                 ->using(function (array $data): Model {
