@@ -59,7 +59,7 @@ class AgentServer
     /**
      * Konverzace projektu: běžící (mají okno) nahoře, pak uložené od nejnovější.
      *
-     * @return list<array{session: ?string, nazev: string, autor: ?string, aktualizace: ?int, okno: ?string, claude: bool, nova: bool}>
+     * @return list<array{session: ?string, nazev: string, autor: ?string, aktualizace: ?int, okno: ?string, trvala: bool, claude: bool, nova: bool}>
      */
     public function conversations(string $slug): array
     {
@@ -81,10 +81,16 @@ class AgentServer
         ]))['okno'];
     }
 
-    /** Ukončí běžící konverzaci (okno). Uložená konverzace zůstane. */
-    public function closeWindow(string $slug, string $window): void
+    /** Uspí běžící konverzaci: proces skončí, konverzace zůstane uložená a jde probudit. */
+    public function sleepWindow(string $slug, string $window): void
     {
         $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/okna/'.rawurlencode($window)));
+    }
+
+    /** Trvalá konverzace se sama neuspí, zůstává dostupná i v aplikaci Claude. */
+    public function pinWindow(string $slug, string $window, bool $pinned): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/okna/'.rawurlencode($window).'/trvala', ['trvala' => $pinned]));
     }
 
     /**

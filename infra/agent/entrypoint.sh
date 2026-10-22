@@ -13,5 +13,12 @@ if [ ! -f "$HOME/.gitconfig" ]; then
     git config --global init.defaultBranch main
 fi
 
-# Služba pro nástroje (vlákna, terminál). Sezení jde otevřít i příkazem `agent`.
-exec node /opt/terminal/server.js
+# Služba pro nástroje (konverzace, terminál). Běží ve smyčce: novou verzi
+# stačí nahrát do /opt/terminal a službu ukončit (`agent sluzba`). Konverzace
+# v tmuxu běží mimo ni, takže aktualizace služby je neukončí.
+# Pozor na `set -e` nahoře: ukončená služba vrací chybový kód a bez `|| …`
+# by skončil celý kontejner i s konverzacemi.
+while true; do
+    node /opt/terminal/server.js || echo "Služba agenta skončila (kód $?), za 2 s ji spouštím znovu."
+    sleep 2
+done

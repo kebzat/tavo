@@ -38,6 +38,9 @@ const FRONTA = '/fronta';
 const AUTORI = path.join(HOME, '.taveo-autori.json');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const OKNO = /^@\d+$/;
+// Nepřipnutá konverzace bez pohybu se po téhle době uspí (proces skončí,
+// konverzace zůstane uložená a jde probudit).
+const USPAT_PO = Number(process.env.USPAT_PO_HODINACH || 12) * 3600;
 
 if (SECRET.length < 32) {
     console.error('AGENT_SECRET chybí nebo je kratší než 32 znaků.');
@@ -120,12 +123,20 @@ async function okna(slug) {
         return [];
     }
 
-    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}'].join('\t');
+    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}', '#{@trvala}'].join('\t');
     const vystup = await tmux(['list-windows', '-t', `=${slug}`, '-F', format]);
 
     return vystup.trim().split('\n').filter(Boolean).map((r) => {
-        const [id, session, autor, aktivita, pid, rc] = r.split('\t');
-        return { id, session: session || null, autor: autor || null, aktivita: Number(aktivita) || null, claude: bezi(pid, 'claude'), rc: rc === '1' };
+        const [id, session, autor, aktivita, pid, rc, trvala] = r.split('\t');
+        return {
+            id,
+            session: session || null,
+            autor: autor || null,
+            aktivita: Number(aktivita) || null,
+            claude: bezi(pid, 'claude'),
+            rc: rc === '1',
+            trvala: trvala === '1',
+        };
     });
 }
 
@@ -218,6 +229,7 @@ async function konverzace(p) {
             nazev: k.nazev || 'Konverzace bez textu',
             autor: autori[k.session] || okno?.autor || null,
             okno: okno?.id || null,
+            trvala: okno?.trvala || false,
             claude: okno?.claude || false,
             nova: false,
         };
@@ -225,7 +237,7 @@ async function konverzace(p) {
 
     // Okno, ve kterém ještě nikdo nic nenapsal, na disku konverzaci nemá.
     for (const o of bezici.filter((o) => !disk.some((k) => k.session === o.session))) {
-        seznam.push({ session: o.session, nazev: 'Nová konverzace', aktualizace: o.aktivita, autor: o.autor, okno: o.id, claude: o.claude, nova: true });
+        seznam.push({ session: o.session, nazev: 'Nová konverzace', aktualizace: o.aktivita, autor: o.autor, okno: o.id, trvala: o.trvala, claude: o.claude, nova: true });
     }
 
     return seznam.sort((a, b) => (Boolean(b.okno) - Boolean(a.okno)) || (b.aktualizace - a.aktualizace));
@@ -391,6 +403,18 @@ async function api(req, res) {
         }
     }
 
+    // Připnout / odepnout: trvalá konverzace se sama neuspí.
+    if (req.method === 'POST' && casti[3] === 'okna' && casti[5] === 'trvala' && casti.length === 6) {
+        const okno = (await konverzacniOkna(p.slug)).find((o) => o.id === casti[4]);
+        if (!okno) {
+            return odpoved(res, 404, { chyba: 'Konverzace už neběží.' });
+        }
+
+        const { trvala } = await telo(req);
+        await tmux(trvala ? ['set-option', '-w', '-t', okno.id, '@trvala', '1'] : ['set-option', '-wu', '-t', okno.id, '@trvala']);
+        return odpoved(res, 200, { ok: true });
+    }
+
     if (req.method === 'DELETE' && casti[3] === 'okna' && casti.length === 5) {
         // Okno musí patřit tomuhle projektu, ID oken jsou společná pro všechny.
         const okno = (await konverzacniOkna(p.slug)).find((o) => o.id === casti[4]);
@@ -477,6 +501,22 @@ async function hlidatAplikaci() {
 
 setTimeout(() => hlidatAplikaci().catch((e) => console.error(e.message)), 5000);
 setInterval(() => hlidatAplikaci().catch((e) => console.error(e.message)), 3 * 60 * 1000);
+
+/** Uspí nepřipnuté konverzace, ve kterých se dlouho nic nedělo. */
+async function uspatNecinne() {
+    const ted = Math.floor(Date.now() / 1000);
+
+    for (const p of projekty()) {
+        for (const o of await konverzacniOkna(p.slug)) {
+            if (o.trvala || !o.aktivita || ted - o.aktivita < USPAT_PO) continue;
+
+            await tmux(['kill-window', '-t', o.id]).catch(() => {});
+            console.log(`${new Date().toISOString()} uspáno ${p.slug}:${o.id} (${o.session}), bez pohybu ${Math.round((ted - o.aktivita) / 3600)} h`);
+        }
+    }
+}
+
+setInterval(() => uspatNecinne().catch((e) => console.error(e.message)), 10 * 60 * 1000);
 
 const server = http.createServer((req, res) => {
     api(req, res).catch((e) => odpoved(res, e.status || 500, { chyba: e.message }));

@@ -4,18 +4,8 @@
   "permissions": {
     "disableBypassPermissionsMode": "disable",
     "allow": [
-      "Bash(*artisan tinker*)",
-      "Bash(*artisan db:seed*)",
-      "Bash(*artisan settings:*)",
-      "Bash(*artisan migrate*)",
-      "Bash(wp db *)",
-      "Bash(wp search-replace *)",
-      "Bash(wp * create *)",
-      "Bash(wp * update *)",
-      "Bash(wp * delete *)",
-      "Bash(wp * set *)",
-      "Bash(wp * add *)",
-      "Bash(wp * import *)",
+      "Bash(php artisan *)",
+      "Bash(wp *)",
       "Bash(rm *)",
       "Bash(git push *)"
     ],

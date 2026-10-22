@@ -17,8 +17,12 @@ use Livewire\Attributes\Url;
  * Terminál s Claudem pro jeden projekt a pod ním jeho konverzace.
  *
  * Po otevření se připojí k naposledy běžící konverzaci, a když žádná neběží,
- * rovnou založí novou: dá se hned psát. Uložené konverzace jsou v seznamu
- * pod terminálem, kliknutím se na ně naváže.
+ * rovnou založí novou: dá se hned psát. Uspané konverzace jsou v seznamu
+ * pod terminálem, kliknutím se probudí.
+ *
+ * Nepřipnutá konverzace se po 12 hodinách bez pohybu sama uspí (šetří paměť
+ * serveru). Připnutá (trvalá) běží pořád, takže je dostupná i v aplikaci
+ * Claude na mobilu.
  *
  * Běžící konverzace = okno tmuxu v kontejneru agenta. Běží dál i po zavření
  * stránky a vidí ji každý přihlášený. Terminál se připojuje WebSocketem
@@ -135,9 +139,10 @@ class AgentProject extends Page
                 'selected' => $item['okno'] !== null && $item['okno'] === $this->window,
                 'meta' => collect([$item['autor'], AgentProjects::ago($item['aktualizace'])])->filter()->implode(' · '),
                 'status' => match (true) {
-                    $item['okno'] === null => ['label' => 'Uložená', 'color' => 'gray'],
-                    $item['claude'] => ['label' => 'Běží', 'color' => 'success'],
-                    default => ['label' => 'Claude ukončen', 'color' => 'warning'],
+                    $item['okno'] === null => ['label' => 'Uspaná', 'color' => 'gray'],
+                    ! $item['claude'] => ['label' => 'Claude ukončen', 'color' => 'warning'],
+                    $item['trvala'] ?? false => ['label' => 'Trvalá', 'color' => 'primary'],
+                    default => ['label' => 'Běží', 'color' => 'success'],
                 },
             ])
             ->all();
@@ -181,7 +186,7 @@ class AgentProject extends Page
         $this->open(null);
     }
 
-    /** Kliknutí v seznamu: běžící konverzaci otevřít, na uloženou navázat. */
+    /** Kliknutí v seznamu: běžící konverzaci otevřít, uspanou probudit. */
     public function select(?string $window, ?string $session = null): void
     {
         if ($window !== null && $this->find($window) !== null) {
@@ -227,14 +232,34 @@ class AgentProject extends Page
         ];
     }
 
-    public function closeWindowAction(): Action
+    /** Připnout jako trvalou / odepnout. Bez potvrzení, jde vrátit jedním klikem. */
+    public function togglePin(string $window): void
     {
-        return Action::make('closeWindow')
-            ->label('Ukončit konverzaci')
-            ->color('danger')
+        $item = $this->find($window);
+
+        if ($item === null) {
+            return;
+        }
+
+        try {
+            app(AgentServer::class)->pinWindow($this->project, $window, ! ($item['trvala'] ?? false));
+        } catch (AgentUnavailable $e) {
+            Notification::make()->danger()->title('Nepovedlo se')->body($e->getMessage())->send();
+
+            return;
+        }
+
+        $this->loadedConversations = null;
+    }
+
+    public function sleepWindowAction(): Action
+    {
+        return Action::make('sleepWindow')
+            ->label('Uspat konverzaci')
+            ->color('gray')
             ->requiresConfirmation()
-            ->modalDescription('Claude v ní skončí. Konverzace zůstane uložená a dá se na ni kdykoli navázat. Změny v souborech zůstávají.')
-            ->modalSubmitActionLabel('Ukončit')
+            ->modalDescription('Claude v ní přestane běžet a uvolní paměť serveru. Konverzace zůstane uložená, kliknutím na Probudit pokračuje tam, kde skončila. Změny v souborech zůstávají.')
+            ->modalSubmitActionLabel('Uspat')
             ->action(function (array $arguments): void {
                 $window = (string) ($arguments['window'] ?? '');
 
@@ -243,7 +268,7 @@ class AgentProject extends Page
                 }
 
                 try {
-                    app(AgentServer::class)->closeWindow($this->project, $window);
+                    app(AgentServer::class)->sleepWindow($this->project, $window);
                 } catch (AgentUnavailable $e) {
                     Notification::make()->danger()->title('Nepovedlo se')->body($e->getMessage())->send();
 

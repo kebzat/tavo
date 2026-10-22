@@ -14,11 +14,14 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
   žádná neběží, sama se založí nová a dá se rovnou psát. U živého webu před tím
   proběhne snímek souborů a záloha databáze (pár vteřin).
 - **Nová konverzace** nad terminálem založí další. Pod terminálem je seznam
-  konverzací: běžící jde **otevřít**, na uloženou **navázat** (`claude --resume`).
+  konverzací: běžící jde **otevřít**, uspanou **probudit** (`claude --resume`).
   Název je první zpráva z konverzace.
+- **Uspat / Připnout:** nepřipnutá konverzace se po 12 hodinách bez pohybu sama
+  uspí (proces skončí a uvolní asi 300–400 MB paměti, konverzace zůstane uložená).
+  **Připnutá (trvalá)** běží pořád, takže je dostupná i v aplikaci Claude na mobilu,
+  kde uspanou probudit nejde. Doba se mění proměnnou `USPAT_PO_HODINACH`.
 - Konverzace běží dál i po zavření stránky. V jedné může být víc lidí zároveň
   a každý vidí totéž, mezi konverzacemi si ale každý přepíná sám.
-- **Ukončit** zavře běžící konverzaci. Zůstane uložená a dá se na ni navázat.
 - **Přidat projekt** (v seznamu projektů) umí repozitář z GitHubu a projekt bez
   kódu. Web na serveru připojí jen root přes SSH, protože dává agentovi přístup
   k živému webu.
@@ -107,6 +110,11 @@ Zálohy databází: `/srv/agent/zalohy/<projekt>/` (posledních 50, jen root).
 Snímky: `/srv/agent/snimky/<projekt>.git`. Log přeposílání: `/var/log/taveo-agent.log`.
 
 ## Úprava instalace
+
+Jen služba (`terminal/server.js`): `rsync` souboru do `/srv/agent/docker/terminal/`
+a `agent sluzba`. Služba v kontejneru běží ve smyčce, konverzace v tmuxu ji přežijí.
+
+Cokoli jiného (Dockerfile, tmux.conf, entrypoint) vyžaduje přestavění:
 
 ```bash
 rsync -a infra/agent/ root@88.198.31.29:/srv/agent/docker/

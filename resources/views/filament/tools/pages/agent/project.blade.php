@@ -86,14 +86,14 @@
 
                     <div x-show="state === 'none'" x-cloak
                          class="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-gray-400">
-                        Žádná konverzace neběží. Založte novou, nebo navažte na některou ze seznamu níž.
+                        Žádná konverzace neběží. Založte novou, nebo probuďte některou ze seznamu níž.
                     </div>
                 </div>
             </div>
 
             <x-filament::section>
                 <x-slot name="heading">Konverzace</x-slot>
-                <x-slot name="description">Běžící jde otevřít, na uloženou navázat. Konverzace běží dál i po zavření stránky a vidí ji Tom i Pavel.</x-slot>
+                <x-slot name="description">Běžící konverzace jde otevřít, uspanou probudit. Nepřipnutá konverzace se po 12 hodinách bez pohybu sama uspí. Připnutá běží pořád a je dostupná i v aplikaci Claude na mobilu.</x-slot>
 
                 <div class="-mx-6 -my-6 divide-y divide-gray-950/5 dark:divide-white/10">
                     @forelse ($this->conversationItems() as $item)
@@ -117,11 +117,16 @@
                                 @elseif ($item['okno'])
                                     <x-filament::button size="xs" color="gray" wire:click="select('{{ $item['okno'] }}')">Otevřít</x-filament::button>
                                 @else
-                                    <x-filament::button size="xs" color="gray" wire:click="select(null, '{{ $item['session'] }}')">Navázat</x-filament::button>
+                                    <x-filament::button size="xs" color="gray" wire:click="select(null, '{{ $item['session'] }}')">Probudit</x-filament::button>
                                 @endif
 
                                 @if ($item['okno'])
-                                    <x-filament::button size="xs" color="gray" outlined wire:click="mountAction('closeWindow', { window: '{{ $item['okno'] }}' })">Ukončit</x-filament::button>
+                                    <x-filament::button size="xs" color="gray" outlined
+                                        :icon="$item['trvala'] ? 'heroicon-m-bookmark-slash' : 'heroicon-m-bookmark'"
+                                        wire:click="togglePin('{{ $item['okno'] }}')">
+                                        {{ $item['trvala'] ? 'Odepnout' : 'Připnout' }}
+                                    </x-filament::button>
+                                    <x-filament::button size="xs" color="gray" outlined wire:click="mountAction('sleepWindow', { window: '{{ $item['okno'] }}' })">Uspat</x-filament::button>
                                 @endif
                             </div>
                         </div>

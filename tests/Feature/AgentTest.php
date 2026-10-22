@@ -49,9 +49,9 @@ class AgentTest extends TestCase
         return ['id' => $id, 'session' => null, 'autor' => 'Tom', 'aktivita' => $aktivita, 'claude' => $claude];
     }
 
-    private function konverzace(?string $okno, string $session, string $nazev, int $aktualizace, bool $claude = true, bool $nova = false): array
+    private function konverzace(?string $okno, string $session, string $nazev, int $aktualizace, bool $claude = true, bool $nova = false, bool $trvala = false): array
     {
-        return ['session' => $session, 'nazev' => $nazev, 'autor' => 'Tom', 'aktualizace' => $aktualizace, 'okno' => $okno, 'claude' => $okno !== null && $claude, 'nova' => $nova];
+        return ['session' => $session, 'nazev' => $nazev, 'autor' => 'Tom', 'aktualizace' => $aktualizace, 'okno' => $okno, 'trvala' => $trvala, 'claude' => $okno !== null && $claude, 'nova' => $nova];
     }
 
     /**
@@ -189,8 +189,8 @@ class AgentTest extends TestCase
             ->assertSet('window', '@2')
             ->assertSee('Změň nadpis na úvodní stránce')
             ->assertSee('Claude ukončen')
-            ->assertSee('Uložená')
-            ->assertSee('Navázat')
+            ->assertSee('Uspaná')
+            ->assertSee('Probudit')
             ->assertSee('Živý web na serveru')
             ->assertActionVisible('claudeApp')
             ->assertActionHasUrl('claudeApp', 'https://claude.ai/code?environment=env_grillnor');
@@ -249,14 +249,14 @@ class AgentTest extends TestCase
             ->call('select', '@99')
             ->call('select', null, 'cizi-session')
             ->assertSet('window', '@1')
-            ->callAction('closeWindow', arguments: ['window' => '@99']);
+            ->callAction('sleepWindow', arguments: ['window' => '@99']);
 
         Http::assertNotSent(fn (Request $request): bool => $request->method() !== 'GET');
 
         $this->actingAs($spravce)->get(AgentProject::getUrl(['project' => 'neexistuje'], panel: 'tools'))->assertNotFound();
     }
 
-    public function test_ukonceni_konverzace_prepne_na_dalsi_bezici(): void
+    public function test_uspani_konverzace_prepne_na_dalsi_bezici(): void
     {
         $this->falesnyAgent([
             $this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Banner', time()),
@@ -266,13 +266,13 @@ class AgentTest extends TestCase
         Livewire::actingAs($this->spravce())
             ->test(AgentProject::class, ['project' => 'grillnor'])
             ->assertSet('window', '@1')
-            ->callAction('closeWindow', arguments: ['window' => '@2'])
+            ->callAction('sleepWindow', arguments: ['window' => '@2'])
             ->assertSet('window', '@1');
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE' && str_ends_with($request->url(), '/api/projekty/grillnor/okna/%402'));
     }
 
-    public function test_neuspesne_ukonceni_nezmeni_otevrenou_konverzaci(): void
+    public function test_neuspesne_uspani_nezmeni_otevrenou_konverzaci(): void
     {
         $this->falesnyAgent(
             [$this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Banner', time())],
@@ -281,10 +281,31 @@ class AgentTest extends TestCase
 
         Livewire::actingAs($this->spravce())
             ->test(AgentProject::class, ['project' => 'grillnor'])
-            ->callAction('closeWindow', arguments: ['window' => '@1'])
+            ->callAction('sleepWindow', arguments: ['window' => '@1'])
             ->assertNotified('Nepovedlo se')
             ->assertSet('window', '@1')
             ->assertNotDispatched('agent-window-selected');
+    }
+
+    public function test_pripnuti_konverzace_jako_trvale(): void
+    {
+        $this->falesnyAgent([
+            $this->konverzace('@1', 'aaaaaaaa-0000-4000-8000-000000000001', 'Údržba webu', time(), trvala: true),
+            $this->konverzace('@2', 'aaaaaaaa-0000-4000-8000-000000000002', 'Banner', time() - 60),
+        ]);
+
+        Livewire::actingAs($this->spravce())
+            ->test(AgentProject::class, ['project' => 'grillnor'])
+            ->assertSee('Trvalá')
+            ->assertSee('Odepnout')
+            ->assertSee('Připnout')
+            ->call('togglePin', '@2')
+            ->call('togglePin', '@1')
+            ->call('togglePin', '@99');
+
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/okna/%402/trvala') && $request['trvala'] === true);
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/okna/%401/trvala') && $request['trvala'] === false);
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), '%4099'));
     }
 
     public function test_klient_s_projektem_ma_odkaz_na_agenta(): void

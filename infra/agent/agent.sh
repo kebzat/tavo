@@ -35,6 +35,7 @@ Použití:
   agent vratit <projekt>        ukáže snímky a jak se vrátit
   agent odebrat <projekt>       agent ztratí přístup, snímky a zálohy zůstanou
   agent prihlasit               přihlášení Claude Code (jednou)
+  agent sluzba                  nahraje novou verzi služby, běžící konverzace zůstanou
 TXT
 }
 
@@ -234,6 +235,14 @@ case "${1:-}" in
     vratit) vratit "${2:?název projektu}" ;;
     odebrat) odebrat "${2:?název projektu}" ;;
     preposlat) preposlat ;;
+    sluzba)
+        # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
+        # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
+        docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
+        docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
+        sleep 3
+        docker logs --tail 2 "$KONTEJNER"
+        ;;
     prihlasit) exec docker exec -it -u agent "$KONTEJNER" bash -lc claude ;;
     *) otevrit "$1" ;;
 esac
