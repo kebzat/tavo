@@ -40,7 +40,19 @@
       "Bash(rm *)",
       "Bash(curl * -X *)",
       "Bash(curl * --data*)",
-      "Bash(curl * -d *)"
+      "Bash(curl * -d *)",
+      "Bash(*artisan tinker*)",
+      "Bash(*artisan db:seed*)",
+      "Bash(*artisan settings:*)",
+      "Bash(wp db *)",
+      "Bash(wp search-replace *)",
+      "Bash(wp * create *)",
+      "Bash(wp * update *)",
+      "Bash(wp * delete *)",
+      "Bash(wp * set *)",
+      "Bash(wp * add *)",
+      "Bash(wp * import *)",
+      "Bash(mysql *)"
     ]
   }
 }

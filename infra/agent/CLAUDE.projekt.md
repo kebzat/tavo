@@ -22,7 +22,9 @@ po každé úpravě ověř, že web odpovídá (`curl -sI https://…`).
 K databázi webu se dostaneš jeho vlastními údaji z `.env`:
 `php artisan` (Laravel) nebo `wp` (WordPress) fungují jako na serveru,
 web je dostupný i pod svou serverovou cestou. Měň data jen tam, kde to
-úkol opravdu potřebuje, a předem řekni, co uděláš.
+úkol opravdu potřebuje, a předem řekni, co uděláš. Zápis do databáze
+(`artisan tinker`, `wp … update` a podobně) se vždycky ptá člověka, to je
+záměr: potvrdí ho v terminálu.
 
 **prazdny:** projekt bez kódu (Shoptet, Upgates, marketing).
 Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.
