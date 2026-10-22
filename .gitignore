@@ -29,3 +29,4 @@ Thumbs.db
 
 # Pracovní screenshoty (nepatří do repa)
 /*.png
+__pycache__/
