@@ -108,9 +108,9 @@ return [
             ->filter(fn (string $pair): bool => str_contains($pair, ':'))
             ->mapWithKeys(fn (string $pair): array => [trim(strstr($pair, ':', true)) => trim(substr(strstr($pair, ':'), 1))])
             ->all(),
-        // Pojistka předplatného Claude: nejvýš tolik úloh z ClickUpu za hodinu a za den.
-        'hourly_limit' => (int) env('CLICKUP_AGENT_HOURLY_LIMIT', 6),
-        'daily_limit' => (int) env('CLICKUP_AGENT_DAILY_LIMIT', 30),
+        // Pojistka předplatného Claude: úlohu z ClickUpu nespustí, když je 5h relace
+        // nebo týden vyčerpaný aspoň z tolika procent. 100 = vypnuto.
+        'max_usage_percent' => (int) env('CLICKUP_AGENT_MAX_USAGE', 90),
     ],
 
 ];

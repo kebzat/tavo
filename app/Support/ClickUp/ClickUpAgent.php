@@ -6,6 +6,8 @@ use App\Filament\Tools\Pages\Agent\AgentProject;
 use App\Models\AgentJob;
 use App\Models\Client;
 use App\Support\Agent\AgentServer;
+use App\Support\Agent\ClaudeUsage;
+use App\Support\Agent\UsageLimit;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -238,16 +240,25 @@ class ClickUpAgent
         return [$client, $client?->agent_project ?: $spaceProject];
     }
 
+    /**
+     * Pojistka předplatného: agent z ClickUpu se nespustí, jen když je relace
+     * nebo týden Claude skoro vyčerpaný, ať zbytek zůstane na práci v Claude
+     * Code. Počet úloh se nehlídá. Když stav předplatného nejde zjistit, pustí se.
+     */
     private function overLimit(): ?string
     {
-        $hour = AgentJob::query()->started()->where('started_at', '>=', now()->subHour())->count();
-        $day = AgentJob::query()->started()->where('started_at', '>=', now()->subDay())->count();
+        $max = (int) config('services.clickup.max_usage_percent');
 
-        return match (true) {
-            $hour >= config('services.clickup.hourly_limit') => 'za poslední hodinu už jsem dostal '.$hour.' úloh, víc kvůli limitům předplatného Claude nespouštím. Zkuste to prosím za chvíli.',
-            $day >= config('services.clickup.daily_limit') => 'dnes už jsem dostal '.$day.' úloh, víc kvůli limitům předplatného Claude nespouštím. Zkuste to zítra, nebo v Nástroje → Agent.',
-            default => null,
-        };
+        if ($max <= 0 || $max >= 100) {
+            return null;
+        }
+
+        $full = collect(ClaudeUsage::current($this->agent)->headline())
+            ->first(fn (UsageLimit $limit): bool => $limit->percent >= $max);
+
+        return $full
+            ? 'předplatné Claude je vyčerpané z '.$full->percent.' % ('.mb_strtolower($full->label()).'), zbytek nechávám na vaši práci v Claude Code. Obnoví se '.($full->resetLabel() ?? 'brzy').'. Zkuste to pak znovu, nebo pojistku upravte (CLICKUP_AGENT_MAX_USAGE).'
+            : null;
     }
 
     private function reject(AgentJob $job, string $reason): void

@@ -33,8 +33,7 @@ class ClickUpAgentTest extends TestCase
             'services.clickup.team_id' => '900',
             'services.clickup.users' => [self::TOM, '106711681'],
             'services.clickup.space_projects' => ['SP-PAVEL' => 'marketing'],
-            'services.clickup.hourly_limit' => 6,
-            'services.clickup.daily_limit' => 30,
+            'services.clickup.max_usage_percent' => 90,
             'services.agent.url' => 'http://agent.test',
             'services.agent.secret' => 'tajne',
             'services.agent.api_token' => self::TOKEN,
@@ -56,7 +55,20 @@ class ClickUpAgentTest extends TestCase
                 ? Http::response(['comments' => collect($this->threads[explode('/', $request->url())[6]] ?? [])->map(fn (string $id): array => ['id' => $id])->all()])
                 : Http::response(['id' => 'R'.(++$this->replies)]),
             'agent.test/api/projekty/*/ulohy' => Http::response(['zarazeno' => true], 202),
+            'agent.test/api/predplatne' => fn () => Http::response($this->usage(), 200),
         ]);
+    }
+
+    /** Stav předplatného Claude ze služby agenta (jako /usage). */
+    private int $sessionPercent = 16;
+
+    /** @return array<string, mixed> */
+    private function usage(): array
+    {
+        return ['plan' => 'max', 'limity' => [
+            ['kind' => 'session', 'percent' => $this->sessionPercent, 'resets_at' => now()->addHours(2)->toIso8601String()],
+            ['kind' => 'weekly_all', 'percent' => 63, 'resets_at' => now()->addDays(2)->toIso8601String()],
+        ]];
     }
 
     /** @param  array<string, mixed>  $override */
@@ -161,7 +173,7 @@ class ClickUpAgentTest extends TestCase
         $this->assertSame('C2', $followup->clickup_thread_id);
         $this->assertSame($first->session, $followup->session);
         $this->assertNotNull($first->session);
-        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'agent.test') && $request['session'] === $first->session && str_contains($request['zadani'], 'odstraň teď ten test'));
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/ulohy') && $request['session'] === $first->session && str_contains($request['zadani'], 'odstraň teď ten test'));
         // Odpověď jde do hlavního komentáře vlákna, ne pod odpověď.
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_contains($request->url(), 'comment/C2/reply') && str_starts_with($request['comment_text'], 'Agent: navazuji'));
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'comment/C40/reply'));
@@ -266,7 +278,7 @@ class ClickUpAgentTest extends TestCase
         $this->webhook()->assertOk();
 
         $this->assertSame(1, AgentJob::query()->count());
-        Http::assertSentCount(4); // úkol, komentáře, potvrzení, agent
+        Http::assertSentCount(5); // úkol, stav předplatného, komentáře, potvrzení, agent
     }
 
     public function test_nase_odpoved_agenta_znovu_nespusti(): void
@@ -319,23 +331,33 @@ class ClickUpAgentTest extends TestCase
 
         $this->webhook()->assertOk();
 
-        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'agent.test') && $request['session'] === '0f8fad5b-d9cb-469f-a165-70867728950e');
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/ulohy') && $request['session'] === '0f8fad5b-d9cb-469f-a165-70867728950e');
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply') && str_contains($request['comment_text'], 'navazuji'));
     }
 
-    public function test_limit_za_hodinu_chrani_predplatne(): void
+    public function test_pocet_uloh_se_nehlida(): void
     {
-        config(['services.clickup.hourly_limit' => 2]);
         $this->klient();
         $this->fakeClickUp();
 
-        foreach (['C10', 'C11', 'C12'] as $id) {
+        foreach (['C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17'] as $id) {
             $this->webhook(commentId: $id)->assertOk();
         }
 
-        $this->assertSame(2, AgentJob::query()->where('status', AgentJob::STATUS_RUNNING)->count());
-        $this->assertSame(AgentJob::STATUS_REJECTED, AgentJob::query()->where('clickup_comment_id', 'C12')->value('status'));
-        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_contains($request->url(), 'reply') && str_contains(self::text($request), 'limitům předplatného'));
+        $this->assertSame(8, AgentJob::query()->where('status', AgentJob::STATUS_RUNNING)->count());
+    }
+
+    public function test_skoro_vycerpane_predplatne_agenta_nespusti(): void
+    {
+        $this->sessionPercent = 94;
+        $this->klient();
+        $this->fakeClickUp();
+
+        $this->webhook()->assertOk();
+
+        $this->assertSame(AgentJob::STATUS_REJECTED, AgentJob::query()->sole()->status);
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), '/ulohy'));
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_contains($request->url(), 'reply') && str_contains(self::text($request), 'vyčerpané z 94 % (relace)'));
     }
 
     public function test_kdyz_do_vlakna_odpovedet_nejde_odpovi_komentarem_k_ukolu(): void

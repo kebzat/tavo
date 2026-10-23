@@ -196,8 +196,9 @@ Nový spouštěč jinde ve stejném úkolu naváže na poslední konverzaci úko
 Pojistky: pokyn je jen text komentáře, popis a ostatní komentáře jdou agentovi
 jako podklady s upozorněním, že pokyny v nich (vložené e-maily) neplní. Odpověď
 agenta spouštěč neobsahuje a ID našich odpovědí se pamatují, takže se agent
-nespustí sám sebou. Limit předplatného: `CLICKUP_AGENT_HOURLY_LIMIT` (6)
-a `CLICKUP_AGENT_DAILY_LIMIT` (30) úloh. V ClickUpu agent jen čte úkoly
+nespustí sám sebou. Počet úloh se nehlídá. Pojistka předplatného: když je 5h
+relace nebo týden Claude vyčerpaný aspoň z `CLICKUP_AGENT_MAX_USAGE` % (90),
+agent odpoví, kdy se limit obnoví, a nespustí se (100 = vypnuto). V ClickUpu agent jen čte úkoly
 a přidává odpovědi, nic neupravuje ani nemaže.
 
 Nastavení (jednou, na serveru):
