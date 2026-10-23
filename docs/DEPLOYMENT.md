@@ -231,9 +231,9 @@ Server ke GitHubu přístup mít nemusí — soubory tam posílá GitHub, ne nao
 
 ## 4. Jak deploy probíhá
 
-`.github/workflows/ci.yml` spustí Pint a testy na každý pull request a na push
-do `main` a do větví agenta `agent/…` (hned po odeslání, ať jsou hotové dřív, než
-člověk klikne na Zveřejnit).
+`.github/workflows/ci.yml` spustí Pint a testy (souběžně, `--parallel`) na každý
+pull request a na push do větví agenta `agent/…` (hned po odeslání, ať jsou hotové
+dřív, než člověk klikne na Zveřejnit). Po sloučení do `main` se znovu netestuje.
 `.github/workflows/deploy.yml` se pustí **hned po pushi do `main`** a podruhé
 netestuje: krok „Prošly testy v pull requestu?“ ověří, že commit patří ke
 sloučenému pull requestu se zelenými testy (ty na pull requestu testují výsledek

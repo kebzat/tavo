@@ -2,11 +2,13 @@ name: CI
 
 # Testy běží hned po odeslání práce agenta (větve agent/…), ne až po kliknutí
 # na Zveřejnit. Než člověk projde snímky, jsou hotové a sloučení nečeká.
-# Na pull requestu se testuje výsledek sloučení s main. Nasazení podruhé
-# netestuje, jen si ověří, že pull request prošel (deploy.yml).
+# Na pull requestu se testuje výsledek sloučení s main (pojistka, když se
+# main mezitím změnil, běží souběžně). Po sloučení do main se znovu
+# netestuje: nasazení si ověří, že pull request prošel, a jinak testuje
+# samo (deploy.yml). Název jobu níž čte deploy.yml, nepřejmenovávat.
 on:
   push:
-    branches: [main, 'agent/**']
+    branches: ['agent/**']
   pull_request:
 
 # Agent pošle větev znovu: rozběhnuté testy starší verze nemají cenu.
@@ -72,5 +74,6 @@ jobs:
       - name: Kontrola formátu (Pint)
         run: vendor/bin/pint --test
 
+      # Souběžně na všech jádrech stroje (paratest), testy jsou tak zhruba o polovinu kratší.
       - name: Testy
-        run: php artisan test
+        run: php artisan test --parallel
