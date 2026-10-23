@@ -323,6 +323,47 @@ class ClickUpAgentTest extends TestCase
         $this->withToken('spatny-token-spatny-token-spatny-token')->postJson("/nastroje/api/agent/ulohy/{$job->id}/vysledek", ['ok' => true])->assertUnauthorized();
     }
 
+    public function test_agent_prida_samostatny_komentar_a_oznaci_pavla(): void
+    {
+        Http::fake([
+            'api.clickup.com/api/v2/team' => Http::response(['teams' => [['id' => '900', 'members' => [
+                ['user' => ['id' => (int) self::TOM, 'username' => 'Tomáš Kebza']],
+                ['user' => ['id' => 106711681, 'username' => 'Pavel']],
+                ['user' => ['id' => 777, 'username' => 'Klient Novák']],
+            ]]]]),
+            'api.clickup.com/api/v2/task/T1/comment' => Http::sequence()->push(['id' => 'K1'])->push(['id' => 'K2']),
+            'api.clickup.com/api/v2/comment/*/reply' => Http::response(['id' => 'R1']),
+        ]);
+        $job = AgentJob::create(['clickup_task_id' => 'T1', 'clickup_comment_id' => 'C50', 'clickup_thread_id' => 'C50', 'clickup_user_id' => self::TOM, 'project' => 'grillnor', 'instruction' => 'x', 'status' => AgentJob::STATUS_RUNNING, 'started_at' => now()]);
+
+        $this->withToken(self::TOKEN)->postJson("/nastroje/api/agent/ulohy/{$job->id}/vysledek", ['ok' => true, 'vysledek' => <<<'TXT'
+            Pixel je nasazený.
+
+            [komentar @Pavel @tomas]
+            Ahoj, zkontroluj prosím události v Meta Events Manageru. @agent
+            [/komentar]
+            [komentar @Klient]
+            Hotovo.
+            [/komentar]
+            TXT])->assertOk();
+
+        // Nový komentář k úkolu (ne odpověď), označí Pavla i Toma, spouštěč z textu zmizí.
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_ends_with($request->url(), 'task/T1/comment')
+            && isset($request['comment'])
+            && $request['comment'][0]['text'] === "Agent: Ahoj, zkontroluj prosím události v Meta Events Manageru. agent\n\n"
+            && $request['comment'][1] === ['type' => 'tag', 'user' => ['id' => 106711681]]
+            && $request['comment'][2] === ['text' => ' ']
+            && $request['comment'][3] === ['type' => 'tag', 'user' => ['id' => (int) self::TOM]]);
+        // Klienta označit nejde, komentář odejde bez něj.
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), 'task/T1/comment') && ($request['comment_text'] ?? null) === 'Agent: Hotovo.');
+        // Do vlákna jde shrnutí bez bloků a zpráva, co se stalo.
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply')
+            && str_starts_with($t = self::text($request), "Agent: hotovo.\n\nPixel je nasazený.\n\nDo úkolu jsem přidal samostatný komentář, označil jsem: Pavel, Tomáš Kebza.")
+            && str_contains($t, 'Nenašel jsem v ClickUpu, koho označit: Klient.')
+            && ! str_contains($t, '[komentar'));
+        $this->assertSame(['K1', 'K2', 'R1'], $job->refresh()->reply_comment_ids);
+    }
+
     public function test_dalsi_agent_ve_stejnem_ukolu_navaze_na_konverzaci(): void
     {
         $this->klient();

@@ -245,6 +245,7 @@ Nový spouštěč jinde ve stejném úkolu naváže na poslední konverzaci úko
 | Spuštění | `App\Support\ClickUp\ClickUpAgent::start()` po odeslání odpovědi webhooku → služba agenta `POST /api/projekty/{slug}/ulohy` |
 | Práce | `server.js`, `odpracovat()`: `claude -p --permission-mode auto --output-format json`, v projektu nejvýš jedna úloha, celkem dvě, limit 30 min, 200 kroků. U webu na serveru předtím snímek a záloha DB. Log `~/.taveo-ulohy/<id>.log`. |
 | Výsledek | služba → `POST /nastroje/api/agent/ulohy/{id}/vysledek` (token `AGENT_API_TOKEN`) → odpověď do ClickUpu |
+| Samostatný komentář | blok `[komentar @Pavel] … [/komentar]` za shrnutím agenta → nový komentář k úkolu se štítky na konci (`ClickUpAgent::postComments()`), nejvýš 3 na úlohu. Označit jde jen lidi z `CLICKUP_AGENT_USERS` (podle jména v ClickUpu, celé nebo křestní, bez diakritiky), klienta nikdy. Do vlákna přijde shrnutí bez bloků a věta, co se přidalo. |
 | Ztracené úlohy | `clickup:hlidat` každých 15 min uzavře úlohy bez výsledku po 2 hodinách a napíše to do ClickUpu |
 
 Pojistky: pokyn je jen text komentáře, popis a ostatní komentáře jdou agentovi
@@ -253,7 +254,7 @@ agenta spouštěč neobsahuje a ID našich odpovědí se pamatují, takže se ag
 nespustí sám sebou. Počet úloh se nehlídá. Pojistka předplatného: když je 5h
 relace nebo týden Claude vyčerpaný aspoň z `CLICKUP_AGENT_MAX_USAGE` % (90),
 agent odpoví, kdy se limit obnoví, a nespustí se (100 = vypnuto). V ClickUpu agent jen čte úkoly
-a přidává odpovědi, nic neupravuje ani nemaže.
+a přidává odpovědi a komentáře, nic neupravuje ani nemaže.
 
 Nastavení (jednou, na serveru):
 

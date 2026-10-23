@@ -26,7 +26,9 @@ use Throwable;
  * a ostatní komentáře jsou podklady (mohou v nich být vložené e-maily
  * klientů a agent je nesmí brát jako příkazy).
  *
- * Agent odpovídá do hlavního komentáře vlákna. Každá další zpráva ve vlákně
+ * Agent odpovídá do hlavního komentáře vlákna. Samostatný komentář k úkolu
+ * (třeba s označením Pavla) napíše blokem `[komentar @Pavel] … [/komentar]`
+ * na konci shrnutí, viz {@see postComments()}. Každá další zpráva ve vlákně
  * s agentem (od Toma nebo Pavla) na konverzaci naváže i bez spouštěče, jako
  * v chatu. Nový „@agent“ jinde ve stejném úkolu naváže na poslední konverzaci úkolu.
  */
@@ -37,6 +39,12 @@ class ClickUpAgent
      * otevírají v ClickUpu našeptávač, vykřičník nic, ať si každý vybere.
      */
     public const TRIGGER = '/(^|\s)[@\/!]agent\b/iu';
+
+    /** Samostatné komentáře v závěru agenta: `[komentar @Pavel @Tom] text [/komentar]`. */
+    private const COMMENT_BLOCK = '/\[komentar((?:[ \t]+@[^\s\]]+)*)[ \t]*\]\s*(.*?)\s*\[\/komentar\]/isu';
+
+    /** Víc samostatných komentářů z jedné úlohy by úkol zaplevelilo. */
+    private const MAX_COMMENTS = 3;
 
     /** Začátek našich odpovědí. Neobsahuje spouštěč, takže odpověď nespustí další běh. */
     private const SIGNATURE = 'Agent:';
@@ -200,10 +208,76 @@ class ClickUpAgent
         ]);
 
         $link = $job->project ? "\n\nKonverzace v nástrojích: ".AgentProject::getUrl(['project' => $job->project], panel: 'tools') : '';
+        [$result, $notes] = $ok ? $this->postComments($job, $result) : [$result, []];
+        $notes = $notes === [] ? '' : "\n\n".implode("\n", $notes);
 
         $this->say($job, $ok
-            ? "hotovo.\n\n".Str::limit($result ?: 'Bez shrnutí.', 6000).$link
+            ? "hotovo.\n\n".Str::limit($result ?: 'Bez shrnutí.', 6000).$notes.$link
             : 'nedokončil jsem to ('.Str::limit((string) $job->error, 300).').'.($result ? "\n\n".Str::limit($result, 3000) : '').$link, mention: true);
+    }
+
+    /**
+     * Bloky `[komentar @Jméno] … [/komentar]` ze závěru agenta odejdou jako
+     * samostatné komentáře k úkolu. Označit jde jen lidi z CLICKUP_AGENT_USERS
+     * (Tom, Pavel), nikdy klienta. Vrátí závěr bez bloků a poznámky pro vlákno.
+     *
+     * @return array{0: string, 1: list<string>}
+     */
+    private function postComments(AgentJob $job, string $result): array
+    {
+        preg_match_all(self::COMMENT_BLOCK, $result, $blocks, PREG_SET_ORDER);
+        $result = trim(preg_replace(self::COMMENT_BLOCK, '', $result));
+        $notes = [];
+        $members = null;
+
+        foreach (array_slice($blocks, 0, self::MAX_COMMENTS) as [, $names, $text]) {
+            $names = preg_split('/[\s@]+/u', $names, flags: PREG_SPLIT_NO_EMPTY);
+            $members ??= $names === [] ? [] : rescue(fn (): array => $this->teammates(), [], report: false);
+            $found = collect($names)->mapWithKeys(fn (string $name): array => [$name => $this->findMember($members, $name)]);
+            $missing = $found->filter(fn (?string $id): bool => $id === null)->keys();
+
+            try {
+                $job->rememberReply($this->clickUp->comment(
+                    $job->clickup_task_id,
+                    self::SIGNATURE.' '.preg_replace(self::TRIGGER, '$1agent', Str::limit($text, 6000)),
+                    $found->filter()->values()->all(),
+                ));
+                $notes[] = 'Do úkolu jsem přidal samostatný komentář'.($found->filter()->isNotEmpty() ? ', označil jsem: '.$found->filter()->map(fn (string $id): string => $members[$id])->implode(', ') : '').'.';
+
+                if ($missing->isNotEmpty()) {
+                    $notes[] = 'Nenašel jsem v ClickUpu, koho označit: '.$missing->implode(', ').'. Komentář je bez nich.';
+                }
+            } catch (RuntimeException $e) {
+                Log::warning('ClickUp: samostatný komentář agenta se nepodařilo přidat.', ['job' => $job->getKey(), 'error' => $e->getMessage()]);
+                $notes[] = "Samostatný komentář se nepodařilo přidat, tady je jeho text:\n".$text;
+            }
+        }
+
+        if (count($blocks) > self::MAX_COMMENTS) {
+            $notes[] = 'Víc než '.self::MAX_COMMENTS.' komentáře najednou nepřidám, zbytek jsem vynechal.';
+        }
+
+        return [$result, $notes];
+    }
+
+    /**
+     * Koho smí agent označit: členové týmu z CLICKUP_AGENT_USERS.
+     *
+     * @return array<string, string> ID => jméno v ClickUpu
+     */
+    private function teammates(): array
+    {
+        return array_intersect_key($this->clickUp->members(), array_flip(config('services.clickup.users')));
+    }
+
+    /** Jméno z bloku (Pavel, pavel, Pavel Novák) → ID člena. Celé jméno nebo křestní, bez ohledu na diakritiku. */
+    private function findMember(array $members, string $name): ?string
+    {
+        $plain = fn (string $text): string => Str::lower(Str::ascii($text));
+        $id = array_search($plain($name), array_map($plain, $members), true)
+            ?: array_search($plain($name), array_map(fn (string $username): string => $plain(Str::before($username, ' ')), $members), true);
+
+        return $id === false ? null : (string) $id;
     }
 
     /**
@@ -325,6 +399,10 @@ class ClickUpAgent
             '- Pracuješ sám na pozadí, nikdo ti během práce neodpoví. Nedoptávej se. Co je nejasné nebo potřebuje potvrzení člověka, neudělej a napiš to do závěru.',
             '- Drž se pravidel projektu (CLAUDE.md) a jeho pojistek.',
             '- Na konci napiš shrnutí pro ClickUp česky, obyčejným textem bez nadpisů, nejvýš 15 řádků: co jsi udělal, co má člověk zkontrolovat, co se nepodařilo a proč.',
+            '- Shrnutí přijde jako odpověď do vlákna. Když máš podle pokynu do úkolu napsat samostatný komentář nebo v něm někoho označit (Tom, Pavel), dej za shrnutí blok, systém ho vloží jako nový komentář a označené upozorní (nejvýš '.self::MAX_COMMENTS.' bloky, označit jde jen Toma a Pavla):',
+            '  [komentar @Pavel]',
+            '  text komentáře (bez „@Pavel“, označení přidá systém)',
+            '  [/komentar]',
         ], fn ($line): bool => $line !== null));
     }
 }
