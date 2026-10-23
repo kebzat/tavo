@@ -132,7 +132,7 @@ class Publisher
     /** Vrátit zveřejněnou úpravu: GitHub založí opačný pull request a ten jde stejnou cestou. */
     public function revert(AgentPublication $original, ?User $user): AgentPublication
     {
-        if ($original->status !== PublicationStatus::Done || $original->pr_node_id === null) {
+        if (! $original->status->isMerged() || $original->pr_node_id === null) {
             throw new GitHubError('Vrátit jde jen úpravu, která je na webu.');
         }
 
@@ -158,16 +158,16 @@ class Publisher
         return $publication;
     }
 
-    /** Zahodit hotovou práci: větev zmizí ze schránky (agent ji má dál u sebe). */
-    public function discard(string $project, string $name, string $sha): void
-    {
-        $this->agent->discardHandover($project, $name, $sha);
-    }
-
     /** Posune zveřejnění o krok, kam až to jde. Volá se opakovaně, nic nepokazí. */
     public function advance(AgentPublication $publication): void
     {
         if (! $publication->status->isRunning()) {
+            return;
+        }
+
+        if ($publication->isRestore()) {
+            app(SiteRestorer::class)->advance($publication);
+
             return;
         }
 
@@ -310,12 +310,12 @@ class Publisher
             return;
         }
 
-        // Bez nasazovacího běhu (repozitář ho nemá): hotovo, až všechno doběhne
-        // a dvě minuty se nic nového neobjeví.
+        // Bez nasazovacího běhu (repozitář ho nemá): sloučeno, až všechno
+        // doběhne a dvě minuty se nic nového neobjeví. „Na webu“ by lhalo.
         $quiet = $runs->every(fn (array $run): bool => $run['status'] === 'completed' && $run['updated_at'] !== null && now()->subMinutes(2)->gt($run['updated_at']));
 
         if ($quiet && $publication->merged_at?->lt(now()->subMinutes(3))) {
-            $this->finish($publication, PublicationStatus::Done);
+            $this->finish($publication, PublicationStatus::Merged);
         } elseif ($publication->merged_at?->lt(now()->subMinutes(45))) {
             $this->finish($publication, PublicationStatus::Failed, 'Nasazení se do 45 minut nedokončilo. Mrkněte na GitHub (Actions).');
         }

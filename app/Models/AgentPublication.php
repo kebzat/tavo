@@ -42,6 +42,11 @@ class AgentPublication extends Model
         return $query->whereIn('status', collect(PublicationStatus::cases())->filter->isRunning()->map->value->all());
     }
 
+    public function isRestore(): bool
+    {
+        return $this->kind === 'restore';
+    }
+
     public function isRevert(): bool
     {
         return $this->reverts_id !== null;

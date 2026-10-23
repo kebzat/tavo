@@ -36,8 +36,21 @@ web je dostupný i pod svou serverovou cestou. Měň data jen tam, kde to
 bez ptaní: těsně před nimi se sama uloží záloha databáze a snímek souborů.
 Po změně ověř na webu, že funguje, a stručně napiš, co se změnilo.
 
+**Předání (karta „Co agent změnil“ v nástrojích):** než začneš web měnit,
+založ složku `/projekty/{{PROJEKT}}/predani/<krátký-popis>/` a zapiš do ní čas:
+`date -Is > /projekty/{{PROJEKT}}/predani/<krátký-popis>/zacatek`. Tlačítko Vrátit pak
+vrátí web do stavu z téhle chvíle. Po dokončení do ní dej `popis.md` (první
+řádek `# Nadpis`, lidsky co se změnilo, „Co zkontrolovat“) a snímky
+z prohlížeče (`01-pocitac.png`, `02-telefon.png`…). Jedna složka = jedna úprava.
+
 **prazdny:** projekt bez kódu (Shoptet, Upgates, marketing).
 Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.
+
+**Předání (karta „Hotové podklady“ v nástrojích):** hotové texty a kódy dej
+do `/projekty/{{PROJEKT}}/predani/<krátký-popis>/`: `popis.md` (první řádek `# Nadpis`, pak
+**přesně kam to v administraci vložit**) a každý kód nebo text jako vlastní
+soubor (`paticka.html`, `styl.css`, `popis-produktu.txt`), náhled jako `*.png`.
+V nástrojích u nich bude tlačítko Zkopírovat.
 
 ## Pravidla
 

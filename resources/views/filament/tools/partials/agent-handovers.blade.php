@@ -1,8 +1,8 @@
-{{-- Hotová práce agenta: zkontrolovat a zveřejnit. Viz App\Filament\Tools\Livewire\AgentHandovers. --}}
+{{-- Hotová práce agenta podle typu projektu. Viz App\Filament\Tools\Livewire\AgentHandovers. --}}
 <div @if ($running) wire:poll.10s @else wire:poll.30s @endif>
-    <x-filament::section icon="heroicon-o-rocket-launch" icon-color="primary">
-        <x-slot name="heading">Hotová práce</x-slot>
-        <x-slot name="description">Co agent dokončil. Zkontrolujte snímky a popis, pak jedním klikem zveřejněte na web.</x-slot>
+    <x-filament::section :icon="$copy['icon']" icon-color="primary">
+        <x-slot name="heading">{{ $copy['heading'] }}</x-slot>
+        <x-slot name="description">{{ $copy['description'] }}</x-slot>
 
         <div class="-mx-6 -my-6 divide-y divide-gray-950/5 dark:divide-white/10">
             @unless ($configured)
@@ -21,11 +21,17 @@
                     <div class="min-w-0 grow basis-64">
                         <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $publication->title }}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            {{ $publication->isRevert() ? 'Vrací' : 'Zveřejňuje' }} {{ $publication->user?->name ?? 'neznámý' }} · {{ $publication->created_at->diffForHumans() }}
+                            {{ $publication->isRevert() || $publication->isRestore() ? 'Vrací' : 'Zveřejňuje' }} {{ $publication->user?->name ?? 'neznámý' }} · {{ $publication->created_at->diffForHumans() }}
+                            @if ($publication->isRestore() && $publication->description) · {{ $publication->description }} @endif
                         </p>
                     </div>
 
-                    @if ($publication->status->isRunning() || $publication->status === \App\Enums\PublicationStatus::Done)
+                    @if ($publication->isRestore() && $publication->status->isRunning())
+                        <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-950 dark:text-white">
+                            <x-filament::loading-indicator class="size-5 text-primary-600 dark:text-primary-400" />
+                            Vrací se
+                        </span>
+                    @elseif (! $publication->isRestore() && ($publication->status->isRunning() || $publication->status === \App\Enums\PublicationStatus::Done))
                         <ol class="flex items-center gap-2 text-xs">
                             @foreach ([1 => 'Testy', 2 => 'Nasazení', 3 => 'Na webu'] as $step => $label)
                                 @unless ($loop->first)
@@ -86,9 +92,10 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">
                             {{ \Illuminate\Support\Carbon::createFromTimestamp($item['time'])->diffForHumans() }}
                             @if ($item['images']) · {{ $this->plural(count($item['images']), 'snímek', 'snímky', 'snímků') }} @endif
+                            @if ($item['codes']) · {{ $this->plural(count($item['codes']), 'kód k vložení', 'kódy k vložení', 'kódů k vložení') }} @endif
                             @if ($item['files']) · {{ $this->plural($item['files'], 'změněný soubor', 'změněné soubory', 'změněných souborů') }} @endif
                         </p>
-                        @if (! $item['on_github'] || $item['sensitive'] || ! ($item['images'] || $item['description']))
+                        @if (! $item['on_github'] || $item['sensitive'] || ! ($item['images'] || $item['description'] || $item['codes']))
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
                                 @unless ($item['on_github'])
                                     <x-filament::badge color="gray" size="sm">Odesílá se na GitHub…</x-filament::badge>
@@ -96,28 +103,28 @@
                                 @if ($item['sensitive'])
                                     <x-filament::badge color="warning" size="sm" icon="heroicon-m-exclamation-triangle">Mění nastavení serveru</x-filament::badge>
                                 @endif
-                                @unless ($item['images'] || $item['description'])
+                                @unless ($item['images'] || $item['description'] || $item['codes'])
                                     <x-filament::badge color="gray" size="sm">Bez snímků a popisu</x-filament::badge>
                                 @endunless
                             </div>
                         @endif
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        {{ ($this->discardAction)(['name' => $item['name'], 'sha' => $item['sha']]) }}
-                        {{ ($this->reviewAction)(['name' => $item['name'], 'sha' => $item['sha']]) }}
-                        {{ ($this->publishAction)(['name' => $item['name'], 'sha' => $item['sha']]) }}
+                    <div class="flex flex-wrap items-center gap-3">
+                        @foreach ($this->rowActions($item) as $action)
+                            {{ $action }}
+                        @endforeach
                     </div>
                 </div>
             @endforeach
 
             @if ($handovers === [] && $active->isEmpty() && ! $error)
-                <p class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">Teď tu nic nečeká. Až agent dokončí úpravu, objeví se tady i se snímky.</p>
+                <p class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $copy['empty'] }}</p>
             @endif
 
             @if ($history->isNotEmpty())
                 <div class="bg-gray-50 px-6 py-3 dark:bg-white/5">
-                    <p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Dřív zveřejněno</p>
+                    <p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">{{ $copy['history'] }}</p>
                     <ul class="space-y-1.5">
                         @foreach ($history as $publication)
                             <li wire:key="historie-{{ $publication->id }}" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">

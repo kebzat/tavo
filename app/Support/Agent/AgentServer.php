@@ -129,10 +129,11 @@ class AgentServer
     }
 
     /**
-     * Hotová práce git projektu: větve agent/… ve schránce s popisem a snímky,
-     * které k nim agent přiložil. Nejnovější první.
+     * Hotová práce ke kontrole, nejnovější první. U git projektu větve agent/…
+     * ve schránce, u živého webu a projektu bez kódu složky s předáním.
+     * Popis a snímky (a kódy, začátek práce) přikládá agent.
      *
-     * @return list<array{vetev: string, jmeno: string, sha: string, cas: int, nadpis: string, popis: ?string, snimky: list<string>}>
+     * @return list<array{jmeno: string, cas: int, nadpis: string, popis: ?string, snimky: list<string>, vetev?: string, sha?: string, kody?: list<array{soubor: string, obsah: ?string}>, zacatek?: ?int}>
      */
     public function handovers(string $slug): array
     {
@@ -152,12 +153,45 @@ class AgentServer
     }
 
     /**
-     * Větev zmizí ze schránky i se snímky. Jen když je pořád na `$sha`:
-     * když agent mezitím pokračoval, nová práce zůstane.
+     * Předání zmizí i se snímky. U git projektu i větev ze schránky, ale jen
+     * když je pořád na `$sha`: když agent mezitím pokračoval, nová práce zůstane.
      */
-    public function discardHandover(string $slug, string $name, string $sha): void
+    public function discardHandover(string $slug, string $name, ?string $sha = null): void
     {
-        $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/predani/'.rawurlencode($name), ['sha' => $sha]));
+        $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/predani/'.rawurlencode($name), array_filter(['sha' => $sha])));
+    }
+
+    /**
+     * Vrátit živý web do stavu z `$time` (unix): soubory ze snímku, s `$database`
+     * i databázi ze zálohy. Dělá to root přes frontu, vrací ID požadavku
+     * pro {@see queueResult()}.
+     */
+    public function restoreSite(string $slug, string $name, int $time, bool $database): string
+    {
+        return $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/predani/'.rawurlencode($name).'/vratit', [
+            'cas' => $time,
+            'databaze' => $database,
+        ]))['id'];
+    }
+
+    /**
+     * Výsledek požadavku ve frontě serveru. Null = ještě běží.
+     *
+     * @return array{ok: bool, vystup: string}|null
+     */
+    public function queueResult(string $id): ?array
+    {
+        try {
+            $response = $this->request()->get('/api/fronta/'.rawurlencode($id));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return ['ok' => (bool) $response->throw()->json('ok'), 'vystup' => (string) $response->json('vystup')];
     }
 
     /** Po zveřejnění: server si stáhne novou verzi služby z main. Nečeká se. */

@@ -6,8 +6,8 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * Kudy jde hotová práce agenta na web po tlačítku Zveřejnit.
- * Viz App\Support\Agent\Publisher.
+ * Kudy jde hotová práce agenta na web po tlačítku Zveřejnit (Publisher),
+ * nebo vrácení živého webu (SiteRestorer).
  */
 enum PublicationStatus: string implements HasColor, HasLabel
 {
@@ -21,6 +21,14 @@ enum PublicationStatus: string implements HasColor, HasLabel
     case Deploying = 'deploying';
 
     case Done = 'done';
+
+    /** Sloučeno do main, repozitář ale nemá automatické nasazení. */
+    case Merged = 'merged';
+
+    /** Živý web se vrací do stavu před prací agenta (dělá root). */
+    case Restoring = 'restoring';
+
+    case Restored = 'restored';
 
     case TestsFailed = 'tests_failed';
 
@@ -36,6 +44,9 @@ enum PublicationStatus: string implements HasColor, HasLabel
             self::Testing => 'Běží testy',
             self::Deploying => 'Nasazuje se na web',
             self::Done => 'Na webu',
+            self::Merged => 'Sloučeno, bez nasazení',
+            self::Restoring => 'Vrací se',
+            self::Restored => 'Vráceno',
             self::TestsFailed => 'Testy neprošly',
             self::Conflict => 'Nejde sloučit',
             self::Failed => 'Nepovedlo se',
@@ -45,15 +56,21 @@ enum PublicationStatus: string implements HasColor, HasLabel
     public function getColor(): string
     {
         return match ($this) {
-            self::Waiting, self::Testing, self::Deploying => 'warning',
-            self::Done => 'success',
+            self::Waiting, self::Testing, self::Deploying, self::Restoring => 'warning',
+            self::Done, self::Merged, self::Restored => 'success',
             self::TestsFailed, self::Conflict, self::Failed => 'danger',
         };
     }
 
     public function isRunning(): bool
     {
-        return in_array($this, [self::Waiting, self::Testing, self::Deploying], true);
+        return in_array($this, [self::Waiting, self::Testing, self::Deploying, self::Restoring], true);
+    }
+
+    /** Úprava je v main (na webu, nebo jen sloučená): jde vrátit. */
+    public function isMerged(): bool
+    {
+        return $this === self::Done || $this === self::Merged;
     }
 
     /** Stav kroku 1 (testy), 2 (nasazení) a 3 (na webu) v průběhu: done / current / todo. */

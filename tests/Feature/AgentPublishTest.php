@@ -7,8 +7,10 @@ use App\Enums\UserRole;
 use App\Filament\Tools\Livewire\AgentHandovers;
 use App\Models\AgentPublication;
 use App\Models\User;
+use App\Support\Agent\AgentServer;
 use App\Support\Agent\GitHubError;
 use App\Support\Agent\Publisher;
+use App\Support\Agent\SiteRestorer;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,6 +58,7 @@ class AgentPublishTest extends TestCase
             ],
             'ahead' => 2,
             'handover_sha' => self::SHA,
+            'queue' => null,
         ];
 
         Http::fake(fn (Request $request) => $this->respond($request));
@@ -70,7 +73,21 @@ class AgentPublishTest extends TestCase
             return match (true) {
                 str_ends_with($url, '/api/projekty') => Http::response([
                     ['slug' => 'taveo', 'typ' => 'git', 'zdroj' => 'git@github.com:kebzat/tavo.git', 'vlakna' => []],
+                    ['slug' => 'grillnor', 'typ' => 'server', 'zdroj' => '/home/taveo.cz/grillnor', 'vlakna' => []],
+                    ['slug' => 'svet-cejlonu', 'typ' => 'prazdny', 'zdroj' => '', 'vlakna' => []],
                 ]),
+                str_ends_with($url, '/api/projekty/grillnor/predani') => Http::response([[
+                    'jmeno' => 'oteviraci-doba', 'cas' => now()->subMinutes(3)->timestamp, 'nadpis' => 'Kontakt: nová otevírací doba',
+                    'popis' => "# Kontakt: nová otevírací doba\n\nV patičce jsou nové hodiny.", 'snimky' => ['01-pocitac.png'], 'kody' => [],
+                    'zacatek' => 1792730000,
+                ]]),
+                str_ends_with($url, '/api/projekty/svet-cejlonu/predani') => Http::response([[
+                    'jmeno' => 'paticka', 'cas' => now()->subMinutes(3)->timestamp, 'nadpis' => 'Nová patička v Shoptetu',
+                    'popis' => "# Nová patička v Shoptetu\n\nVložte do Šablona → HTML kódy → Patička.", 'snimky' => [],
+                    'kody' => [['soubor' => 'paticka.html', 'obsah' => '<div class="paticka">Čaj z Cejlonu</div>']], 'zacatek' => null,
+                ]]),
+                str_ends_with($url, '/predani/oteviraci-doba/vratit') => Http::response(['id' => '11111111-2222-3333-4444-555555555555'], 202),
+                str_contains($url, '/api/fronta/') => $this->gh['queue'] === null ? Http::response(['hotovo' => false], 404) : Http::response(['hotovo' => true] + $this->gh['queue']),
                 str_ends_with($url, '/api/projekty/taveo/predani') => Http::response([[
                     'vetev' => 'agent/predplatne', 'jmeno' => 'predplatne', 'sha' => $this->gh['handover_sha'], 'cas' => now()->subMinutes(5)->timestamp,
                     'nadpis' => 'Nástroje: využití předplatného v hlavičce',
@@ -283,5 +300,73 @@ class AgentPublishTest extends TestCase
             ->assertHeader('Content-Type', 'image/png');
 
         $this->get(route('filament.tools.agent.snimek', ['project' => 'taveo', 'name' => 'predplatne', 'file' => '..%2F.env']))->assertNotFound();
+    }
+
+    public function test_bez_automatickeho_nasazeni_je_uprava_jen_sloucena(): void
+    {
+        $this->gh['main_runs'] = [['name' => 'CI', 'status' => 'completed', 'conclusion' => 'success']];
+
+        $publication = app(Publisher::class)->start('taveo', 'predplatne', self::SHA, $this->spravce());
+        $this->travel(4)->minutes();
+        app(Publisher::class)->advance($publication->refresh());
+
+        $this->assertSame(PublicationStatus::Merged, $publication->refresh()->status);
+        $this->assertSame('Sloučeno, bez nasazení', $publication->status->getLabel());
+    }
+
+    public function test_zivy_web_jde_vratit_i_s_databazi(): void
+    {
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'grillnor', 'type' => 'server'])
+            ->assertSee('Co agent změnil')
+            ->assertSee('Kontakt: nová otevírací doba')
+            ->assertDontSee('Zveřejnit')
+            ->assertActionHidden(TestAction::make('publish')->arguments(['name' => 'oteviraci-doba', 'sha' => null]))
+            ->callAction(TestAction::make('restoreSite')->arguments(['name' => 'oteviraci-doba', 'sha' => null]), data: ['database' => true])
+            ->assertNotified('Web se vrací');
+
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/predani/oteviraci-doba/vratit') && $r['cas'] === 1792730000 && $r['databaze'] === true);
+
+        $restore = AgentPublication::sole();
+        $this->assertTrue($restore->isRestore());
+        $this->assertSame(PublicationStatus::Restoring, $restore->status);
+
+        // Root ještě pracuje: nic se nemění.
+        app(Publisher::class)->advance($restore);
+        $this->assertSame(PublicationStatus::Restoring, $restore->refresh()->status);
+
+        $this->gh['queue'] = ['ok' => true, 'vystup' => 'Soubory vráceny na snímek abc1234.'];
+        $this->artisan('agent:zverejneni')->assertSuccessful();
+
+        $this->assertSame(PublicationStatus::Restored, $restore->refresh()->status);
+        $this->assertStringContainsString('Soubory vráceny', $restore->description);
+        $this->assertTrue($this->called('DELETE /api/projekty/grillnor/predani/oteviraci-doba'));
+    }
+
+    public function test_nepovedene_vraceni_webu_rekne_proc(): void
+    {
+        $this->gh['queue'] = ['ok' => false, 'vystup' => 'Chyba: před tímhle časem žádný snímek webu není'];
+
+        $item = app(AgentServer::class)->handovers('grillnor')[0];
+        $restore = app(SiteRestorer::class)->start('grillnor', $item, false, $this->spravce());
+        app(Publisher::class)->advance($restore);
+
+        $this->assertSame(PublicationStatus::Failed, $restore->refresh()->status);
+        $this->assertStringContainsString('žádný snímek', $restore->error);
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/vratit') && $r['databaze'] === false);
+    }
+
+    public function test_podklady_pro_shoptet_jdou_zkopirovat_a_odskrtnout(): void
+    {
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'svet-cejlonu', 'type' => 'prazdny'])
+            ->assertSee('Hotové podklady')
+            ->assertSee('1 kód k vložení')
+            ->mountAction(TestAction::make('review')->arguments(['name' => 'paticka', 'sha' => null]))
+            ->assertMountedActionModalSee(['Zkopírovat', 'Čaj z Cejlonu', 'Šablona → HTML kódy'])
+            ->callMountedAction()
+            ->assertNotified('Hotovo');
+
+        Http::assertSent(fn (Request $r) => $r->method() === 'DELETE' && str_ends_with($r->url(), '/api/projekty/svet-cejlonu/predani/paticka') && ! isset($r['sha']));
     }
 }

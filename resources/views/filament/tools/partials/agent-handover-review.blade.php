@@ -8,11 +8,29 @@
         </div>
     @endif
 
+    @if ($item['since'] && $component->type === 'server')
+        <p class="text-xs text-gray-500 dark:text-gray-400">Agent začal {{ $component->sinceLabel($item) }}. Do tohoto stavu web vrátí tlačítko Vrátit.</p>
+    @endif
+
     @if ($body)
         <div class="ads-advice text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ $body }}</div>
     @else
         <p class="text-sm text-gray-500 dark:text-gray-400">Agent k úpravě nenapsal popis. Požádejte ho v terminálu: „Připrav předání ke kontrole.“</p>
     @endif
+
+    {{-- Kódy a texty k vložení (Shoptet, Upgates). Tlačítko je zkopíruje do schránky. --}}
+    @foreach ($item['codes'] as $code)
+        <div x-data="{ copied: false }" class="overflow-hidden rounded-lg ring-1 ring-gray-950/10 dark:ring-white/10">
+            <div class="flex items-center justify-between gap-3 bg-gray-50 px-3 py-2 dark:bg-white/5">
+                <span class="font-mono text-xs text-gray-600 dark:text-gray-300">{{ $code['soubor'] }}</span>
+                <x-filament::button size="xs" color="gray" icon="heroicon-m-clipboard-document"
+                    x-on:click="navigator.clipboard.writeText($refs.code.innerText).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                    <span x-text="copied ? 'Zkopírováno' : 'Zkopírovat'">Zkopírovat</span>
+                </x-filament::button>
+            </div>
+            <pre x-ref="code" class="max-h-72 overflow-auto bg-white p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-gray-800 dark:bg-gray-900 dark:text-gray-200">{{ $code['obsah'] }}</pre>
+        </div>
+    @endforeach
 
     @if ($item['images'])
         <div>

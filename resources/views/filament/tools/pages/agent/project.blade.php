@@ -12,8 +12,8 @@
             <p class="text-sm text-gray-600 dark:text-gray-300">{{ $this->error() }}</p>
         </x-filament::section>
     @else
-        @if (($this->details()['typ'] ?? null) === 'git')
-            @livewire('tools.agent-handovers', ['project' => $project], key('hotova-prace'))
+        @if ($this->details())
+            @livewire('tools.agent-handovers', ['project' => $project, 'type' => $this->details()['typ']], key('hotova-prace'))
         @endif
 
         <div wire:poll.15s class="flex flex-col gap-6">

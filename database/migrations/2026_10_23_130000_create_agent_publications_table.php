@@ -5,9 +5,13 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Zveřejnění hotové práce agenta z nástrojů: větev agent/… → pull request
- * → testy → sloučení do main → nasazení. Jeden řádek na jedno kliknutí
- * na Zveřejnit (nebo Vrátit). Viz docs/AGENT.md, Zveřejnění.
+ * Hotová práce agenta poslaná z nástrojů dál. Jeden řádek na jedno kliknutí:
+ *
+ * - publish: větev agent/… → pull request → testy → main → nasazení (git),
+ *   i vrácení zveřejněné úpravy (reverts_id),
+ * - restore: živý web na serveru vrácený do stavu před prací agenta.
+ *
+ * Viz docs/AGENT.md, Hotová práce.
  */
 return new class extends Migration
 {
@@ -15,11 +19,13 @@ return new class extends Migration
     {
         Schema::create('agent_publications', function (Blueprint $table) {
             $table->id();
+            $table->string('kind', 20)->default('publish');
             $table->string('project', 60);
-            $table->string('repo');
+            $table->string('repo')->nullable();
+            // Větev (git), nebo jméno složky s předáním (vrácení webu).
             $table->string('branch');
             // Commit, který člověk zkontroloval. Sloučí se právě tenhle, ne novější.
-            $table->string('sha', 40);
+            $table->string('sha', 40)->nullable();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('status', 20)->index();
@@ -28,6 +34,8 @@ return new class extends Migration
             $table->string('merge_sha', 40)->nullable();
             $table->text('error')->nullable();
             $table->string('details_url')->nullable();
+            // Požadavek ve frontě serveru (vrácení webu dělá root).
+            $table->uuid('job_id')->nullable();
             // Vrácení dřívějšího zveřejnění (revert pull request na GitHubu).
             $table->foreignId('reverts_id')->nullable()->constrained('agent_publications')->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();

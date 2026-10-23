@@ -2,27 +2,34 @@
 
 namespace App\Filament\Tools\Livewire;
 
-use App\Enums\PublicationStatus;
 use App\Models\AgentPublication;
+use App\Support\Agent\AgentServer;
 use App\Support\Agent\AgentUnavailable;
 use App\Support\Agent\GitHubError;
 use App\Support\Agent\Publisher;
+use App\Support\Agent\SiteRestorer;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
 /**
- * Hotová práce agenta na stránce git projektu: zkontrolovat (snímky, popis)
- * a zveřejnit na web jedním tlačítkem. Pod tím průběh a poslední zveřejnění
- * s možností vrátit. Logika je v {@see Publisher}.
+ * Hotová práce agenta na stránce projektu. Podle typu projektu:
+ *
+ * - git: zkontrolovat (snímky, popis) a zveřejnit na web jedním tlačítkem,
+ *   průběh, poslední zveřejnění jde vrátit ({@see Publisher}),
+ * - server (živý web): co agent změnil, „V pořádku“, nebo vrátit web do stavu
+ *   před změnou ({@see SiteRestorer}),
+ * - prazdny (Shoptet, Upgates): hotové texty a kódy ke zkopírování.
  *
  * Obnovuje se sama: během zveřejnění každých 10 s (a rovnou ho posouvá),
  * jinak po 30 s, ať je vidět, když agent něco dokončí.
@@ -32,7 +39,35 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
     use InteractsWithActions;
     use InteractsWithSchemas;
 
+    /** Nadpis, popis a prázdný stav karty podle typu projektu. */
+    private const COPY = [
+        'git' => [
+            'icon' => 'heroicon-o-rocket-launch',
+            'heading' => 'Hotová práce',
+            'description' => 'Co agent dokončil. Zkontrolujte snímky a popis, pak jedním klikem zveřejněte na web.',
+            'empty' => 'Teď tu nic nečeká. Až agent dokončí úpravu, objeví se tady i se snímky.',
+            'history' => 'Dřív zveřejněno',
+        ],
+        'server' => [
+            'icon' => 'heroicon-o-eye',
+            'heading' => 'Co agent změnil',
+            'description' => 'Na živém webu je to už vidět. Zkontrolujte snímky, a když něco nesedí, vraťte web do stavu před změnou.',
+            'empty' => 'Teď tu nic není. Až agent na webu něco změní, objeví se to tady i se snímky.',
+            'history' => 'Dřív vráceno',
+        ],
+        'prazdny' => [
+            'icon' => 'heroicon-o-clipboard-document-list',
+            'heading' => 'Hotové podklady',
+            'description' => 'Texty a kódy od agenta. Zkopírujte je, vložte do administrace (Shoptet, Upgates…) a označte jako hotové.',
+            'empty' => 'Teď tu nic není. Až agent připraví texty nebo kódy, objeví se tady.',
+            'history' => 'Dřív',
+        ],
+    ];
+
     public string $project;
+
+    /** git / server / prazdny */
+    public string $type = 'git';
 
     private ?array $loaded = null;
 
@@ -54,14 +89,15 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
         [$active, $history] = collect($recent)->partition(fn (AgentPublication $p): bool => $p->status->isRunning() || $p->finished_at?->gt(now()->subHour()));
 
         return view('filament.tools.partials.agent-handovers', [
+            'copy' => self::COPY[$this->type] ?? self::COPY['git'],
             'handovers' => $this->handovers(),
             'error' => $this->error,
             'active' => $active->values(),
             'history' => $history->values(),
             'running' => $active->contains(fn (AgentPublication $p): bool => $p->status->isRunning()),
-            'configured' => $publisher->configured(),
-            // Vrátit jde poslední úpravu, která je na webu (ne vrácení samo).
-            'revertable' => collect($recent)->first(fn (AgentPublication $p): bool => $p->status === PublicationStatus::Done && ! $p->isRevert()),
+            'configured' => $this->type !== 'git' || $publisher->configured(),
+            // Vrátit jde poslední zveřejněnou úpravu (ne vrácení samo).
+            'revertable' => collect($recent)->first(fn (AgentPublication $p): bool => $p->status->isMerged() && ! $p->isRevert()),
         ]);
     }
 
@@ -70,7 +106,9 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
     {
         if ($this->loaded === null) {
             try {
-                $this->loaded = app(Publisher::class)->handovers($this->project);
+                $this->loaded = $this->type === 'git'
+                    ? array_map(fn (array $item): array => $item + ['codes' => [], 'since' => null], app(Publisher::class)->handovers($this->project))
+                    : array_map(self::folderItem(...), app(AgentServer::class)->handovers($this->project));
             } catch (AgentUnavailable $e) {
                 $this->error = $e->getMessage();
                 $this->loaded = [];
@@ -78,6 +116,21 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
         }
 
         return $this->loaded;
+    }
+
+    /**
+     * Tlačítka u jedné hotové práce, jen ta, která k typu projektu patří.
+     *
+     * @param  array<string, mixed>  $item
+     * @return list<Action>
+     */
+    public function rowActions(array $item): array
+    {
+        return collect(['discard', 'restoreSite', 'review', 'publish'])
+            ->map(fn (string $name): Action => ($this->{$name.'Action'})(['name' => $item['name'], 'sha' => $item['sha']]))
+            ->filter(fn (Action $action): bool => $action->isVisible())
+            ->values()
+            ->all();
     }
 
     /** „3 snímky“, „5 souborů“ */
@@ -105,14 +158,22 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->slideOver()
             ->modalWidth('3xl')
             ->modalHeading(fn (array $arguments): string => $this->find($arguments)['title'] ?? 'Hotová práce')
-            ->modalDescription('Takhle to agent udělal a vyzkoušel. Když sedí, zveřejněte. Když ne, napište mu do terminálu, co upravit.')
+            ->modalDescription(match ($this->type) {
+                'server' => 'Tohle agent na webu změnil a vyzkoušel. Když něco nesedí, napište mu do terminálu, nebo web vraťte.',
+                'prazdny' => 'Texty a kódy od agenta. Zkopírujte je tlačítkem a vložte, kam říká popis.',
+                default => 'Takhle to agent udělal a vyzkoušel. Když sedí, zveřejněte. Když ne, napište mu do terminálu, co upravit.',
+            })
             ->modalContent(fn (array $arguments): ?View => ($item = $this->find($arguments))
                 ? view('filament.tools.partials.agent-handover-review', ['item' => $item, 'component' => $this, 'body' => self::markdown($item['description'])])
                 : null)
-            ->modalSubmitActionLabel('Zveřejnit na web')
-            ->modalSubmitAction(fn (Action $action) => $action->visible(app(Publisher::class)->configured()))
+            ->modalSubmitActionLabel(match ($this->type) {
+                'server' => 'V pořádku',
+                'prazdny' => 'Vloženo, hotovo',
+                default => 'Zveřejnit na web',
+            })
+            ->modalSubmitAction(fn (Action $action) => $action->visible($this->type !== 'git' || app(Publisher::class)->configured()))
             ->modalCancelActionLabel('Zavřít')
-            ->action(fn (array $arguments) => $this->publish($arguments));
+            ->action(fn (array $arguments) => $this->type === 'git' ? $this->publish($arguments) : $this->acknowledge($arguments));
     }
 
     public function publishAction(): Action
@@ -121,6 +182,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->label('Zveřejnit')
             ->icon(Heroicon::OutlinedRocketLaunch)
             ->size('sm')
+            ->visible(fn (): bool => $this->type === 'git')
             ->disabled(fn (): bool => ! app(Publisher::class)->configured())
             ->requiresConfirmation()
             ->modalIcon(Heroicon::OutlinedRocketLaunch)
@@ -132,20 +194,63 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->action(fn (array $arguments) => $this->publish($arguments));
     }
 
+    /** Zahodit (git), V pořádku (živý web), Hotovo (podklady): předání zmizí ze seznamu. */
     public function discardAction(): Action
     {
         return Action::make('discard')
-            ->label('Zahodit')
-            ->icon(Heroicon::OutlinedTrash)
+            ->label(match ($this->type) {
+                'server' => 'V pořádku',
+                'prazdny' => 'Hotovo',
+                default => 'Zahodit',
+            })
+            ->icon(match ($this->type) {
+                'git' => Heroicon::OutlinedTrash,
+                default => Heroicon::OutlinedCheck,
+            })
             ->color('gray')
             ->link()
             ->size('sm')
+            ->extraAttributes(['class' => 'whitespace-nowrap'])
             ->requiresConfirmation()
-            ->modalHeading('Zahodit hotovou práci?')
-            ->modalDescription('Úprava zmizí z tohoto seznamu a na web se nedostane. Agent ji má dál u sebe, kdyby byla potřeba.')
-            ->modalSubmitActionLabel('Zahodit')
+            ->modalHeading(match ($this->type) {
+                'server' => 'Změna je v pořádku?',
+                'prazdny' => 'Vloženo do administrace?',
+                default => 'Zahodit hotovou práci?',
+            })
+            ->modalDescription(match ($this->type) {
+                'server' => 'Zmizí ze seznamu, na webu zůstane. Vrátit ji pak jde jen přes Toma (agent vratit).',
+                'prazdny' => 'Podklady zmizí ze seznamu.',
+                default => 'Úprava zmizí z tohoto seznamu a na web se nedostane. Agent ji má dál u sebe, kdyby byla potřeba.',
+            })
+            ->modalSubmitActionLabel(match ($this->type) {
+                'server' => 'V pořádku',
+                'prazdny' => 'Hotovo',
+                default => 'Zahodit',
+            })
+            ->modalSubmitAction(fn (Action $action) => $action->color($this->type === 'git' ? 'danger' : 'primary'))
+            ->action(fn (array $arguments) => $this->acknowledge($arguments));
+    }
+
+    /** Živý web: vrátit do stavu z doby, kdy agent začal. Databáze jen na přání. */
+    public function restoreSiteAction(): Action
+    {
+        return Action::make('restoreSite')
+            ->label('Vrátit')
+            ->icon(Heroicon::OutlinedArrowUturnLeft)
+            ->color('gray')
+            ->size('sm')
+            ->visible(fn (): bool => $this->type === 'server')
+            ->modalIcon(Heroicon::OutlinedArrowUturnLeft)
+            ->modalHeading(fn (array $arguments): string => 'Vrátit „'.($this->find($arguments)['title'] ?? '').'“?')
+            ->modalDescription(fn (array $arguments): string => 'Web se vrátí do stavu z '.$this->sinceLabel($this->find($arguments)).', kdy agent začal. Současný stav se předtím uloží, takže i vrácení jde vrátit.')
+            ->schema([
+                Toggle::make('database')
+                    ->label('Vrátit i databázi')
+                    ->helperText('Smaže všechno, co se v databázi od té doby změnilo, i objednávky, zprávy z formulářů a komentáře zákazníků. Zapněte jen, když agent měnil obsah v administraci webu.'),
+            ])
+            ->modalSubmitActionLabel('Vrátit web')
             ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
-            ->action(function (array $arguments): void {
+            ->action(function (array $data, array $arguments): void {
                 $item = $this->find($arguments);
 
                 if ($item === null) {
@@ -153,16 +258,21 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
                 }
 
                 try {
-                    app(Publisher::class)->discard($this->project, $item['name'], $item['sha']);
+                    app(SiteRestorer::class)->start($this->project, $item['raw'], (bool) ($data['database'] ?? false), auth()->user());
                 } catch (AgentUnavailable $e) {
-                    Notification::make()->danger()->title('Nepovedlo se')->body($e->getMessage())->send();
+                    Notification::make()->danger()->title('Vrátit nejde')->body($e->getMessage())->send();
 
                     return;
                 }
 
-                $this->loaded = null;
-                Notification::make()->success()->title('Zahozeno')->send();
+                Notification::make()->success()->title('Web se vrací')->body('Trvá to chvilku, průběh je vidět tady na stránce.')->send();
             });
+    }
+
+    /** „23. 10. v 9:41“ */
+    public function sinceLabel(?array $item): string
+    {
+        return isset($item['since']) ? Carbon::createFromTimestamp($item['since'])->timezone('Europe/Prague')->format('j. n. \v G:i') : 'doby';
     }
 
     public function revertAction(): Action
@@ -217,6 +327,53 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
 
         $this->loaded = null;
         Notification::make()->success()->title('Zveřejňuje se')->body('Průběh je vidět tady na stránce. Klidně ji zavřete, dokončí se samo.')->send();
+    }
+
+    /** @param  array<string, mixed>  $arguments */
+    private function acknowledge(array $arguments): void
+    {
+        $item = $this->find($arguments);
+
+        if ($item === null) {
+            return;
+        }
+
+        try {
+            app(AgentServer::class)->discardHandover($this->project, $item['name'], $item['sha']);
+        } catch (AgentUnavailable $e) {
+            Notification::make()->danger()->title('Nepovedlo se')->body($e->getMessage())->send();
+
+            return;
+        }
+
+        $this->loaded = null;
+        Notification::make()->success()->title($this->type === 'git' ? 'Zahozeno' : 'Hotovo')->send();
+    }
+
+    /**
+     * Předání živého webu nebo projektu bez kódu ve stejném tvaru jako git.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private static function folderItem(array $item): array
+    {
+        return [
+            'name' => $item['jmeno'],
+            'branch' => null,
+            'sha' => null,
+            'title' => Str::limit($item['nadpis'], 180, '…'),
+            'description' => $item['popis'],
+            'images' => $item['snimky'],
+            'codes' => $item['kody'] ?? [],
+            'since' => $item['zacatek'] ?? null,
+            'time' => $item['cas'],
+            'commits' => [],
+            'files' => 0,
+            'sensitive' => [],
+            'on_github' => true,
+            'raw' => $item,
+        ];
     }
 
     /**
