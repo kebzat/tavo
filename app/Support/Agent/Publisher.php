@@ -56,11 +56,14 @@ class Publisher
 
         return collect($this->agent->handovers($project))
             ->reject(fn (array $item): bool => in_array($item['sha'], $running, true))
-            ->map(function (array $item) use ($repo): ?array {
+            ->map(function (array $item) use ($repo, $project): ?array {
                 $compare = $repo ? $this->compare($repo, $item['sha']) : null;
 
-                // Main už úpravu má (sloučená dřív, ručně): není co zveřejnit.
-                if (($compare['ahead'] ?? null) === 0) {
+                // Main už úpravu má (sloučená dřív, ručně, i squashem): není co
+                // zveřejnit. Ze schránky ji rovnou uklidit, ať se neukazuje dál.
+                if (($compare['ahead'] ?? null) === 0 || ($compare !== null && $this->merged($repo, $item['vetev'], $item['sha']))) {
+                    rescue(fn () => $this->agent->discardHandover($project, $item['jmeno'], $item['sha']), report: false);
+
                     return null;
                 }
 
@@ -336,6 +339,21 @@ class Publisher
             null,
             report: false,
         ));
+    }
+
+    /** Sloučený pull request se už nezmění, „ne“ se ptá znovu za dvě minuty. */
+    private function merged(string $repo, string $branch, string $sha): bool
+    {
+        $key = 'agent-merged-'.$repo.'-'.$sha;
+
+        if (Cache::get($key)) {
+            return true;
+        }
+
+        $merged = (bool) rescue(fn (): bool => $this->github->mergedPull($repo, $branch, $sha), false, report: false);
+        Cache::put($key, $merged, $merged ? now()->addDays(30) : now()->addMinutes(2));
+
+        return $merged;
     }
 
     /** Nadpis z popisu agenta („# …“), jinak z commitu. */
