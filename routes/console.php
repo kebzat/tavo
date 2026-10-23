@@ -73,3 +73,10 @@ Schedule::command('clients:dashboard-demo --refresh')
     ->monthlyOn(1, '05:00')
     ->timezone('Europe/Prague')
     ->onOneServer();
+
+// Zveřejnění práce agenta z nástrojů: testy, sloučení a nasazení na GitHubu
+// běží minuty, tohle je posouvá dál. Bez rozběhnutých nic nevolá. Viz docs/AGENT.md.
+Schedule::command('agent:zverejneni')
+    ->everyMinute()
+    ->withoutOverlapping(10)
+    ->onOneServer();

@@ -13,8 +13,18 @@ se rozhodlo a co by měl vědět ten, kdo přijde po tobě.
 **git:** pracuj ve větvi pojmenované `agent/<krátký-popis>`. Hotovou práci
 pošli `git push origin agent/<krátký-popis>`. Push jde do schránky na serveru
 a odtud se do minuty sám dostane na GitHub. Jiné větve než `agent/…` (hlavně
-`main`) na GitHub neprojdou. Na konci napiš, co je potřeba zkontrolovat.
-Na web změnu dostane člověk sloučením do `main`.
+`main`) na GitHub neprojdou. Na web ji pošle člověk tlačítkem **Zveřejnit**
+v nástrojích (karta Hotová práce), často marketér, který kód nečte. Proto ke
+každé hotové větvi připrav **předání** do `../predani/<krátký-popis>/`:
+
+- `popis.md`: první řádek `# Nadpis` (co se změnilo, lidsky, bez kódu), pak
+  pár vět, co je jinak, a „Co zkontrolovat“. Bez technických detailů.
+- snímky z prohlížeče (`prohlizec`) jako `01-pocitac.png`, `02-telefon.png`…
+  Celé stránky, kde je změna vidět, i stav před kliknutím a po něm. Název
+  souboru se ukáže jako popisek.
+
+Když na větvi pokračuješ, předání uprav, ať odpovídá poslednímu pushi.
+Zveřejnit jde jen se zelenými testy, takže je před pushem pusť.
 
 **server:** složka je **živý web**. Každá úprava je hned vidět.
 Před sezením se uložil snímek souborů a záloha databáze. Dělej malé kroky,

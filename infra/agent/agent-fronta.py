@@ -9,6 +9,7 @@ potřeba udělat na serveru, proto jen popíše, a tady se to pečlivě ověří
 
   zaloha   snímek souborů a záloha databáze projektu (před novým vláknem)
   pridat   nový projekt typu git nebo prazdny
+  aktualizovat  služba agenta z main na GitHubu (po Zveřejnit v nástrojích)
 
 Web na serveru (`server`) se z administrace přidat nedá. Dává agentovi
 přístup k živému webu klienta, takže zůstává jen pro roota přes SSH.
@@ -49,6 +50,10 @@ def zpracovat(pozadavek):
         if nazev not in projekty():
             return False, f'Projekt {nazev} neexistuje.'
         return agent('zaloha', nazev)
+
+    if akce == 'aktualizovat':
+        # Bez parametrů: agent.sh vezme server.js jen z main na GitHubu.
+        return agent('aktualizovat')
 
     if akce == 'pridat':
         typ = pozadavek.get('typ')

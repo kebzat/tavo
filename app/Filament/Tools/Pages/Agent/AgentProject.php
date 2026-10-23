@@ -79,7 +79,7 @@ class AgentProject extends Page
     {
         return match ($this->details()['typ'] ?? null) {
             'server' => 'Živý web na serveru. Před každou novou konverzací se uloží snímek souborů a záloha databáze.',
-            'git' => 'Repozitář na GitHubu. Agent posílá jen větve agent/…, na web je dostane člověk.',
+            'git' => 'Repozitář na GitHubu. Hotovou práci agenta zkontrolujete a zveřejníte na web v kartě Hotová práce.',
             'prazdny' => 'Projekt bez kódu: texty, podklady a kódy k ručnímu vložení.',
             default => null,
         };

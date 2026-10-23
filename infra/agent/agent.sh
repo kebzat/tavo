@@ -36,6 +36,7 @@ Použití:
   agent odebrat <projekt>       agent ztratí přístup, snímky a zálohy zůstanou
   agent prihlasit               přihlášení Claude Code (jednou)
   agent sluzba                  nahraje novou verzi služby, běžící konverzace zůstanou
+  agent aktualizovat            službu z main na GitHubu (po zveřejnění z nástrojů sám)
 TXT
 }
 
@@ -225,6 +226,36 @@ odebrat() {
     echo "Projekt $slug odebrán. Snímky: $SNIMKY/$slug.git, zálohy: $ZALOHY/$slug, paměť a kód: $ROOT/archiv/"
 }
 
+sluzba() {
+    # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
+    # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
+    docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
+    docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
+    sleep 3
+    docker logs --tail 2 "$KONTEJNER"
+}
+
+aktualizovat() {
+    # Po tlačítku Zveřejnit v nástrojích (přes frontu): nová verze služby ze
+    # schváleného main na GitHubu, ne ze schránky, kam píše agent. Bere se jen
+    # terminal/server.js, který běží v kontejneru bez práv. Co běží jako root
+    # (tenhle skript, agent-fronta.py), se z GitHubu samo nenahrazuje.
+    local slug=taveo g=$ROOT/zdroj-taveo.git cil=$ROOT/docker/terminal/server.js zdroj
+    zdroj=$(zaznam "$slug" | cut -f3); [ -n "$zdroj" ] || chyba "projekt $slug neexistuje"
+    [ -d "$g" ] || git init -q --bare "$g"
+    GIT_SSH_COMMAND="ssh -i /root/.ssh/agent-$slug -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
+        git --git-dir="$g" fetch -q "$zdroj" +refs/heads/main:refs/heads/main
+    git --git-dir="$g" show main:infra/agent/terminal/server.js > "$cil.novy"
+    if cmp -s "$cil.novy" "$cil"; then
+        rm "$cil.novy"
+        echo "Služba je aktuální."
+        return
+    fi
+    mv "$cil.novy" "$cil"
+    echo "$(date '+%F %T') služba aktualizována z main ($(git --git-dir="$g" rev-parse --short main))"
+    sluzba
+}
+
 [ "$(id -u)" = 0 ] || chyba "spouštějte jako root"
 
 case "${1:-}" in
@@ -235,14 +266,8 @@ case "${1:-}" in
     vratit) vratit "${2:?název projektu}" ;;
     odebrat) odebrat "${2:?název projektu}" ;;
     preposlat) preposlat ;;
-    sluzba)
-        # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
-        # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
-        docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
-        docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
-        sleep 3
-        docker logs --tail 2 "$KONTEJNER"
-        ;;
+    sluzba) sluzba ;;
+    aktualizovat) aktualizovat ;;
     prihlasit) exec docker exec -it -u agent "$KONTEJNER" bash -lc claude ;;
     *) otevrit "$1" ;;
 esac

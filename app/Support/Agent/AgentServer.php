@@ -128,6 +128,44 @@ class AgentServer
         return $this->call(fn (PendingRequest $http) => $http->get('/api/predplatne'));
     }
 
+    /**
+     * Hotová práce git projektu: větve agent/… ve schránce s popisem a snímky,
+     * které k nim agent přiložil. Nejnovější první.
+     *
+     * @return list<array{vetev: string, jmeno: string, sha: string, cas: int, nadpis: string, popis: ?string, snimky: list<string>}>
+     */
+    public function handovers(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get($this->projectPath($slug).'/predani'));
+    }
+
+    /** Snímek k hotové práci (PNG, JPEG, WebP). Null, když neexistuje. */
+    public function handoverImage(string $slug, string $name, string $file): ?Response
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/predani/'.rawurlencode($name).'/'.rawurlencode($file));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->successful() ? $response : null;
+    }
+
+    /**
+     * Větev zmizí ze schránky i se snímky. Jen když je pořád na `$sha`:
+     * když agent mezitím pokračoval, nová práce zůstane.
+     */
+    public function discardHandover(string $slug, string $name, string $sha): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/predani/'.rawurlencode($name), ['sha' => $sha]));
+    }
+
+    /** Po zveřejnění: server si stáhne novou verzi služby z main. Nečeká se. */
+    public function updateService(): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->post('/api/aktualizovat'));
+    }
+
     /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. */
     public function terminalUrl(string $slug, string $window, string $user, ?string $host = null): string
     {

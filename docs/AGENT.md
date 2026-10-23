@@ -73,6 +73,67 @@ přepsat a blok `websocket` zmizí. Terminál pak neodpoví, zbytek stránky fun
 Blok stačí vrátit na konec souboru a restartovat LiteSpeed (`/usr/local/lsws/bin/lswsctrl restart`).
 Záloha konfigurace před úpravou: `/root/opravy-prav-2026-10-22/taveo-vhost.conf.pred-agentem`.
 
+## Zveřejnění hotové práce (tlačítko v nástrojích)
+
+U git projektu je nad terminálem karta **Hotová práce**. Kdo nezná git (Pavel),
+v ní zkontroluje, co agent udělal, a jedním tlačítkem to pošle na web.
+
+1. Agent dokončí úpravu a pošle větev `agent/…`. K ní přiloží **popis a snímky**
+   (návod pro agenta je v paměti projektu, oddíl git):
+   `/projekty/<projekt>/predani/<větev bez agent/>/popis.md` a `*.png`.
+2. Karta ukáže nadpis, náhled snímku, počet změněných souborů. **Zkontrolovat**
+   otevře panel s popisem, snímky (kliknutím 1:1) a seznamem změn.
+3. **Zveřejnit** (Tom i Pavel):
+   *Testy* (pull request, CI na GitHubu) → sloučení do `main` → *Nasazení*
+   (workflow Deploy) → *Na webu*. Průběh je na kartě a dokončí se i bez otevřené
+   stránky (plánovač, `agent:zverejneni` každou minutu).
+4. **Vrátit** u poslední zveřejněné úpravy: GitHub založí opačný pull request
+   a ten jde stejnou cestou. **Zahodit** smaže větev jen ze schránky.
+
+Pojistky: sloučí se jen commit, který člověk viděl (když agent mezitím
+pokračoval, GitHub sloučení odmítne a karta řekne „zkontrolujte znovu“).
+Bez zelených testů se nic neslučuje. Úprava souborů v `.github/` nebo `infra/`
+dostane varování „Mění nastavení serveru“. Token GitHubu má jen web, agent
+ho nevidí, a do `main` sám pořád nemůže.
+
+Kód už před zveřejněním nikdo nečte, kontroluje se podle snímků, popisu
+a testů. Tak to chtěl Tom (23. 10. 2026), náhradou je tlačítko Vrátit.
+
+**Služba agenta se aktualizuje sama:** po sloučení u projektu `taveo`
+(`AGENT_INFRA_PROJECT`) web pošle do fronty `aktualizovat`. Root
+(`agent aktualizovat`) stáhne `main` z GitHubu do `/srv/agent/zdroj-taveo.git`
+a když se změnil `infra/agent/terminal/server.js`, nahraje ho a službu restartuje.
+Bere jen tenhle soubor (běží v kontejneru bez práv). Co běží jako root
+(`agent.sh`, `agent-fronta.py`), Dockerfile a ostatní se z GitHubu samo
+nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
+
+| Kus | Kde |
+|---|---|
+| Hotová práce ve službě | `GET/DELETE /api/projekty/<projekt>/predani`, snímky `…/predani/<větev>/<soubor>` |
+| Pull request, testy, sloučení | `App\Support\Agent\Publisher`, `GitHub`, tabulka `agent_publications` |
+| Karta v nástrojích | `Filament/Tools/Livewire/AgentHandovers`, snímky přes `/nastroje/agent/<projekt>/snimek/…` |
+| Aktualizace služby | `POST /api/aktualizovat` → fronta → `agent aktualizovat` |
+
+### Zapnutí (jednou, Tom)
+
+1. **Token GitHubu:** github.com → Settings → Developer settings → Fine-grained
+   tokens → Generate new token. Repository access: jen `kebzat/tavo`.
+   Permissions: *Contents* Read and write, *Pull requests* Read and write,
+   *Actions* Read-only. Platnost nejdéle rok, pak vytvořit nový.
+2. Na serveru do `.env` webu (`/home/taveo.cz/public_html/.env`):
+   `GITHUB_TOKEN=github_pat_…`. Nasazení si ho samo načte (`artisan optimize`).
+3. Sloučit tuhle změnu do `main` (naposledy ručně).
+4. Nahrát službu a skripty pro roota (z Macu, v repozitáři na `main`):
+   ```bash
+   git pull
+   rsync -a infra/agent/ root@88.198.31.29:/srv/agent/docker/
+   ssh root@88.198.31.29 'install -m 755 /srv/agent/docker/agent.sh /usr/local/bin/agent && agent sluzba'
+   ```
+5. Kontrola: Nástroje → Agent → taveo, karta Hotová práce bez žlutého upozornění.
+
+Když token vyprší, karta ukáže „GitHub token neplatí“. Stačí vytvořit nový (krok 1–2)
+a na serveru `php artisan optimize`.
+
 ## Z terminálu přes SSH
 
 Z Macu (přístup roota má klíč `~/.ssh/id_rsa`):
@@ -109,6 +170,7 @@ na web se nedostane a vidí ji každý, kdo s projektem pracuje.
 
 | Riziko | Pojistka |
 |---|---|
+| Zveřejnění tlačítkem pustí na web chybu | Jen po zelených testech, jen zkontrolovaný commit, tlačítko Vrátit. Úpravy `.github/` a `infra/` mají varování. Viz Zveřejnění. |
 | Agent sáhne na jiný web, poštu nebo databázi | Kontejner vidí jen `/srv/agent/projekty`. Weby, `/home`, pošta ani databáze serveru v něm nejsou. |
 | Rozbije živý web | Před každým otevřením vláken snímek souborů (git mimo složku webu) a záloha databáze. `agent vratit <projekt>` ukáže, jak se vrátit. |
 | Pošle změnu rovnou na produkci | Klíč v kontejneru umí jen číst. Na GitHub posílá server ze schránky jen větve `agent/…` (cron, `agent preposlat`). Do `main` se agent nedostane. |
