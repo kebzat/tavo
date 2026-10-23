@@ -13,6 +13,8 @@ potřeba udělat na serveru, proto jen popíše, a tady se to pečlivě ověří
   obnovit  živý web do stavu před časem (ručně, agent obnovit)
   nasadit  vydání ze služby agenta rovnou na web (tlačítko Zveřejnit, jen taveo)
   nasadit-zpet  web na verzi před posledním nasazením (tlačítko Vrátit)
+  kopie-db  databáze kopie živého webu znovu z živé
+  nasadit-kopii  kopie živého webu na živý web (tlačítko Zveřejnit)
 
 Web na serveru (`server`) se z administrace přidat nedá. Dává agentovi
 přístup k živému webu klienta, takže zůstává jen pro roota přes SSH.
@@ -66,6 +68,11 @@ def zpracovat(pozadavek):
 
     if akce == 'nasadit-zpet':
         return agent('nasadit-zpet', nazev)
+
+    if akce in ('kopie-db', 'nasadit-kopii'):
+        if nazev not in projekty():
+            return False, f'Projekt {nazev} neexistuje.'
+        return agent(akce, nazev)
 
     if akce == 'obnovit':
         cas = pozadavek.get('cas')

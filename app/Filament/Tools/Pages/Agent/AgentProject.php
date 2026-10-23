@@ -78,7 +78,7 @@ class AgentProject extends Page
     public function getSubheading(): ?string
     {
         return match ($this->details()['typ'] ?? null) {
-            'server' => 'Živý web na serveru. Před každou novou konverzací se uloží snímek souborů a záloha databáze.',
+            'server' => 'Živý web na serveru. Agent pracuje na jeho kopii, na web ji pošlete tlačítkem Zveřejnit. Úlohy z ClickUpu jdou rovnou na živý web.',
             'git' => 'Repozitář na GitHubu. Hotovou práci agenta zkontrolujete a zveřejníte na web v kartě Hotová práce.',
             'prazdny' => 'Projekt bez kódu: texty, podklady a kódy k ručnímu vložení.',
             default => null,

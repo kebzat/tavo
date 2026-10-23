@@ -81,16 +81,42 @@ git (Pavel), v ní zkontroluje snímky a popis. Co karta umí, záleží na typu
 | Typ | Karta | Tlačítka |
 |---|---|---|
 | git | Hotová práce | Zkontrolovat, **Zveřejnit** (testy → main → nasazení), Zahodit, Vrátit poslední zveřejnění |
+| server (živý web, grillnor) | Hotová práce | agent pracuje v **kopii webu**: Zkontrolovat, **Zveřejnit na web** (celá kopie najednou), Zahodit změny, Vrátit |
 | prazdny (Shoptet, Upgates) | Hotové podklady | Zkontrolovat s tlačítkem **Zkopírovat** u každého kódu, Hotovo |
-
-U živého webu (server) karta není: úprav je hodně (i z ClickUpu) a na webu
-jsou hned. Tom rozhodl 23. 10. 2026, že je tam nechce. Vrátit web jde ručně
-(`agent vratit`, `agent obnovit <projekt> <čas> [databaze]`).
 
 Podklady přikládá agent do `/projekty/<projekt>/predani/<krátký-popis>/`
 (`popis.md`, snímky `*.png`, u Shoptetu kódy jako `*.html`, `*.css`, `*.txt`). Návod pro agenta je v paměti každého projektu.
 Shoptet ani Upgates šablonu přes API měnit nedovolí, proto se kódy kopírují
 ručně.
+
+### Živý web: kopie a Zveřejnit
+
+Agent u živého webu v terminálu a v aplikaci Claude **nepracuje na živém webu**,
+ale v jeho kopii: `/projekty/<projekt>/kopie` s vlastní databází
+`<databáze>_kopie` (konverzace se v ní otevírá sama, kopie se založí s první
+konverzací nebo tlačítkem Připravit kopii). Náhled si agent spustí v kopii
+(`php artisan serve --port 8090`). Úlohy z ClickUpu jdou dál **rovnou na živý
+web** (rozhodl Tom 23. 10. 2026), v kartě nejsou.
+
+- Kopie má git, značka `zivy` = stav živého webu. Karta ukáže, kolik souborů
+  v kopii čeká, a předání (popis, snímky) od agenta.
+- **Zveřejnit na web** → root `agent nasadit-kopii <projekt>`: snímek souborů
+  a záloha databáze, stránka údržby, rsync kopie na web (bez `.env`, `storage`,
+  `bootstrap/cache`, bez symlinků), `migrate`, `optimize`, kontrola `APP_URL`.
+  **Databáze se nepřepisuje**: změny obsahu agent píše jako migrace, živá data
+  (objednávky, zprávy) zůstávají. Zveřejní se celá kopie najednou.
+- **Zahodit změny**: kopie zpátky na živý web, databáze kopie znovu z živé
+  (`agent kopie-db`). Tabulky, které v kopii vznikly navíc, v ní zůstanou.
+- **Vrátit**: soubory živého webu ze snímku těsně před zveřejněním
+  (`agent obnovit`, bez databáze), pak se kopie srovná s živým webem.
+- Dokud kopie nejde založit, konverzace běží postaru na živém webu (se snímkem
+  a zálohou).
+
+| Kus | Kde |
+|---|---|
+| Kopie, změny, úlohy | `server.js`, `pripravitKopii()`, `spustitUlohuKopie()`, `GET/POST /api/projekty/<projekt>/kopie[/akce]`, `GET …/uloha/<id>` |
+| Databáze kopie, nahrání | `agent.sh`, `kopie-db`, `nasadit-kopii` (fronta) |
+| Karta, průběh | `App\Support\Agent\CopyPublisher`, `AgentHandovers` |
 
 ### Živý web: vrácení ručně
 

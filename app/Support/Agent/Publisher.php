@@ -152,6 +152,11 @@ class Publisher
     /** Vrátit zveřejněnou úpravu: GitHub založí opačný pull request a ten jde stejnou cestou. */
     public function revert(AgentPublication $original, ?User $user): AgentPublication
     {
+        // Živý web z kopie: soubory ze snímku před zveřejněním.
+        if ($original->kind === 'kopie' && $original->status->isMerged()) {
+            return app(CopyPublisher::class)->revert($original, $user);
+        }
+
         // Nahrané rovnou ze serveru se vrací stejně: předchozí verze zpátky na web.
         if ($original->job_id !== null && $original->status->isMerged()) {
             return app(InstantPublisher::class)->revert($original, $user);
@@ -197,7 +202,9 @@ class Publisher
         }
 
         if ($publication->status === PublicationStatus::Publishing) {
-            app(InstantPublisher::class)->advance($publication);
+            $publication->kind === 'kopie'
+                ? app(CopyPublisher::class)->advance($publication)
+                : app(InstantPublisher::class)->advance($publication);
 
             return;
         }
