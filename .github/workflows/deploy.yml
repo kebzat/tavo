@@ -92,7 +92,7 @@ jobs:
           cp .env.example .env
           php artisan key:generate
           vendor/bin/pint --test
-          php artisan test
+          php artisan test --parallel
           rm .env
 
       - name: Cache Composer
