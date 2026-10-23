@@ -8,7 +8,8 @@
       "Bash(wp *)",
       "Bash(rm *)",
       "Bash(git push *)",
-      "Bash(taveo *)"
+      "Bash(taveo *)",
+      "mcp__prohlizec"
     ],
     "ask": [
       "Bash(composer update*)",

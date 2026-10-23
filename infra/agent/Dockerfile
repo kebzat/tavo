@@ -26,6 +26,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod 755 /usr/local/bin/wp \
     && rm -rf /var/lib/apt/lists/*
 
+# Prohlížeč pro agenty (Playwright MCP, server „prohlizec“): kontrola vzhledu,
+# responzivity a chyb v konzoli. Chromium s knihovnami a fonty do /opt, aby
+# patřil obrazu a ne domovské složce. Registraci pro konverzace dělá
+# entrypoint (prohlizec-mcp). Viz docs/AGENT.md, oddíl Prohlížeč.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+RUN apt-get update \
+    && npx -y playwright@1.64.1 install --with-deps chromium \
+    && ln -s "$(ls -d /opt/ms-playwright/chromium-*/chrome-linux64 | head -1)" /opt/ms-playwright/chromium \
+    && npm install -g --no-audit --no-fund @playwright/mcp@0.0.83 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Uživatel se stejným UID jako `agent` na serveru, ať sedí práva (ACL)
 # u složek webů připojených zvenku. Ubuntu 24.04 má v obrazu uživatele
 # `ubuntu` s UID 1000, ten nevadí.
@@ -46,8 +57,12 @@ COPY managed-settings.json /etc/claude-code/managed-settings.json
 COPY tmux.conf /etc/tmux.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY zaloha-pred-zmenou.sh /usr/local/bin/zaloha-pred-zmenou
-RUN chmod 644 /etc/claude-code/managed-settings.json /etc/tmux.conf \
-    && chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/zaloha-pred-zmenou /usr/local/bin/taveo
+COPY agent-chromium.sh /usr/local/bin/agent-chromium
+COPY prohlizec-mcp.sh /usr/local/bin/prohlizec-mcp
+COPY CLAUDE.agent.md /etc/taveo-agent/CLAUDE.agent.md
+RUN chmod 644 /etc/claude-code/managed-settings.json /etc/tmux.conf /etc/taveo-agent/CLAUDE.agent.md \
+    && chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/zaloha-pred-zmenou /usr/local/bin/taveo \
+        /usr/local/bin/agent-chromium /usr/local/bin/prohlizec-mcp
 
 USER agent
 WORKDIR /projekty

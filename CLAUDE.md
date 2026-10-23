@@ -65,7 +65,8 @@ Pro změnu schématu vždy **nová migrace** + prosté `php artisan migrate`.
 
 ## Kontrola práce
 
-Po každé změně šablony nebo komponenty **projdi výsledek v prohlížeči** přes Playwright MCP:
+Po každé změně šablony nebo komponenty **projdi výsledek v prohlížeči** přes Playwright MCP
+(lokálně server `playwright` z `.mcp.json`, v kontejneru na serveru `prohlizec`):
 `browser_navigate` → `browser_take_screenshot` → `browser_console_messages`.
 Typová kontrola ani testy neodhalí rozbitý layout, chybějící Tailwind třídu
 ani runtime chybu v Blade.

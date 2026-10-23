@@ -95,6 +95,32 @@ na web se nedostane a vidí ji každý, kdo s projektem pracuje.
 
 `agent odebrat <projekt>` agentovi přístup vezme. Snímky, zálohy a paměť zůstanou.
 
+## Prohlížeč (oči agenta)
+
+Každá konverzace v kontejneru má headless Chromium přes MCP server
+**`prohlizec`** (Playwright MCP). Agent si otevře stránku, udělá snímek, přečte
+chyby z konzole a zkusí šířku telefonu, tabletu i počítače. Jak ho má používat,
+říká společná paměť agentů `~/.claude/CLAUDE.md` (zdroj
+[`infra/agent/CLAUDE.agent.md`](../infra/agent/CLAUDE.agent.md)).
+
+| Kus | Kde |
+|---|---|
+| Chromium + knihovny + fonty | v obrazu, `/opt/ms-playwright` (Dockerfile) |
+| Spouštění prohlížeče | `agent-chromium` ([`agent-chromium.sh`](../infra/agent/agent-chromium.sh)) |
+| Registrace pro konverzace | `prohlizec-mcp` z `entrypoint.sh`, uživatelská úroveň v `~/.claude.json` |
+| Snímky | `/tmp/agent-prohlizec` v kontejneru |
+| Povolení bez ptaní | `mcp__prohlizec` v `managed-settings.json` |
+
+Profil prohlížeče je izolovaný (nic si nepamatuje mezi konverzacemi). Verze
+jsou připnuté (`playwright@1.64.1`, `@playwright/mcp@0.0.83`), zvedají se
+v Dockerfile a v `prohlizec-bez-roota.sh` zároveň.
+
+**Bez přestavění obrazu:** `bash infra/agent/prohlizec-bez-roota.sh` v kontejneru
+stáhne knihovny jako balíčky Ubuntu do `~/.local/share/browser-deps` (bez roota)
+a prohlížeč zaregistruje. Tak běží od 23. 10. 2026, než se obraz přestaví.
+`.mcp.json` v repu (server `playwright` přes `npx`) je pro lokální vývoj na Macu,
+v kontejneru je vypnutý.
+
 ## Pojistky
 
 | Riziko | Pojistka |
