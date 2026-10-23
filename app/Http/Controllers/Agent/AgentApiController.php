@@ -6,8 +6,10 @@ use App\Enums\TaskStatus;
 use App\Enums\WorkArea;
 use App\Http\Controllers\Controller;
 use App\Models\Ads\AdReport;
+use App\Models\AgentJob;
 use App\Models\Client;
 use App\Models\Marketing\ClientBriefing;
+use App\Support\ClickUp\ClickUpAgent;
 use App\Support\Marketing\ClientContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -146,6 +148,26 @@ class AgentApiController extends Controller
         ]);
 
         $report->forceFill(collect($data)->filter(fn ($value, string $key): bool => filled($value) && blank($report->{$key}))->all())->save();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Výsledek úlohy z ClickUpu od služby agenta. Odpověď do ClickUpu napíše
+     * {@see ClickUpAgent::finish()}. Jen jednou, doběhlá úloha se nemění.
+     */
+    public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent): JsonResponse
+    {
+        abort_unless($job->status === AgentJob::STATUS_RUNNING, 409, 'Úloha už je uzavřená.');
+
+        $data = $request->validate([
+            'ok' => ['required', 'boolean'],
+            'vysledek' => ['nullable', 'string', 'max:50000'],
+            'session' => ['nullable', 'uuid'],
+            'chyba' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $agent->finish($job, $data);
 
         return response()->json(['ok' => true]);
     }

@@ -81,6 +81,18 @@ class AgentServer
         ]))['okno'];
     }
 
+    /**
+     * Úloha na pozadí (z ClickUpu): agent ji odpracuje bez terminálu a výsledek
+     * pošle zpět na /nastroje/api/agent/ulohy/{id}. Služba je řadí, v jednom
+     * projektu běží nejvýš jedna. Se `session` naváže na předchozí konverzaci.
+     *
+     * @param  array{id: int, zadani: string, session: ?string, autor: string}  $task
+     */
+    public function runTask(string $slug, array $task): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/ulohy', $task));
+    }
+
     /** Uspí běžící konverzaci: proces skončí, konverzace zůstane uložená a jde probudit. */
     public function sleepWindow(string $slug, string $window): void
     {

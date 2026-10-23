@@ -74,6 +74,11 @@ Schedule::command('clients:dashboard-demo --refresh')
     ->timezone('Europe/Prague')
     ->onOneServer();
 
+// Úlohy agenta z ClickUpu, které nedoběhly (docs/AGENT.md, ClickUp). Nic nevolá, když žádné nejsou.
+Schedule::command('clickup:hlidat')
+    ->everyFifteenMinutes()
+    ->onOneServer();
+
 // Zveřejnění práce agenta z nástrojů: testy, sloučení a nasazení na GitHubu
 // běží minuty, tohle je posouvá dál. Bez rozběhnutých nic nevolá. Viz docs/AGENT.md.
 Schedule::command('agent:zverejneni')

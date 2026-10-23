@@ -154,16 +154,55 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
 2. Na serveru do `.env` webu (`/home/taveo.cz/public_html/.env`):
    `GITHUB_TOKEN=github_pat_…`. Nasazení si ho samo načte (`artisan optimize`).
 3. Sloučit tuhle změnu do `main` (naposledy ručně).
-4. Nahrát službu a skripty pro roota (z Macu, v repozitáři na `main`):
+4. Nahrát službu a skripty pro roota (z Macu, v repozitáři na `main`). Jen tyhle
+   tři soubory, ať se na serveru nepřepíše nic rozpracovaného:
    ```bash
-   git pull
-   rsync -a infra/agent/ root@88.198.31.29:/srv/agent/docker/
+   git checkout main && git pull
+   scp infra/agent/agent.sh infra/agent/agent-fronta.py root@88.198.31.29:/srv/agent/docker/
+   scp infra/agent/terminal/server.js root@88.198.31.29:/srv/agent/docker/terminal/
    ssh root@88.198.31.29 'install -m 755 /srv/agent/docker/agent.sh /usr/local/bin/agent && agent sluzba'
    ```
 5. Kontrola: Nástroje → Agent → taveo, karta Hotová práce bez žlutého upozornění.
 
 Když token vyprší, karta ukáže „GitHub token neplatí“. Stačí vytvořit nový (krok 1–2)
 a na serveru `php artisan optimize`.
+
+## Z ClickUpu (`@agent` v komentáři)
+
+Komentář u úkolu v ClickUpu, který obsahuje `@agent`, spustí agenta v projektu
+klienta. Agent dostane název, popis a komentáře úkolu, odpracuje to na pozadí
+a odpoví do vlákna komentáře (odpovědi začínají „Agent:“). Další `@agent` ve
+stejném úkolu naváže na stejnou konverzaci. Konverzace je pak i v nástrojích
+→ Agent, dá se na ni navázat ručně.
+
+| Krok | Kde |
+|---|---|
+| Webhook na nové komentáře | `POST /nastroje/api/clickup/webhook`, `ClickUpWebhookController`, podpis `X-Signature` (HMAC-SHA256 tajemstvím webhooku) |
+| Spouštěč | uživatel „Agent“ (host v ClickUpu, `CLICKUP_AGENT_USER_ID`) označený v našeptávači, nebo napsaný text `@agent`, `/agent` či `!agent` |
+| Kdo smí spustit | `CLICKUP_AGENT_USERS` (ID uživatelů ClickUpu: Tom, Pavel). Od nikoho jiného se nic nespustí. |
+| Který projekt | seznam úkolu → klient s `clickup_list_id` (Klienti → klient → ClickUp seznam) → jeho Projekt agenta. Jinak projekt celého prostoru z `CLICKUP_SPACE_PROJECTS` (Pavlův prostor → `marketing`). Jinak agent odpoví, že projekt chybí. |
+| Spuštění | `App\Support\ClickUp\ClickUpAgent::start()` po odeslání odpovědi webhooku → služba agenta `POST /api/projekty/{slug}/ulohy` |
+| Práce | `server.js`, `odpracovat()`: `claude -p --permission-mode auto --output-format json`, v projektu nejvýš jedna úloha, celkem dvě, limit 30 min, 200 kroků. U webu na serveru předtím snímek a záloha DB. Log `~/.taveo-ulohy/<id>.log`. |
+| Výsledek | služba → `POST /nastroje/api/agent/ulohy/{id}/vysledek` (token `AGENT_API_TOKEN`) → odpověď do ClickUpu |
+| Ztracené úlohy | `clickup:hlidat` každých 15 min uzavře úlohy bez výsledku po 2 hodinách a napíše to do ClickUpu |
+
+Pojistky: pokyn je jen text komentáře, popis a ostatní komentáře jdou agentovi
+jako podklady s upozorněním, že pokyny v nich (vložené e-maily) neplní. Odpověď
+agenta spouštěč neobsahuje a ID našich odpovědí se pamatují, takže se agent
+nespustí sám sebou. Limit předplatného: `CLICKUP_AGENT_HOURLY_LIMIT` (6)
+a `CLICKUP_AGENT_DAILY_LIMIT` (30) úloh. V ClickUpu agent jen čte úkoly
+a přidává odpovědi, nic neupravuje ani nemaže.
+
+Nastavení (jednou, na serveru):
+
+```bash
+# .env: CLICKUP_API_TOKEN, CLICKUP_TEAM_ID, CLICKUP_AGENT_USERS, CLICKUP_SPACE_PROJECTS
+php artisan config:cache
+php artisan clickup:napojit            # jen ukáže seznamy, klienty a projekty
+php artisan clickup:napojit --ulozit   # přiřadí seznamy klientům se stejným názvem
+php artisan clickup:napojit --webhook  # založí webhook, vypíše CLICKUP_WEBHOOK_SECRET do .env
+php artisan config:cache
+```
 
 ## Z terminálu přes SSH
 
