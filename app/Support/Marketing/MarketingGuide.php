@@ -18,13 +18,7 @@ final class MarketingGuide
     /** @return array<string, mixed> */
     public static function content(): array
     {
-        // Obrázky jsou nafocené ve dvojnásobném rozlišení (Retina). Do <img>
-        // jde poloviční rozměr, ať se stránka nepřeskládává a obrázek se neroztahuje.
-        $features = array_map(function (array $feature): array {
-            [$width, $height] = getimagesize(public_path('images/pruvodce/'.$feature['image'].'.webp')) ?: [0, 0];
-
-            return $feature + ['src' => '/images/pruvodce/'.$feature['image'].'.webp', 'width' => intdiv($width, 2), 'height' => intdiv($height, 2)];
-        }, self::features());
+        $features = array_map(fn (array $feature): array => $feature + self::image($feature['image']), self::features());
 
         return [
             'title' => "Co je nového v\u{00A0}nástrojích Taveo",
@@ -60,6 +54,19 @@ final class MarketingGuide
         ];
     }
 
+    /**
+     * Obrázky jsou nafocené ve dvojnásobném rozlišení (Retina). Do <img>
+     * jde poloviční rozměr, ať se stránka nepřeskládává a obrázek se neroztahuje.
+     *
+     * @return array{src: string, width: int, height: int}
+     */
+    private static function image(string $name): array
+    {
+        [$width, $height] = getimagesize(public_path('images/pruvodce/'.$name.'.webp')) ?: [0, 0];
+
+        return ['src' => '/images/pruvodce/'.$name.'.webp', 'width' => intdiv($width, 2), 'height' => intdiv($height, 2)];
+    }
+
     /** @return array<string, mixed> */
     private static function agent(): array
     {
@@ -79,6 +86,7 @@ final class MarketingGuide
                 'Řekni, o kterého klienta jde. Kartu a čísla si načte sám, nic nemusíš kopírovat.',
                 'Na nové téma dej Nová konverzace. Ke starší se vrátíš v seznamu Konverzace, uspanou probudíš. Tu, kterou chceš mít pořád po ruce, si připni.',
                 'Všechno, co navrhne, je návrh. Úkoly schvaluješ v Návrzích úkolů, texty si upravíš a pošleš sám.',
+                'Úkol z ClickUpu mu předáš rovnou komentářem s @agent. Jak, je níž v Nově u agenta.',
             ],
             'asks' => [
                 ['title' => 'Ze schůzky úkoly', 'prompt' => 'Tady je přepis dnešní schůzky s MIRNIX. Zapiš dohody a navrhni úkoly.', 'result' => 'Poznámku uloží ke klientovi, dohody zapíše do karty, úkoly připraví ke schválení. Napíše, co chybí doplnit.'],
@@ -102,6 +110,95 @@ final class MarketingGuide
                     'Do karty rozhodnutí: rozpočet 30 000 Kč měsíčně od listopadu (zdroj: schůzka 23. 10.).',
                     'Dva návrhy úkolů ke schválení: Připravit kampaň na brusle, termín k doplnění. Dodat fotky, čeká se na klienta.',
                     'K doplnění: přesný den dodání fotek a kdo u klienta navýšení schválil.',
+                ],
+            ],
+            'news' => self::agentNews(),
+        ];
+    }
+
+    /**
+     * Co agent umí nově (23. 10. 2026). Obrázky jsou z ukázkových projektů
+     * nafocené lokálně, vlákno z ClickUpu je ilustrace v šabloně.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function agentNews(): array
+    {
+        return [
+            [
+                'id' => 'agent-clickup',
+                'label' => 'Agent v ClickUpu',
+                'title' => 'Agent v ClickUpu',
+                'intro' => 'Úkol nemusíš přepisovat do nástrojů. Napiš k němu v ClickUpu komentář s @agent. Agent si přečte název, popis i ostatní komentáře úkolu, odpracuje to na serveru a odpoví do stejného vlákna.',
+                'where' => ['ClickUp', 'úkol', 'komentář s @agent'],
+                'how' => [
+                    'V komentáři označ uživatele Agent, nabídne se v našeptávači. Stačí i napsat @agent, /agent nebo !agent.',
+                    'Hned odpoví, že se do toho pouští. Až skončí, označí tě v odpovědi, takže ti přijde upozornění.',
+                    'Ve vlákně pak piš jako v chatu, už bez @agent. Navazuje na stejnou konverzaci.',
+                    'U klienta s propojeným seznamem v ClickUpu pracuje v jeho projektu, jinak v projektu marketing. Konverzaci najdeš i v Nástroje › Agent, odkaz je na konci odpovědi.',
+                    'Spustit ho můžete jen ty a Tom. V ClickUpu jen čte a přidává odpovědi, nic nemaže. Odpověď ale uvidí každý, kdo vidí úkol.',
+                ],
+                'thread' => [
+                    'task' => 'MIRNIX · Kampaň na brusle',
+                    'messages' => [
+                        ['author' => 'Pavel', 'agent' => false, 'lines' => ['@agent napiš 3 krátké texty do reklamy na brusle. Drž se tónu z karty.']],
+                        ['author' => 'Agent', 'agent' => true, 'lines' => ['Agent: pouštím se do toho (projekt marketing). Až budu hotový, napíšu sem.']],
+                        ['author' => 'Agent', 'agent' => true, 'lines' => [
+                            'Agent: hotovo.',
+                            '1. Zima začíná na ledě. Vyber si brusle, které sednou napoprvé.',
+                            '2. Rekreační, hokejové i dětské brusle na jednom místě.',
+                            '3. Do Vánoc to stihneš. Brusle od [cena k doplnění].',
+                            'Cenu a termín akce karta nemá, nechal jsem je k doplnění. @Pavel',
+                        ]],
+                        ['author' => 'Pavel', 'agent' => false, 'lines' => ['Dvojku zkrať pod 60 znaků a přidej variantu pro děti.']],
+                    ],
+                ],
+            ],
+            [
+                'id' => 'agent-hotova-prace',
+                'label' => 'Hotová práce',
+                'title' => 'Hotová práce: zkontroluješ a zveřejníš sám',
+                'intro' => 'Když agent upraví web Taveo, sám ho na web nepošle. Úprava se objeví v kartě Hotová práce s popisem a snímky, které si nafotil ve svém prohlížeči. Kód číst nemusíš, kontroluješ podle snímků.',
+                'where' => ['Nástroje', 'Agent', 'taveo'],
+                'how' => [
+                    'Zkontrolovat otevře popis, co je jinak, a snímky z počítače i telefonu. Kliknutím je zvětšíš.',
+                    'Zveřejnit jde až se zelenými testy (Testy prošly). Pak to běží samo: testy, nasazení, na webu. Obvykle do 2 minut. Zveřejnit můžeš ty i Tom.',
+                    'Když něco nesedí, napiš agentovi do konverzace pod kartou, co upravit. Tlačítko Vrátit u poslední zveřejněné úpravy vrátí web zpátky.',
+                    'Úpravu s upozorněním „Mění nastavení serveru“ nech Tomovi.',
+                    'U projektů pro Shoptet a Upgates se karta jmenuje Hotové podklady. Kódy a texty mají tlačítko Zkopírovat a popis, kam je v administraci vložit. Po vložení klikni Vloženo, hotovo.',
+                ],
+                'images' => [
+                    self::image('agent-hotova-prace') + [
+                        'alt' => 'Karta Hotová práce: úprava se nasazuje, další čeká na kontrolu se zelenými testy, starší jde vrátit',
+                        'caption' => 'Jedna úprava se právě nasazuje, druhá čeká na kontrolu, starší jde vrátit.',
+                    ],
+                    self::image('agent-zkontrolovat') + [
+                        'alt' => 'Panel Zkontrolovat s popisem úpravy a snímky z počítače a telefonu',
+                        'caption' => 'Po kliknutí na Zkontrolovat: popis a snímky z prohlížeče agenta.',
+                    ],
+                    self::image('agent-podklady') + [
+                        'alt' => 'Hotové podklady pro Shoptet: kódy s tlačítkem Zkopírovat a popisem, kam je vložit',
+                        'caption' => 'U Shoptetu a Upgates: kód ke zkopírování a kam ho vložit.',
+                    ],
+                ],
+            ],
+            [
+                'id' => 'agent-predplatne',
+                'label' => 'Předplatné Claude',
+                'title' => 'Kolik zbývá z předplatného',
+                'intro' => 'Agent v nástrojích, agent v ClickUpu i Tomova práce v Claude Code jedou na jednom předplatném Claude. Kolik je z něj vyčerpané, vidíš uprostřed hlavičky nástrojů.',
+                'where' => ['Nástroje', 'hlavička nahoře'],
+                'how' => [
+                    '5 h je relace, obnovuje se po pěti hodinách. 7 dní je týdenní limit.',
+                    'Pruh je zelený, od 75 % oranžový a od 90 % červený.',
+                    'Po kliknutí uvidíš, kdy se který limit obnoví. Ryska ukazuje, kolik z okna už uběhlo. Když je pruh za ní, limit dojde dřív.',
+                    'Od 90 % se agent z ClickUpu nespustí a odpoví, kdy se limit obnoví. Zbytek zůstane na rozdělanou práci v nástrojích.',
+                ],
+                'images' => [
+                    self::image('agent-predplatne') + [
+                        'alt' => 'Ukazatel předplatného Claude v hlavičce nástrojů, rozbalený: relace, týden a kdy se obnoví',
+                        'caption' => 'Rozbalený ukazatel: relace, týden a kdy se obnoví.',
+                    ],
                 ],
             ],
         ];
