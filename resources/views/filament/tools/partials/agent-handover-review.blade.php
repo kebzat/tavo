@@ -8,10 +8,6 @@
         </div>
     @endif
 
-    @if ($item['since'] && $component->type === 'server')
-        <p class="text-xs text-gray-500 dark:text-gray-400">Agent začal {{ $component->sinceLabel($item) }}. Do tohoto stavu web vrátí tlačítko Vrátit.</p>
-    @endif
-
     @if ($body)
         <div class="ads-advice text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ $body }}</div>
     @else

@@ -81,29 +81,24 @@ git (Pavel), v ní zkontroluje snímky a popis. Co karta umí, záleží na typu
 | Typ | Karta | Tlačítka |
 |---|---|---|
 | git | Hotová práce | Zkontrolovat, **Zveřejnit** (testy → main → nasazení), Zahodit, Vrátit poslední zveřejnění |
-| server (živý web) | Co agent změnil | Zkontrolovat, **V pořádku**, **Vrátit** web do stavu před změnou |
 | prazdny (Shoptet, Upgates) | Hotové podklady | Zkontrolovat s tlačítkem **Zkopírovat** u každého kódu, Hotovo |
 
+U živého webu (server) karta není: úprav je hodně (i z ClickUpu) a na webu
+jsou hned. Tom rozhodl 23. 10. 2026, že je tam nechce. Vrátit web jde ručně
+(`agent vratit`, `agent obnovit <projekt> <čas> [databaze]`).
+
 Podklady přikládá agent do `/projekty/<projekt>/predani/<krátký-popis>/`
-(`popis.md`, snímky `*.png`, u živého webu `zacatek`, u Shoptetu kódy jako
-`*.html`, `*.css`, `*.txt`). Návod pro agenta je v paměti každého projektu.
+(`popis.md`, snímky `*.png`, u Shoptetu kódy jako `*.html`, `*.css`, `*.txt`). Návod pro agenta je v paměti každého projektu.
 Shoptet ani Upgates šablonu přes API měnit nedovolí, proto se kódy kopírují
 ručně.
 
-### Živý web: Vrátit
+### Živý web: vrácení ručně
 
-Agent před změnou zapíše do předání čas (`zacatek`). **Vrátit** přes frontu
-spustí na serveru `agent obnovit <projekt> <čas> [databaze]`:
-
-1. uloží současný stav (snímek souborů a záloha databáze), takže jde vrátit i vrácení,
-2. vrátí soubory z posledního snímku před tím časem (přidané po něm smaže; co
-   snímky neukládají, např. nahraná média a cache, zůstane),
-3. jen když se zaškrtne **Vrátit i databázi**: nahraje zálohu databáze před tím
-   časem. Smaže tím i objednávky, zprávy z formulářů a komentáře od té doby,
-   proto je to vypnuté.
-
-Výsledek si nástroje vyzvednou (`GET /api/fronta/<id>`) a ukážou na kartě.
-Vrácení po ruce: `agent vratit <projekt>` ukáže snímky.
+`agent obnovit <projekt> <čas> [databaze]` (root) vrátí živý web do stavu
+před časem (unix): nejdřív uloží současný stav, pak vrátí soubory z posledního
+snímku před tím časem (přidané po něm smaže, nahraná média a cache zůstanou),
+s `databaze` i databázi ze zálohy (smaže i objednávky a zprávy od té doby).
+`agent vratit <projekt>` ukáže snímky.
 
 ### Git: Zveřejnit
 
@@ -142,8 +137,7 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
 
 | Kus | Kde |
 |---|---|
-| Hotová práce ve službě | `GET/DELETE /api/projekty/<projekt>/predani`, snímky `…/predani/<jméno>/<soubor>`, vrácení webu `POST …/predani/<jméno>/vratit` |
-| Vrácení živého webu | `App\Support\Agent\SiteRestorer` → fronta → `agent obnovit` |
+| Hotová práce ve službě | `GET/DELETE /api/projekty/<projekt>/predani`, snímky `…/predani/<jméno>/<soubor>` |
 | Pull request, testy, sloučení | `App\Support\Agent\Publisher`, `GitHub`, tabulka `agent_publications` |
 | Karta v nástrojích | `Filament/Tools/Livewire/AgentHandovers`, snímky přes `/nastroje/agent/<projekt>/snimek/…` |
 | Aktualizace služby | `POST /api/aktualizovat` → fronta → `agent aktualizovat` |

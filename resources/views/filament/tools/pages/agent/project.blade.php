@@ -12,7 +12,8 @@
             <p class="text-sm text-gray-600 dark:text-gray-300">{{ $this->error() }}</p>
         </x-filament::section>
     @else
-        @if ($this->details())
+        {{-- U živého webu ne: úprav (i z ClickUpu) je moc a jsou rovnou venku. --}}
+        @if ($this->details() && $this->details()['typ'] !== 'server')
             @livewire('tools.agent-handovers', ['project' => $project, 'type' => $this->details()['typ']], key('hotova-prace'))
         @endif
 
