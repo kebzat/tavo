@@ -79,4 +79,25 @@ return [
         'api_token' => env('AGENT_API_TOKEN'),
     ],
 
+    // ClickUp: komentář „@agent …“ u úkolu spustí agenta v projektu klienta
+    // (docs/AGENT.md, ClickUp). Bez tokenu a tajemství webhooku je vypnuté.
+    'clickup' => [
+        // Osobní API token (pk_…). Agent jím čte úkol a odpovídá do komentářů.
+        'token' => env('CLICKUP_API_TOKEN'),
+        // Tajemství webhooku, ClickUp ho vrátí při založení (php artisan clickup:napojit).
+        'webhook_secret' => env('CLICKUP_WEBHOOK_SECRET'),
+        'team_id' => env('CLICKUP_TEAM_ID'),
+        // Kdo smí agenta spustit: ID uživatelů ClickUpu oddělená čárkou (Tom, Pavel).
+        'users' => array_filter(explode(',', (string) env('CLICKUP_AGENT_USERS', ''))),
+        // Prostory bez přiřazeného klienta: ID prostoru:projekt agenta, oddělené čárkou.
+        // Pavlovi klienti jsou v ClickUpu, v nástrojích zatím ne, jdou do projektu marketing.
+        'space_projects' => collect(explode(',', (string) env('CLICKUP_SPACE_PROJECTS', '')))
+            ->filter(fn (string $pair): bool => str_contains($pair, ':'))
+            ->mapWithKeys(fn (string $pair): array => [trim(strstr($pair, ':', true)) => trim(substr(strstr($pair, ':'), 1))])
+            ->all(),
+        // Pojistka předplatného Claude: nejvýš tolik úloh z ClickUpu za hodinu a za den.
+        'hourly_limit' => (int) env('CLICKUP_AGENT_HOURLY_LIMIT', 6),
+        'daily_limit' => (int) env('CLICKUP_AGENT_DAILY_LIMIT', 30),
+    ],
+
 ];

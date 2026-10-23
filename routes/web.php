@@ -6,6 +6,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
+use App\Http\Controllers\ClickUpWebhookController;
 use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\Crm\AuditImportController;
 use App\Http\Controllers\Crm\CandidateImportController;
@@ -64,7 +65,21 @@ Route::prefix('nastroje/api/agent')
         Route::post('/klienti/{slug}/ukoly', [AgentApiController::class, 'tasks'])->name('agent.api.tasks');
         Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
+        Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');
     });
+
+// Webhook ClickUpu: komentář „@agent …“ spustí agenta (docs/AGENT.md, ClickUp).
+// Ověřuje se podpisem ClickUpu, bez session a CSRF.
+Route::post('/nastroje/api/clickup/webhook', ClickUpWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->name('clickup.webhook');
 
 // Strojové rozhraní interního CRM. Bez session a CSRF — volá ho automatizace,
 // ne prohlížeč — a ověřené sdíleným tokenem z .env. Musí být nad catch-all

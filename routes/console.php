@@ -73,3 +73,8 @@ Schedule::command('clients:dashboard-demo --refresh')
     ->monthlyOn(1, '05:00')
     ->timezone('Europe/Prague')
     ->onOneServer();
+
+// Úlohy agenta z ClickUpu, které nedoběhly (docs/AGENT.md, ClickUp). Nic nevolá, když žádné nejsou.
+Schedule::command('clickup:hlidat')
+    ->everyFifteenMinutes()
+    ->onOneServer();

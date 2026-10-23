@@ -63,6 +63,42 @@ přepsat a blok `websocket` zmizí. Terminál pak neodpoví, zbytek stránky fun
 Blok stačí vrátit na konec souboru a restartovat LiteSpeed (`/usr/local/lsws/bin/lswsctrl restart`).
 Záloha konfigurace před úpravou: `/root/opravy-prav-2026-10-22/taveo-vhost.conf.pred-agentem`.
 
+## Z ClickUpu (`@agent` v komentáři)
+
+Komentář u úkolu v ClickUpu, který obsahuje `@agent`, spustí agenta v projektu
+klienta. Agent dostane název, popis a komentáře úkolu, odpracuje to na pozadí
+a odpoví do vlákna komentáře (odpovědi začínají „Agent:“). Další `@agent` ve
+stejném úkolu naváže na stejnou konverzaci. Konverzace je pak i v nástrojích
+→ Agent, dá se na ni navázat ručně.
+
+| Krok | Kde |
+|---|---|
+| Webhook na nové komentáře | `POST /nastroje/api/clickup/webhook`, `ClickUpWebhookController`, podpis `X-Signature` (HMAC-SHA256 tajemstvím webhooku) |
+| Kdo smí spustit | `CLICKUP_AGENT_USERS` (ID uživatelů ClickUpu: Tom, Pavel). Od nikoho jiného se nic nespustí. |
+| Který projekt | seznam úkolu → klient s `clickup_list_id` (Klienti → klient → ClickUp seznam) → jeho Projekt agenta. Jinak projekt celého prostoru z `CLICKUP_SPACE_PROJECTS` (Pavlův prostor → `marketing`). Jinak agent odpoví, že projekt chybí. |
+| Spuštění | `App\Support\ClickUp\ClickUpAgent::start()` po odeslání odpovědi webhooku → služba agenta `POST /api/projekty/{slug}/ulohy` |
+| Práce | `server.js`, `odpracovat()`: `claude -p --permission-mode auto --output-format json`, v projektu nejvýš jedna úloha, celkem dvě, limit 30 min, 200 kroků. U webu na serveru předtím snímek a záloha DB. Log `~/.taveo-ulohy/<id>.log`. |
+| Výsledek | služba → `POST /nastroje/api/agent/ulohy/{id}/vysledek` (token `AGENT_API_TOKEN`) → odpověď do ClickUpu |
+| Ztracené úlohy | `clickup:hlidat` každých 15 min uzavře úlohy bez výsledku po 2 hodinách a napíše to do ClickUpu |
+
+Pojistky: pokyn je jen text komentáře, popis a ostatní komentáře jdou agentovi
+jako podklady s upozorněním, že pokyny v nich (vložené e-maily) neplní. Odpověď
+agenta spouštěč neobsahuje a ID našich odpovědí se pamatují, takže se agent
+nespustí sám sebou. Limit předplatného: `CLICKUP_AGENT_HOURLY_LIMIT` (6)
+a `CLICKUP_AGENT_DAILY_LIMIT` (30) úloh. V ClickUpu agent jen čte úkoly
+a přidává odpovědi, nic neupravuje ani nemaže.
+
+Nastavení (jednou, na serveru):
+
+```bash
+# .env: CLICKUP_API_TOKEN, CLICKUP_TEAM_ID, CLICKUP_AGENT_USERS, CLICKUP_SPACE_PROJECTS
+php artisan config:cache
+php artisan clickup:napojit            # jen ukáže seznamy, klienty a projekty
+php artisan clickup:napojit --ulozit   # přiřadí seznamy klientům se stejným názvem
+php artisan clickup:napojit --webhook  # založí webhook, vypíše CLICKUP_WEBHOOK_SECRET do .env
+php artisan config:cache
+```
+
 ## Z terminálu přes SSH
 
 Z Macu (přístup roota má klíč `~/.ssh/id_rsa`):

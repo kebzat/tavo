@@ -418,6 +418,20 @@ async function api(req, res) {
         }
     }
 
+    // Úloha na pozadí (z ClickUpu). Hned potvrdí, výsledek pošle zpět na web.
+    if (req.method === 'POST' && casti[3] === 'ulohy' && casti.length === 4) {
+        const data = await telo(req);
+        if (!Number.isInteger(data.id) || typeof data.zadani !== 'string' || !data.zadani.trim()) {
+            return odpoved(res, 422, { chyba: 'Úloha potřebuje id a zadání.' });
+        }
+        if (data.session && !UUID.test(String(data.session))) {
+            return odpoved(res, 422, { chyba: 'Neplatná konverzace.' });
+        }
+
+        zaraditUlohu(p, { id: data.id, zadani: data.zadani, session: data.session || null, autor: radek(data.autor || 'ClickUp', 60) });
+        return odpoved(res, 202, { zarazeno: true, ve_fronte: (fronty.get(p.slug) || []).length });
+    }
+
     // Připnout / odepnout: trvalá konverzace se sama neuspí.
     if (req.method === 'POST' && casti[3] === 'okna' && casti[5] === 'trvala' && casti.length === 6) {
         const okno = (await konverzacniOkna(p.slug)).find((o) => o.id === casti[4]);
@@ -575,6 +589,134 @@ setInterval(() => ranniPrehled().catch((e) => console.error(e.message)), 60 * 10
 
 setTimeout(() => hlidatAplikaci().catch((e) => console.error(e.message)), 5000);
 setInterval(() => hlidatAplikaci().catch((e) => console.error(e.message)), 3 * 60 * 1000);
+
+// ---------------------------------------------------------------- úlohy na pozadí (ClickUp)
+
+/*
+ * Komentář „@agent …“ v ClickUpu přijde přes web jako úloha. Agent ji odpracuje
+ * headless (`claude -p`) ve složce projektu, jako uložená konverzace, na kterou
+ * jde v nástrojích navázat. Výsledek jde na web, ten odpoví do ClickUpu.
+ *
+ * Pojistky: v projektu běží nejvýš jedna úloha (ostatní čekají ve frontě),
+ * celkem nejvýš dvě, časový limit a strop kroků. U webu na serveru před každou
+ * úlohou snímek a záloha databáze, stejně jako před konverzací. Oprávnění
+ * hlídá režim auto podle managed-settings: co by chtělo potvrzení, neudělá.
+ */
+const ULOHY_SOUBEZNE = Number(process.env.ULOHY_SOUBEZNE || 2);
+const ULOHA_LIMIT_MIN = Number(process.env.ULOHA_LIMIT_MIN || 30);
+const ULOHY_LOG = path.join(HOME, '.taveo-ulohy');
+const API_WEBU = process.env.TAVEO_API_URL || 'https://taveo.cz/nastroje/api/agent';
+const fronty = new Map();
+const bezici = new Set();
+
+function zaraditUlohu(p, uloha) {
+    fronty.set(p.slug, [...(fronty.get(p.slug) || []), uloha]);
+    console.log(`${new Date().toISOString()} úloha ${uloha.id}: zařazena v ${p.slug}`);
+    spustitDalsi();
+}
+
+function spustitDalsi() {
+    for (const [slug, cekajici] of fronty) {
+        if (bezici.size >= ULOHY_SOUBEZNE) return;
+        if (bezici.has(slug) || !cekajici.length) continue;
+
+        const uloha = cekajici.shift();
+        const p = projekt(slug);
+        if (!p) {
+            vysledekUlohy(uloha, { ok: false, chyba: `Projekt ${slug} už neexistuje.` });
+            continue;
+        }
+
+        bezici.add(slug);
+        odpracovat(p, uloha)
+            .catch((e) => vysledekUlohy(uloha, { ok: false, chyba: e.message }))
+            .finally(() => { bezici.delete(slug); spustitDalsi(); });
+    }
+}
+
+async function odpracovat(p, uloha) {
+    if (!prihlasen()) throw new Error('Claude na serveru není přihlášený.');
+
+    if (p.typ === 'server') {
+        const zaloha = await fronta({ akce: 'zaloha', projekt: p.slug });
+        if (!zaloha.ok) throw new Error(`Záloha webu se nepovedla, úlohu nespouštím. ${zaloha.vystup || ''}`.trim());
+    }
+
+    const cwd = slozka(p);
+    pripravitClaude(cwd);
+
+    const navazat = uloha.session && ulozene(p).some((k) => k.session === uloha.session);
+    const session = navazat ? uloha.session : crypto.randomUUID();
+    const autori = cteniJson(AUTORI, {});
+    autori[session] ??= uloha.autor;
+    zapisJson(AUTORI, autori);
+
+    // Proměnné z `prostredi` (tmux -e KLIC=hodnota) pro execFile jako objekt.
+    const env = { ...process.env };
+    const dvojice = prostredi(p);
+    for (let i = 1; i < dvojice.length; i += 2) {
+        const [klic, ...hodnota] = dvojice[i].split('=');
+        env[klic] = hodnota.join('=');
+    }
+
+    console.log(`${new Date().toISOString()} úloha ${uloha.id}: start v ${p.slug} (${navazat ? 'navazuje' : 'nová'} ${session})`);
+
+    const { stdout, stderr, chyba } = await new Promise((resolve) => {
+        const proces = execFile('claude', [
+            '-p', uloha.zadani,
+            ...(navazat ? ['--resume', session] : ['--session-id', session]),
+            '--output-format', 'json',
+            '--permission-mode', 'auto',
+            '--max-turns', '200',
+        ], { cwd, env, timeout: ULOHA_LIMIT_MIN * 60 * 1000, maxBuffer: 20 * 1024 * 1024 }, (chyba, stdout, stderr) => resolve({ stdout, stderr, chyba }));
+        proces.stdin?.end();
+    });
+
+    fs.mkdirSync(ULOHY_LOG, { recursive: true });
+    fs.writeFileSync(path.join(ULOHY_LOG, `${uloha.id}.log`), [stdout, stderr, chyba ? `CHYBA: ${chyba.message}` : ''].join('\n'));
+
+    let vystup = null;
+    try { vystup = JSON.parse(stdout); } catch { /* spadl dřív, než něco vypsal */ }
+
+    const limit = /usage limit|limit reached|rate limit/i.test(`${stdout}${stderr}`);
+    const casVyprsel = chyba?.killed || chyba?.signal === 'SIGTERM';
+    const ok = Boolean(vystup && !vystup.is_error && !chyba);
+
+    await vysledekUlohy(uloha, {
+        ok,
+        session: vystup?.session_id || session,
+        vysledek: typeof vystup?.result === 'string' ? vystup.result : null,
+        chyba: ok ? null : limit
+            ? 'Narazil jsem na limit předplatného Claude.'
+            : casVyprsel ? `Nestihl jsem to do ${ULOHA_LIMIT_MIN} minut.` : (vystup?.subtype || chyba?.message || 'Claude skončil bez výsledku.').slice(0, 500),
+    });
+
+    console.log(`${new Date().toISOString()} úloha ${uloha.id}: ${ok ? 'hotovo' : 'chyba'}`);
+}
+
+/** Výsledek na web (ten odpoví do ClickUpu). Při výpadku sítě ještě dvakrát. */
+async function vysledekUlohy(uloha, data) {
+    let token = process.env.AGENT_API_TOKEN || '';
+    try { token ||= fs.readFileSync(path.join(HOME, '.config', 'taveo', 'token'), 'utf8').trim(); } catch { /* bez tokenu web odmítne */ }
+
+    for (let pokus = 1; pokus <= 3; pokus++) {
+        try {
+            const odpovedWebu = await fetch(`${API_WEBU}/ulohy/${uloha.id}/vysledek`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(data),
+                signal: AbortSignal.timeout(30000),
+            });
+            if (odpovedWebu.ok || odpovedWebu.status < 500) {
+                if (!odpovedWebu.ok) console.error(`úloha ${uloha.id}: web odmítl výsledek (${odpovedWebu.status})`);
+                return;
+            }
+        } catch (e) {
+            console.error(`úloha ${uloha.id}: výsledek se neodeslal (${e.message}), pokus ${pokus}`);
+        }
+        await new Promise((r) => setTimeout(r, pokus * 5000));
+    }
+}
 
 /** Uspí nepřipnuté konverzace, ve kterých se dlouho nic nedělo. */
 async function uspatNecinne() {

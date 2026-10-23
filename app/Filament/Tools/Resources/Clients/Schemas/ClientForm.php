@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Support\Ads\Format;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\AgentUnavailable;
+use App\Support\ClickUp\ClickUp;
 use App\Support\RetainerSchedule;
 use Closure;
 use Filament\Forms\Components\DatePicker;
@@ -19,6 +20,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ClientForm
@@ -136,6 +138,27 @@ class ClientForm
         return collect($projects)->push($current)->filter()->unique()->sort()->mapWithKeys(fn (string $slug): array => [$slug => $slug])->all();
     }
 
+    /**
+     * Seznamy z ClickUpu („Prostor › Seznam“). Pamatují se hodinu, formulář
+     * se překresluje a ClickUp se nemá ptát pořád dokola.
+     *
+     * @return array<string, string>
+     */
+    private static function clickUpLists(?string $current): array
+    {
+        $clickUp = app(ClickUp::class);
+
+        $lists = $clickUp->configured()
+            ? rescue(fn (): array => Cache::remember('clickup.lists', now()->addHour(), fn (): array => $clickUp->lists()), [], report: false)
+            : [];
+
+        return collect($lists)
+            ->mapWithKeys(fn (array $list): array => [$list['id'] => $list['space'].' › '.$list['name']])
+            ->when($current && ! collect($lists)->contains('id', $current), fn ($options) => $options->put($current, 'Seznam '.$current))
+            ->sort()
+            ->all();
+    }
+
     /** „říjen – listopad 2026: 30 000 Kč · od února 2027: 5 000 Kč (předběžně)“ */
     private static function pricingPreview(Client $client): string
     {
@@ -228,6 +251,14 @@ class ClientForm
                         ->options(fn (?Client $record): array => self::agentProjects($record?->agent_project))
                         ->placeholder('Bez agenta')
                         ->helperText('Vlákna Clauda u tohoto klienta. Projekty se přidávají v nástrojích → Agent.'),
+
+                    Select::make('clickup_list_id')
+                        ->label('ClickUp seznam')
+                        ->options(fn (?Client $record): array => self::clickUpLists($record?->clickup_list_id))
+                        ->searchable()
+                        ->placeholder('Nepřiřazený')
+                        ->unique(ignoreRecord: true)
+                        ->helperText('Komentář „@agent …“ u úkolu z tohoto seznamu spustí agenta v projektu klienta.'),
 
                     Toggle::make('is_archived')
                         ->label('Archivovaný')
