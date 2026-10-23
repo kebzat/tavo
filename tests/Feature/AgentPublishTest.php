@@ -59,6 +59,7 @@ class AgentPublishTest extends TestCase
             'ahead' => 2,
             'handover_sha' => self::SHA,
             'queue' => null,
+            'closed_pulls' => [],
         ];
 
         Http::fake(fn (Request $request) => $this->respond($request));
@@ -108,7 +109,7 @@ class AgentPublishTest extends TestCase
                 'commits' => [['commit' => ['message' => "Ukazatel předplatného\n\nPodrobnosti"]]],
             ]),
             str_contains($path, '/branches/') => $this->gh['branch_sha'] ? Http::response(['commit' => ['sha' => $this->gh['branch_sha']]]) : Http::response([], 404),
-            $request->method() === 'GET' && str_ends_with($path, '/pulls') => Http::response([]),
+            $request->method() === 'GET' && str_ends_with($path, '/pulls') => Http::response(($request['state'] ?? null) === 'closed' ? $this->gh['closed_pulls'] : []),
             $request->method() === 'POST' && str_ends_with($path, '/pulls') => Http::response(['number' => 42, 'node_id' => 'PR_42']),
             str_ends_with($path, '/pulls/42') || str_ends_with($path, '/pulls/43') => Http::response(['mergeable' => $this->gh['mergeable'], 'merged' => false]),
             str_ends_with($path, '/merge') => Http::response(['sha' => self::MERGE_SHA, 'merged' => true]),
@@ -152,6 +153,21 @@ class AgentPublishTest extends TestCase
         $this->gh['ahead'] = 0;
 
         $this->assertSame([], app(Publisher::class)->handovers('taveo'));
+    }
+
+    public function test_uprava_sloucena_squashem_na_githubu_zmizi_i_ze_schranky(): void
+    {
+        $this->gh['closed_pulls'] = [['number' => 3, 'merged_at' => '2026-10-23T08:00:00Z', 'head' => ['sha' => self::SHA]]];
+
+        $this->assertSame([], app(Publisher::class)->handovers('taveo'));
+        Http::assertSent(fn (Request $r) => $r->method() === 'DELETE' && str_ends_with($r->url(), '/api/projekty/taveo/predani/predplatne') && $r['sha'] === self::SHA);
+    }
+
+    public function test_zavreny_neslouceny_pull_request_upravu_neschova(): void
+    {
+        $this->gh['closed_pulls'] = [['number' => 3, 'merged_at' => null, 'head' => ['sha' => self::SHA]]];
+
+        $this->assertCount(1, app(Publisher::class)->handovers('taveo'));
     }
 
     public function test_zverejneni_projde_testy_slouci_a_nasadi(): void

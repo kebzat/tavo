@@ -64,6 +64,18 @@ class GitHub
     }
 
     /**
+     * Byl tenhle commit větve už sloučený pull requestem? Po „Squash and merge“
+     * na GitHubu má main jiný commit, porovnání větve s main to nepozná.
+     */
+    public function mergedPull(string $repo, string $branch, string $sha): bool
+    {
+        $owner = strtok($repo, '/');
+        $pulls = $this->ok($this->request('get', "repos/{$repo}/pulls", ['head' => "{$owner}:{$branch}", 'state' => 'closed', 'per_page' => 20]))->json();
+
+        return collect($pulls)->contains(fn (array $pull): bool => filled($pull['merged_at'] ?? null) && ($pull['head']['sha'] ?? null) === $sha);
+    }
+
+    /**
      * Otevřený pull request větve do main, nebo nový.
      *
      * @return array{number: int, node_id: string}
