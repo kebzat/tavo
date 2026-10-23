@@ -396,6 +396,10 @@ async function api(req, res) {
         return odpoved(res, 202, { spusteno: ranniBezi });
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/predplatne') {
+        return odpoved(res, 200, await predplatne());
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/projekty') {
         const data = await telo(req);
         const vysledek = await fronta({ akce: 'pridat', projekt: data.projekt, typ: data.typ, zdroj: data.zdroj }, 180);
@@ -446,7 +450,50 @@ async function api(req, res) {
 
 // ---------------------------------------------------------------- aplikace Claude (Remote Control)
 
-const prihlasen = () => fs.existsSync(path.join(HOME, '.claude', '.credentials.json'));
+const PRIHLASENI = path.join(HOME, '.claude', '.credentials.json');
+const prihlasen = () => fs.existsSync(PRIHLASENI);
+
+// ---------------------------------------------------------------- využití předplatného
+
+/**
+ * Kolik z limitů předplatného je vyčerpáno (5h relace, týden), stejné číslo
+ * jako /usage v Claude Code. Čte token, kterým je Claude v kontejneru
+ * přihlášený, a ptá se Anthropicu. Token neobnovuje: to dělá Claude Code sám
+ * a obnova by mu přihlášení vyměnila pod rukama. Ven jdou jen čísla.
+ * Odpověď se drží minutu, endpoint má vlastní limit dotazů.
+ */
+let vyuziti = { cas: 0, data: null };
+
+async function predplatne() {
+    if (Date.now() - vyuziti.cas < 60_000 && vyuziti.data) {
+        return vyuziti.data;
+    }
+
+    let oauth;
+    try {
+        oauth = JSON.parse(fs.readFileSync(PRIHLASENI, 'utf8')).claudeAiOauth;
+    } catch {
+        throw Object.assign(new Error('Claude v kontejneru není přihlášený.'), { status: 503 });
+    }
+
+    const r = await fetch('https://api.anthropic.com/api/oauth/usage', {
+        headers: { Authorization: `Bearer ${oauth.accessToken}`, 'anthropic-beta': 'oauth-2025-04-20' },
+        signal: AbortSignal.timeout(8000),
+    }).catch(() => null);
+
+    if (!r || !r.ok) {
+        const chyba = r?.status === 401 ? 'Přihlášení Clauda vypršelo, obnoví se v příští konverzaci.' : `Anthropic neodpověděl (${r?.status ?? 'spojení'}).`;
+        throw Object.assign(new Error(chyba), { status: 503 });
+    }
+
+    const u = await r.json();
+    vyuziti = {
+        cas: Date.now(),
+        data: { plan: oauth.subscriptionType ?? null, limity: u.limits ?? null, five_hour: u.five_hour ?? null, seven_day: u.seven_day ?? null },
+    };
+
+    return vyuziti.data;
+}
 
 /** Adresa projektu v aplikaci Claude, kterou vypsal serverový režim. */
 async function adresaAplikace(p) {

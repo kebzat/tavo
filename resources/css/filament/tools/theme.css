@@ -41,3 +41,31 @@
 .ads-advice li + li {
     margin-top: 0.35em;
 }
+
+/*
+ * Využití předplatného Claude uprostřed hlavičky. Ve flexu, ne absolutně:
+ * na užší obrazovce se tak nepřekryje s hledáním. Volné místo si dělí jen
+ * jeho okraje, pravá část hlavičky proto ztrácí svůj ms-auto. Nezmenšuje se,
+ * na telefonu ustoupí pole hledání.
+ */
+.claude-usage {
+    order: 1;
+    display: flex;
+    flex-shrink: 0;
+    margin-inline: auto;
+    padding-inline: 0.5rem;
+}
+
+@media (width >= 40rem) {
+    .claude-usage {
+        padding-inline: 0.75rem;
+    }
+}
+
+.fi-topbar-end {
+    order: 2;
+}
+
+.fi-topbar:has(.claude-usage) .fi-topbar-end {
+    margin-inline-start: 0;
+}

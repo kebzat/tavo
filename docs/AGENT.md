@@ -44,6 +44,15 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
 - **Poprvé** se Claude zeptá na vzhled (Enter) a přihlášení: zvolit předplatné,
   otevřít odkaz, přihlásit se a vložit kód do terminálu. Pak už nikdy. Důvěru
   ke složkám projektů a tmavý vzhled nastavuje služba předem.
+- **Využití předplatného** je uprostřed hlavičky celých nástrojů: relace (5 h)
+  a týden (7 dní), procento a pruh. Stejná čísla jako `/usage` v Claude Code.
+  Kliknutím se rozbalí podrobnosti: týdenní limit pro jeden model, kdy se který
+  limit obnoví, a ryska, kolik z okna už uběhlo (pruh za ryskou = limit dojde
+  dřív). Barva: zelená, od 75 % oranžová, od 90 % červená. Obnovuje se
+  každé 2 minuty. Služba čte token, kterým je Claude v kontejneru přihlášený
+  (`~/.claude/.credentials.json`), a ptá se `api.anthropic.com/api/oauth/usage`.
+  Token sama neobnovuje (dělá to Claude Code), ven pustí jen čísla. Když
+  přihlášení vyprší, ukazatel ukáže „Claude –“ a důvod v rozbalení.
 
 Jak to drží pohromadě:
 
@@ -53,6 +62,7 @@ Jak to drží pohromadě:
 | LiteSpeed | `websocket /agent-terminal/` ve `vhost.conf` webu taveo.cz | pošle terminál z prohlížeče do kontejneru |
 | Fronta | `/srv/agent/fronta`, `taveo-agent-fronta.path` + `agent-fronta.py` | co potřebuje roota (záloha databáze, nový projekt), kontejner jen popíše |
 | Nástroje | `App\Support\Agent\AgentServer`, stránky `Filament/Tools/Pages/Agent` | seznam, vlákna, terminál (`resources/js/agent-terminal.js`) |
+| Předplatné | `GET /api/predplatne` ve službě, `ClaudeUsage` + `UsageLimit`, `Filament/Tools/Livewire/ClaudeUsageMeter` | ukazatel v hlavičce, odpověď drží služba minutu a Laravel 2 minuty |
 
 Tajemství je na serveru v `/srv/agent/terminal.env` a v `.env` webu (`AGENT_SECRET`).
 Lokálně jde stránka vyzkoušet přes SSH tunel: `ssh -N -L 7681:127.0.0.1:7681 root@88.198.31.29`

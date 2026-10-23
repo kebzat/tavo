@@ -117,6 +117,17 @@ class AgentServer
         ];
     }
 
+    /**
+     * Využití předplatného, na kterém Claude v kontejneru běží (jako /usage).
+     * Čtené z účtu Anthropicu, přepočet dělá {@see ClaudeUsage}.
+     *
+     * @return array{plan: ?string, limity: ?list<array<string, mixed>>, five_hour: ?array<string, mixed>, seven_day: ?array<string, mixed>}
+     */
+    public function usage(): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get('/api/predplatne'));
+    }
+
     /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. */
     public function terminalUrl(string $slug, string $window, string $user, ?string $host = null): string
     {
