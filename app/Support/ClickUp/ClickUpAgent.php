@@ -28,8 +28,11 @@ use Throwable;
  */
 class ClickUpAgent
 {
-    /** Spouštěč v textu komentáře. */
-    public const TRIGGER = '@agent';
+    /**
+     * Spouštěč v textu komentáře: @agent, /agent nebo !agent. Zavináč a lomítko
+     * otevírají v ClickUpu našeptávač, vykřičník nic, ať si každý vybere.
+     */
+    public const TRIGGER = '/(^|\s)[@\/!]agent\b/iu';
 
     /** Začátek našich odpovědí. Neobsahuje spouštěč, takže odpověď nespustí další běh. */
     private const SIGNATURE = 'Agent:';
@@ -38,7 +41,7 @@ class ClickUpAgent
 
     public static function mentions(string $text): bool
     {
-        return (bool) preg_match('/(^|\s)'.preg_quote(self::TRIGGER, '/').'\b/iu', $text);
+        return (bool) preg_match(self::TRIGGER, $text);
     }
 
     /**
@@ -93,7 +96,7 @@ class ClickUpAgent
             'clickup_task_id' => $taskId,
             'clickup_comment_id' => $commentId,
             'author' => (string) ($comment['user']['username'] ?? $item['user']['username'] ?? 'ClickUp'),
-            'instruction' => trim(preg_replace('/(^|\s)'.preg_quote(self::TRIGGER, '/').'\b/iu', ' ', $instruction)),
+            'instruction' => trim(preg_replace('/[ \t]{2,}/', ' ', preg_replace(self::TRIGGER, ' ', $instruction))),
         ]);
     }
 
@@ -209,7 +212,7 @@ class ClickUpAgent
     /** Odpověď do vlákna komentáře. Spouštěč z textu zmizí, ať odpověď nespustí další běh. */
     private function say(AgentJob $job, string $text): void
     {
-        $text = self::SIGNATURE.' '.preg_replace('/'.preg_quote(self::TRIGGER, '/').'\b/iu', 'agent', $text);
+        $text = self::SIGNATURE.' '.preg_replace(self::TRIGGER, '$1agent', $text);
 
         // Spouštěč může být i v odpovědi ve vlákně a na odpověď ClickUp odpovědět nedovolí.
         // Pak jde odpověď jako běžný komentář k úkolu.

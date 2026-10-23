@@ -135,6 +135,18 @@ class ClickUpAgentTest extends TestCase
         $this->assertSame(['R1'], $job->reply_comment_ids);
     }
 
+    public function test_agenta_spusti_i_lomitko_a_vykricnik(): void
+    {
+        $this->klient();
+        $this->fakeClickUp();
+
+        $this->webhook('/agent shrň úkol', commentId: 'C30')->assertOk();
+        $this->webhook('Prosím !agent oprav texty', commentId: 'C31')->assertOk();
+        $this->webhook('cesta /home/agent/x a agent!', commentId: 'C32')->assertOk();
+
+        $this->assertSame(['shrň úkol', 'Prosím oprav texty'], AgentJob::query()->orderBy('id')->pluck('instruction')->all());
+    }
+
     public function test_agent_oznaceny_stitkem_z_naseptavace_se_spusti(): void
     {
         config(['services.clickup.agent_user_id' => '777']);
