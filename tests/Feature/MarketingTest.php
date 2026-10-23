@@ -405,6 +405,7 @@ class MarketingTest extends TestCase
         $this->get('/pruvodce/'.MarketingGuide::SLUG)
             ->assertOk()
             ->assertSee('noindex', false)
+            ->assertSee($guide['agent']['title'])
             ->assertSee($guide['features'][0]['title']);
 
         foreach ($guide['features'] as $feature) {

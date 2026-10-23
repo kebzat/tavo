@@ -30,6 +30,110 @@
         </div>
     </section>
 
+    <section id="{{ $guide['agent']['id'] }}" class="section-x scroll-mt-6 pt-10 menu:pt-14" aria-labelledby="agent-nadpis">
+        <div class="container-tavo">
+            <div class="rounded-card border-2 border-brick/70 p-6 menu:p-12">
+                <div class="grid gap-8 menu:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] menu:gap-14">
+                    <div>
+                        <p class="text-sm font-bold tracking-[.14em] text-brick uppercase">Nejdůležitější novinka</p>
+                        <h2 id="agent-nadpis" class="mt-2 text-h3 font-extrabold tracking-[-.02em] text-ink">{{ $guide['agent']['title'] }}</h2>
+                        <p class="mt-5 text-perex text-body">{{ $guide['agent']['intro'] }}</p>
+
+                        <figure class="mt-6 border-l-[3px] border-brick pl-5">
+                            <blockquote class="text-[15px] leading-[1.55] text-body italic">„{{ $guide['agent']['asked'] }}“</blockquote>
+                            <figcaption class="mt-2 text-sm font-semibold text-muted">Tvoje odpověď, otázka {{ $guide['agent']['question'] }}</figcaption>
+                        </figure>
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-bold tracking-[.14em] text-muted uppercase">Kde ho najdeš</p>
+                        <ol class="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-2" aria-label="Cesta v nástrojích">
+                            @foreach ($guide['agent']['where'] as $place)
+                                <li class="flex items-center gap-1.5">
+                                    <span class="rounded-pill bg-ink px-3.5 py-1.5 text-sm font-semibold text-cream">{{ $place }}</span>
+                                    @unless ($loop->last)
+                                        <span class="text-muted" aria-hidden="true">›</span>
+                                    @endunless
+                                </li>
+                            @endforeach
+                        </ol>
+
+                        <p class="mt-7 text-sm font-bold tracking-[.14em] text-muted uppercase">Co udělá sám</p>
+                        <ul class="mt-3 flex flex-col gap-3">
+                            @foreach ($guide['agent']['auto'] as $line)
+                                <li class="flex gap-3 text-[15px] leading-[1.6] text-body">
+                                    <span class="mt-[9px] size-1.5 shrink-0 rounded-full bg-brick" aria-hidden="true"></span>
+                                    <span>{{ $line }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+
+                        <p class="mt-7 text-sm font-bold tracking-[.14em] text-muted uppercase">Jak s ním pracovat</p>
+                        <ol class="mt-3 flex flex-col gap-3">
+                            @foreach ($guide['agent']['how'] as $line)
+                                <li class="flex gap-3 text-[15px] leading-[1.6] text-body">
+                                    <span class="shrink-0 font-bold text-brick tabular-nums">{{ $loop->iteration }}.</span>
+                                    <span>{{ $line }}</span>
+                                </li>
+                            @endforeach
+                        </ol>
+                    </div>
+                </div>
+
+                <h3 class="mt-12 text-h3-sm font-extrabold tracking-[-.02em] text-ink">S čím ti pomůže, když mu napíšeš</h3>
+                <p class="mt-2 text-[15px] leading-[1.55] text-muted">Zadání můžeš psát přesně takhle. Agent si dohledá klienta, kartu i čísla sám.</p>
+
+                <ul class="mt-6 grid gap-4 menu:grid-cols-3">
+                    @foreach ($guide['agent']['asks'] as $ask)
+                        <li class="flex flex-col rounded-card border border-ink/14 p-5">
+                            <p class="font-bold text-ink">{{ $ask['title'] }}</p>
+                            <p class="mt-3 rounded-2xl bg-ink px-4 py-3 text-[14px] leading-[1.5] text-cream">
+                                <span class="text-brick" aria-hidden="true">›</span> {{ $ask['prompt'] }}
+                            </p>
+                            <p class="mt-3 text-[14px] leading-[1.55] text-body">{{ $ask['result'] }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+
+                <div class="mt-12 grid gap-6 menu:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+                    <figure class="rounded-card bg-ink p-6 text-cream menu:p-8">
+                        <figcaption class="text-sm font-bold tracking-[.14em] text-cream/50 uppercase">Příklad</figcaption>
+
+                        <div class="mt-5 ml-auto max-w-[46ch] rounded-2xl rounded-br-md bg-cream px-4 py-3 text-[14px] leading-[1.55] text-ink">
+                            <p class="mb-1 text-xs font-bold text-muted">Ty</p>
+                            {{ $guide['agent']['example']['you'] }}
+                        </div>
+
+                        <div class="mt-4 max-w-[52ch] rounded-2xl rounded-bl-md bg-ink-lift px-4 py-3 text-[14px] leading-[1.55]">
+                            <p class="mb-1 text-xs font-bold text-brick">Agent</p>
+                            <p>{{ $guide['agent']['example']['agent_lead'] }}</p>
+                            <ul class="mt-2 flex flex-col gap-1.5">
+                                @foreach ($guide['agent']['example']['agent'] as $line)
+                                    <li class="flex gap-2.5 text-cream/85">
+                                        <span class="mt-[8px] size-1.5 shrink-0 rounded-full bg-brick" aria-hidden="true"></span>
+                                        <span>{{ $line }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </figure>
+
+                    <div class="rounded-card border border-ink/14 p-6 menu:p-8">
+                        <p class="text-sm font-bold tracking-[.14em] text-muted uppercase">Co nikdy neudělá</p>
+                        <ul class="mt-4 flex flex-col gap-3">
+                            @foreach ($guide['agent']['never'] as $line)
+                                <li class="flex gap-3 text-[15px] leading-[1.6] text-body">
+                                    <span class="shrink-0 font-bold text-brick" aria-hidden="true">✕</span>
+                                    <span>{{ $line }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="section-x pt-10 menu:pt-14" aria-labelledby="kde-zacit">
         <div class="container-tavo">
             <h2 id="kde-zacit" class="text-h3-sm font-extrabold tracking-[-.02em] text-ink">Kde začít</h2>
@@ -44,6 +148,10 @@
             </ol>
 
             <nav aria-label="Obsah průvodce" class="mt-8 flex flex-wrap gap-2">
+                <a href="#{{ $guide['agent']['id'] }}"
+                   class="rounded-pill border-[1.5px] border-brick bg-brick px-4 py-2 text-sm font-semibold text-cream transition duration-300 ease-tavo hover:bg-brick-dark">
+                    Agent
+                </a>
                 @foreach ($guide['features'] as $feature)
                     <a href="#{{ $feature['id'] }}"
                        class="rounded-pill border-[1.5px] border-ink/20 px-4 py-2 text-sm font-semibold text-ink transition duration-300 ease-tavo hover:border-ink hover:bg-ink hover:text-cream">

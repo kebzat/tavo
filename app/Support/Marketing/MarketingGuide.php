@@ -29,9 +29,9 @@ final class MarketingGuide
         return [
             'title' => "Co je nového v\u{00A0}nástrojích Taveo",
             'eyebrow' => 'Aktualizováno 23. 10. 2026',
-            'intro' => 'Podle tvého dotazníku jsem do nástrojů přidal, co šlo postavit hned. U každé novinky je, na kterou tvoji odpověď reaguje, kde ji najdeš a jak s ní pracovat. Obrázky jsou z ukázkových klientů, ne z tvých.',
+            'intro' => 'Podle tvého dotazníku jsem do nástrojů přidal, co šlo postavit hned. Nejdůležitější je agent, začni u něj. U každé další novinky je, na kterou tvoji odpověď reaguje, kde ji najdeš a jak s ní pracovat. Obrázky jsou z ukázkových klientů, ne z tvých.',
             'counts' => [
-                ['value' => count($features), 'label' => 'novinek'],
+                ['value' => count($features) + 1, 'label' => 'novinek'],
                 ['value' => count(self::partial()), 'label' => 'napůl'],
                 ['value' => count(self::missing()), 'label' => 'zatím chybí'],
             ],
@@ -40,6 +40,7 @@ final class MarketingGuide
                 ['title' => 'Tento týden', 'text' => 'Vyplň karty klientů, aspoň cíle, KPI, zdroj pravdy a tón. Bez nich agent jen napíše, co chybí.'],
                 ['title' => 'Co nejdřív', 'text' => 'Nasdílej zbylé Meta účty Business Manageru Taveo. Napojení jsou zatím 2 klienti z 13.'],
             ],
+            'agent' => self::agent(),
             'features' => $features,
             'partial' => self::partial(),
             'missing' => self::missing(),
@@ -55,6 +56,53 @@ final class MarketingGuide
                 'U leadových klientů domluvit, odkud a jak často dostaneme zpětnou vazbu k leadům.',
                 'Změřit, kolik ti teď trvá jeden report a fakturace. Bez toho úsporu nevyhodnotíme.',
                 'Sednout si se mnou nad hranice upozornění, ať odpovídají tomu, kdy ty zbystříš.',
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function agent(): array
+    {
+        return [
+            'id' => 'agent',
+            'title' => 'Agent: asistent, který zná tvoje klienty',
+            'intro' => 'Claude běží na našem serveru a vidí do nástrojů Taveo: karty klientů, čísla reklam spočítaná systémem, upozornění, úkoly, kvalitu leadů a kreativní testy. Poznámky ze schůzek si ukládá, takže kontext nemusíš pokaždé vkládat znovu. Řídí se pravidly z tvého dotazníku: fakta odděluje od hypotéz, u čísel píše zdroj a období a nic si nedomýšlí.',
+            'asked' => 'Udržování kontextu a házení věcí do AI, protože nemám vše na jednom místě.',
+            'question' => 3,
+            'where' => ['Nástroje', 'Agent', 'marketing'],
+            'auto' => [
+                'Každý všední den v 6:50 projde klienty a napíše Ranní přehled: co se změnilo, jestli jsou data spolehlivá, co vyžaduje pozornost a jaký krok navrhuje.',
+                'Ke konceptům reportů doplní Co se stalo, Možné příčiny a Co doporučujeme z čísel za období reportu. Ty je jen upravíš.',
+            ],
+            'how' => [
+                'Otevři Nástroje › Agent › marketing. Konverzace se otevře rovnou, piš normálně česky.',
+                'Řekni, o kterého klienta jde. Kartu a čísla si načte sám, nic nemusíš kopírovat.',
+                'Na nové téma dej Nová konverzace. Ke starší se vrátíš v seznamu Konverzace, uspanou probudíš. Tu, kterou chceš mít pořád po ruce, si připni.',
+                'Všechno, co navrhne, je návrh. Úkoly schvaluješ v Návrzích úkolů, texty si upravíš a pošleš sám.',
+            ],
+            'asks' => [
+                ['title' => 'Ze schůzky úkoly', 'prompt' => 'Tady je přepis dnešní schůzky s MIRNIX. Zapiš dohody a navrhni úkoly.', 'result' => 'Poznámku uloží ke klientovi, dohody zapíše do karty, úkoly připraví ke schválení. Napíše, co chybí doplnit.'],
+                ['title' => 'Texty do reklam', 'prompt' => 'Napiš 5 variant textu a 5 hooků na Black Friday pro Svět Cejlonu. Drž se tónu z karty.', 'result' => 'Varianty podle karty klienta a historie kreativních testů, ať neopakuje, co nefungovalo.'],
+                ['title' => 'Plán obsahu a scénáře', 'prompt' => 'Navrhni plán příspěvků na listopad a 3 scénáře reels do 20 vteřin.', 'result' => 'Plán podle sezony, marží a priorit z karty. Scénáře si doladíš.'],
+                ['title' => 'Proč se čísla změnila', 'prompt' => 'Proč u Naturalek minulý týden vyskočila cena za nákup?', 'result' => 'Čísla se zdrojem a obdobím. Nejdřív zkontroluje měření, příčiny napíše jako hypotézy, chybějící data přizná.'],
+                ['title' => 'Kontrola před kampaní', 'prompt' => 'Projdi kampaň na Black Friday podle kontroly před spuštěním: cíl, rozpočet, odkaz, texty jsou tady.', 'result' => 'Projde body checklistu, napíše, co sedí, co chybí a co ověřit neumí.'],
+                ['title' => 'Shrnutí a odpovědi', 'prompt' => 'Připrav shrnutí po schůzce pro klienta. A navrhni odpovědi na tyhle komentáře pod postem.', 'result' => 'Hotový text k úpravě. Odesíláš ho ty, agent nikomu nic nepošle.'],
+            ],
+            'never' => [
+                'Nespustí, nevypne ani nezmění kampaň či rozpočet. Do reklamních účtů přístup nemá.',
+                'Nic nepošle klientovi a nic nezveřejní.',
+                'Termíny, ceny a závazky si nedomýšlí, napíše „k doplnění“.',
+                'Osobní údaje zákazníků do poznámek nezapisuje.',
+            ],
+            'example' => [
+                'you' => 'Schůzka s MIRNIX 23. 10.: do Vánoc chtějí kampaň na brusle, od listopadu navýšit rozpočet na 30 000 Kč, fotky dodají příští týden. Zapiš to.',
+                'agent_lead' => 'Uloženo u klienta MIRNIX:',
+                'agent' => [
+                    'Poznámka ze schůzky 23. 10.',
+                    'Do karty rozhodnutí: rozpočet 30 000 Kč měsíčně od listopadu (zdroj: schůzka 23. 10.).',
+                    'Dva návrhy úkolů ke schválení: Připravit kampaň na brusle, termín k doplnění. Dodat fotky, čeká se na klienta.',
+                    'K doplnění: přesný den dodání fotek a kdo u klienta navýšení schválil.',
+                ],
             ],
         ];
     }
@@ -130,7 +178,7 @@ final class MarketingGuide
                 'where' => ['Nástroje', 'Agent', 'marketing'],
                 'how' => [
                     'Do agenta vlož přepis schůzky, e-mail nebo zprávu a napiš, o kterého klienta jde.',
-                    'Agent uloží poznámku, dohody zapíše do karty klienta a úkoly připraví jako návrhy s termínem, prioritou, tím, na co se čeká, a zdrojem. Co nezaznělo, označí „k doplnění“.',
+                    'Agent uloží poznámku, dohody zapíše do karty klienta a úkoly připraví jako návrhy s termínem, prioritou, tím, na co se čeká, a zdrojem. Co nezaznělo, označí „k doplnění“.',
                     'Návrhy najdeš u klienta v záložce Návrhy úkolů (a v Ranním přehledu). Schválit, Upravit, nebo Zahodit, jde to i hromadně. Klient je nevidí, dokud je neschválíš.',
                 ],
                 'image' => 'navrhy',
