@@ -116,16 +116,20 @@ class AdReportResource extends Resource
                         ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
                 ]),
 
-            Section::make('Fakta, příčiny, doporučení')
+            Section::make('Osnova reportu')
                 ->visibleOn('edit')
-                ->description('Ranní agent je u konceptu předvyplní z čísel. Fakta jen z čísel reportu, příčiny jako hypotézy, doporučení k vaší kontrole. Klient je vidí pod komentářem, prázdné sekce se neukazují.')
+                ->description('Cíl a čísla doplní report sám, „Co jsme změnili“ se vezme z historie zásahů. Ranní agent předvyplní výsledky, příčiny a další kroky z čísel; příčiny jsou hypotézy, kde je nevíme jistě. Klient vidí části pod komentářem, prázdné se neukazují.')
                 ->columnSpanFull()
                 ->schema([
-                    MarkdownEditor::make('facts')->label('Co se stalo')
+                    MarkdownEditor::make('facts')->label('Výsledky (co se stalo)')
                         ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
-                    MarkdownEditor::make('causes')->label('Možné příčiny')
+                    MarkdownEditor::make('worked')->label('Co fungovalo')
                         ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
-                    MarkdownEditor::make('recommendations')->label('Co doporučujeme')
+                    MarkdownEditor::make('not_worked')->label('Co nefungovalo')
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
+                    MarkdownEditor::make('causes')->label('Možné příčiny (hypotézy)')
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
+                    MarkdownEditor::make('recommendations')->label('Co uděláme dál')
                         ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'undo', 'redo']),
                 ]),
 
@@ -165,12 +169,12 @@ class AdReportResource extends Resource
     {
         return $table
             ->defaultSort('period_end', 'desc')
-            ->modifyQueryUsing(fn ($query) => $query->with(['client', 'reviews']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['client', 'group', 'reviews']))
             ->columns([
                 TextColumn::make('title')
                     ->label('Report')
                     ->weight('bold')
-                    ->description(fn (AdReport $record): string => $record->client->name)
+                    ->description(fn (AdReport $record): string => $record->client->name.($record->group ? ' · '.$record->group->name : ''))
                     ->searchable(),
                 TextColumn::make('type')->label('Typ')->badge()->color('gray'),
                 TextColumn::make('period_end')->label('Do')->date('j. n. Y')->sortable(),

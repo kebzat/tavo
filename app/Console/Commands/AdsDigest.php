@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\AdsDailyDigest as DigestMail;
 use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdEvent;
 use App\Models\Client;
 use App\Models\User;
 use App\Settings\AdsSettings;
@@ -28,10 +29,10 @@ class AdsDigest extends Command
 
     public function handle(AdsSettings $settings): int
     {
-        $alerts = AdAlert::query()->open()->with('client')->worstFirst()->get();
+        $alerts = AdAlert::query()->open()->with(['client', 'group'])->worstFirst()->get();
         $clients = $this->yesterday();
 
-        if ($alerts->isEmpty() && $clients->isEmpty()) {
+        if ($alerts->isEmpty() && $clients->isEmpty() && ! AdEvent::query()->due()->exists()) {
             $this->info('Není co hlásit, souhrn se neposílá.');
 
             return self::SUCCESS;

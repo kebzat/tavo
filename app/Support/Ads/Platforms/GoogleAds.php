@@ -94,7 +94,7 @@ class GoogleAds implements AdsPlatform
     }
 
     /** Google Ads dosah za období nevrací, dosah a frekvence jsou jen z Mety. */
-    public function periodReach(AdAccount $account, array $periods): Collection
+    public function periodReach(AdAccount $account, array $periods, ?array $campaignIds = null): Collection
     {
         return collect();
     }

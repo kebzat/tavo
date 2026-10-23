@@ -10,6 +10,8 @@ use App\Models\Ads\AdAlert;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -19,7 +21,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Schránka upozornění ze všech klientů. Zakládá je denní kontrola
- * (ads:alerts), tady se jen berou na vědomí, řeší nebo zamítají.
+ * (ads:alerts), tady se řeší: Nové / Řeším / Čekám na klienta / Vyřešeno,
+ * odložení do data, zamítnutí na týden. Opakovaný problém je jedno
+ * upozornění, návrat do normálu zavře upozornění samo.
  */
 class AdAlertResource extends Resource
 {
@@ -59,34 +63,49 @@ class AdAlertResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['client', 'account'])->worstFirst())
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['client', 'account', 'group'])->worstFirst())
             ->columns([
                 TextColumn::make('severity')->label('')->badge(),
                 TextColumn::make('title')
                     ->label('Upozornění')
                     ->weight('bold')
                     ->wrap()
-                    ->description(fn (AdAlert $record): string => $record->client->name.($record->account ? ' · '.$record->account->name : ''))
+                    ->description(fn (AdAlert $record): string => collect([$record->client->name, $record->group?->name, $record->account?->name])->filter()->implode(' · '))
                     ->searchable(),
+                TextColumn::make('facts')
+                    ->label('Co se změnilo')
+                    ->wrap()
+                    ->lineClamp(3)
+                    ->description(fn (AdAlert $record): ?string => $record->basis ? 'Z dat: '.$record->basis : null)
+                    ->placeholder('–')
+                    ->toggleable(),
                 TextColumn::make('recommendation')
-                    ->label('Co udělat')
+                    ->label('Co prověřit')
                     ->wrap()
                     ->lineClamp(3)
                     ->color('gray')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('detected_on')
                     ->label('Od')
                     ->date('j. n.')
                     ->description(fn (AdAlert $record): ?string => $record->last_seen_on->isSameDay($record->detected_on) ? null : 'naposledy '.$record->last_seen_on->format('j. n.'))
                     ->sortable(),
-                TextColumn::make('status')->label('Stav')->badge(),
+                TextColumn::make('status')
+                    ->label('Stav')
+                    ->badge()
+                    ->description(fn (AdAlert $record): ?string => collect([
+                        $record->isSnoozed() ? 'odloženo do '.$record->snoozed_until->format('j. n.') : null,
+                        $record->waiting_for ? 'čeká se na: '.$record->waiting_for : null,
+                        $record->occurrences > 1 ? $record->occurrences.'. výskyt' : null,
+                        $record->recovered_on ? 'v normálu od '.$record->recovered_on->format('j. n.') : null,
+                    ])->filter()->implode(' · ') ?: null),
             ])
             ->filters([
                 SelectFilter::make('status')
                     ->label('Stav')
                     ->options(AlertStatus::class)
                     ->multiple()
-                    ->default([AlertStatus::Open->value, AlertStatus::Acknowledged->value]),
+                    ->default([AlertStatus::Open->value, AlertStatus::Acknowledged->value, AlertStatus::Waiting->value]),
                 SelectFilter::make('severity')->label('Závažnost')->options(AlertSeverity::class),
                 SelectFilter::make('client')->label('Klient')->relationship('client', 'name')->searchable()->preload(),
             ])
@@ -94,6 +113,17 @@ class AdAlertResource extends Resource
             ->recordActions([
                 ActionGroup::make([
                     self::statusAction('acknowledge', 'Řeším', AlertStatus::Acknowledged, Heroicon::OutlinedHandRaised),
+                    Action::make('wait')
+                        ->label('Čekám na klienta')
+                        ->icon(Heroicon::OutlinedClock)
+                        ->visible(fn (AdAlert $record): bool => $record->status !== AlertStatus::Waiting)
+                        ->schema([TextInput::make('waiting_for')->label('Na co čekáme')->maxLength(255)])
+                        ->action(fn (AdAlert $record, array $data) => $record->moveTo(AlertStatus::Waiting, auth()->user()?->name, $data['waiting_for'] ?? null)),
+                    Action::make('snooze')
+                        ->label('Odložit')
+                        ->icon(Heroicon::OutlinedBellSnooze)
+                        ->schema([Select::make('days')->label('Na jak dlouho')->options([1 => 'Do zítřka', 3 => 'Na 3 dny', 7 => 'Na týden', 14 => 'Na 2 týdny'])->default(3)->required()])
+                        ->action(fn (AdAlert $record, array $data) => $record->snooze(today()->addDays((int) $data['days']), auth()->user()?->name)),
                     self::statusAction('resolve', 'Vyřešeno', AlertStatus::Resolved, Heroicon::OutlinedCheckCircle),
                     self::statusAction('dismiss', 'Zamítnout na týden', AlertStatus::Dismissed, Heroicon::OutlinedXCircle),
                     self::statusAction('reopen', 'Znovu otevřít', AlertStatus::Open, Heroicon::OutlinedArrowUturnLeft),
@@ -116,9 +146,6 @@ class AdAlertResource extends Resource
             ->label($label)
             ->icon($icon)
             ->visible(fn (AdAlert $record): bool => $record->status !== $status)
-            ->action(fn (AdAlert $record) => $record->update([
-                'status' => $status,
-                'resolved_at' => $status === AlertStatus::Resolved ? now() : null,
-            ]));
+            ->action(fn (AdAlert $record) => $record->moveTo($status, auth()->user()?->name));
     }
 }

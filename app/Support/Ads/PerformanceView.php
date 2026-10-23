@@ -2,8 +2,10 @@
 
 namespace App\Support\Ads;
 
+use App\Enums\Ads\AdChangeType;
 use App\Enums\Ads\AdPlatform;
 use App\Enums\Ads\PrimaryGoal;
+use App\Models\Ads\AdCampaign;
 use Carbon\CarbonImmutable;
 
 /**
@@ -27,6 +29,13 @@ final class PerformanceView
     /** Změna pod touhle hranicí se nebarví, je to běžné kolísání. */
     private const NOISE_PCT = 3;
 
+    /**
+     * Dá se období se srovnáním porovnat? Ne, když chybí data na konci období
+     * (výpadek stahování) nebo když srovnávací období začíná dřív, než máme
+     * čísla. Procenta by pak ukazovala propad, který neexistuje.
+     */
+    public readonly bool $comparable;
+
     /** @param  array<string, mixed>  $snapshot */
     public function __construct(private readonly array $snapshot)
     {
@@ -37,6 +46,107 @@ final class PerformanceView
         // Přesný dosah za období mají jen novější snímky a jen přednastavená období.
         $this->totals = Metrics::fromArray($snapshot['totals'] ?? [])->withPeriodReach($snapshot['period_reach']['current'] ?? null);
         $this->previous = Metrics::fromArray($snapshot['previous_totals'] ?? [])->withPeriodReach($snapshot['period_reach']['previous'] ?? null);
+        $since = $snapshot['data']['since'] ?? null;
+        $this->comparable = ($snapshot['data']['covers_period'] ?? true)
+            && ($since === null || $since <= $this->previousPeriod->from->toDateString());
+    }
+
+    /** Skupina kampaní, za kterou čísla jsou. Null = celý účet. */
+    public function scopeLabel(): ?string
+    {
+        return ($this->snapshot['scope']['is_group'] ?? false) ? $this->snapshot['scope']['label'] : null;
+    }
+
+    /**
+     * Proč čísla za období nejsou celá nebo srovnatelná. Null, když je
+     * všechno v pořádku. Ukazuje se nad dlaždicemi i v reportu.
+     */
+    public function dataNote(): ?string
+    {
+        $data = $this->snapshot['data'] ?? null;
+
+        if ($data === null) {
+            return null;
+        }
+
+        $through = filled($data['complete_through'] ?? null) ? CarbonImmutable::parse($data['complete_through']) : null;
+        $since = $data['since'] ?? null;
+
+        return match (true) {
+            $through === null && ($data['state'] ?? null) === DataStatus::WAITING => 'Účet se ještě nestahoval, čísla zatím nemáme.',
+            ! ($data['covers_period'] ?? true) => 'Data máme jen do '.($through?->format('j. n. Y') ?? '–').', za '.$data['missing_days'].' '.self::days((int) $data['missing_days']).' na konci období chybí. Součty jsou neúplné a srovnání neukazujeme, propad by nebyl skutečný.',
+            $since !== null && $since > $this->previousPeriod->from->toDateString() => 'Srovnávací období začíná '.$this->previousPeriod->from->format('j. n. Y').', čísla máme až od '.CarbonImmutable::parse($since)->format('j. n. Y').'. Srovnání neukazujeme.',
+            default => null,
+        };
+    }
+
+    /**
+     * Hlavní výsledek proti cíli: cena za konverzi a ROAS proti cílovým
+     * hodnotám. Prázdné, když cíle nejsou vyplněné.
+     *
+     * @return list<array{label: string, value: string, target: string, ok: ?bool}>
+     */
+    public function targets(): array
+    {
+        $targets = $this->snapshot['targets'] ?? [];
+        $rows = [];
+
+        if ($this->goal->isPerformance() && filled($targets['target_cpa'] ?? null)) {
+            $cost = $this->totals->costPerConversion($this->goal);
+            $rows[] = [
+                'label' => $this->goal->costLabel(),
+                'value' => Format::unitPrice($cost, $this->currency),
+                'target' => Format::unitPrice((float) $targets['target_cpa'], $this->currency),
+                'ok' => $cost === null ? null : $cost <= (float) $targets['target_cpa'],
+            ];
+        }
+
+        if ($this->goal->hasValue() && filled($targets['target_roas'] ?? null)) {
+            $roas = $this->totals->roas();
+            $rows[] = [
+                'label' => 'ROAS',
+                'value' => Format::roas($roas),
+                'target' => Format::roas((float) $targets['target_roas']),
+                'ok' => $roas === null ? null : $roas >= (float) $targets['target_roas'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Zásahy v období, formátované do seznamu a do grafu.
+     *
+     * @return list<array{date: string, label: string, description: string, expected: ?string, scope: ?string}>
+     */
+    public function changes(): array
+    {
+        return array_map(fn (array $change): array => [
+            'date' => CarbonImmutable::parse($change['date'])->format('j. n.'),
+            'label' => $change['label'],
+            'description' => $change['description'],
+            'expected' => $change['expected'] ?? null,
+            'scope' => $change['scope'] ?? null,
+        ], $this->snapshot['changes'] ?? []);
+    }
+
+    /** @return list<array{date: string, label: string, title: string}> */
+    public function events(): array
+    {
+        return array_map(fn (array $event): array => [
+            'date' => CarbonImmutable::parse($event['date'])->format('j. n.'),
+            'label' => $event['label'],
+            'title' => $event['title'],
+        ], $this->snapshot['events'] ?? []);
+    }
+
+    private static function days(int $count): string
+    {
+        return match (true) {
+            $count === 1 => 'den',
+            $count >= 2 && $count <= 4 => 'dny',
+            default => 'dní',
+        };
     }
 
     public function hasData(): bool
@@ -75,7 +185,9 @@ final class PerformanceView
         return match (true) {
             $key === 'cost_per_conversion' && filled($targets['target_cpa'] ?? null) && $this->goal->isPerformance() => 'cíl '.Format::unitPrice((float) $targets['target_cpa'], $this->currency),
             $key === 'roas' && filled($targets['target_roas'] ?? null) => 'cíl '.Format::roas((float) $targets['target_roas']),
-            MetricCatalog::needsPeriodReach($key) && ! $this->totals->hasPeriodReach() => PeriodReach::UNAVAILABLE_HINT,
+            MetricCatalog::needsPeriodReach($key) && ! $this->totals->hasPeriodReach() => ($this->snapshot['scope']['is_group'] ?? false)
+                ? 'u skupiny se stahuje ráno, jen přednastavená období'
+                : PeriodReach::UNAVAILABLE_HINT,
             default => null,
         };
     }
@@ -173,15 +285,34 @@ final class PerformanceView
     }
 
     /**
-     * Data pro <x-ads.chart>: sloupce útraty a čára konverzí po dnech.
+     * Data pro <x-ads.chart>: sloupce útraty a čára konverzí po dnech. Den
+     * bez stažených dat má stav „missing“ (nekreslí se jako nula), poslední
+     * dny „settling“ (Meta je ještě dopočítává). Značky jsou zásahy a termíny.
      *
-     * @return array{labels: list<string>, bars: array{label: string, values: list<float>, display: list<string>}, line: array{label: string, values: list<float>, display: list<string>}}
+     * @return array{labels: list<string>, bars: array{label: string, values: list<float>, display: list<string>}, line: array{label: string, values: list<float>, display: list<string>}, states: list<string>, markers: list<array{index: int, kind: string, mark: string, text: string}>}
      */
     public function chart(): array
     {
         $days = collect($this->snapshot['daily'] ?? []);
+        $index = $days->pluck('date')->flip();
+        $markers = [];
+
+        foreach ($this->snapshot['changes'] ?? [] as $change) {
+            if (isset($index[$change['date']])) {
+                $type = AdChangeType::tryFrom($change['type']);
+                $markers[] = ['index' => $index[$change['date']], 'kind' => 'change', 'mark' => $type?->mark() ?? '•', 'text' => $change['label'].': '.$change['description']];
+            }
+        }
+
+        foreach ($this->snapshot['events'] ?? [] as $event) {
+            if (isset($index[$event['date']])) {
+                $markers[] = ['index' => $index[$event['date']], 'kind' => 'event', 'mark' => '◆', 'text' => $event['label'].': '.$event['title']];
+            }
+        }
 
         return [
+            'states' => $days->map(fn (array $day): string => $day['state'] ?? 'ok')->all(),
+            'markers' => $markers,
             'labels' => $days->map(fn (array $day): string => CarbonImmutable::parse($day['date'])->format('j. n.'))->all(),
             'bars' => [
                 'label' => 'Útrata',
@@ -197,7 +328,10 @@ final class PerformanceView
     }
 
     /**
-     * Cesta od zobrazení k nákupu. U každého kroku podíl z předchozího.
+     * Události po cestě od zobrazení ke konverzi. U každého kroku poměr
+     * k předchozímu. Meta počítá události, ne lidi: poměr neříká, že titíž
+     * lidé prošli všemi kroky (nákup může přijít bez zaznamenaného košíku,
+     * jeden člověk může košík otevřít třikrát). Proto „poměr“, ne „prošlo“.
      * Kroky bez dat (e-shop bez událostí košíku) se vynechají.
      *
      * @return list<array{label: string, value: string, rate: ?string, width: float}>
@@ -215,11 +349,11 @@ final class PerformanceView
                 'Zahájení objednávky' => $m->get('checkouts'),
                 'Nákupy' => $m->get('purchases'),
             ],
-            PrimaryGoal::Leads => [
+            PrimaryGoal::Leads, PrimaryGoal::Recruitment => [
                 'Zobrazení' => $m->get('impressions'),
                 'Prokliky na web' => $m->get('link_clicks'),
                 'Zobrazení cílové stránky' => $m->get('landing_page_views'),
-                'Poptávky' => $m->get('leads'),
+                $this->goal->conversionLabel() => $m->get('leads'),
             ],
             PrimaryGoal::Traffic => [
                 'Zobrazení' => $m->get('impressions'),
@@ -268,10 +402,14 @@ final class PerformanceView
                 $p = Metrics::fromArray($row['previous_totals'] ?? []);
 
                 return [
+                    'id' => $row['id'] ?? null,
                     'name' => $row['name'],
                     'account' => $row['account'],
+                    'group' => $row['group'] ?? null,
+                    'status' => AdCampaign::label($row['status'] ?? null),
+                    'running' => in_array($row['status'] ?? null, AdCampaign::RUNNING_STATUSES, true),
                     'spend' => Format::money($m->spend(), $this->currency),
-                    'spend_change' => Format::change(Metrics::change($m->spend(), $p->spend())),
+                    'spend_change' => $this->comparable ? Format::change(Metrics::change($m->spend(), $p->spend())) : null,
                     'conversions' => Format::count($m->conversions($this->goal)),
                     'cost' => Format::unitPrice($m->costPerConversion($this->goal), $this->currency),
                     'roas' => $this->goal->hasValue() ? Format::roas($m->roas()) : null,
@@ -295,7 +433,7 @@ final class PerformanceView
      */
     private function tile(string $key, string $label, ?float $current, ?float $previous, callable $format, int $direction, ?string $hint = null): array
     {
-        $change = Metrics::change($current, $previous);
+        $change = $this->comparable ? Metrics::change($current, $previous) : null;
 
         $tone = match (true) {
             $change === null, $direction === 0, abs($change) < self::NOISE_PCT => 'neutral',
@@ -306,8 +444,9 @@ final class PerformanceView
         return [
             'key' => $key,
             'label' => $label,
+            'description' => MetricCatalog::exists($key) ? MetricCatalog::description($key, $this->goal) : null,
             'value' => $format($current),
-            'previous' => $format($previous),
+            'previous' => $this->comparable ? $format($previous) : '–',
             'change' => Format::change($change),
             'tone' => $tone,
             'hint' => $hint,

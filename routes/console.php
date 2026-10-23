@@ -38,6 +38,13 @@ Schedule::command('ads:sync')
     ->withoutOverlapping(60)
     ->onOneServer();
 
+// Ruční obnova čísel z detailu klienta (tlačítko Obnovit čísla). Bez žádosti nic nevolá,
+// účet jde obnovit nejvýš jednou za 2 hodiny (config ads.refresh_cooldown_minutes).
+Schedule::command('ads:sync --requested')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(30)
+    ->onOneServer();
+
 // Cílové stránky klientů: odpovídají a mají Meta pixel? Jeden dotaz na adresu za den.
 Schedule::command('marketing:landing-check')
     ->dailyAt('06:20')

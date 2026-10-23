@@ -28,6 +28,7 @@ class AccountStatus implements Rule
                 },
                 ['status' => $account->status],
                 $account,
+                facts: 'Meta při ranním stažení hlásí stav účtu „'.$account->statusLabel().'“.',
             ))
             ->values()
             ->all();

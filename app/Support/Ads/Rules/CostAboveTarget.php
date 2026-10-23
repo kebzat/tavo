@@ -6,9 +6,9 @@ use App\Enums\Ads\AlertSeverity;
 use App\Support\Ads\Format;
 
 /**
- * Cena za konverzi za poslední týden je nad cílem. Hodnotí se jen nad
- * minimem konverzí, u malého účtu dělá jedna objednávka navíc nebo
- * míň rozdíl desítek procent.
+ * Cena za konverzi za poslední týden je nad cílem (klienta nebo skupiny).
+ * Hodnotí se jen nad minimem konverzí, u malého účtu dělá jedna objednávka
+ * navíc nebo míň rozdíl desítek procent.
  */
 class CostAboveTarget implements Rule
 {
@@ -20,7 +20,7 @@ class CostAboveTarget implements Rule
     public function evaluate(AlertContext $context): array
     {
         $goal = $context->goal();
-        $target = $context->clientSettings()?->target_cpa;
+        $target = $context->targetCpa();
 
         if (! $goal->isPerformance() || ! $target) {
             return [];
@@ -41,13 +41,16 @@ class CostAboveTarget implements Rule
         }
 
         $currency = $context->currency();
+        $previous = $context->totals($context->week()->previous())->costPerConversion($goal);
 
         return [new Finding(
             AlertSeverity::Warning,
             $goal->costLabel().' '.Format::unitPrice($cost, $currency).' je nad cílem '.Format::unitPrice($target, $currency),
-            'Za posledních 7 dní: '.Format::count($conversions).' '.mb_strtolower($goal->conversionLabel()).' za '.Format::money($week->spend(), $currency).'. '
-                ."\n\nPodívejte se, které kampaně a sady cenu táhnou nahoru, a přesuňte rozpočet k těm levnějším. Zkontrolujte i frekvenci a stáří kreativ a jestli se nezměnilo něco na webu (ceny, doprava, pokladna).",
-            ['cost' => $cost, 'target' => $target, 'conversions' => $conversions],
+            'Podívejte se, které kampaně a sady cenu táhnou nahoru, a přesuňte rozpočet k těm levnějším. Zkontrolujte i frekvenci a stáří kreativ a jestli se nezměnilo něco na webu (ceny, doprava, pokladna).',
+            ['cost' => $cost, 'target' => $target, 'conversions' => $conversions, 'previous_cost' => $previous],
+            facts: $goal->costLabel().' za 7 dní '.Format::unitPrice($cost, $currency).' proti cíli '.Format::unitPrice($target, $currency)
+                .' (+'.Format::number(($cost / $target - 1) * 100).' %, hranice upozornění +'.Format::number($context->threshold('cpa_over_pct')).' %).'
+                .($previous !== null ? ' Týden předtím '.Format::unitPrice($previous, $currency).'.' : ''),
         )];
     }
 }

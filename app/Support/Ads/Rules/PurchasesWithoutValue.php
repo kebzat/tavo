@@ -35,10 +35,9 @@ class PurchasesWithoutValue implements Rule
         return [new Finding(
             AlertSeverity::Critical,
             'Měření: nákupy bez hodnoty objednávky',
-            'Za posledních 7 dní reklamy hlásí '.Format::count($week->get('purchases')).' nákupů, ale jejich hodnota je nula. '
-                .'ROAS a hodnota nákupů proto neplatí, i když se prodává.'
-                ."\n\nJde o problém měření, ne o výkon reklam. Zkontrolujte, jestli událost Purchase posílá value a currency (Meta Pixel Helper, Správce událostí → Testovat události), hlavně po úpravě pokladny nebo doplňku pro měření.",
+            'Jde o problém měření, ne o výkon reklam. Zkontrolujte, jestli událost Purchase posílá value a currency (Meta Pixel Helper, Správce událostí → Testovat události), hlavně po úpravě pokladny nebo doplňku pro měření.',
             ['purchases' => $week->get('purchases'), 'purchase_value' => 0],
+            facts: 'Za posledních 7 dní reklamy hlásí '.Format::count($week->get('purchases')).' nákupů, ale jejich hodnota je nula. ROAS a hodnota nákupů proto neplatí, i když se prodává.',
         )];
     }
 }

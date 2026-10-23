@@ -5,11 +5,13 @@ namespace App\Mail;
 use App\Filament\Tools\Pages\Ads\AdsOverview;
 use App\Filament\Tools\Pages\Agent\Briefings;
 use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdEvent;
 use App\Models\Client;
 use App\Models\Marketing\ClientBriefing;
 use App\Models\User;
 use App\Support\Ads\Format;
 use App\Support\Ads\Metrics;
+use App\Support\Ads\MorningSummary;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -35,6 +37,15 @@ class AdsDailyDigest extends Mailable
     /** Kolik klientů má dnes ranní přehled od agenta. */
     public int $briefings;
 
+    /** „2 problémy s daty, 3 výkonové odchylky, 1 končící licence…“ */
+    public string $summary;
+
+    /** @var Collection<int, AdEvent> Termíny, na které se má upozornit, i ty po termínu. */
+    public Collection $events;
+
+    /** @var Collection<int, AdAlert> Co se za poslední den samo vrátilo do normálu. */
+    public Collection $recovered;
+
     /** @var list<array{client: string, spend: string, conversions: string, cost: string}> Včerejší čísla už naformátovaná. */
     public array $rows;
 
@@ -51,6 +62,9 @@ class AdsDailyDigest extends Mailable
         $this->briefingsUrl = Briefings::getUrl(panel: 'tools');
         [$this->newAlerts, $this->ongoingAlerts] = $alerts->partition(fn (AdAlert $alert): bool => $alert->detected_on?->isToday() ?? false);
         $this->briefings = ClientBriefing::query()->whereDate('date', today())->count();
+        $this->summary = MorningSummary::for()->sentence();
+        $this->events = AdEvent::query()->due()->with('client')->orderBy('due_on')->get();
+        $this->recovered = AdAlert::query()->with('client')->where('resolved_by', 'system')->whereDate('recovered_on', '>=', today()->subDay())->get();
         $this->rows = $clients->map(function (array $row): array {
             $client = $row['client'];
             $goal = $client->adGoal();

@@ -8,6 +8,35 @@
         <x-filament::button size="sm" color="gray" icon="heroicon-m-chevron-right" icon-position="after" wire:click="shiftDay(1)" :disabled="$date->isToday()">Další den</x-filament::button>
     </div>
 
+    @if ($date->isToday() && ($summary = $this->adsSummary()))
+        {{-- Reklamy: problémy s daty, odchylky, termíny, reporty. Stejné jako nahoře v přehledu klientů. --}}
+        <div class="flex flex-wrap items-center gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+            <span class="mr-1 text-sm font-semibold text-gray-950 dark:text-white">Reklamy dnes ráno:</span>
+            @foreach ($summary as $item)
+                @if ($item['url'])
+                    <a href="{{ $item['url'] }}" class="contents"><x-filament::badge :color="$item['color']" size="lg">{{ $item['count'] }} {{ $item['label'] }}</x-filament::badge></a>
+                @else
+                    <x-filament::badge :color="$item['color']" size="lg">{{ $item['count'] }} {{ $item['label'] }}</x-filament::badge>
+                @endif
+            @endforeach
+        </div>
+    @endif
+
+    @if ($date->isToday() && ($events = $this->adEvents())->isNotEmpty())
+        <x-filament::section icon="heroicon-o-calendar-days">
+            <x-slot name="heading">Termíny v reklamách</x-slot>
+            <x-slot name="description">Visí tady, dokud je někdo neoznačí jako vyřešené.</x-slot>
+            <ul class="divide-y divide-gray-100 text-sm dark:divide-white/5">
+                @foreach ($events as $event)
+                    <li class="flex flex-wrap items-baseline justify-between gap-2 py-2 first:pt-0">
+                        <span class="min-w-0"><span class="font-medium text-gray-950 dark:text-white">{{ $event->client->name }}:</span> {{ $event->title }} <span class="text-gray-500">· {{ $event->type->todo() }}</span></span>
+                        <span @class(['shrink-0 text-xs', 'text-danger-600 dark:text-danger-400' => $event->isOverdue(), 'text-gray-500' => ! $event->isOverdue()])>{{ $event->due_on->format('j. n.') }} ({{ $event->whenLabel() }})</span>
+                    </li>
+                @endforeach
+            </ul>
+        </x-filament::section>
+    @endif
+
     @if ($date->isToday())
         <div class="grid gap-4 lg:grid-cols-2">
             <x-filament::section icon="heroicon-o-flag">

@@ -31,10 +31,10 @@ class LandingPageProblem implements Rule
             $findings[] = new Finding(
                 AlertSeverity::Critical,
                 'Cílová stránka nefunguje ('.$down->count().')',
-                "Ranní kontrola nenačetla tyto stránky:\n"
-                    .$down->map(fn (LandingCheck $check): string => '- '.$check->url.': '.($check->error ?: 'HTTP '.$check->status_code))->implode("\n")
-                    ."\n\nReklamy na ně posílají lidi zbytečně. Ověřte stránku v prohlížeči, a když nejde, zastavte kampaně, které na ni vedou, a dejte vědět Tomovi.",
+                'Reklamy na ně posílají lidi zbytečně. Ověřte stránku v prohlížeči, a když nejde, zastavte kampaně, které na ni vedou, a dejte vědět Tomovi.',
                 ['urls' => $down->pluck('url')->all()],
+                facts: "Ranní kontrola nenačetla tyto stránky:\n"
+                    .$down->map(fn (LandingCheck $check): string => '- '.$check->url.': '.($check->error ?: 'HTTP '.$check->status_code))->implode("\n"),
             );
         }
 

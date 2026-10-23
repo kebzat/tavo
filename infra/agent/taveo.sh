@@ -27,7 +27,7 @@ taveo klient <slug>                     všechno o klientovi: karta, čísla, up
 taveo prehled <slug> < prehled.md       uloží dnešní ranní přehled (Markdown ze vstupu)
 taveo ukoly <slug> < ukoly.json         návrhy úkolů ke schválení: {"tasks":[{"title":…,"source":…}]}
 taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
-taveo report <id> fakta|priciny|doporuceni <<'EOF' … EOF
+taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF
                                         jedna část konceptu reportu v Markdownu (jen prázdná pole se doplní)
 TXT
 }
@@ -46,7 +46,9 @@ case "${1:-}" in
         [ "${3:-}" = fakta ] && pole=facts
         [ "${3:-}" = priciny ] && pole=causes
         [ "${3:-}" = doporuceni ] && pole=recommendations
-        [ -n "$pole" ] || { echo "Použití: taveo report <id> fakta|priciny|doporuceni <<'EOF' … EOF" >&2; exit 1; }
+        [ "${3:-}" = fungovalo ] && pole=worked
+        [ "${3:-}" = nefungovalo ] && pole=not_worked
+        [ -n "$pole" ] || { echo "Použití: taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF" >&2; exit 1; }
         jq -Rs --arg pole "$pole" '{($pole): .}' | volat POST "/reporty/${2:?id reportu}" --data-binary @-
         ;;
     *) napoveda ;;

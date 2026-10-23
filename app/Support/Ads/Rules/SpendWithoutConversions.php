@@ -46,10 +46,10 @@ class SpendWithoutConversions implements Rule
         return [new Finding(
             AlertSeverity::Critical,
             $days.($days < 5 ? ' dny' : ' dní').' útrata bez jediné konverze',
-            'Za posledních '.$days.' dní se utratilo '.Format::money($totals->spend(), $context->currency())
-                .' a nepřišla žádná konverze ('.mb_strtolower($goal->conversionLabel()).'). Předtím chodily ('.Format::count($before->conversions($goal)).' za 4 týdny).'
-                ."\n\nNejdřív zkontrolujte měření: jestli se na webu spouští pixel a událost konverze (Meta Pixel Helper, Správce událostí) a jestli se nedávno neměnil web nebo pokladna. Když měření funguje, jde o reklamy.",
+            'Nejdřív zkontrolujte měření: jestli se na webu spouští pixel a událost konverze (Meta Pixel Helper, Správce událostí) a jestli se nedávno neměnil web nebo pokladna. Když měření funguje, jde o reklamy.',
             ['spend' => $totals->spend(), 'previous_conversions' => $before->conversions($goal)],
+            facts: 'Za posledních '.$days.' dní ('.$recent->label().') se utratilo '.Format::money($totals->spend(), $context->currency())
+                .' a nepřišla žádná konverze ('.mb_strtolower($goal->conversionLabel()).'). Předchozí 4 týdny jich přišlo '.Format::count($before->conversions($goal)).'.',
         )];
     }
 }

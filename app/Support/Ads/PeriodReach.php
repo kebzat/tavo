@@ -22,8 +22,9 @@ final class PeriodReach
     public const UNAVAILABLE_HINT = 'jen u přednastavených období';
 
     /**
-     * Období, za která se dosah stahuje: přednastavená, jejich srovnání
-     * a minulý týden pondělí až neděle (týdenní report).
+     * Období, za která se dosah stahuje: přednastavená, obě jejich srovnání
+     * (předchozí a před týdnem) a minulý týden pondělí až neděle (týdenní
+     * report). Pořád jeden dotaz na účet.
      *
      * @return list<Period>
      */
@@ -35,6 +36,7 @@ final class PeriodReach
             $period = Period::preset($key, $today);
             $periods[] = $period;
             $periods[] = $period->previous();
+            $periods[] = $period->comparison('week_ago');
         }
 
         $lastWeek = Period::week(CarbonImmutable::parse($today ?? now())->subWeek());

@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\Log;
  *   do obnovení přístupu, jinak do zítřka.
  *
  * Běžný provoz je o řád níž: ranní synchronizace dělá u Mety jeden dotaz na seznam
- * účtů a čtyři na účet a den (stav účtu, čísla po kampaních, dosah za přednastavená
- * období, zamítnuté reklamy), u Google Ads a GA4 dva. Rozpočet dotazů je
+ * účtů a šest na účet a den (stav účtu, čísla po kampaních, dosah za přednastavená
+ * období, zamítnuté reklamy, stav kampaní, čísla reklam) a jeden na skupinu kampaní
+ * (její dosah), u Google Ads a GA4 dva. Ruční obnova z detailu klienta (`ads:sync
+ * --requested`) totéž pro jeden účet, nejvýš jednou za 2 hodiny. Rozpočet dotazů je
  * v docs/MARKETING.md. Strop je tu pro případ chyby v kódu, ne pro každodenní provoz.
  */
 final class ApiGuard
@@ -73,7 +75,7 @@ final class ApiGuard
         $limit = $this->dailyLimit();
 
         if ($this->callsToday() >= $limit) {
-            throw new AdsApiException($this->label().": dnešní strop {$limit} dotazů je vyčerpaný, další stahování zítra. Běžně stačí čtyři dotazy na účet a den, zkontrolujte log.");
+            throw new AdsApiException($this->label().": dnešní strop {$limit} dotazů je vyčerpaný, další stahování zítra. Běžně stačí šest dotazů na účet a den, zkontrolujte log.");
         }
 
         Cache::add($this->counterKey(), 0, now()->addDays(2));

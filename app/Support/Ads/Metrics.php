@@ -91,7 +91,7 @@ final class Metrics
     {
         return match ($goal) {
             PrimaryGoal::Purchases => $this->sums['purchases'],
-            PrimaryGoal::Leads => $this->sums['leads'],
+            PrimaryGoal::Leads, PrimaryGoal::Recruitment => $this->sums['leads'],
             PrimaryGoal::Traffic => $this->sums['link_clicks'],
             PrimaryGoal::Awareness => $this->sums['engagements'],
         };
