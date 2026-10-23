@@ -22,6 +22,7 @@ class AgentPublication extends Model
             'pr_opened_at' => 'datetime',
             'merged_at' => 'datetime',
             'finished_at' => 'datetime',
+            'dismissed_at' => 'datetime',
         ];
     }
 
@@ -50,6 +51,26 @@ class AgentPublication extends Model
     public function isRevert(): bool
     {
         return $this->reverts_id !== null;
+    }
+
+    /**
+     * Chyba, se kterou je potřeba něco udělat: karta ji nechá nahoře hodinu,
+     * dokud ji někdo neskryje, nebo dokud stejná práce neprojde dalším pokusem.
+     *
+     * @param  iterable<self>  $recent  poslední zveřejnění projektu
+     */
+    public function needsAttention(iterable $recent): bool
+    {
+        if (! $this->status->isProblem() || $this->dismissed_at !== null || ! $this->finished_at?->gt(now()->subHour())) {
+            return false;
+        }
+
+        // U kopie živého webu je větev vždycky „kopie“: projde-li později
+        // jakékoli zveřejnění, nese i to, co napoprvé nevyšlo.
+        return ! collect($recent)->contains(fn (self $later): bool => $later->id > $this->id
+            && $later->branch === $this->branch
+            && $later->isRevert() === $this->isRevert()
+            && $later->status->isMerged());
     }
 
     public function pullUrl(): ?string
