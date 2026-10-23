@@ -3,24 +3,26 @@
 namespace App\Console\Commands;
 
 use App\Models\AgentJob;
+use App\Support\AdGraphics\GraphicsAgent;
 use App\Support\ClickUp\ClickUpAgent;
 use Illuminate\Console\Command;
 
 /**
- * Úlohy z ClickUpu, které se ztratily: běží déle, než služba agenta dovolí
+ * Úlohy agenta, které se ztratily: běží déle, než služba agenta dovolí
  * (30 min a rezerva), takže výsledek už nepřijde (restart služby, pád).
- * Uzavře je a napíše to do ClickUpu, ať na odpověď nikdo nečeká.
+ * Uzavře je. U ClickUpu to napíše do úkolu, u reklamní grafiky do zadání,
+ * ať na výsledek nikdo nečeká.
  */
 class ClickUpWatch extends Command
 {
     protected $signature = 'clickup:hlidat';
 
-    protected $description = 'Uzavře úlohy agenta z ClickUpu, které nedoběhly';
+    protected $description = 'Uzavře úlohy agenta (ClickUp, reklamní grafika), které nedoběhly';
 
     /** Čekání ve frontě projektu + limit běhu 30 min + rezerva. */
     private const LOST_AFTER_MINUTES = 120;
 
-    public function handle(ClickUpAgent $agent): int
+    public function handle(ClickUpAgent $agent, GraphicsAgent $graphics): int
     {
         $lost = AgentJob::query()
             ->where('status', AgentJob::STATUS_RUNNING)
@@ -28,7 +30,8 @@ class ClickUpWatch extends Command
             ->get();
 
         foreach ($lost as $job) {
-            rescue(fn () => $agent->finish($job, ['ok' => false, 'chyba' => 'úloha nedoběhla, výsledek nepřišel (restart služby agenta?)']), report: false);
+            $result = ['ok' => false, 'chyba' => 'úloha nedoběhla, výsledek nepřišel (restart služby agenta?)'];
+            rescue(fn () => $job->source === GraphicsAgent::SOURCE ? $graphics->finish($job, $result) : $agent->finish($job, $result), report: false);
         }
 
         $this->info('Uzavřeno: '.$lost->count());

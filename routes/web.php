@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdReportController;
+use App\Http\Controllers\Agent\AdGraphicApiController;
 use App\Http\Controllers\Agent\AgentApiController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
@@ -66,6 +67,22 @@ Route::prefix('nastroje/api/agent')
         Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
         Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');
+    });
+
+// Agent při práci na reklamní grafice: podklady a obrázky z Gemini. Ověřuje
+// jednorázový token zadání (X-Grafika-Token), bez session a CSRF.
+Route::prefix('nastroje/api/grafika/{graphic}')
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->group(function () {
+        Route::get('/podklady/{index}', [AdGraphicApiController::class, 'asset'])->whereNumber('index')->name('agent.grafika.podklad');
+        Route::post('/obrazek', [AdGraphicApiController::class, 'image'])->name('agent.grafika.obrazek');
     });
 
 // Webhook ClickUpu: komentář „@agent …“ spustí agenta (docs/AGENT.md, ClickUp).

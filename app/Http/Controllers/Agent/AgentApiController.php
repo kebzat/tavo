@@ -9,6 +9,7 @@ use App\Models\Ads\AdReport;
 use App\Models\AgentJob;
 use App\Models\Client;
 use App\Models\Marketing\ClientBriefing;
+use App\Support\AdGraphics\GraphicsAgent;
 use App\Support\ClickUp\ClickUpAgent;
 use App\Support\Marketing\ClientContext;
 use Illuminate\Http\JsonResponse;
@@ -155,10 +156,11 @@ class AgentApiController extends Controller
     }
 
     /**
-     * Výsledek úlohy z ClickUpu od služby agenta. Odpověď do ClickUpu napíše
-     * {@see ClickUpAgent::finish()}. Jen jednou, doběhlá úloha se nemění.
+     * Výsledek úlohy od služby agenta. Úloha z ClickUpu odpoví do ClickUpu
+     * ({@see ClickUpAgent::finish()}), reklamní grafika uloží návrhy
+     * ({@see GraphicsAgent::finish()}). Jen jednou, doběhlá úloha se nemění.
      */
-    public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent): JsonResponse
+    public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent, GraphicsAgent $graphics): JsonResponse
     {
         abort_unless($job->status === AgentJob::STATUS_RUNNING, 409, 'Úloha už je uzavřená.');
 
@@ -169,7 +171,7 @@ class AgentApiController extends Controller
             'chyba' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $agent->finish($job, $data);
+        $job->source === GraphicsAgent::SOURCE ? $graphics->finish($job, $data) : $agent->finish($job, $data);
 
         return response()->json(['ok' => true]);
     }
