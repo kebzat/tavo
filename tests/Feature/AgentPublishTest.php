@@ -45,6 +45,8 @@ class AgentPublishTest extends TestCase
             'services.agent.secret' => 'tajemstvi-pro-testy-dlouhe-aspon-32-znaku',
             'services.agent.infra_project' => 'taveo',
             'services.github.token' => 'github_pat_test',
+            // Tady cesta přes GitHub. Okamžité zveřejnění: AgentInstantPublishTest.
+            'services.agent.deploy_projects' => [],
         ]);
 
         $this->gh = [

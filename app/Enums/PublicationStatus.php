@@ -19,6 +19,9 @@ enum PublicationStatus: string implements HasColor, HasLabel
     /** Sloučeno do main, běží nasazení. */
     case Deploying = 'deploying';
 
+    /** Okamžité zveřejnění: vydání se nahrává rovnou na web (InstantPublisher). */
+    case Publishing = 'publishing';
+
     case Done = 'done';
 
     /** Sloučeno do main, repozitář ale nemá automatické nasazení. */
@@ -42,6 +45,7 @@ enum PublicationStatus: string implements HasColor, HasLabel
             self::Waiting => 'Odesílá se na GitHub',
             self::Testing => 'Běží testy',
             self::Deploying => 'Nasazuje se na web',
+            self::Publishing => 'Nahrává se na web',
             self::Done => 'Na webu',
             self::Merged => 'Sloučeno, bez nasazení',
             self::Restoring => 'Vrací se',
@@ -55,7 +59,7 @@ enum PublicationStatus: string implements HasColor, HasLabel
     public function getColor(): string
     {
         return match ($this) {
-            self::Waiting, self::Testing, self::Deploying, self::Restoring => 'warning',
+            self::Waiting, self::Testing, self::Deploying, self::Publishing, self::Restoring => 'warning',
             self::Done, self::Merged, self::Restored => 'success',
             self::TestsFailed, self::Conflict, self::Failed => 'danger',
         };
@@ -63,7 +67,7 @@ enum PublicationStatus: string implements HasColor, HasLabel
 
     public function isRunning(): bool
     {
-        return in_array($this, [self::Waiting, self::Testing, self::Deploying], true);
+        return in_array($this, [self::Waiting, self::Testing, self::Deploying, self::Publishing], true);
     }
 
     /** Skončilo chybou, se kterou je potřeba něco udělat (karta ji nechá nahoře). */

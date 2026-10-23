@@ -80,6 +80,9 @@ return [
         // Projekt, v jehož repozitáři je sama služba agenta (infra/agent/).
         // Po zveřejnění se na serveru aktualizuje z main.
         'infra_project' => env('AGENT_INFRA_PROJECT', 'taveo'),
+        // Weby na tomhle serveru, které tlačítko Zveřejnit nahraje rovnou ze
+        // serveru, bez GitHubu a testů (InstantPublisher, agent nasadit).
+        'deploy_projects' => array_filter(explode(',', (string) env('AGENT_DEPLOY_PROJECTS', 'taveo'))),
     ],
 
     // Tlačítko Zveřejnit v nástrojích (agent → pull request → main → web).

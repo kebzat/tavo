@@ -10,7 +10,9 @@ potřeba udělat na serveru, proto jen popíše, a tady se to pečlivě ověří
   zaloha   snímek souborů a záloha databáze projektu (před novým vláknem)
   pridat   nový projekt typu git nebo prazdny
   aktualizovat  služba agenta z main na GitHubu (po Zveřejnit v nástrojích)
-  obnovit  živý web do stavu před časem (tlačítko Vrátit u hotové práce)
+  obnovit  živý web do stavu před časem (ručně, agent obnovit)
+  nasadit  vydání ze služby agenta rovnou na web (tlačítko Zveřejnit, jen taveo)
+  nasadit-zpet  web na verzi před posledním nasazením (tlačítko Vrátit)
 
 Web na serveru (`server`) se z administrace přidat nedá. Dává agentovi
 přístup k živému webu klienta, takže zůstává jen pro roota přes SSH.
@@ -55,6 +57,15 @@ def zpracovat(pozadavek):
     if akce == 'aktualizovat':
         # Bez parametrů: agent.sh vezme server.js jen z main na GitHubu.
         return agent('aktualizovat')
+
+    if akce == 'nasadit':
+        strom = str(pozadavek.get('strom') or '')
+        if not re.match(r'^[0-9a-f]{40}$', strom):
+            return False, 'Neplatné vydání.'
+        return agent('nasadit', nazev, strom)
+
+    if akce == 'nasadit-zpet':
+        return agent('nasadit-zpet', nazev)
 
     if akce == 'obnovit':
         cas = pozadavek.get('cas')

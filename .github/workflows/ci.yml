@@ -1,14 +1,11 @@
 name: CI
 
-# Testy běží hned po odeslání práce agenta (větve agent/…), ne až po kliknutí
-# na Zveřejnit. Než člověk projde snímky, jsou hotové a sloučení nečeká.
-# Na pull requestu se testuje výsledek sloučení s main (pojistka, když se
-# main mezitím změnil, běží souběžně). Po sloučení do main se znovu
-# netestuje: nasazení si ověří, že pull request prošel, a jinak testuje
-# samo (deploy.yml). Název jobu níž čte deploy.yml, nepřejmenovávat.
+# Testy na pull requestu (výsledek sloučení s main). Na nic se nečeká: taveo
+# zveřejňuje tlačítko rovnou ze serveru bez testů a GitHub je historie, pull
+# request tlačítka se slučuje hned. Testy tu jsou pro přehled a pro ruční
+# změny. Nasazení z GitHubu si ověří zelený pull request, jinak testuje samo
+# (deploy.yml). Název jobu níž čte deploy.yml, nepřejmenovávat.
 on:
-  push:
-    branches: ['agent/**']
   pull_request:
 
 # Agent pošle větev znovu: rozběhnuté testy starší verze nemají cenu.

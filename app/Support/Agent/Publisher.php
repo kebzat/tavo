@@ -13,6 +13,9 @@ use Illuminate\Support\Str;
  * Tlačítko Zveřejnit v nástrojích: hotová práce agenta (větev agent/…)
  * jde přes pull request a testy do main a odtud nasazením na web.
  *
+ * Web na tomhle serveru (taveo) jde jinou, rychlou cestou: {@see InstantPublisher}
+ * ho nahraje rovnou ze serveru a GitHub je jen historie.
+ *
  *   Odesílá se na GitHub → Běží testy → (sloučení) → Nasazuje se → Na webu
  *
  * Sloučí se jen commit, který člověk viděl (snímky, popis). Když agent
@@ -52,11 +55,15 @@ class Publisher
     public function handovers(string $project): array
     {
         $repo = $this->repo($project);
-        $running = AgentPublication::query()->where('project', $project)->running()->pluck('sha')->all();
+        $instant = InstantPublisher::enabled($project);
+        // Co se zveřejňuje, nebo už je (okamžitě) na webu a jen čeká na historii.
+        $taken = AgentPublication::query()->where('project', $project)
+            ->where(fn ($query) => $query->running()->orWhere(fn ($query) => $query->whereNotNull('job_id')->where('status', PublicationStatus::Done)))
+            ->pluck('sha')->filter()->all();
 
         return collect($this->agent->handovers($project))
-            ->reject(fn (array $item): bool => in_array($item['sha'], $running, true))
-            ->map(function (array $item) use ($repo, $project): ?array {
+            ->reject(fn (array $item): bool => in_array($item['sha'], $taken, true))
+            ->map(function (array $item) use ($repo, $project, $instant): ?array {
                 $compare = $repo ? $this->compare($repo, $item['sha']) : null;
 
                 // Main už úpravu má (sloučená dřív, ručně, i squashem): není co
@@ -69,11 +76,16 @@ class Publisher
 
                 $files = $compare['files'] ?? [];
 
+                if ($instant) {
+                    app(InstantPublisher::class)->prepare($project, $item['sha']);
+                }
+
                 return [
                     'name' => $item['jmeno'],
                     'branch' => $item['vetev'],
                     'sha' => $item['sha'],
-                    'tests' => $compare === null ? null : $this->tests($repo, $item['sha'], $compare['behind']),
+                    'tests' => $compare === null || $instant ? null : $this->tests($repo, $item['sha'], $compare['behind']),
+                    'instant' => $instant,
                     'title' => self::title($item),
                     'description' => $item['popis'],
                     'images' => $item['snimky'],
@@ -81,7 +93,7 @@ class Publisher
                     'commits' => $compare['commits'] ?? [],
                     'files' => count($files),
                     'sensitive' => array_values(array_filter($files, fn (string $file): bool => Str::startsWith($file, self::SENSITIVE))),
-                    'on_github' => $compare !== null,
+                    'on_github' => $instant || $compare !== null,
                 ];
             })
             ->filter()
@@ -111,6 +123,10 @@ class Publisher
             throw new GitHubError('Agent mezitím na úpravě pokračoval. Zkontrolujte ji znovu.');
         }
 
+        if (InstantPublisher::enabled($project)) {
+            return app(InstantPublisher::class)->start($project, $item, self::title($item), $this->repo($project), $user);
+        }
+
         $repo = $this->repo($project) ?? throw new GitHubError('Projekt nemá repozitář na GitHubu.');
 
         if (! $this->github->configured()) {
@@ -136,6 +152,11 @@ class Publisher
     /** Vrátit zveřejněnou úpravu: GitHub založí opačný pull request a ten jde stejnou cestou. */
     public function revert(AgentPublication $original, ?User $user): AgentPublication
     {
+        // Nahrané rovnou ze serveru se vrací stejně: předchozí verze zpátky na web.
+        if ($original->job_id !== null && $original->status->isMerged()) {
+            return app(InstantPublisher::class)->revert($original, $user);
+        }
+
         if (! $original->status->isMerged() || $original->pr_node_id === null) {
             throw new GitHubError('Vrátit jde jen úpravu, která je na webu.');
         }
@@ -172,6 +193,12 @@ class Publisher
         // Vrácení živého webu z karty už není (karta u živého webu není),
         // starý záznam se jen nechá v historii.
         if ($publication->isRestore()) {
+            return;
+        }
+
+        if ($publication->status === PublicationStatus::Publishing) {
+            app(InstantPublisher::class)->advance($publication);
+
             return;
         }
 

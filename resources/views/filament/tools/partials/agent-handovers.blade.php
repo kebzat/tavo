@@ -1,5 +1,5 @@
 {{-- Hotová práce agenta podle typu projektu. Viz App\Filament\Tools\Livewire\AgentHandovers. --}}
-<div @if ($running) wire:poll.10s @else wire:poll.30s @endif>
+<div @if ($running) wire:poll.3s @else wire:poll.30s @endif>
     <x-filament::section :icon="$copy['icon']" icon-color="primary">
         <x-slot name="heading">{{ $copy['heading'] }}</x-slot>
         <x-slot name="description">{{ $copy['description'] }}</x-slot>
@@ -26,12 +26,12 @@
                         </p>
                     </div>
 
-                    @if ($publication->isRestore() && $publication->status->isRunning())
+                    @if (($publication->isRestore() || $publication->status === \App\Enums\PublicationStatus::Publishing) && $publication->status->isRunning())
                         <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-950 dark:text-white">
                             <x-filament::loading-indicator class="size-5 text-primary-600 dark:text-primary-400" />
-                            Vrací se
+                            {{ $publication->isRevert() || $publication->isRestore() ? 'Vrací se' : 'Nahrává se na web…' }}
                         </span>
-                    @elseif (! $publication->isRestore() && ($publication->status->isRunning() || $publication->status === \App\Enums\PublicationStatus::Done))
+                    @elseif (! $publication->isRestore() && $publication->job_id === null && ($publication->status->isRunning() || $publication->status === \App\Enums\PublicationStatus::Done))
                         <ol class="flex items-center gap-2 text-xs">
                             @foreach ([1 => 'Testy', 2 => 'Nasazení', 3 => 'Na webu'] as $step => $label)
                                 @unless ($loop->first)
@@ -144,6 +144,9 @@
                                     @class(['size-4 shrink-0', 'text-success-600 dark:text-success-400' => ! $publication->status->isProblem(), 'text-danger-600 dark:text-danger-400' => $publication->status->isProblem()]) />
                                 <span class="min-w-0 truncate font-medium text-gray-700 dark:text-gray-200">{{ $publication->title }}</span>
                                 <span>· {{ $publication->status->getLabel() }} · {{ $publication->user?->name }} · {{ $publication->created_at->diffForHumans() }}</span>
+                                @if ($publication->error && ! $publication->status->isProblem())
+                                    <span class="basis-full ps-6 text-gray-400 dark:text-gray-500">{{ $publication->error }}</span>
+                                @endif
                                 @if ($revertable?->is($publication))
                                     <span class="ms-auto">{{ ($this->revertAction)(['id' => $publication->id]) }}</span>
                                 @endif

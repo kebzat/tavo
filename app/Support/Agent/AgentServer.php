@@ -173,6 +173,44 @@ class AgentServer
         $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/predani/'.rawurlencode($name), array_filter(['sha' => $sha])));
     }
 
+    /**
+     * Vydání pro okamžité zveřejnění: commit `$sha` větve agenta spojený s main
+     * a sestavený. S `$deploy` ho root rovnou nahraje na web. Běží na pozadí,
+     * stav vrací {@see release()}.
+     *
+     * @return array{id: string, stav: string}
+     */
+    public function startRelease(string $slug, string $sha, bool $deploy): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->timeout(30)->post($this->projectPath($slug).'/vydani', ['sha' => $sha, 'nasadit' => $deploy]));
+    }
+
+    /**
+     * Web zpátky na verzi před posledním nasazením tlačítkem (na pozadí).
+     *
+     * @return array{id: string, stav: string}
+     */
+    public function rollbackRelease(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/vydani', ['zpet' => true]));
+    }
+
+    /**
+     * Stav úlohy vydání: sestavuje / nahrava / hotovo / chyba (s výstupem).
+     *
+     * @return array{id: string, stav: string, vystup: string, konflikt: bool, strom?: string}|null
+     */
+    public function release(string $slug, string $id): ?array
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/vydani/'.rawurlencode($id));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->status() === 404 ? null : $response->throw()->json();
+    }
+
     /** Po zveřejnění: server si stáhne novou verzi služby z main. Nečeká se. */
     public function updateService(): void
     {

@@ -444,6 +444,154 @@ function predaniSlozky(p) {
     }).sort((a, b) => b.cas - a.cas);
 }
 
+// ---------------------------------------------------------------- okamžité zveřejnění
+
+/**
+ * Tlačítko Zveřejnit u webu, který běží na tomhle serveru (taveo): bez GitHubu
+ * a bez testů, na webu do pár sekund. Git je jen historie, doplní ho web potom.
+ *
+ *   1. vydání: commit větve agenta (ten, který člověk viděl) spojený s main
+ *      z GitHubu, sestavený (vendor bez dev balíčků, npm run build). Složka
+ *      /projekty/<projekt>/vydani/<strom>, strom = git tree spojení, takže
+ *      stejné spojení se sestaví jen jednou. Sestavuje se předem, jakmile se
+ *      úprava objeví v nástrojích, po kliknutí už jen nahrání.
+ *   2. nahrání dělá root (fronta → agent nasadit): záloha databáze, předchozí
+ *      verze stranou (Vrátit), rsync, migrace, cache.
+ *
+ * Konflikt s main se nesestaví, nástroje řeknou, ať agent sloučí main do větve.
+ */
+const VYDANI_PROJEKTY = ['taveo'];
+const VYDANI_DOMOV = path.join(HOME, '.taveo-vydani');
+const VYDANI_ULOHY = path.join(VYDANI_DOMOV, 'ulohy');
+const VYDANI_PONECHAT = 6;
+const vydaniSlozka = (p) => path.join('/projekty', p.slug, 'vydani');
+const sestavovani = new Map(); // strom → Promise, ať se stejné vydání nesestavuje dvakrát
+
+const prikaz = (cmd, args, cwd) => new Promise((resolve, reject) => {
+    execFile(cmd, args, { cwd, timeout: 300000, maxBuffer: 20 * 1024 * 1024, env: { ...process.env, COMPOSER_NO_INTERACTION: '1' } }, (error, stdout, stderr) => {
+        error ? reject(new Error((stderr || stdout || error.message).trim().split('\n').slice(-5).join('\n'))) : resolve(stdout.trim());
+    });
+});
+
+const hashSouboru = (soubor) => crypto.createHash('sha256').update(fs.readFileSync(soubor)).digest('hex').slice(0, 16);
+
+/** Spojení commitu `sha` z větve agenta s main z GitHubu. Vrací strom a main. */
+async function spojit(p, sha) {
+    const repo = path.join(VYDANI_DOMOV, `${p.slug}.git`);
+    if (!fs.existsSync(repo)) {
+        await prikaz('git', ['init', '-q', '--bare', repo]);
+    }
+    const origin = await prikaz('git', ['-C', slozka(p), 'remote', 'get-url', 'origin']);
+    await prikaz('git', ['--git-dir', repo, 'fetch', '-q', origin, '+refs/heads/main:refs/heads/main']);
+    await prikaz('git', ['--git-dir', repo, 'fetch', '-q', schranka(p), sha]);
+
+    let strom;
+    try {
+        strom = (await prikaz('git', ['--git-dir', repo, 'merge-tree', '--write-tree', '--name-only', 'main', sha])).split('\n')[0];
+    } catch (e) {
+        throw Object.assign(new Error(`Úprava se srazí s tím, co je mezitím na webu: ${e.message.split('\n').filter((r) => /^[\w./-]+$/.test(r)).join(', ') || 'konflikt'}`), { konflikt: true });
+    }
+
+    return { repo, strom, main: await prikaz('git', ['--git-dir', repo, 'rev-parse', 'main']) };
+}
+
+/** Balíčky podle zámku (composer.lock, package-lock.json), sdílené mezi vydáními. */
+async function cacheBalicku(druh, zdroj) {
+    const zamek = druh === 'vendor' ? 'composer.lock' : 'package-lock.json';
+    const cil = path.join(VYDANI_DOMOV, 'cache', `${druh}-${hashSouboru(path.join(zdroj, zamek))}`);
+    const hotovo = path.join(cil, druh === 'vendor' ? 'vendor' : 'node_modules');
+    if (fs.existsSync(hotovo)) {
+        return hotovo;
+    }
+
+    const docasna = `${cil}.tmp-${process.pid}-${Date.now()}`;
+    fs.mkdirSync(docasna, { recursive: true });
+    if (druh === 'vendor') {
+        for (const f of ['composer.json', 'composer.lock']) fs.copyFileSync(path.join(zdroj, f), path.join(docasna, f));
+        await prikaz('composer', ['install', '--no-dev', '--no-scripts', '--no-autoloader', '--prefer-dist', '--ignore-platform-reqs', '-q'], docasna);
+    } else {
+        for (const f of ['package.json', 'package-lock.json']) fs.copyFileSync(path.join(zdroj, f), path.join(docasna, f));
+        await prikaz('npm', ['ci', '--no-audit', '--no-fund', '--loglevel=error'], docasna);
+    }
+    fs.rmSync(cil, { recursive: true, force: true });
+    fs.renameSync(docasna, cil);
+
+    return hotovo;
+}
+
+/** Sestaví vydání (nebo vrátí hotové). Vrací {strom, slozka, main}. */
+async function sestavitVydani(p, sha) {
+    const { repo, strom, main } = await spojit(p, sha);
+    const cil = path.join(vydaniSlozka(p), strom);
+    if (fs.existsSync(path.join(cil, '.vydani.json'))) {
+        return { strom, slozka: cil, main };
+    }
+    if (sestavovani.has(strom)) {
+        return sestavovani.get(strom);
+    }
+
+    const prace = (async () => {
+        const docasna = `${cil}.tmp-${Date.now()}`;
+        fs.mkdirSync(docasna, { recursive: true });
+        try {
+            await prikaz('bash', ['-c', 'git --git-dir="$1" archive "$2" | tar -x -C "$3"', '_', repo, strom, docasna]);
+            await prikaz('cp', ['-a', await cacheBalicku('vendor', docasna), path.join(docasna, 'vendor')]);
+            await prikaz('composer', ['dump-autoload', '--no-dev', '--optimize', '-q'], docasna);
+            fs.symlinkSync(await cacheBalicku('node', docasna), path.join(docasna, 'node_modules'));
+            await prikaz('npx', ['vite', 'build', '--logLevel', 'error'], docasna);
+            fs.unlinkSync(path.join(docasna, 'node_modules'));
+            fs.writeFileSync(path.join(docasna, '.vydani.json'), JSON.stringify({ strom, sha, main, cas: Math.floor(Date.now() / 1000) }));
+            fs.rmSync(cil, { recursive: true, force: true });
+            fs.renameSync(docasna, cil);
+        } catch (e) {
+            fs.rmSync(docasna, { recursive: true, force: true });
+            throw new Error(`Web se nepodařilo sestavit: ${e.message}`);
+        }
+
+        // Stará vydání pryč (nahraná verze je na webu, předchozí drží root stranou).
+        const stara = fs.readdirSync(vydaniSlozka(p)).filter((d) => /^[0-9a-f]{40}$/.test(d))
+            .map((d) => ({ d, t: fs.statSync(path.join(vydaniSlozka(p), d)).mtimeMs })).sort((a, b) => b.t - a.t).slice(VYDANI_PONECHAT);
+        for (const { d } of stara) fs.rmSync(path.join(vydaniSlozka(p), d), { recursive: true, force: true });
+
+        return { strom, slozka: cil, main };
+    })().finally(() => sestavovani.delete(strom));
+
+    sestavovani.set(strom, prace);
+    return prace;
+}
+
+function ulozitUlohuVydani(uloha) {
+    fs.mkdirSync(VYDANI_ULOHY, { recursive: true });
+    fs.writeFileSync(path.join(VYDANI_ULOHY, `${uloha.id}.json`), JSON.stringify(uloha));
+}
+
+/**
+ * Úloha na pozadí: sestavit (a s `nasadit` i nahrát na web). Stav si nástroje
+ * čtou přes GET …/vydani/<id>: sestavuje → nahrava → hotovo / chyba.
+ * Bez `sha` (Vrátit) jen nahraje zpátky předchozí verzi.
+ */
+function spustitVydani(p, { sha = null, nasadit = false, zpet = false }) {
+    const uloha = { id: crypto.randomUUID(), projekt: p.slug, sha, stav: zpet ? 'nahrava' : 'sestavuje', vystup: '', konflikt: false, cas: Date.now() };
+    ulozitUlohuVydani(uloha);
+
+    (async () => {
+        if (!zpet) {
+            const vydani = await sestavitVydani(p, sha);
+            Object.assign(uloha, { strom: vydani.strom, main: vydani.main, stav: nasadit ? 'nahrava' : 'hotovo' });
+            ulozitUlohuVydani(uloha);
+            if (!nasadit) return;
+        }
+        const r = await fronta(zpet ? { akce: 'nasadit-zpet', projekt: p.slug } : { akce: 'nasadit', projekt: p.slug, strom: uloha.strom }, 300);
+        Object.assign(uloha, { stav: r.ok ? 'hotovo' : 'chyba', vystup: r.vystup });
+        ulozitUlohuVydani(uloha);
+    })().catch((e) => {
+        Object.assign(uloha, { stav: 'chyba', vystup: e.message, konflikt: e.konflikt === true });
+        ulozitUlohuVydani(uloha);
+    });
+
+    return uloha;
+}
+
 // ---------------------------------------------------------------- HTTP API
 
 const odpoved = (res, status, data) => {
@@ -504,6 +652,22 @@ async function api(req, res) {
     const p = casti[0] === 'api' && casti[1] === 'projekty' ? projekt(casti[2]) : null;
     if (!p) {
         return odpoved(res, 404, { chyba: 'Projekt neexistuje.' });
+    }
+
+    // Okamžité zveřejnění: sestavit / nahrát vydání a stav úlohy (viz spustitVydani).
+    if (casti[3] === 'vydani' && VYDANI_PROJEKTY.includes(p.slug) && p.typ === 'git') {
+        if (req.method === 'POST' && casti.length === 4) {
+            const { sha, nasadit, zpet } = await telo(req);
+            if (!zpet && !/^[0-9a-f]{40}$/.test(sha || '')) {
+                return odpoved(res, 400, { chyba: 'Chybí commit.' });
+            }
+            return odpoved(res, 202, spustitVydani(p, { sha: zpet ? null : sha, nasadit: nasadit === true, zpet: zpet === true }));
+        }
+
+        if (req.method === 'GET' && casti.length === 5 && UUID.test(casti[4] || '')) {
+            const soubor = path.join(VYDANI_ULOHY, `${casti[4]}.json`);
+            return fs.existsSync(soubor) ? odpoved(res, 200, JSON.parse(fs.readFileSync(soubor, 'utf8'))) : odpoved(res, 404, { chyba: 'Úloha neexistuje.' });
+        }
     }
 
     // Hotová práce ke zveřejnění: větve agent/… ve schránce se snímky a popisem.

@@ -234,6 +234,11 @@ Server ke GitHubu přístup mít nemusí — soubory tam posílá GitHub, ne nao
 `.github/workflows/ci.yml` spustí Pint a testy (souběžně, `--parallel`) na každý
 pull request a na push do větví agenta `agent/…` (hned po odeslání, ať jsou hotové
 dřív, než člověk klikne na Zveřejnit). Po sloučení do `main` se znovu netestuje.
+**Tlačítko Zveřejnit v nástrojích nahrává web rovnou ze serveru** (bez GitHubu,
+viz [AGENT.md](AGENT.md), Taveo: Zveřejnit rovnou ze serveru). Deploy pak
+porovná strom commitu se `storage/app/nasazeny-strom` na serveru a stejnou
+verzi znovu nenasadí.
+
 `.github/workflows/deploy.yml` se pustí **hned po pushi do `main`** a podruhé
 netestuje: krok „Prošly testy v pull requestu?“ ověří, že commit patří ke
 sloučenému pull requestu se zelenými testy (ty na pull requestu testují výsledek

@@ -33,7 +33,9 @@ Použití:
   agent pridat <projekt> prazdny      (Shoptet, Upgates, marketing: bez kódu)
   agent zaloha <projekt>        snímek souborů a záloha databáze hned teď
   agent vratit <projekt>        ukáže snímky a jak se vrátit
-  agent obnovit <projekt> <čas> [databaze]   živý web do stavu před časem (unix), i z nástrojů
+  agent obnovit <projekt> <čas> [databaze]   živý web do stavu před časem (unix)
+  agent nasadit <projekt> <strom>   vydání ze služby agenta na web (tlačítko Zveřejnit)
+  agent nasadit-zpet <projekt>      web zpátky na verzi před posledním nasazením (Vrátit)
   agent odebrat <projekt>       agent ztratí přístup, snímky a zálohy zůstanou
   agent prihlasit               přihlášení Claude Code (jednou)
   agent sluzba                  nahraje novou verzi služby, běžící konverzace zůstanou
@@ -209,6 +211,82 @@ Zálohy databáze:           ls $ZALOHY/$slug
 TXT
 }
 
+# Weby, které jde zveřejnit tlačítkem rovnou ze serveru (bez GitHubu).
+# Nastaví CIL (složka webu), UZIVATEL (pod ním běží PHP), PHP a ADRESA.
+# Nastavuje proměnné přímo, ne přes výstup: chyba tu musí ukončit celý příkaz.
+nasazeni_cile() {
+    case "$1" in
+        taveo) CIL=/home/taveo.cz/public_html UZIVATEL=taveo1015 PHP=/usr/local/lsws/lsphp84/bin/php ADRESA=https://taveo.cz ;;
+        *) chyba "projekt $1 nejde zveřejnit ze serveru" ;;
+    esac
+    [ -f "$CIL/artisan" ] || chyba "ve složce $CIL není web"
+}
+
+# Co se na web neposílá a co se na něm nikdy nesmaže (rsync --delete).
+# Pevně tady, ne z repozitáře: seznam v repozitáři může změnit agent.
+nasazeni_vynechat() {
+    printf '%s\n' /.env /storage/ /public/storage /public/.well-known/ /node_modules/ \
+        /.git/ /.github/ /.claude/ /.playwright-mcp/ /tests/ /docs/ /design-source/ /bin/ /infra/ \
+        /.editorconfig /.gitattributes /.gitignore /.mcp.json /.npmrc /.phpunit.result.cache \
+        /phpunit.xml /vite.config.js /package-lock.json /CLAUDE.md '/*.png' /.vydani.json
+}
+
+nahrat_na_web() {
+    # Společné pro nasadit a nasadit-zpet: $1 projekt, $2 složka s verzí webu,
+    # $3 „migrovat“, nebo prázdné (vrácení: databáze zůstává, jak je).
+    local slug=$1 zdroj=$2 migrovat=${3:-}
+    nasazeni_cile "$slug"
+    local cil=$CIL uzivatel=$UZIVATEL
+    local zaloha=$ROOT/vydani-zaloha/$slug
+    install -d -m 700 "$zaloha"
+    web() { (cd "$CIL" && runuser -u "$UZIVATEL" -- "$PHP" artisan "$@"); }
+
+    web down --render=errors::503 --retry=5 >/dev/null || true
+    trap 'web up >/dev/null 2>&1 || true' EXIT
+    web db:zaloha
+    # Současná verze stranou pro Vrátit (jen kód, data zůstávají na místě).
+    [ "$migrovat" = migrovat ] && rsync -a --delete --exclude-from=<(nasazeni_vynechat) "$cil/" "$zaloha/predchozi/"
+    # Odkazy (symlinky) se nepřenesou vůbec: z vydání se nesmí odkázat mimo web.
+    rsync -rt --delete --no-links --chmod=D755,F644 --chown="$uzivatel:$uzivatel" \
+        --exclude-from=<(nasazeni_vynechat) "$zdroj/" "$cil/"
+    [ "$migrovat" = migrovat ] && web migrate --force
+    web storage:link >/dev/null 2>&1 || true
+    web obrazky:zmensit >/dev/null 2>&1 || true
+    web optimize >/dev/null
+    web queue:restart >/dev/null 2>&1 || true
+    web up >/dev/null
+    trap - EXIT
+
+    local kod; kod=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$ADRESA" || true)
+    [ "$kod" = 200 ] || chyba "web po nahrání vrací $kod, mrkněte na něj (agent nasadit-zpet $slug vrátí předchozí verzi)"
+}
+
+nasadit() {
+    # Tlačítko Zveřejnit (přes frontu): vydání, které sestavila služba agenta
+    # (/srv/agent/projekty/<projekt>/vydani/<strom>), rovnou na web.
+    local slug=$1 strom=$2
+    [[ "$strom" =~ ^[0-9a-f]{40}$ ]] || chyba "neplatné vydání"
+    local zdroj=$PROJEKTY/$slug/vydani/$strom
+    [ -f "$zdroj/.vydani.json" ] || chyba "vydání ${strom:0:7} není sestavené"
+    # Složku vydání zakládá agent: nesmí to být odkaz jinam na serveru.
+    [ "$(realpath -e "$zdroj")" = "$zdroj" ] || chyba "vydání ${strom:0:7} odkazuje mimo svou složku"
+    local zacatek=$SECONDS
+    nahrat_na_web "$slug" "$zdroj" migrovat
+    # Podle stromu nasazení z GitHubu (deploy.yml) pozná, že tahle verze už na webu je.
+    echo "$strom" > "$CIL/storage/app/nasazeny-strom"
+    chown "$UZIVATEL:$UZIVATEL" "$CIL/storage/app/nasazeny-strom"
+    echo "Na webu za $((SECONDS - zacatek)) s (vydání ${strom:0:7})."
+}
+
+nasadit_zpet() {
+    # Tlačítko Vrátit: verze webu před posledním nasazením tlačítkem.
+    local slug=$1 zaloha=$ROOT/vydani-zaloha/$1/predchozi
+    [ -f "$zaloha/artisan" ] || chyba "předchozí verze webu není uložená"
+    nahrat_na_web "$slug" "$zaloha"
+    echo vraceno > "$CIL/storage/app/nasazeny-strom"
+    echo "Web je zpátky na předchozí verzi. Databáze zůstala, jak byla."
+}
+
 obnovit() {
     # Tlačítko Vrátit v nástrojích (přes frontu): živý web do stavu před
     # časem $2 (unix). Soubory z posledního snímku před ním, databáze ze
@@ -302,6 +380,8 @@ case "${1:-}" in
     zaloha) zaloha "${2:?název projektu}" ;;
     vratit) vratit "${2:?název projektu}" ;;
     obnovit) obnovit "${2:?název projektu}" "${3:?čas (unix)}" "${4:-}" ;;
+    nasadit) nasadit "${2:?název projektu}" "${3:?strom vydání}" ;;
+    nasadit-zpet) nasadit_zpet "${2:?název projektu}" ;;
     odebrat) odebrat "${2:?název projektu}" ;;
     preposlat) preposlat ;;
     sluzba) sluzba ;;
