@@ -6,8 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * Kudy jde hotová práce agenta na web po tlačítku Zveřejnit (Publisher),
- * nebo vrácení živého webu (SiteRestorer).
+ * Kudy jde hotová práce agenta na web po tlačítku Zveřejnit (Publisher).
  */
 enum PublicationStatus: string implements HasColor, HasLabel
 {
@@ -25,7 +24,7 @@ enum PublicationStatus: string implements HasColor, HasLabel
     /** Sloučeno do main, repozitář ale nemá automatické nasazení. */
     case Merged = 'merged';
 
-    /** Živý web se vrací do stavu před prací agenta (dělá root). */
+    /** Vrácení živého webu z karty (už se nezakládá, jen starší záznamy). */
     case Restoring = 'restoring';
 
     case Restored = 'restored';
@@ -64,7 +63,7 @@ enum PublicationStatus: string implements HasColor, HasLabel
 
     public function isRunning(): bool
     {
-        return in_array($this, [self::Waiting, self::Testing, self::Deploying, self::Restoring], true);
+        return in_array($this, [self::Waiting, self::Testing, self::Deploying], true);
     }
 
     /** Skončilo chybou, se kterou je potřeba něco udělat (karta ji nechá nahoře). */

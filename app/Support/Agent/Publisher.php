@@ -169,9 +169,9 @@ class Publisher
             return;
         }
 
+        // Vrácení živého webu z karty už není (karta u živého webu není),
+        // starý záznam se jen nechá v historii.
         if ($publication->isRestore()) {
-            app(SiteRestorer::class)->advance($publication);
-
             return;
         }
 

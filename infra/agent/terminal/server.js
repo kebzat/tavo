@@ -372,12 +372,12 @@ async function zalozit(p, { autor, session, nahradit }) {
  *
  *   popis.md      co se změnilo, lidsky (první řádek # Nadpis)
  *   *.png …       snímky z prohlížeče
- *   zacatek       kdy agent začal měnit živý web (ISO čas), k tlačítku Vrátit
  *   *.html …      hotové kódy a texty k vložení (Shoptet, Upgates)
  *
  * U git projektu je hotová práce větev agent/<jméno> ve schránce (odeslat.git)
  * a nástroje ji zveřejní přes GitHub. Agent sám do main pořád nemůže.
- * U živého webu a projektu bez kódu je hotová práce každá složka v predani/.
+ * U projektu bez kódu je hotová práce každá složka v predani/. Živý web
+ * kartu nemá (úprav je moc a jsou hned venku).
  */
 const VETEV = /^[a-z0-9][a-z0-9._-]{0,60}$/;
 const SNIMEK = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}\.(png|jpe?g|webp)$/i;
@@ -391,19 +391,16 @@ const git = (args) => new Promise((resolve, reject) => {
     });
 });
 
-/** Popis, snímky, kódy a začátek práce ze složky předání (každá část volitelná). */
+/** Popis, snímky a kódy ze složky předání (každá část volitelná). */
 function podklady(slozka) {
     const cist = (soubor, limit) => { try { return fs.readFileSync(path.join(slozka, soubor), 'utf8').slice(0, limit); } catch { return null; } };
     let soubory = [];
     try { soubory = fs.readdirSync(slozka).sort(); } catch { /* bez podkladů */ }
 
-    const zacatek = Date.parse((cist('zacatek', 100) || '').trim());
-
     return {
         popis: cist('popis.md', 20000),
         snimky: soubory.filter((s) => SNIMEK.test(s)),
         kody: soubory.filter((s) => KOD.test(s) && s !== 'popis.md').slice(0, 20).map((s) => ({ soubor: s, obsah: cist(s, 200000) })),
-        zacatek: Number.isNaN(zacatek) ? null : Math.floor(zacatek / 1000),
     };
 }
 
@@ -431,7 +428,7 @@ async function predani(p) {
     }).filter(Boolean);
 }
 
-/** Živý web a projekt bez kódu: hotová práce = složky v predani/, nejnovější první. */
+/** Projekt bez kódu: hotová práce = složky v predani/, nejnovější první. */
 function predaniSlozky(p) {
     const koren = path.join('/projekty', p.slug, 'predani');
     let jmena = [];
@@ -443,8 +440,7 @@ function predaniSlozky(p) {
         const pod = podklady(slozka);
         const nadpis = (pod.popis || '').match(/^#\s+(.+)$/m)?.[1]?.trim() || jmeno;
 
-        // Bez souboru zacatek: kdy agent složku založil (má ji založit dřív, než začne).
-        return { jmeno, cas: Math.floor(stat.mtimeMs / 1000), nadpis, ...pod, zacatek: pod.zacatek ?? Math.floor((stat.birthtimeMs || stat.ctimeMs) / 1000) };
+        return { jmeno, cas: Math.floor(stat.mtimeMs / 1000), nadpis, ...pod };
     }).sort((a, b) => b.cas - a.cas);
 }
 
@@ -494,17 +490,6 @@ async function api(req, res) {
 
     // Po zveřejnění: server si z GitHubu (main) stáhne novou verzi služby.
     // Nečeká se na výsledek, aktualizace tuhle službu sama restartuje.
-    // Výsledek požadavku, na který se nečekalo (vrácení webu). 404 = ještě běží.
-    if (req.method === 'GET' && casti[1] === 'fronta' && casti.length === 3 && UUID.test(casti[2] || '')) {
-        const soubor = path.join(FRONTA, 'vysledky', `vysledek-${casti[2]}.json`);
-        if (!fs.existsSync(soubor)) {
-            return odpoved(res, 404, { hotovo: false });
-        }
-        const data = JSON.parse(fs.readFileSync(soubor, 'utf8'));
-        fs.rmSync(soubor, { force: true });
-        return odpoved(res, 200, { hotovo: true, ...data });
-    }
-
     if (req.method === 'POST' && url.pathname === '/api/aktualizovat') {
         doFronty({ akce: 'aktualizovat', projekt: 'taveo' });
         return odpoved(res, 202, { ok: true });
@@ -548,17 +533,6 @@ async function api(req, res) {
         if (req.method === 'DELETE' && casti.length === 5 && p.typ !== 'git') {
             fs.rmSync(predaniSlozka(p, jmeno), { recursive: true, force: true });
             return odpoved(res, 200, { ok: true });
-        }
-
-        // Vrátit živý web do stavu před touhle prací (soubory, volitelně databázi).
-        // Dělá to root (agent.sh obnovit), výsledek si nástroje vyzvednou.
-        if (req.method === 'POST' && casti.length === 6 && casti[5] === 'vratit' && p.typ === 'server') {
-            const { cas, databaze } = await telo(req);
-            if (!Number.isInteger(cas) || cas <= 0) {
-                return odpoved(res, 400, { chyba: 'Chybí čas, do kterého se vrací.' });
-            }
-            const id = doFronty({ akce: 'obnovit', projekt: p.slug, cas, databaze: databaze === true });
-            return odpoved(res, 202, { id });
         }
 
         if (req.method === 'DELETE' && casti.length === 5) {
