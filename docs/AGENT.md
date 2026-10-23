@@ -121,6 +121,25 @@ a prohlížeč zaregistruje. Tak běží od 23. 10. 2026, než se obraz přestav
 `.mcp.json` v repu (server `playwright` přes `npx`) je pro lokální vývoj na Macu,
 v kontejneru je vypnutý.
 
+## Panel „Co agent dělá“
+
+Mod Claude Code ([`infra/agent/mody/co-agent-dela`](../infra/agent/mody/co-agent-dela/)),
+načtený ve všech konverzacích v kontejneru:
+
+- **Panel** vedle chatu: každý krok agenta česky (čte soubor, spouští příkaz,
+  prohlížeč otevírá stránku…) s časem a stavem (▶ běží, ✓ hotovo, ✗ chyba),
+  nahoře „Teď: …“. Pod tím poslední adresa z prohlížeče a poslední snímek.
+  Obrázek vykreslí jen terminál, který to umí (kitty, Ghostty, iTerm2), jinde
+  je tam cesta k souboru.
+- **Pruh nad vstupním polem** se na dvě minuty objeví, jakmile agent sáhne po
+  prohlížeči: „Agent kontroluje web v prohlížeči“ a tlačítko **Kouknout**.
+- **`/co-agent-dela`** otevře panel kdykoli.
+
+Načítá ho proměnná `CLAUDE_CODE_PLUGIN_DIRS`: v obrazu z Dockerfile
+(`/opt/taveo-agent/mody/co-agent-dela`), do přestavění z `env`
+v `~/.claude/settings.json` (kopie v `~/.claude/mody/`). Testy:
+`claude plugin test infra/agent/mody/co-agent-dela`.
+
 ## Pojistky
 
 | Riziko | Pojistka |

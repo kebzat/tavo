@@ -60,12 +60,15 @@ COPY zaloha-pred-zmenou.sh /usr/local/bin/zaloha-pred-zmenou
 COPY agent-chromium.sh /usr/local/bin/agent-chromium
 COPY prohlizec-mcp.sh /usr/local/bin/prohlizec-mcp
 COPY CLAUDE.agent.md /etc/taveo-agent/CLAUDE.agent.md
+# Mody Claude Code pro všechny konverzace: panel „Co agent dělá“ (/co-agent-dela).
+COPY mody /opt/taveo-agent/mody
 RUN chmod 644 /etc/claude-code/managed-settings.json /etc/tmux.conf /etc/taveo-agent/CLAUDE.agent.md \
     && chmod 755 /usr/local/bin/entrypoint.sh /usr/local/bin/zaloha-pred-zmenou /usr/local/bin/taveo \
         /usr/local/bin/agent-chromium /usr/local/bin/prohlizec-mcp
 
 USER agent
 WORKDIR /projekty
-ENV PATH=/home/agent/.local/bin:$PATH
+ENV PATH=/home/agent/.local/bin:$PATH \
+    CLAUDE_CODE_PLUGIN_DIRS=/opt/taveo-agent/mody/co-agent-dela
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
