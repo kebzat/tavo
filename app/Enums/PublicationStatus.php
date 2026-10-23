@@ -67,6 +67,12 @@ enum PublicationStatus: string implements HasColor, HasLabel
         return in_array($this, [self::Waiting, self::Testing, self::Deploying, self::Restoring], true);
     }
 
+    /** Skončilo chybou, se kterou je potřeba něco udělat (karta ji nechá nahoře). */
+    public function isProblem(): bool
+    {
+        return in_array($this, [self::TestsFailed, self::Conflict, self::Failed], true);
+    }
+
     /** Úprava je v main (na webu, nebo jen sloučená): jde vrátit. */
     public function isMerged(): bool
     {

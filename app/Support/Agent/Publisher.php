@@ -73,6 +73,7 @@ class Publisher
                     'name' => $item['jmeno'],
                     'branch' => $item['vetev'],
                     'sha' => $item['sha'],
+                    'tests' => $compare === null ? null : $this->tests($repo, $item['sha'], $compare['behind']),
                     'title' => self::title($item),
                     'description' => $item['popis'],
                     'images' => $item['snimky'],
@@ -89,7 +90,7 @@ class Publisher
     }
 
     /** @return list<AgentPublication> */
-    public function recent(string $project, int $limit = 6): array
+    public function recent(string $project, int $limit = 10): array
     {
         return AgentPublication::query()->with('user')->where('project', $project)->latest('id')->limit($limit)->get()->all();
     }
@@ -222,24 +223,30 @@ class Publisher
         $this->mergeWhenGreen($publication);
     }
 
-    /** Krok 2: po zelených testech sloučit do main. */
+    /**
+     * Krok 2: po zelených testech sloučit do main. Testy běží už po odeslání
+     * větve (ci.yml, push agent/…), takže když jsou hotové, slučuje se hned.
+     */
     private function mergeWhenGreen(AgentPublication $publication): void
     {
-        $checks = $this->github->runs($publication->repo, $publication->sha);
+        $runs = $this->github->runs($publication->repo, $publication->sha);
+        $behind = $this->github->compare($publication->repo, 'main', $publication->sha)['behind'];
+        $state = self::testState($runs, $behind);
 
         // Repozitář bez testů: po pěti minutách bez jediného běhu se slučuje.
-        if ($checks === [] && $publication->pr_opened_at?->gt(now()->subMinutes(5))) {
+        if ($state === null && $publication->pr_opened_at?->gt(now()->subMinutes(5))) {
             return;
         }
 
-        if ($failed = collect($checks)->first(fn (array $check): bool => in_array($check['conclusion'], self::FAILED_CONCLUSIONS, true))) {
-            $publication->update(['details_url' => $failed['url']]);
-            $this->finish($publication, PublicationStatus::TestsFailed, 'Neprošlo: '.$failed['name'].'. Napište agentovi, ať se na testy podívá a opraví je, pak zveřejněte znovu.');
+        if ($state === 'failed') {
+            $failed = collect($runs)->first(fn (array $run): bool => in_array($run['conclusion'], self::FAILED_CONCLUSIONS, true));
+            $publication->update(['details_url' => $failed['url'] ?? null]);
+            $this->finish($publication, PublicationStatus::TestsFailed, 'Neprošlo: '.($failed['name'] ?? 'testy').'. Napište agentovi, ať se na testy podívá a opraví je, pak zveřejněte znovu.');
 
             return;
         }
 
-        if (collect($checks)->contains(fn (array $check): bool => $check['status'] !== 'completed')) {
+        if ($state === 'running') {
             if ($publication->pr_opened_at?->lt(now()->subMinutes(45))) {
                 $this->finish($publication, PublicationStatus::Failed, 'Testy běží přes 45 minut. Mrkněte na GitHub, jestli nestojí.');
             }
@@ -287,18 +294,16 @@ class Publisher
         }
     }
 
-    /** Krok 3: počkat na nasazení (běh GitHub Actions s „deploy“ v názvu). */
+    /**
+     * Krok 3: počkat na nasazení (běh GitHub Actions s „deploy“ v názvu,
+     * spuštěný pushem do main). Testy na main nasazení neblokují, ty už
+     * proběhly v pull requestu.
+     */
     private function watchDeploy(AgentPublication $publication): void
     {
         $runs = collect($this->github->runs($publication->repo, (string) $publication->merge_sha));
-        $deploy = $runs->first(fn (array $run): bool => (bool) preg_match('/deploy|nasaz/i', $run['name']));
-
-        if ($failed = $runs->first(fn (array $run): bool => $run !== $deploy && in_array($run['conclusion'], self::FAILED_CONCLUSIONS, true))) {
-            $publication->update(['details_url' => $failed['url']]);
-            $this->finish($publication, PublicationStatus::Failed, 'Testy na main neprošly ('.$failed['name'].'), web zůstal beze změny.');
-
-            return;
-        }
+        $deploy = $runs->first(fn (array $run): bool => (bool) preg_match('/deploy|nasaz/i', $run['name'])
+            && in_array($run['event'] ?? 'push', ['push', 'workflow_dispatch', 'workflow_run'], true));
 
         if ($deploy !== null) {
             if ($deploy['status'] !== 'completed') {
@@ -324,6 +329,37 @@ class Publisher
         }
     }
 
+    /**
+     * Výsledek testů commitu z běhů GitHub Actions: passed / failed / running,
+     * null = žádné testy. Každý workflow stačí jednou zelený (push větve
+     * i pull request testují totéž). Větev pozadu za main ale testuje jen
+     * pull request, ten zkouší výsledek sloučení.
+     *
+     * @param  list<array{name: string, event: ?string, status: string, conclusion: ?string}>  $runs
+     */
+    public static function testState(array $runs, int $behind): ?string
+    {
+        $runs = collect($runs)
+            ->reject(fn (array $run): bool => (bool) preg_match('/deploy|nasaz/i', $run['name']))
+            ->when($behind > 0, fn ($runs) => $runs->where('event', 'pull_request'));
+
+        if ($runs->isEmpty()) {
+            return null;
+        }
+
+        $states = $runs->groupBy('name')->map(fn ($group): string => match (true) {
+            $group->contains(fn (array $run): bool => in_array($run['conclusion'], ['success', 'neutral', 'skipped'], true)) => 'passed',
+            $group->contains(fn (array $run): bool => $run['status'] !== 'completed') => 'running',
+            default => 'failed',
+        });
+
+        return match (true) {
+            $states->contains('failed') => 'failed',
+            $states->contains('running') => 'running',
+            default => 'passed',
+        };
+    }
+
     private function finish(AgentPublication $publication, PublicationStatus $status, ?string $error = null): void
     {
         $publication->update(['status' => $status, 'error' => $error, 'finished_at' => now()]);
@@ -336,6 +372,16 @@ class Publisher
         // token), vrací null a v nástrojích je „odesílá se“. To se neukládá.
         return Cache::remember('agent-compare-'.$repo.'-'.$sha, now()->addMinutes(2), fn (): ?array => rescue(
             fn (): array => $this->github->compare($repo, 'main', $sha),
+            null,
+            report: false,
+        ));
+    }
+
+    /** Stav testů hotové práce pro kartu (před kliknutím na Zveřejnit). */
+    private function tests(string $repo, string $sha, int $behind): ?string
+    {
+        return Cache::remember('agent-tests-'.$repo.'-'.$sha.'-'.$behind, now()->addSeconds(20), fn (): ?string => rescue(
+            fn (): ?string => self::testState($this->github->runs($repo, $sha), $behind),
             null,
             report: false,
         ));

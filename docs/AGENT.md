@@ -111,12 +111,16 @@ Vrácení po ruce: `agent vratit <projekt>` ukáže snímky.
    do `/projekty/<projekt>/predani/<větev bez agent/>/`.
 2. Karta ukáže nadpis, náhled snímku, počet změněných souborů. **Zkontrolovat**
    otevře panel s popisem, snímky (kliknutím 1:1) a seznamem změn.
-3. **Zveřejnit** (Tom i Pavel):
-   *Testy* (pull request, CI na GitHubu) → sloučení do `main` → *Nasazení*
-   (workflow Deploy) → *Na webu*. Repozitář bez nasazovacího workflow skončí
+3. Testy běží **hned po odeslání větve** (CI na push `agent/…`), karta u úpravy
+   ukáže „Testy běží“ / „Testy prošly“ / „Testy neprošly“ (pak Zveřejnit nejde).
+4. **Zveřejnit** (Tom i Pavel), se zelenými testy na webu obvykle do 2 minut:
+   *Testy* (už hotové, nebo se na ně počká) → sloučení do `main` → *Nasazení*
+   (workflow Deploy hned po pushi do `main`, podruhé netestuje) → *Na webu*.
+   Větev pozadu za `main` čeká na testy pull requestu, ty zkoušejí výsledek
+   sloučení. Repozitář bez nasazovacího workflow skončí
    stavem *Sloučeno, bez nasazení*. Průběh je na kartě a dokončí se i bez
    otevřené stránky (plánovač, `agent:zverejneni` každou minutu).
-4. **Vrátit** u poslední zveřejněné úpravy: GitHub založí opačný pull request
+5. **Vrátit** u poslední zveřejněné úpravy: GitHub založí opačný pull request
    a ten jde stejnou cestou. **Zahodit** smaže větev jen ze schránky.
 
 Pojistky: sloučí se jen commit, který člověk viděl (když agent mezitím
