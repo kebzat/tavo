@@ -95,11 +95,22 @@
                             @if ($item['codes']) · {{ $this->plural(count($item['codes']), 'kód k vložení', 'kódy k vložení', 'kódů k vložení') }} @endif
                             @if ($item['files']) · {{ $this->plural($item['files'], 'změněný soubor', 'změněné soubory', 'změněných souborů') }} @endif
                         </p>
-                        @if (! $item['on_github'] || $item['sensitive'] || ! ($item['images'] || $item['description'] || $item['codes']))
+                        @if (! $item['on_github'] || ($item['tests'] ?? null) || $item['sensitive'] || ! ($item['images'] || $item['description'] || $item['codes']))
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
                                 @unless ($item['on_github'])
                                     <x-filament::badge color="gray" size="sm">Odesílá se na GitHub…</x-filament::badge>
                                 @endunless
+                                @switch ($item['tests'] ?? null)
+                                    @case ('running')
+                                        <x-filament::badge color="gray" size="sm" icon="heroicon-m-arrow-path">Testy běží…</x-filament::badge>
+                                        @break
+                                    @case ('passed')
+                                        <x-filament::badge color="success" size="sm" icon="heroicon-m-check">Testy prošly</x-filament::badge>
+                                        @break
+                                    @case ('failed')
+                                        <x-filament::badge color="danger" size="sm" icon="heroicon-m-x-mark">Testy neprošly, napište agentovi</x-filament::badge>
+                                        @break
+                                @endswitch
                                 @if ($item['sensitive'])
                                     <x-filament::badge color="warning" size="sm" icon="heroicon-m-exclamation-triangle">Mění nastavení serveru</x-filament::badge>
                                 @endif
@@ -122,21 +133,27 @@
                 <p class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $copy['empty'] }}</p>
             @endif
 
+            {{-- Hotové dole, drobně. Vidět je poslední, ostatní po rozbalení. --}}
             @if ($history->isNotEmpty())
-                <div class="bg-gray-50 px-6 py-3 dark:bg-white/5">
-                    <p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">{{ $copy['history'] }}</p>
-                    <ul class="space-y-1.5">
+                <div x-data="{ all: false }" class="bg-gray-50 px-6 py-2.5 dark:bg-white/5">
+                    <ul class="space-y-1">
                         @foreach ($history as $publication)
-                            <li wire:key="historie-{{ $publication->id }}" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                                <span class="min-w-0 truncate text-gray-700 dark:text-gray-200">{{ $publication->title }}</span>
-                                <x-filament::badge :color="$publication->status->getColor()" size="sm">{{ $publication->status->getLabel() }}</x-filament::badge>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $publication->user?->name }} · {{ $publication->created_at->diffForHumans() }}</span>
+                            <li wire:key="historie-{{ $publication->id }}" @unless ($loop->first) x-show="all" x-cloak @endunless
+                                class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                <x-filament::icon :icon="$publication->status->isProblem() ? \Filament\Support\Icons\Heroicon::XCircle : \Filament\Support\Icons\Heroicon::CheckCircle"
+                                    @class(['size-4 shrink-0', 'text-success-600 dark:text-success-400' => ! $publication->status->isProblem(), 'text-danger-600 dark:text-danger-400' => $publication->status->isProblem()]) />
+                                <span class="min-w-0 truncate font-medium text-gray-700 dark:text-gray-200">{{ $publication->title }}</span>
+                                <span>· {{ $publication->status->getLabel() }} · {{ $publication->user?->name }} · {{ $publication->created_at->diffForHumans() }}</span>
                                 @if ($revertable?->is($publication))
                                     <span class="ms-auto">{{ ($this->revertAction)(['id' => $publication->id]) }}</span>
                                 @endif
                             </li>
                         @endforeach
                     </ul>
+                    @if ($history->count() > 1)
+                        <button type="button" x-on:click="all = ! all" class="mt-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            x-text="all ? 'Skrýt' : '{{ $copy['history'] }}: další {{ $history->count() - 1 }}'"></button>
+                    @endif
                 </div>
             @endif
         </div>

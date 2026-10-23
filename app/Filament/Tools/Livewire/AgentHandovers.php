@@ -85,8 +85,9 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             }
         }
 
-        // Nahoře průběh (i hodinu po dokončení, ať je vidět výsledek), dole historie.
-        [$active, $history] = collect($recent)->partition(fn (AgentPublication $p): bool => $p->status->isRunning() || $p->finished_at?->gt(now()->subHour()));
+        // Nahoře jen co běží a co skončilo chybou (hodinu), hotové hned dolů do historie.
+        [$active, $history] = collect($recent)->partition(fn (AgentPublication $p): bool => $p->status->isRunning()
+            || ($p->status->isProblem() && $p->finished_at?->gt(now()->subHour())));
 
         return view('filament.tools.partials.agent-handovers', [
             'copy' => self::COPY[$this->type] ?? self::COPY['git'],
@@ -183,13 +184,17 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->icon(Heroicon::OutlinedRocketLaunch)
             ->size('sm')
             ->visible(fn (): bool => $this->type === 'git')
-            ->disabled(fn (): bool => ! app(Publisher::class)->configured())
+            ->disabled(fn (array $arguments): bool => ! app(Publisher::class)->configured() || ($this->find($arguments)['tests'] ?? null) === 'failed')
             ->requiresConfirmation()
             ->modalIcon(Heroicon::OutlinedRocketLaunch)
             ->modalHeading(fn (array $arguments): string => 'Zveřejnit „'.($this->find($arguments)['title'] ?? '').'“?')
             ->modalDescription(fn (array $arguments): string => (($this->find($arguments)['sensitive'] ?? []) !== []
                 ? 'Pozor, úprava mění i nastavení serveru (soubory v .github/ nebo infra/). '
-                : '').'Nejdřív proběhnou testy. Když projdou, úprava se sama nasadí na web, obvykle do 10 minut. Kdyby se něco nepovedlo, jde vrátit.')
+                : '').match ($this->find($arguments)['tests'] ?? null) {
+                    'passed' => 'Testy už prošly, úprava se hned sloučí a nasadí na web, obvykle do 2 minut.',
+                    'running' => 'Testy ještě běží. Jakmile projdou, úprava se sama sloučí a nasadí na web.',
+                    default => 'Nejdřív proběhnou testy, pak se úprava sama nasadí na web.',
+                }.' Kdyby se něco nepovedlo, jde vrátit.')
             ->modalSubmitActionLabel('Zveřejnit')
             ->action(fn (array $arguments) => $this->publish($arguments));
     }
@@ -284,7 +289,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->size('xs')
             ->requiresConfirmation()
             ->modalHeading(fn (array $arguments): string => 'Vrátit „'.(AgentPublication::find($arguments['id'] ?? null)?->title ?? '').'“?')
-            ->modalDescription('Web se vrátí do stavu před touhle úpravou. Jde to stejnou cestou jako zveřejnění: testy, pak nasazení, obvykle do 10 minut.')
+            ->modalDescription('Web se vrátí do stavu před touhle úpravou. Jde to stejnou cestou jako zveřejnění: testy, pak nasazení, obvykle do 5 minut.')
             ->modalSubmitActionLabel('Vrátit')
             ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
             ->action(function (array $arguments): void {

@@ -1,9 +1,18 @@
 name: CI
 
+# Testy běží hned po odeslání práce agenta (větve agent/…), ne až po kliknutí
+# na Zveřejnit. Než člověk projde snímky, jsou hotové a sloučení nečeká.
+# Na pull requestu se testuje výsledek sloučení s main. Nasazení podruhé
+# netestuje, jen si ověří, že pull request prošel (deploy.yml).
 on:
   push:
-    branches: [main]
+    branches: [main, 'agent/**']
   pull_request:
+
+# Agent pošle větev znovu: rozběhnuté testy starší verze nemají cenu.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
@@ -27,6 +36,13 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
+      # Hotová složka vendor podle composer.lock: instalace pak jen ověří, že sedí.
+      - name: Cache vendor
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-dev-${{ hashFiles('composer.lock') }}
+
       - name: Composer install
         run: composer install --prefer-dist --no-interaction --no-progress
 
@@ -36,9 +52,16 @@ jobs:
           node-version: '20'
           cache: npm
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
       - name: NPM install a build
         run: |
-          npm ci
+          [ "${{ steps.node-modules.outputs.cache-hit }}" = true ] || npm ci
           npm run build
 
       - name: Příprava prostředí

@@ -126,7 +126,7 @@ class GitHub
      * Běhy GitHub Actions na commitu: testy pull requestu, na main testy
      * a nasazení.
      *
-     * @return list<array{name: string, status: string, conclusion: ?string, url: ?string, updated_at: ?string}>
+     * @return list<array{name: string, event: ?string, status: string, conclusion: ?string, url: ?string, updated_at: ?string}>
      */
     public function runs(string $repo, string $sha): array
     {
@@ -134,6 +134,7 @@ class GitHub
 
         return array_map(fn (array $run): array => [
             'name' => (string) $run['name'],
+            'event' => $run['event'] ?? null,
             'status' => (string) $run['status'],
             'conclusion' => $run['conclusion'] ?? null,
             'url' => $run['html_url'] ?? null,

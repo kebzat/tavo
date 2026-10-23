@@ -1,16 +1,26 @@
 name: Deploy
 
-# Nasadí se až po zeleném CI a jen z větve main.
+# Nasadí se hned po sloučení do main, jen otestovaný kód.
+#
+# Testy už proběhly v pull requestu (CI testuje výsledek sloučení s main),
+# podruhé se na ně nečeká: tlačítko Zveřejnit v nástrojích je tak na webu
+# do pár minut. Krok „Prošly testy?“ to ověří: commit musí patřit ke
+# sloučenému pull requestu, jehož poslední commit prošel testy. Jinak
+# (přímý push do main, sloučení před doběhnutím testů) se testy pustí tady
+# a bez nich se nenasadí.
 #
 # Projekt se sestaví tady na GitHubu (composer + vite) a na server se přes rsync
 # pošle hotový výsledek. Server tedy nepotřebuje git, composer ani node — stačí
 # SSH, rsync a PHP.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
 
 concurrency:
   group: deploy-production
@@ -20,7 +30,6 @@ jobs:
   deploy:
     name: Nasazení na produkci
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     environment: production
 
     env:
@@ -30,15 +39,61 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, intl, zip, gd, exif, pdo_mysql, bcmath
+          extensions: mbstring, intl, zip, gd, exif, pdo_mysql, pdo_sqlite, bcmath
           coverage: none
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # Název kontroly = název jobu v ci.yml („Testy a kontrola formátu“).
+      - name: Prošly testy v pull requestu?
+        id: testy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hlava=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[] | select(.merged_at != null)][0].head.sha // empty' || true)
+          zelene=0
+          if [ -n "$hlava" ]; then
+            zelene=$(gh api -X GET "repos/$GITHUB_REPOSITORY/commits/$hlava/check-runs" \
+              -f check_name='Testy a kontrola formátu' \
+              --jq '[.check_runs[] | select(.conclusion == "success")] | length' || echo 0)
+          fi
+          if [ "${zelene:-0}" -gt 0 ]; then
+            echo "Pull request prošel testy ($hlava), znovu se netestuje."
+            echo "proslo=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "K commitu není pull request se zelenými testy, testuje se tady."
+          fi
+
+      # Jen načíst: na konci je ve vendor verze bez dev balíčků, ta se pod
+      # klíčem CI ukládat nesmí.
+      - name: Cache vendor (testy)
+        if: steps.testy.outputs.proslo != '1'
+        uses: actions/cache/restore@v4
+        with:
+          path: vendor
+          key: vendor-dev-${{ hashFiles('composer.lock') }}
+
+      - name: Testy (jen bez zeleného pull requestu)
+        if: steps.testy.outputs.proslo != '1'
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+          npm run build
+          cp .env.example .env
+          php artisan key:generate
+          vendor/bin/pint --test
+          php artisan test
+          rm .env
 
       - name: Cache Composer
         uses: actions/cache@v4
@@ -50,15 +105,17 @@ jobs:
       - name: Composer install (bez dev balíčků)
         run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
 
-      - name: Node 20
-        uses: actions/setup-node@v4
+
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
         with:
-          node-version: '20'
-          cache: npm
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Sestavit assety
         run: |
-          npm ci
+          [ -d node_modules/.bin ] || npm ci
           npm run build
 
       # Server občas utne nové SSH spojení hned při navázání („Connection reset

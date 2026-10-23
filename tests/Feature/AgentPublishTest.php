@@ -385,4 +385,51 @@ class AgentPublishTest extends TestCase
 
         Http::assertSent(fn (Request $r) => $r->method() === 'DELETE' && str_ends_with($r->url(), '/api/projekty/svet-cejlonu/predani/paticka') && ! isset($r['sha']));
     }
+
+    public function test_stav_testu_z_behu_github_actions(): void
+    {
+        $push = fn (string $conclusion, string $status = 'completed') => ['name' => 'CI', 'event' => 'push', 'status' => $status, 'conclusion' => $conclusion ?: null];
+        $pr = fn (string $conclusion, string $status = 'completed') => ['name' => 'CI', 'event' => 'pull_request', 'status' => $status, 'conclusion' => $conclusion ?: null];
+
+        // Větev je aktuální s main: stačí testy z odeslání větve, i když pull request ještě běží.
+        $this->assertSame('passed', Publisher::testState([$push('success'), $pr('', 'in_progress')], behind: 0));
+        // Větev je pozadu: platí jen pull request, ten testuje výsledek sloučení.
+        $this->assertNull(Publisher::testState([$push('success')], behind: 3));
+        $this->assertSame('running', Publisher::testState([$push('success'), $pr('', 'in_progress')], behind: 3));
+        $this->assertSame('failed', Publisher::testState([$push('failure')], behind: 0));
+        // Nasazení se do testů nepočítá.
+        $this->assertSame('passed', Publisher::testState([$push('success'), ['name' => 'Deploy', 'event' => 'push', 'status' => 'completed', 'conclusion' => 'failure']], behind: 0));
+    }
+
+    public function test_karta_ukaze_testy_predem_a_po_dokonceni_historii_dole(): void
+    {
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'taveo'])
+            ->assertSee('Testy prošly')
+            ->callAction(TestAction::make('publish')->arguments(['name' => 'predplatne', 'sha' => self::SHA]))
+            ->assertNotified('Zveřejňuje se');
+
+        $publication = AgentPublication::sole();
+        app(Publisher::class)->advance($publication->refresh());
+        $this->assertSame(PublicationStatus::Done, $publication->refresh()->status);
+
+        // Hotové už není nahoře v průběhu, jen drobně v historii (sloučený pull request).
+        $this->gh['closed_pulls'] = [['number' => 42, 'merged_at' => now()->toIso8601String(), 'head' => ['sha' => self::SHA]]];
+
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'taveo'])
+            ->assertDontSee('Nasazení')
+            ->assertDontSee('Zkontrolovat')
+            ->assertSeeInOrder(['Ukazatel předplatného v hlavičce', 'Na webu', 'Vrátit']);
+    }
+
+    public function test_s_neuspesnymi_testy_nejde_zverejnit(): void
+    {
+        $this->gh['pr_runs'] = [['name' => 'CI', 'status' => 'completed', 'conclusion' => 'failure']];
+
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'taveo'])
+            ->assertSee('Testy neprošly')
+            ->assertActionDisabled(TestAction::make('publish')->arguments(['name' => 'predplatne', 'sha' => self::SHA]));
+    }
 }
