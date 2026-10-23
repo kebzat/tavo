@@ -78,3 +78,10 @@ Schedule::command('clients:dashboard-demo --refresh')
 Schedule::command('clickup:hlidat')
     ->everyFifteenMinutes()
     ->onOneServer();
+
+// Zveřejnění práce agenta z nástrojů: testy, sloučení a nasazení na GitHubu
+// běží minuty, tohle je posouvá dál. Bez rozběhnutých nic nevolá. Viz docs/AGENT.md.
+Schedule::command('agent:zverejneni')
+    ->everyMinute()
+    ->withoutOverlapping(10)
+    ->onOneServer();

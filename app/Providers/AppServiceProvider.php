@@ -10,6 +10,7 @@ use App\Support\Ads\Ai\AdsAdvisor;
 use App\Support\Ads\Ai\ClaudeAdsAdvisor;
 use App\Support\Ads\Ai\NullAdsAdvisor;
 use App\Support\Agent\AgentServer;
+use App\Support\Agent\GitHub;
 use App\Support\Crm\Ai\ClaudeProspectAi;
 use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Claude Code na serveru (docs/AGENT.md). Nahrazuje se v testech.
         $this->app->bind(AgentServer::class, fn (): AgentServer => AgentServer::fromConfig());
+        $this->app->bind(GitHub::class, fn (): GitHub => GitHub::fromConfig());
 
         // Claude jen s klíčem a zapnutým ANTHROPIC_ENABLED. Jinak proklepnutí
         // webu a audit jedou z měření, nic se nerozbije a nic se neplatí.

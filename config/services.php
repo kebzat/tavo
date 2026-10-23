@@ -77,6 +77,17 @@ return [
         // Token, kterým agent v kontejneru volá /nastroje/api/agent (čtení dat
         // klientů, zápis konceptů). Jiný než AGENT_SECRET i CRM_IMPORT_TOKEN.
         'api_token' => env('AGENT_API_TOKEN'),
+        // Projekt, v jehož repozitáři je sama služba agenta (infra/agent/).
+        // Po zveřejnění se na serveru aktualizuje z main.
+        'infra_project' => env('AGENT_INFRA_PROJECT', 'taveo'),
+    ],
+
+    // Tlačítko Zveřejnit v nástrojích (agent → pull request → main → web).
+    // Fine-grained token jen na repozitáře projektů, viz docs/AGENT.md.
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+        // Jen pro lokální náhled s falešným GitHubem.
+        'url' => env('GITHUB_API_URL', 'https://api.github.com/'),
     ],
 
     // ClickUp: komentář „@agent …“ u úkolu spustí agenta v projektu klienta

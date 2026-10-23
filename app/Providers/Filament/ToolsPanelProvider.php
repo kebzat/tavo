@@ -2,9 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Tools\Livewire\AgentHandovers;
+use App\Filament\Tools\Livewire\ClaudeUsageMeter;
 use App\Filament\Tools\Pages\Today;
+use App\Http\Controllers\Tools\AgentHandoverImageController;
 use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\RememberStaffIp;
+use App\Support\Agent\AgentServer;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -18,7 +22,10 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Livewire\Livewire;
 
 /**
  * Interní nástroje oddělené od správy obsahu webu. Sdílí codebase, databázi
@@ -30,6 +37,12 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
  */
 class ToolsPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        Livewire::component('tools.claude-usage', ClaudeUsageMeter::class);
+        Livewire::component('tools.agent-handovers', AgentHandovers::class);
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -68,6 +81,14 @@ class ToolsPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<meta name="robots" content="noindex, nofollow, noarchive">',
             )
+            // Využití předplatného Clauda (relace a týden) uprostřed hlavičky.
+            // Bez služby agenta (lokálně bez tunelu) se neukáže vůbec.
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): string => app(AgentServer::class)->configured() ? Blade::render('@livewire(\'tools.claude-usage\')') : '',
+            )
+            // Snímky k hotové práci agenta. Za přihlášením do nástrojů, i s 2FA.
+            ->authenticatedRoutes(fn () => Route::get('agent/{project}/snimek/{name}/{file}', AgentHandoverImageController::class)->name('agent.snimek'))
             ->discoverResources(in: app_path('Filament/Tools/Resources'), for: 'App\Filament\Tools\Resources')
             ->discoverPages(in: app_path('Filament/Tools/Pages'), for: 'App\Filament\Tools\Pages')
             ->middleware([

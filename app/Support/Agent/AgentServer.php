@@ -129,6 +129,89 @@ class AgentServer
         ];
     }
 
+    /**
+     * Využití předplatného, na kterém Claude v kontejneru běží (jako /usage).
+     * Čtené z účtu Anthropicu, přepočet dělá {@see ClaudeUsage}.
+     *
+     * @return array{plan: ?string, limity: ?list<array<string, mixed>>, five_hour: ?array<string, mixed>, seven_day: ?array<string, mixed>}
+     */
+    public function usage(): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get('/api/predplatne'));
+    }
+
+    /**
+     * Hotová práce ke kontrole, nejnovější první. U git projektu větve agent/…
+     * ve schránce, u živého webu a projektu bez kódu složky s předáním.
+     * Popis a snímky (a kódy, začátek práce) přikládá agent.
+     *
+     * @return list<array{jmeno: string, cas: int, nadpis: string, popis: ?string, snimky: list<string>, vetev?: string, sha?: string, kody?: list<array{soubor: string, obsah: ?string}>, zacatek?: ?int}>
+     */
+    public function handovers(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get($this->projectPath($slug).'/predani'));
+    }
+
+    /** Snímek k hotové práci (PNG, JPEG, WebP). Null, když neexistuje. */
+    public function handoverImage(string $slug, string $name, string $file): ?Response
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/predani/'.rawurlencode($name).'/'.rawurlencode($file));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->successful() ? $response : null;
+    }
+
+    /**
+     * Předání zmizí i se snímky. U git projektu i větev ze schránky, ale jen
+     * když je pořád na `$sha`: když agent mezitím pokračoval, nová práce zůstane.
+     */
+    public function discardHandover(string $slug, string $name, ?string $sha = null): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/predani/'.rawurlencode($name), array_filter(['sha' => $sha])));
+    }
+
+    /**
+     * Vrátit živý web do stavu z `$time` (unix): soubory ze snímku, s `$database`
+     * i databázi ze zálohy. Dělá to root přes frontu, vrací ID požadavku
+     * pro {@see queueResult()}.
+     */
+    public function restoreSite(string $slug, string $name, int $time, bool $database): string
+    {
+        return $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/predani/'.rawurlencode($name).'/vratit', [
+            'cas' => $time,
+            'databaze' => $database,
+        ]))['id'];
+    }
+
+    /**
+     * Výsledek požadavku ve frontě serveru. Null = ještě běží.
+     *
+     * @return array{ok: bool, vystup: string}|null
+     */
+    public function queueResult(string $id): ?array
+    {
+        try {
+            $response = $this->request()->get('/api/fronta/'.rawurlencode($id));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        return ['ok' => (bool) $response->throw()->json('ok'), 'vystup' => (string) $response->json('vystup')];
+    }
+
+    /** Po zveřejnění: server si stáhne novou verzi služby z main. Nečeká se. */
+    public function updateService(): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->post('/api/aktualizovat'));
+    }
+
     /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. */
     public function terminalUrl(string $slug, string $window, string $user, ?string $host = null): string
     {

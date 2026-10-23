@@ -33,9 +33,11 @@ Použití:
   agent pridat <projekt> prazdny      (Shoptet, Upgates, marketing: bez kódu)
   agent zaloha <projekt>        snímek souborů a záloha databáze hned teď
   agent vratit <projekt>        ukáže snímky a jak se vrátit
+  agent obnovit <projekt> <čas> [databaze]   živý web do stavu před časem (unix), i z nástrojů
   agent odebrat <projekt>       agent ztratí přístup, snímky a zálohy zůstanou
   agent prihlasit               přihlášení Claude Code (jednou)
   agent sluzba                  nahraje novou verzi služby, běžící konverzace zůstanou
+  agent aktualizovat            službu z main na GitHubu (po zveřejnění z nástrojů sám)
 TXT
 }
 
@@ -207,6 +209,42 @@ Zálohy databáze:           ls $ZALOHY/$slug
 TXT
 }
 
+obnovit() {
+    # Tlačítko Vrátit v nástrojích (přes frontu): živý web do stavu před
+    # časem $2 (unix). Soubory z posledního snímku před ním, databáze ze
+    # zálohy jen na výslovné přání (smaže i objednávky a zprávy od té doby).
+    # Nejdřív se uloží současný stav, takže jde vrátit i tohle vrácení.
+    local slug=$1 cas=$2 s_db=${3:-} g=$SNIMKY/$1.git
+    [ "$(typ_projektu "$slug")" = server ] || chyba "vracet jde jen web na serveru"
+    [[ "$cas" =~ ^[0-9]+$ ]] || chyba "neplatný čas"
+    [ -d "$g" ] || chyba "projekt $slug nemá snímky"
+    local git=(git -c safe.directory='*' --git-dir="$g" --work-tree="$PROJEKTY/$slug/kod")
+    local cil; cil=$("${git[@]}" log --format='%H %ct' main | awk -v t="$cas" '$2 <= t { print $1; exit }')
+    [ -n "$cil" ] || chyba "před tímhle časem žádný snímek webu není"
+
+    local db zaloha=""; db=$(zaznam "$slug" | cut -f4)
+    if [ "$s_db" = databaze ]; then
+        [ -n "$db" ] || chyba "web nemá databázi"
+        zaloha=$(find "$ZALOHY/$slug" -name '*.sql.gz' ! -newermt "@$cas" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2)
+        [ -n "$zaloha" ] || chyba "před tímhle časem žádná záloha databáze není"
+    fi
+
+    snimek "$slug" "Před vrácením z nástrojů"
+    [ -z "$db" ] || zalohovat_db "$slug" "$db"
+
+    # Soubory přidané po snímku zmizí, změněné se vrátí. Co snímky neukládají
+    # (snimky-exclude: nahraná média, cache, vendor), zůstává, jak je.
+    # Obnovené soubory zapisuje root: vrátit je uživateli webu, jen ty změněné.
+    local zdroj vlastnik zmeny; zdroj=$(zaznam "$slug" | cut -f3); vlastnik=$(stat -c %U:%G "$zdroj")
+    zmeny=$("${git[@]}" diff --name-only "$cil" main)
+    "${git[@]}" restore --source="$cil" --staged --worktree -- ':/'
+    (cd "$zdroj" && printf '%s\n' "$zmeny" | while IFS= read -r f; do [ -e "$f" ] && chown "$vlastnik" "$f"; done) || true
+    [ -z "$zaloha" ] || gunzip -c "$zaloha" | mysql --defaults-extra-file=/root/.my.cnf "$db"
+    snimek "$slug" "Vráceno na stav před $(date -d "@$cas" '+%-d. %-m. %Y %H:%M')"
+
+    echo "Soubory vráceny na snímek $("${git[@]}" log -1 --format='%h z %cd' --date=format:'%-d. %-m. %H:%M' "$cil").${zaloha:+ Databáze ze zálohy $(basename "$zaloha").}"
+}
+
 odebrat() {
     local slug=$1; [ -n "$(zaznam "$slug")" ] || chyba "projekt $slug neexistuje"
     local typ zdroj; typ=$(typ_projektu "$slug"); zdroj=$(zaznam "$slug" | cut -f3)
@@ -225,6 +263,36 @@ odebrat() {
     echo "Projekt $slug odebrán. Snímky: $SNIMKY/$slug.git, zálohy: $ZALOHY/$slug, paměť a kód: $ROOT/archiv/"
 }
 
+sluzba() {
+    # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
+    # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
+    docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
+    docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
+    sleep 3
+    docker logs --tail 2 "$KONTEJNER"
+}
+
+aktualizovat() {
+    # Po tlačítku Zveřejnit v nástrojích (přes frontu): nová verze služby ze
+    # schváleného main na GitHubu, ne ze schránky, kam píše agent. Bere se jen
+    # terminal/server.js, který běží v kontejneru bez práv. Co běží jako root
+    # (tenhle skript, agent-fronta.py), se z GitHubu samo nenahrazuje.
+    local slug=taveo g=$ROOT/zdroj-taveo.git cil=$ROOT/docker/terminal/server.js zdroj
+    zdroj=$(zaznam "$slug" | cut -f3); [ -n "$zdroj" ] || chyba "projekt $slug neexistuje"
+    [ -d "$g" ] || git init -q --bare "$g"
+    GIT_SSH_COMMAND="ssh -i /root/.ssh/agent-$slug -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
+        git --git-dir="$g" fetch -q "$zdroj" +refs/heads/main:refs/heads/main
+    git --git-dir="$g" show main:infra/agent/terminal/server.js > "$cil.novy"
+    if cmp -s "$cil.novy" "$cil"; then
+        rm "$cil.novy"
+        echo "Služba je aktuální."
+        return
+    fi
+    mv "$cil.novy" "$cil"
+    echo "$(date '+%F %T') služba aktualizována z main ($(git --git-dir="$g" rev-parse --short main))"
+    sluzba
+}
+
 [ "$(id -u)" = 0 ] || chyba "spouštějte jako root"
 
 case "${1:-}" in
@@ -233,16 +301,11 @@ case "${1:-}" in
     pridat) shift; pridat "$@" ;;
     zaloha) zaloha "${2:?název projektu}" ;;
     vratit) vratit "${2:?název projektu}" ;;
+    obnovit) obnovit "${2:?název projektu}" "${3:?čas (unix)}" "${4:-}" ;;
     odebrat) odebrat "${2:?název projektu}" ;;
     preposlat) preposlat ;;
-    sluzba)
-        # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
-        # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
-        docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
-        docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
-        sleep 3
-        docker logs --tail 2 "$KONTEJNER"
-        ;;
+    sluzba) sluzba ;;
+    aktualizovat) aktualizovat ;;
     prihlasit) exec docker exec -it -u agent "$KONTEJNER" bash -lc claude ;;
     *) otevrit "$1" ;;
 esac

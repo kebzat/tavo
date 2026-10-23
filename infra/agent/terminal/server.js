@@ -252,13 +252,21 @@ async function konverzace(p) {
  * Požadavek pro server (root). Kontejner sám zálohu databáze udělat nesmí,
  * nemá k ní přístup. Čeká na výsledek, nejdéle `limit` sekund.
  */
-async function fronta(pozadavek, limit = 120) {
+/** Zapíše požadavek do fronty a vrátí jeho ID. Na výsledek nečeká. */
+function doFronty(pozadavek) {
     const id = crypto.randomUUID();
     const soubor = path.join(FRONTA, 'pozadavky', `pozadavek-${id}.json`);
-    const vysledek = path.join(FRONTA, 'vysledky', `vysledek-${id}.json`);
 
     fs.writeFileSync(`${soubor}.tmp`, JSON.stringify(pozadavek));
     fs.renameSync(`${soubor}.tmp`, soubor);
+
+    return id;
+}
+
+async function fronta(pozadavek, limit = 120) {
+    const id = doFronty(pozadavek);
+    const soubor = path.join(FRONTA, 'pozadavky', `pozadavek-${id}.json`);
+    const vysledek = path.join(FRONTA, 'vysledky', `vysledek-${id}.json`);
 
     for (let i = 0; i < limit * 2; i++) {
         await new Promise((r) => setTimeout(r, 500));
@@ -356,6 +364,90 @@ async function zalozit(p, { autor, session, nahradit }) {
     return okno;
 }
 
+// ---------------------------------------------------------------- hotová práce
+
+/**
+ * Hotová práce, kterou nástroje ukážou ke kontrole. Podklady leží v
+ * /projekty/<projekt>/predani/<jméno>/:
+ *
+ *   popis.md      co se změnilo, lidsky (první řádek # Nadpis)
+ *   *.png …       snímky z prohlížeče
+ *   zacatek       kdy agent začal měnit živý web (ISO čas), k tlačítku Vrátit
+ *   *.html …      hotové kódy a texty k vložení (Shoptet, Upgates)
+ *
+ * U git projektu je hotová práce větev agent/<jméno> ve schránce (odeslat.git)
+ * a nástroje ji zveřejní přes GitHub. Agent sám do main pořád nemůže.
+ * U živého webu a projektu bez kódu je hotová práce každá složka v predani/.
+ */
+const VETEV = /^[a-z0-9][a-z0-9._-]{0,60}$/;
+const SNIMEK = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}\.(png|jpe?g|webp)$/i;
+const KOD = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}\.(html?|txt|css|js|json|liquid|xml|csv|md)$/i;
+const schranka = (p) => `/projekty/${p.slug}/odeslat.git`;
+const predaniSlozka = (p, jmeno) => path.join('/projekty', p.slug, 'predani', jmeno);
+
+const git = (args) => new Promise((resolve, reject) => {
+    execFile('git', args, { timeout: 10000 }, (error, stdout, stderr) => {
+        error ? reject(new Error(stderr.trim() || error.message)) : resolve(stdout);
+    });
+});
+
+/** Popis, snímky, kódy a začátek práce ze složky předání (každá část volitelná). */
+function podklady(slozka) {
+    const cist = (soubor, limit) => { try { return fs.readFileSync(path.join(slozka, soubor), 'utf8').slice(0, limit); } catch { return null; } };
+    let soubory = [];
+    try { soubory = fs.readdirSync(slozka).sort(); } catch { /* bez podkladů */ }
+
+    const zacatek = Date.parse((cist('zacatek', 100) || '').trim());
+
+    return {
+        popis: cist('popis.md', 20000),
+        snimky: soubory.filter((s) => SNIMEK.test(s)),
+        kody: soubory.filter((s) => KOD.test(s) && s !== 'popis.md').slice(0, 20).map((s) => ({ soubor: s, obsah: cist(s, 200000) })),
+        zacatek: Number.isNaN(zacatek) ? null : Math.floor(zacatek / 1000),
+    };
+}
+
+async function predani(p) {
+    if (p.typ !== 'git') {
+        return predaniSlozky(p);
+    }
+
+    if (!fs.existsSync(schranka(p))) {
+        return [];
+    }
+
+    const vypis = await git(['--git-dir', schranka(p), 'for-each-ref', '--sort=-committerdate',
+        '--format=%(refname:lstrip=3)%00%(objectname)%00%(committerdate:unix)%00%(subject)', 'refs/heads/agent/']);
+
+    return vypis.split('\n').filter(Boolean).map((radek) => {
+        const [jmeno, sha, cas, nadpis] = radek.split('\0');
+        if (!VETEV.test(jmeno)) {
+            return null;
+        }
+
+        const { popis, snimky } = podklady(predaniSlozka(p, jmeno));
+
+        return { vetev: `agent/${jmeno}`, jmeno, sha, cas: Number(cas), nadpis, popis, snimky };
+    }).filter(Boolean);
+}
+
+/** Živý web a projekt bez kódu: hotová práce = složky v predani/, nejnovější první. */
+function predaniSlozky(p) {
+    const koren = path.join('/projekty', p.slug, 'predani');
+    let jmena = [];
+    try { jmena = fs.readdirSync(koren, { withFileTypes: true }).filter((d) => d.isDirectory() && VETEV.test(d.name)).map((d) => d.name); } catch { return []; }
+
+    return jmena.map((jmeno) => {
+        const slozka = path.join(koren, jmeno);
+        const stat = fs.statSync(slozka);
+        const pod = podklady(slozka);
+        const nadpis = (pod.popis || '').match(/^#\s+(.+)$/m)?.[1]?.trim() || jmeno;
+
+        // Bez souboru zacatek: kdy agent složku založil (má ji založit dřív, než začne).
+        return { jmeno, cas: Math.floor(stat.mtimeMs / 1000), nadpis, ...pod, zacatek: pod.zacatek ?? Math.floor((stat.birthtimeMs || stat.ctimeMs) / 1000) };
+    }).sort((a, b) => b.cas - a.cas);
+}
+
 // ---------------------------------------------------------------- HTTP API
 
 const odpoved = (res, status, data) => {
@@ -396,6 +488,28 @@ async function api(req, res) {
         return odpoved(res, 202, { spusteno: ranniBezi });
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/predplatne') {
+        return odpoved(res, 200, await predplatne());
+    }
+
+    // Po zveřejnění: server si z GitHubu (main) stáhne novou verzi služby.
+    // Nečeká se na výsledek, aktualizace tuhle službu sama restartuje.
+    // Výsledek požadavku, na který se nečekalo (vrácení webu). 404 = ještě běží.
+    if (req.method === 'GET' && casti[1] === 'fronta' && casti.length === 3 && UUID.test(casti[2] || '')) {
+        const soubor = path.join(FRONTA, 'vysledky', `vysledek-${casti[2]}.json`);
+        if (!fs.existsSync(soubor)) {
+            return odpoved(res, 404, { hotovo: false });
+        }
+        const data = JSON.parse(fs.readFileSync(soubor, 'utf8'));
+        fs.rmSync(soubor, { force: true });
+        return odpoved(res, 200, { hotovo: true, ...data });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/aktualizovat') {
+        doFronty({ akce: 'aktualizovat', projekt: 'taveo' });
+        return odpoved(res, 202, { ok: true });
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/projekty') {
         const data = await telo(req);
         const vysledek = await fronta({ akce: 'pridat', projekt: data.projekt, typ: data.typ, zdroj: data.zdroj }, 180);
@@ -405,6 +519,61 @@ async function api(req, res) {
     const p = casti[0] === 'api' && casti[1] === 'projekty' ? projekt(casti[2]) : null;
     if (!p) {
         return odpoved(res, 404, { chyba: 'Projekt neexistuje.' });
+    }
+
+    // Hotová práce ke zveřejnění: větve agent/… ve schránce se snímky a popisem.
+    if (casti[3] === 'predani') {
+        if (req.method === 'GET' && casti.length === 4) {
+            return odpoved(res, 200, await predani(p));
+        }
+
+        const jmeno = casti[4] || '';
+        if (!VETEV.test(jmeno)) {
+            return odpoved(res, 400, { chyba: 'Neplatná větev.' });
+        }
+
+        if (req.method === 'GET' && casti.length === 6) {
+            const soubor = casti[5];
+            const cesta = path.join(predaniSlozka(p, jmeno), soubor);
+            if (!SNIMEK.test(soubor) || !fs.existsSync(cesta)) {
+                return odpoved(res, 404, { chyba: 'Snímek neexistuje.' });
+            }
+            const pripona = path.extname(soubor).slice(1).toLowerCase();
+            res.writeHead(200, { 'Content-Type': `image/${pripona === 'jpg' ? 'jpeg' : pripona}` });
+            return fs.createReadStream(cesta).pipe(res);
+        }
+
+        // Po zveřejnění nebo zahození: větev ze schránky pryč, i se snímky.
+        // Jen když je pořád na stejném commitu, novější práci agenta to nesmaže.
+        if (req.method === 'DELETE' && casti.length === 5 && p.typ !== 'git') {
+            fs.rmSync(predaniSlozka(p, jmeno), { recursive: true, force: true });
+            return odpoved(res, 200, { ok: true });
+        }
+
+        // Vrátit živý web do stavu před touhle prací (soubory, volitelně databázi).
+        // Dělá to root (agent.sh obnovit), výsledek si nástroje vyzvednou.
+        if (req.method === 'POST' && casti.length === 6 && casti[5] === 'vratit' && p.typ === 'server') {
+            const { cas, databaze } = await telo(req);
+            if (!Number.isInteger(cas) || cas <= 0) {
+                return odpoved(res, 400, { chyba: 'Chybí čas, do kterého se vrací.' });
+            }
+            const id = doFronty({ akce: 'obnovit', projekt: p.slug, cas, databaze: databaze === true });
+            return odpoved(res, 202, { id });
+        }
+
+        if (req.method === 'DELETE' && casti.length === 5) {
+            const { sha } = await telo(req);
+            if (!/^[0-9a-f]{40}$/.test(sha || '')) {
+                return odpoved(res, 400, { chyba: 'Chybí commit.' });
+            }
+            try {
+                await git(['--git-dir', schranka(p), 'update-ref', '-d', `refs/heads/agent/${jmeno}`, sha]);
+            } catch {
+                return odpoved(res, 409, { chyba: 'Agent mezitím na větvi pokračoval.' });
+            }
+            fs.rmSync(predaniSlozka(p, jmeno), { recursive: true, force: true });
+            return odpoved(res, 200, { ok: true });
+        }
     }
 
     if (casti[3] === 'konverzace' && casti.length === 4) {
@@ -460,7 +629,50 @@ async function api(req, res) {
 
 // ---------------------------------------------------------------- aplikace Claude (Remote Control)
 
-const prihlasen = () => fs.existsSync(path.join(HOME, '.claude', '.credentials.json'));
+const PRIHLASENI = path.join(HOME, '.claude', '.credentials.json');
+const prihlasen = () => fs.existsSync(PRIHLASENI);
+
+// ---------------------------------------------------------------- využití předplatného
+
+/**
+ * Kolik z limitů předplatného je vyčerpáno (5h relace, týden), stejné číslo
+ * jako /usage v Claude Code. Čte token, kterým je Claude v kontejneru
+ * přihlášený, a ptá se Anthropicu. Token neobnovuje: to dělá Claude Code sám
+ * a obnova by mu přihlášení vyměnila pod rukama. Ven jdou jen čísla.
+ * Odpověď se drží minutu, endpoint má vlastní limit dotazů.
+ */
+let vyuziti = { cas: 0, data: null };
+
+async function predplatne() {
+    if (Date.now() - vyuziti.cas < 60_000 && vyuziti.data) {
+        return vyuziti.data;
+    }
+
+    let oauth;
+    try {
+        oauth = JSON.parse(fs.readFileSync(PRIHLASENI, 'utf8')).claudeAiOauth;
+    } catch {
+        throw Object.assign(new Error('Claude v kontejneru není přihlášený.'), { status: 503 });
+    }
+
+    const r = await fetch('https://api.anthropic.com/api/oauth/usage', {
+        headers: { Authorization: `Bearer ${oauth.accessToken}`, 'anthropic-beta': 'oauth-2025-04-20' },
+        signal: AbortSignal.timeout(8000),
+    }).catch(() => null);
+
+    if (!r || !r.ok) {
+        const chyba = r?.status === 401 ? 'Přihlášení Clauda vypršelo, obnoví se v příští konverzaci.' : `Anthropic neodpověděl (${r?.status ?? 'spojení'}).`;
+        throw Object.assign(new Error(chyba), { status: 503 });
+    }
+
+    const u = await r.json();
+    vyuziti = {
+        cas: Date.now(),
+        data: { plan: oauth.subscriptionType ?? null, limity: u.limits ?? null, five_hour: u.five_hour ?? null, seven_day: u.seven_day ?? null },
+    };
+
+    return vyuziti.data;
+}
 
 /** Adresa projektu v aplikaci Claude, kterou vypsal serverový režim. */
 async function adresaAplikace(p) {
