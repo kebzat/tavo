@@ -87,6 +87,8 @@ return [
         // Tajemství webhooku, ClickUp ho vrátí při založení (php artisan clickup:napojit).
         'webhook_secret' => env('CLICKUP_WEBHOOK_SECRET'),
         'team_id' => env('CLICKUP_TEAM_ID'),
+        // Uživatel „Agent“ v ClickUpu (host). Označení v komentáři ho spustí jako štítek.
+        'agent_user_id' => env('CLICKUP_AGENT_USER_ID'),
         // Kdo smí agenta spustit: ID uživatelů ClickUpu oddělená čárkou (Tom, Pavel).
         'users' => array_filter(explode(',', (string) env('CLICKUP_AGENT_USERS', ''))),
         // Prostory bez přiřazeného klienta: ID prostoru:projekt agenta, oddělené čárkou.

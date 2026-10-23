@@ -74,6 +74,7 @@ stejném úkolu naváže na stejnou konverzaci. Konverzace je pak i v nástrojí
 | Krok | Kde |
 |---|---|
 | Webhook na nové komentáře | `POST /nastroje/api/clickup/webhook`, `ClickUpWebhookController`, podpis `X-Signature` (HMAC-SHA256 tajemstvím webhooku) |
+| Spouštěč | uživatel „Agent“ (host v ClickUpu, `CLICKUP_AGENT_USER_ID`) označený v našeptávači, nebo napsaný text `@agent` |
 | Kdo smí spustit | `CLICKUP_AGENT_USERS` (ID uživatelů ClickUpu: Tom, Pavel). Od nikoho jiného se nic nespustí. |
 | Který projekt | seznam úkolu → klient s `clickup_list_id` (Klienti → klient → ClickUp seznam) → jeho Projekt agenta. Jinak projekt celého prostoru z `CLICKUP_SPACE_PROJECTS` (Pavlův prostor → `marketing`). Jinak agent odpoví, že projekt chybí. |
 | Spuštění | `App\Support\ClickUp\ClickUpAgent::start()` po odeslání odpovědi webhooku → služba agenta `POST /api/projekty/{slug}/ulohy` |

@@ -15,6 +15,9 @@ use Throwable;
  * Komentář „@agent …“ v ClickUpu → úloha pro agenta na serveru → odpověď
  * do vlákna komentáře.
  *
+ * Spouštěč: štítek uživatele „Agent“ (CLICKUP_AGENT_USER_ID, vybraný v našeptávači),
+ * nebo napsaný text „@agent“.
+ *
  * Kdo: jen uživatelé z CLICKUP_AGENT_USERS (Tom, Pavel). Kde: úkol musí ležet
  * v seznamu přiřazeném klientovi s projektem agenta, nebo v prostoru
  * z CLICKUP_SPACE_PROJECTS. Pokyn je jen text komentáře, popis úkolu
@@ -59,12 +62,21 @@ class ClickUpAgent
         }
 
         $commentId = (string) ($comment['id'] ?? '');
-        $text = trim((string) ($comment['text_content'] ?? collect($comment['comment'] ?? [])->pluck('text')->implode('')));
+        $parts = collect($comment['comment'] ?? []);
+        $text = trim((string) ($comment['text_content'] ?? $parts->pluck('text')->implode('')));
         $userId = (string) ($comment['user']['id'] ?? $item['user']['id'] ?? '');
 
-        if ($commentId === '' || ! self::mentions($text) || str_starts_with($text, self::SIGNATURE)) {
+        // Agent jako uživatel ClickUpu: vybraný v našeptávači je v komentáři štítek
+        // (type tag) s jeho ID. Napsaný text „@agent“ platí dál.
+        $agentId = (string) config('services.clickup.agent_user_id');
+        $isAgentTag = fn ($part): bool => $agentId !== '' && ($part['type'] ?? null) === 'tag' && (string) ($part['user']['id'] ?? '') === $agentId;
+        $tagged = $parts->contains($isAgentTag);
+
+        if ($commentId === '' || (! $tagged && ! self::mentions($text)) || str_starts_with($text, self::SIGNATURE)) {
             return null;
         }
+
+        $instruction = $tagged ? trim($parts->reject($isAgentTag)->pluck('text')->implode('')) : $text;
 
         if (! in_array($userId, config('services.clickup.users'), true) || AgentJob::isOurReply($commentId)) {
             Log::info('ClickUp: komentář s @agent od nepovoleného uživatele nebo naše odpověď, přeskočeno.', ['user' => $userId, 'comment' => $commentId]);
@@ -81,7 +93,7 @@ class ClickUpAgent
             'clickup_task_id' => $taskId,
             'clickup_comment_id' => $commentId,
             'author' => (string) ($comment['user']['username'] ?? $item['user']['username'] ?? 'ClickUp'),
-            'instruction' => trim(preg_replace('/(^|\s)'.preg_quote(self::TRIGGER, '/').'\b/iu', ' ', $text)),
+            'instruction' => trim(preg_replace('/(^|\s)'.preg_quote(self::TRIGGER, '/').'\b/iu', ' ', $instruction)),
         ]);
     }
 

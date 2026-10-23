@@ -135,6 +135,37 @@ class ClickUpAgentTest extends TestCase
         $this->assertSame(['R1'], $job->reply_comment_ids);
     }
 
+    public function test_agent_oznaceny_stitkem_z_naseptavace_se_spusti(): void
+    {
+        config(['services.clickup.agent_user_id' => '777']);
+        $this->klient();
+        $this->fakeClickUp();
+
+        $body = json_encode([
+            'event' => 'taskCommentPosted',
+            'task_id' => 'T1',
+            'history_items' => [[
+                'user' => ['id' => (int) self::TOM, 'username' => 'Tom'],
+                'comment' => [
+                    'id' => 'C20',
+                    'text_content' => '@Agent TAVEO prosím shrň úkol',
+                    'comment' => [
+                        ['type' => 'tag', 'user' => ['id' => 777, 'username' => 'Agent TAVEO'], 'text' => '@Agent TAVEO'],
+                        ['text' => ' prosím shrň úkol'],
+                    ],
+                    'user' => ['id' => (int) self::TOM, 'username' => 'Tom'],
+                ],
+            ]],
+        ]);
+
+        $this->call('POST', '/nastroje/api/clickup/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_SIGNATURE' => hash_hmac('sha256', $body, 'tajemstvi'),
+        ], $body)->assertOk();
+
+        $this->assertSame('prosím shrň úkol', AgentJob::query()->sole()->instruction);
+    }
+
     public function test_pavlovi_klienti_bez_karty_jdou_do_projektu_prostoru(): void
     {
         $this->fakeClickUp(listId: 'L-MIRNIX', spaceId: 'SP-PAVEL');
