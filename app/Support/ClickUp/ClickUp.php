@@ -79,21 +79,44 @@ class ClickUp
         return collect($data['comments'] ?? [])->pluck('id')->map(fn ($id): string => (string) $id)->all();
     }
 
-    /** Odpověď do vlákna komentáře. Vrátí ID nového komentáře. */
-    public function reply(string $commentId, string $text): ?string
+    /**
+     * Odpověď do vlákna komentáře. Vrátí ID nového komentáře. S `$mention`
+     * na konci označí uživatele (přijde mu upozornění).
+     */
+    public function reply(string $commentId, string $text, ?string $mention = null): ?string
     {
-        $data = $this->call(fn (PendingRequest $http) => $http->post('/comment/'.rawurlencode($commentId).'/reply', [
-            'comment_text' => $text,
-            'notify_all' => false,
-        ]));
-
-        return isset($data['id']) ? (string) $data['id'] : null;
+        return $this->post('/comment/'.rawurlencode($commentId).'/reply', $text, $mention);
     }
 
     /** Nový komentář k úkolu (když odpověď do vlákna nejde). Vrátí ID komentáře. */
-    public function comment(string $taskId, string $text): ?string
+    public function comment(string $taskId, string $text, ?string $mention = null): ?string
     {
-        $data = $this->call(fn (PendingRequest $http) => $http->post('/task/'.rawurlencode($taskId).'/comment', [
+        return $this->post('/task/'.rawurlencode($taskId).'/comment', $text, $mention);
+    }
+
+    /**
+     * Označení uživatele jde jen ve formátovaném komentáři (pole `comment`
+     * se štítkem). Když ho ClickUp odmítne, odejde aspoň prostý text.
+     */
+    private function post(string $path, string $text, ?string $mention): ?string
+    {
+        if ($mention !== null && $mention !== '') {
+            try {
+                $data = $this->call(fn (PendingRequest $http) => $http->post($path, [
+                    'comment' => [
+                        ['text' => $text."\n\n"],
+                        ['type' => 'tag', 'user' => ['id' => (int) $mention]],
+                    ],
+                    'notify_all' => false,
+                ]));
+
+                return isset($data['id']) ? (string) $data['id'] : null;
+            } catch (RuntimeException) {
+                // Prostý text níž.
+            }
+        }
+
+        $data = $this->call(fn (PendingRequest $http) => $http->post($path, [
             'comment_text' => $text,
             'notify_all' => false,
         ]));

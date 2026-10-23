@@ -106,6 +106,7 @@ class ClickUpAgent
             'clickup_task_id' => $taskId,
             'clickup_comment_id' => $commentId,
             'is_followup' => ! $triggered,
+            'clickup_user_id' => $userId,
             'author' => (string) ($comment['user']['username'] ?? $item['user']['username'] ?? 'ClickUp'),
             'instruction' => trim(preg_replace('/[ \t]{2,}/', ' ', preg_replace(self::TRIGGER, ' ', $instruction))),
         ]);
@@ -200,7 +201,7 @@ class ClickUpAgent
 
         $this->say($job, $ok
             ? "hotovo.\n\n".Str::limit($result ?: 'Bez shrnutí.', 6000).$link
-            : 'nedokončil jsem to ('.Str::limit((string) $job->error, 300).').'.($result ? "\n\n".Str::limit($result, 3000) : '').$link);
+            : 'nedokončil jsem to ('.Str::limit((string) $job->error, 300).').'.($result ? "\n\n".Str::limit($result, 3000) : '').$link, mention: true);
     }
 
     /**
@@ -252,20 +253,25 @@ class ClickUpAgent
     private function reject(AgentJob $job, string $reason): void
     {
         $job->update(['status' => AgentJob::STATUS_REJECTED, 'error' => $reason, 'finished_at' => now()]);
-        $this->say($job, $reason);
+        $this->say($job, $reason, mention: true);
     }
 
-    /** Odpověď do vlákna komentáře. Spouštěč z textu zmizí, ať odpověď nespustí další běh. */
-    private function say(AgentJob $job, string $text): void
+    /**
+     * Odpověď do vlákna komentáře. Spouštěč z textu zmizí, ať odpověď nespustí
+     * další běh. Závěrečná odpověď (`$mention`) označí toho, kdo psal: štítek je
+     * na konci, text musí začínat „Agent:“, podle toho se naše odpověď pozná.
+     */
+    private function say(AgentJob $job, string $text, bool $mention = false): void
     {
+        $user = $mention ? $job->clickup_user_id : null;
         $text = self::SIGNATURE.' '.preg_replace(self::TRIGGER, '$1agent', $text);
 
         // Spouštěč může být i v odpovědi ve vlákně a na odpověď ClickUp odpovědět nedovolí.
         // Pak jde odpověď jako běžný komentář k úkolu.
         try {
-            $id = $this->clickUp->reply($job->clickup_thread_id ?? $job->clickup_comment_id, $text);
+            $id = $this->clickUp->reply($job->clickup_thread_id ?? $job->clickup_comment_id, $text, $user);
         } catch (RuntimeException) {
-            $id = $this->clickUp->comment($job->clickup_task_id, $text);
+            $id = $this->clickUp->comment($job->clickup_task_id, $text, $user);
         }
 
         $job->rememberReply($id);

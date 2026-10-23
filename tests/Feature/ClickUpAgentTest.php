@@ -77,6 +77,12 @@ class ClickUpAgentTest extends TestCase
         ], $body);
     }
 
+    /** Text odpovědi, prostý i formátovaný (se štítkem). */
+    private static function text(Request $request): string
+    {
+        return (string) ($request['comment_text'] ?? $request['comment'][0]['text'] ?? '');
+    }
+
     private function klient(): Client
     {
         // Svět Cejlonu zakládá už migrace přehledu klienta.
@@ -247,7 +253,7 @@ class ClickUpAgentTest extends TestCase
         $this->webhook()->assertOk();
 
         $this->assertSame(AgentJob::STATUS_REJECTED, AgentJob::query()->sole()->status);
-        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply') && str_contains($request['comment_text'], 'nemá v nástrojích Taveo přiřazený projekt'));
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply') && str_contains(self::text($request), 'nemá v nástrojích Taveo přiřazený projekt'));
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'agent.test'));
     }
 
@@ -292,10 +298,13 @@ class ClickUpAgentTest extends TestCase
         $this->assertSame(AgentJob::STATUS_DONE, $job->status);
         $this->assertSame('0f8fad5b-d9cb-469f-a165-70867728950e', $job->session);
         $this->assertSame(['R1', 'R2'], $job->reply_comment_ids);
+        // Závěrečná odpověď označí toho, kdo psal (štítek na konci, text začíná „Agent:“).
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply')
-            && str_starts_with($request['comment_text'], "Agent: hotovo.\n\nUpraveno 14 produktů")
-            && ! str_contains($request['comment_text'], '@agent')
-            && str_contains($request['comment_text'], '/nastroje/agent/svet-cejlonu'));
+            && isset($request['comment'])
+            && str_starts_with($request['comment'][0]['text'], "Agent: hotovo.\n\nUpraveno 14 produktů")
+            && ! str_contains($request['comment'][0]['text'], '@agent')
+            && str_contains($request['comment'][0]['text'], '/nastroje/agent/svet-cejlonu')
+            && $request['comment'][1] === ['type' => 'tag', 'user' => ['id' => (int) self::TOM]]);
 
         // Podruhé už se nic nezapíše ani neodpoví.
         $this->withToken(self::TOKEN)->postJson("/nastroje/api/agent/ulohy/{$job->id}/vysledek", ['ok' => true])->assertStatus(409);
@@ -326,7 +335,7 @@ class ClickUpAgentTest extends TestCase
 
         $this->assertSame(2, AgentJob::query()->where('status', AgentJob::STATUS_RUNNING)->count());
         $this->assertSame(AgentJob::STATUS_REJECTED, AgentJob::query()->where('clickup_comment_id', 'C12')->value('status'));
-        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_contains($request->url(), 'reply') && str_contains($request['comment_text'], 'limitům předplatného'));
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_contains($request->url(), 'reply') && str_contains(self::text($request), 'limitům předplatného'));
     }
 
     public function test_kdyz_do_vlakna_odpovedet_nejde_odpovi_komentarem_k_ukolu(): void
@@ -345,6 +354,22 @@ class ClickUpAgentTest extends TestCase
         $this->assertSame(AgentJob::STATUS_RUNNING, $job->status);
         $this->assertSame(['K1'], $job->reply_comment_ids);
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_ends_with($request->url(), 'task/T1/comment') && str_starts_with($request['comment_text'], 'Agent: pouštím se'));
+    }
+
+    public function test_kdyz_clickup_oznaceni_odmitne_odejde_prosty_text(): void
+    {
+        $this->klient();
+        Http::fake([
+            'api.clickup.com/api/v2/comment/*/reply' => fn (Request $request) => isset($request['comment'])
+                ? Http::response(['err' => 'Bad comment'], 400)
+                : Http::response(['id' => 'P1']),
+        ]);
+        $job = AgentJob::create(['clickup_task_id' => 'T1', 'clickup_comment_id' => 'C50', 'clickup_thread_id' => 'C50', 'clickup_user_id' => self::TOM, 'project' => 'svet-cejlonu', 'instruction' => 'x', 'status' => AgentJob::STATUS_RUNNING, 'started_at' => now()]);
+
+        $this->withToken(self::TOKEN)->postJson("/nastroje/api/agent/ulohy/{$job->id}/vysledek", ['ok' => true, 'vysledek' => 'Hotovo.'])->assertOk();
+
+        $this->assertSame(['P1'], $job->refresh()->reply_comment_ids);
+        Http::assertSent(fn (Request $request): bool => ($request['comment_text'] ?? '') !== '' && str_starts_with($request['comment_text'], 'Agent: hotovo.'));
     }
 
     public function test_ztracena_uloha_se_uzavre_a_napise_to(): void
