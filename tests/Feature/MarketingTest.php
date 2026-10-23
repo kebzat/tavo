@@ -406,11 +406,19 @@ class MarketingTest extends TestCase
             ->assertOk()
             ->assertSee('noindex', false)
             ->assertSee($guide['agent']['title'])
+            ->assertSee($guide['agent']['news'][0]['title'])
             ->assertSee($guide['features'][0]['title']);
 
         foreach ($guide['features'] as $feature) {
             $this->assertFileExists(public_path(ltrim($feature['src'], '/')));
             $this->assertGreaterThan(0, $feature['width']);
+        }
+
+        foreach ($guide['agent']['news'] as $news) {
+            foreach ($news['images'] ?? [] as $image) {
+                $this->assertFileExists(public_path(ltrim($image['src'], '/')));
+                $this->assertGreaterThan(0, $image['width']);
+            }
         }
 
         $this->get('/pruvodce/marketing')->assertNotFound();
