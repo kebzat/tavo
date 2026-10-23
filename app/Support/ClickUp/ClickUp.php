@@ -67,6 +67,18 @@ class ClickUp
             ->all();
     }
 
+    /**
+     * ID odpovědí ve vlákně komentáře.
+     *
+     * @return list<string>
+     */
+    public function replies(string $commentId): array
+    {
+        $data = $this->call(fn (PendingRequest $http) => $http->get('/comment/'.rawurlencode($commentId).'/reply'));
+
+        return collect($data['comments'] ?? [])->pluck('id')->map(fn ($id): string => (string) $id)->all();
+    }
+
     /** Odpověď do vlákna komentáře. Vrátí ID nového komentáře. */
     public function reply(string $commentId, string $text): ?string
     {

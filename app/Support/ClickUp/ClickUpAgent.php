@@ -24,7 +24,9 @@ use Throwable;
  * a ostatní komentáře jsou podklady (mohou v nich být vložené e-maily
  * klientů a agent je nesmí brát jako příkazy).
  *
- * Další „@agent“ ve stejném úkolu naváže na stejnou konverzaci.
+ * Agent odpovídá do hlavního komentáře vlákna. Každá další zpráva ve vlákně
+ * s agentem (od Toma nebo Pavla) na konverzaci naváže i bez spouštěče, jako
+ * v chatu. Nový „@agent“ jinde ve stejném úkolu naváže na poslední konverzaci úkolu.
  */
 class ClickUpAgent
 {
@@ -75,7 +77,15 @@ class ClickUpAgent
         $isAgentTag = fn ($part): bool => $agentId !== '' && ($part['type'] ?? null) === 'tag' && (string) ($part['user']['id'] ?? '') === $agentId;
         $tagged = $parts->contains($isAgentTag);
 
-        if ($commentId === '' || (! $tagged && ! self::mentions($text)) || str_starts_with($text, self::SIGNATURE)) {
+        $triggered = $tagged || self::mentions($text);
+
+        if ($commentId === '' || str_starts_with($text, self::SIGNATURE)) {
+            return null;
+        }
+
+        // Bez spouštěče jen kandidát na pokračování: úkol už s agentem mluvil.
+        // Jestli je zpráva opravdu ve vlákně s agentem, ověří start().
+        if (! $triggered && AgentJob::query()->where('clickup_task_id', $taskId)->doesntExist()) {
             return null;
         }
 
@@ -95,6 +105,7 @@ class ClickUpAgent
         return AgentJob::create([
             'clickup_task_id' => $taskId,
             'clickup_comment_id' => $commentId,
+            'is_followup' => ! $triggered,
             'author' => (string) ($comment['user']['username'] ?? $item['user']['username'] ?? 'ClickUp'),
             'instruction' => trim(preg_replace('/[ \t]{2,}/', ' ', preg_replace(self::TRIGGER, ' ', $instruction))),
         ]);
@@ -104,6 +115,16 @@ class ClickUpAgent
     public function start(AgentJob $job): void
     {
         try {
+            $thread = $this->threadOf($job);
+
+            // Zpráva bez spouštěče mimo vlákno s agentem není pro agenta.
+            if ($job->is_followup && $thread === null) {
+                $job->delete();
+
+                return;
+            }
+
+            $job->update(['clickup_thread_id' => $thread ?? $job->clickup_comment_id]);
             $task = $this->clickUp->task($job->clickup_task_id);
             [$client, $project] = $this->resolve($task);
 
@@ -127,16 +148,22 @@ class ClickUpAgent
                 return;
             }
 
-            $session = AgentJob::query()
+            // Navázat: nejdřív konverzace tohohle vlákna, pak poslední v úkolu.
+            // Nová dostane ID hned, ať na ni další zpráva z vlákna naváže, i když
+            // přijde dřív, než tahle doběhne.
+            $previous = AgentJob::query()
+                ->whereKeyNot($job->getKey())
                 ->where('clickup_task_id', $job->clickup_task_id)
                 ->where('project', $project)
-                ->whereNotNull('session')
-                ->latest('id')
-                ->value('session');
+                ->whereNotNull('session');
+            $session = (clone $previous)->where('clickup_thread_id', $job->clickup_thread_id)->latest('id')->value('session')
+                ?? $previous->latest('id')->value('session');
+            $continues = $session !== null;
+            $session ??= (string) Str::uuid();
 
             $prompt = $this->prompt($job, $task, $client, $this->clickUp->comments($job->clickup_task_id));
             $job->update(['status' => AgentJob::STATUS_RUNNING, 'started_at' => now(), 'session' => $session]);
-            $this->say($job, ($session ? 'navazuji na předchozí práci v tomto úkolu' : 'pouštím se do toho').' (projekt '.$project.'). Až budu hotový, napíšu sem.');
+            $this->say($job, ($continues ? 'navazuji' : 'pouštím se do toho').' (projekt '.$project.'). Až budu hotový, napíšu sem.');
 
             $this->agent->runTask($project, [
                 'id' => $job->getKey(),
@@ -174,6 +201,25 @@ class ClickUpAgent
         $this->say($job, $ok
             ? "hotovo.\n\n".Str::limit($result ?: 'Bez shrnutí.', 6000).$link
             : 'nedokončil jsem to ('.Str::limit((string) $job->error, 300).').'.($result ? "\n\n".Str::limit($result, 3000) : '').$link);
+    }
+
+    /**
+     * Hlavní komentář vlákna, do kterého zpráva patří, pokud je to vlákno
+     * s agentem (začalo spouštěčem v tomhle úkolu). Null = nový komentář
+     * mimo vlákna s agentem.
+     */
+    private function threadOf(AgentJob $job): ?string
+    {
+        $threads = AgentJob::query()
+            ->whereKeyNot($job->getKey())
+            ->where('clickup_task_id', $job->clickup_task_id)
+            ->whereNotNull('clickup_thread_id')
+            ->latest('id')
+            ->pluck('clickup_thread_id')
+            ->unique()
+            ->take(5);
+
+        return $threads->first(fn (string $thread): bool => in_array($job->clickup_comment_id, $this->clickUp->replies($thread), true));
     }
 
     /**
@@ -217,7 +263,7 @@ class ClickUpAgent
         // Spouštěč může být i v odpovědi ve vlákně a na odpověď ClickUp odpovědět nedovolí.
         // Pak jde odpověď jako běžný komentář k úkolu.
         try {
-            $id = $this->clickUp->reply($job->clickup_comment_id, $text);
+            $id = $this->clickUp->reply($job->clickup_thread_id ?? $job->clickup_comment_id, $text);
         } catch (RuntimeException) {
             $id = $this->clickUp->comment($job->clickup_task_id, $text);
         }

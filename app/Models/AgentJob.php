@@ -52,6 +52,7 @@ class AgentJob extends Model
     {
         return [
             'reply_comment_ids' => 'array',
+            'is_followup' => 'boolean',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];

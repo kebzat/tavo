@@ -171,8 +171,11 @@ a na serveru `php artisan optimize`.
 
 Komentář u úkolu v ClickUpu, který obsahuje `@agent`, spustí agenta v projektu
 klienta. Agent dostane název, popis a komentáře úkolu, odpracuje to na pozadí
-a odpoví do vlákna komentáře (odpovědi začínají „Agent:“). Další `@agent` ve
-stejném úkolu naváže na stejnou konverzaci. Konverzace je pak i v nástrojích
+a odpoví do vlákna komentáře (odpovědi začínají „Agent:“). Ve vlákně s agentem
+se pak píše bez spouštěče jako v chatu: každá další zpráva od Toma nebo Pavla
+v tom vlákně naváže na stejnou konverzaci. Agent odpovídá vždy do hlavního
+komentáře vlákna (odpověď na odpověď by ClickUp schoval do vnořeného vlákna).
+Nový spouštěč jinde ve stejném úkolu naváže na poslední konverzaci úkolu. Konverzace je pak i v nástrojích
 → Agent, dá se na ni navázat ručně.
 
 | Krok | Kde |

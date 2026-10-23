@@ -857,8 +857,10 @@ async function odpracovat(p, uloha) {
     const cwd = slozka(p);
     pripravitClaude(cwd);
 
-    const navazat = uloha.session && ulozene(p).some((k) => k.session === uloha.session);
-    const session = navazat ? uloha.session : crypto.randomUUID();
+    // ID konverzace přidělí web předem, ať na ni další zpráva z vlákna naváže,
+    // i když přijde dřív, než tahle doběhne (fronta projektu je pustí po sobě).
+    const navazat = Boolean(uloha.session) && ulozene(p).some((k) => k.session === uloha.session);
+    const session = uloha.session || crypto.randomUUID();
     const autori = cteniJson(AUTORI, {});
     autori[session] ??= uloha.autor;
     zapisJson(AUTORI, autori);
