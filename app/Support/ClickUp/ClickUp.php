@@ -11,8 +11,8 @@ use RuntimeException;
 
 /**
  * ClickUp API v2, jen to, co agent potřebuje: přečíst úkol a komentáře,
- * odpovědět do vlákna, vypsat seznamy a založit webhook. Úkoly ani
- * komentáře nikdy neupravuje a nemaže.
+ * odpovědět do vlákna nebo přidat komentář, vypsat seznamy, členy týmu
+ * a založit webhook. Úkoly ani komentáře nikdy neupravuje a nemaže.
  *
  * Token je osobní (pk_…), odpovědi agenta proto v ClickUpu nesou jméno
  * majitele tokenu. Poznají se podle začátku „Agent:“.
@@ -81,32 +81,57 @@ class ClickUp
 
     /**
      * Odpověď do vlákna komentáře. Vrátí ID nového komentáře. S `$mention`
-     * na konci označí uživatele (přijde mu upozornění).
+     * (ID uživatele, nebo jejich seznam) je na konci označí, přijde jim upozornění.
+     *
+     * @param  string|list<string>|null  $mention
      */
-    public function reply(string $commentId, string $text, ?string $mention = null): ?string
+    public function reply(string $commentId, string $text, string|array|null $mention = null): ?string
     {
         return $this->post('/comment/'.rawurlencode($commentId).'/reply', $text, $mention);
     }
 
-    /** Nový komentář k úkolu (když odpověď do vlákna nejde). Vrátí ID komentáře. */
-    public function comment(string $taskId, string $text, ?string $mention = null): ?string
+    /**
+     * Nový komentář k úkolu. Vrátí ID komentáře.
+     *
+     * @param  string|list<string>|null  $mention
+     */
+    public function comment(string $taskId, string $text, string|array|null $mention = null): ?string
     {
         return $this->post('/task/'.rawurlencode($taskId).'/comment', $text, $mention);
     }
 
     /**
-     * Označení uživatele jde jen ve formátovaném komentáři (pole `comment`
-     * se štítkem). Když ho ClickUp odmítne, odejde aspoň prostý text.
+     * Členové týmu (workspace): ID => jméno v ClickUpu.
+     *
+     * @return array<string, string>
      */
-    private function post(string $path, string $text, ?string $mention): ?string
+    public function members(): array
     {
-        if ($mention !== null && $mention !== '') {
+        $teamId = (string) config('services.clickup.team_id');
+        $team = collect($this->call(fn (PendingRequest $http) => $http->get('/team'))['teams'] ?? [])
+            ->first(fn (array $team): bool => (string) $team['id'] === $teamId);
+
+        return collect($team['members'] ?? [])
+            ->mapWithKeys(fn (array $member): array => [(string) $member['user']['id'] => (string) ($member['user']['username'] ?? '')])
+            ->all();
+    }
+
+    /**
+     * Označení uživatele jde jen ve formátovaném komentáři (pole `comment`
+     * se štítky). Když ho ClickUp odmítne, odejde aspoň prostý text.
+     *
+     * @param  string|list<string>|null  $mention
+     */
+    private function post(string $path, string $text, string|array|null $mention): ?string
+    {
+        // Štítky oddělené mezerou: štítek, mezera, štítek…
+        $tags = collect((array) $mention)->filter(fn ($id): bool => filled($id))->values()
+            ->flatMap(fn ($id, int $i): array => [...($i > 0 ? [['text' => ' ']] : []), ['type' => 'tag', 'user' => ['id' => (int) $id]]]);
+
+        if ($tags->isNotEmpty()) {
             try {
                 $data = $this->call(fn (PendingRequest $http) => $http->post($path, [
-                    'comment' => [
-                        ['text' => $text."\n\n"],
-                        ['type' => 'tag', 'user' => ['id' => (int) $mention]],
-                    ],
+                    'comment' => [['text' => $text."\n\n"], ...$tags->all()],
                     'notify_all' => false,
                 ]));
 
