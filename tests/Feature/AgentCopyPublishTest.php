@@ -130,6 +130,43 @@ class AgentCopyPublishTest extends TestCase
         $this->assertSame('kopie', $revert->kind);
     }
 
+    private function nepovedene(): AgentPublication
+    {
+        return AgentPublication::create([
+            'kind' => 'kopie', 'project' => 'grillnor', 'branch' => 'kopie', 'title' => 'Nový nadpis úvodní stránky',
+            'status' => PublicationStatus::Failed, 'error' => 'Nepovedlo se: Neznámý požadavek.', 'finished_at' => now()->subMinutes(2),
+        ]);
+    }
+
+    public function test_chyba_zustane_nahore_dokud_se_nevyresi(): void
+    {
+        $this->nepovedene();
+
+        $this->karta()->assertSee('Nepovedlo se: Neznámý požadavek.');
+    }
+
+    public function test_chyba_zmizi_kdyz_dalsi_pokus_projde(): void
+    {
+        $this->nepovedene();
+        AgentPublication::create([
+            'kind' => 'kopie', 'project' => 'grillnor', 'branch' => 'kopie', 'title' => 'Nový nadpis úvodní stránky',
+            'status' => PublicationStatus::Done, 'finished_at' => now()->subMinute(),
+        ]);
+
+        $this->karta()->assertDontSee('Nepovedlo se: Neznámý požadavek.');
+    }
+
+    public function test_chybu_jde_skryt(): void
+    {
+        $publication = $this->nepovedene();
+
+        $this->karta()
+            ->callAction(TestAction::make('dismiss')->arguments(['id' => $publication->id]))
+            ->assertDontSee('Nepovedlo se: Neznámý požadavek.');
+
+        $this->assertNotNull($publication->refresh()->dismissed_at);
+    }
+
     public function test_zahodit_vrati_kopii_na_zivy_web(): void
     {
         $this->karta()->callAction('discardCopy')->assertNotified('Kopie se vrací na živý web');

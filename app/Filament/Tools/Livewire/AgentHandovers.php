@@ -87,9 +87,8 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             }
         }
 
-        // Nahoře jen co běží a co skončilo chybou (hodinu), hotové hned dolů do historie.
-        [$active, $history] = collect($recent)->partition(fn (AgentPublication $p): bool => $p->status->isRunning()
-            || ($p->status->isProblem() && $p->finished_at?->gt(now()->subHour())));
+        // Nahoře jen co běží a chyby, které ještě nikdo nevyřešil. Hotové hned dolů do historie.
+        [$active, $history] = collect($recent)->partition(fn (AgentPublication $p): bool => $p->status->isRunning() || $p->needsAttention($recent));
 
         return view('filament.tools.partials.agent-handovers', [
             'copy' => self::COPY[$this->type] ?? self::COPY['git'],
@@ -361,6 +360,25 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
                 }
 
                 Notification::make()->success()->title('Vrací se')->body('Průběh je vidět tady na stránce.')->send();
+            });
+    }
+
+    /** Chybu nahoře schovat do historie (vyřešila se jinak, nebo už o ní všichni vědí). */
+    public function dismissAction(): Action
+    {
+        return Action::make('dismiss')
+            ->label('Skrýt')
+            ->tooltip('Skrýt do historie')
+            ->icon(Heroicon::XMark)
+            ->iconButton()
+            ->color('gray')
+            ->size('sm')
+            ->action(function (array $arguments): void {
+                $publication = AgentPublication::query()->where('project', $this->project)->find($arguments['id'] ?? null);
+
+                if ($publication?->status->isProblem()) {
+                    $publication->update(['dismissed_at' => now()]);
+                }
             });
     }
 

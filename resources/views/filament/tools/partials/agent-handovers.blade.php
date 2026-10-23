@@ -89,6 +89,10 @@
                         {{ ($this->revertAction)(['id' => $publication->id]) }}
                     @endif
 
+                    @if ($publication->status->isProblem())
+                        {{ ($this->dismissAction)(['id' => $publication->id]) }}
+                    @endif
+
                     @if ($publication->error)
                         <p class="basis-full text-sm text-danger-600 dark:text-danger-400">
                             {{ $publication->error }}
