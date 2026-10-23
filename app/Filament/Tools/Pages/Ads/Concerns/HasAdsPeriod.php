@@ -8,8 +8,9 @@ use Illuminate\Support\Carbon;
 use Livewire\Attributes\Url;
 
 /**
- * Volba období na stránkách reklam: přednastavená období a vlastní od–do.
- * Všechno se počítá z naší databáze, na reklamní systémy se nesahá.
+ * Volba období na stránkách reklam: přednastavená období, vlastní od–do
+ * a s čím je porovnat. Všechno se počítá z naší databáze, na reklamní
+ * systémy se nesahá.
  *
  * Stránka sama definuje `$period` s výchozí hodnotou.
  */
@@ -21,6 +22,10 @@ trait HasAdsPeriod
     #[Url]
     public ?string $to = null;
 
+    /** S čím porovnat, klíč z Period::COMPARISONS. */
+    #[Url(as: 'srovnani')]
+    public string $compare = 'previous';
+
     public function currentPeriod(): Period
     {
         if ($this->period === 'custom' && $this->from && $this->to) {
@@ -30,17 +35,40 @@ trait HasAdsPeriod
         return Period::preset($this->period);
     }
 
+    /** Srovnávací období podle zvolené volby. */
+    public function comparisonPeriod(): Period
+    {
+        return $this->currentPeriod()->comparison($this->compare);
+    }
+
     /** @return array<string, string> */
     public function periods(): array
     {
         return Period::PRESETS;
     }
 
+    /** @return array<string, string> */
+    public function comparisons(): array
+    {
+        return Period::COMPARISONS;
+    }
+
     public function setPeriod(string $period): void
     {
-        $this->period = array_key_exists($period, Period::PRESETS) ? $period : array_key_first(Period::PRESETS);
+        $this->period = array_key_exists($period, Period::PRESETS) ? $period : '7d';
         $this->from = null;
         $this->to = null;
+    }
+
+    public function setCompare(string $compare): void
+    {
+        $this->compare = array_key_exists($compare, Period::COMPARISONS) ? $compare : 'previous';
+    }
+
+    /** „16.–22. 10. 2026, srovnání s 9.–15. 10. 2026“ */
+    public function periodHeading(): string
+    {
+        return $this->currentPeriod()->label().', srovnání s '.$this->comparisonPeriod()->label();
     }
 
     public function applyRange(): void
@@ -71,9 +99,11 @@ trait HasAdsPeriod
     /** Parametry adresy, ať se zvolené období přenese na další stránku. */
     public function periodQuery(): array
     {
-        return $this->period === 'custom'
+        $query = $this->period === 'custom'
             ? ['period' => 'custom', 'from' => $this->from, 'to' => $this->to]
             : ['period' => $this->period];
+
+        return $this->compare === 'previous' ? $query : $query + ['srovnani' => $this->compare];
     }
 
     /**

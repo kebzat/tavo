@@ -1,6 +1,10 @@
 <x-mail::message>
 # Dobré ráno, {{ $recipient->name }}
 
+@if ($summary)
+**Dnes ráno:** {{ $summary }}.
+@endif
+
 @if ($newAlerts->isNotEmpty())
 ## Nové ({{ $newAlerts->count() }})
 
@@ -19,6 +23,22 @@
 
 @if ($alerts->isEmpty())
 Žádné upozornění. Reklamy běží, jak mají.
+@endif
+
+@if ($events->isNotEmpty())
+## Termíny ({{ $events->count() }})
+
+@foreach ($events as $event)
+- **{{ $event->client->name }}**: {{ $event->title }}, {{ $event->due_on->format('j. n.') }} ({{ $event->whenLabel() }}). {{ $event->type->todo() }}
+@endforeach
+@endif
+
+@if ($recovered->isNotEmpty())
+## Vrátilo se do normálu
+
+@foreach ($recovered as $alert)
+- {{ $alert->client->name }}: {{ $alert->title }}
+@endforeach
 @endif
 
 @if ($briefings > 0)

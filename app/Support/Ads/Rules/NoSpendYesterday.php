@@ -6,7 +6,7 @@ use App\Enums\Ads\AlertSeverity;
 use App\Support\Ads\Format;
 use App\Support\Ads\Period;
 
-/** Včera se neutratilo nic, i když předtím reklamy běžely. */
+/** Včera nulová útrata, přitom předchozí týden reklamy běžely. */
 class NoSpendYesterday implements Rule
 {
     public function key(): string
@@ -26,9 +26,10 @@ class NoSpendYesterday implements Rule
         return [new Finding(
             AlertSeverity::Warning,
             'Včera reklamy neutratily nic',
-            'Předchozí týden reklamy běžely ('.Format::money($before->spend(), $context->currency()).'), včera se ale neutratila ani koruna. '
-                .'Zkontrolujte, jestli kampaně neskončily, nevyčerpal se jejich rozpočet nebo neprošla platba. Když je to záměr (sezóna, dovolená), upozornění zamítněte.',
+            'Zkontrolujte, jestli kampaně neskončily, nevyčerpal se jejich rozpočet nebo neprošla platba. Když je to záměr (sezóna, dovolená), upozornění zamítněte nebo odložte.',
             ['previous_week_spend' => $before->spend()],
+            facts: 'Včera ('.$context->yesterday()->format('j. n.').') útrata 0 Kč. Předchozích 7 dní '.Format::money($before->spend(), $context->currency()).', tedy průměrně '.Format::money($before->spend() / 7, $context->currency()).' denně.',
+            basis: 'Data za včerejšek jsou stažená, nula je skutečná.',
         )];
     }
 }

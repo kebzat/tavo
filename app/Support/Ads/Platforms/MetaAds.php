@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Http;
  * Čísla bereme na úrovni kampaní po dnech a s atribucí nastavenou v účtu,
  * aby seděla s tím, co klient vidí ve Správci reklam.
  */
-class MetaAds implements AdsPlatform
+class MetaAds implements AdsPlatform, HasAdInsights, HasCampaignStatus
 {
     private const ACCOUNT_FIELDS = 'account_id,name,currency,timezone_name,account_status,business{name}';
 
@@ -36,6 +36,9 @@ class MetaAds implements AdsPlatform
     private const ACTIONS = [
         'purchases' => ['omni_purchase', 'purchase', 'offsite_conversion.fb_pixel_purchase', 'onsite_web_purchase'],
         'leads' => ['lead', 'onsite_conversion.lead_grouped', 'offsite_conversion.fb_pixel_lead', 'onsite_web_lead'],
+        // Rozpad poptávek: formulář přímo na Metě (instant form) a poptávka na webu (pixel).
+        'form_leads' => ['onsite_conversion.lead_grouped', 'onsite_conversion.lead'],
+        'web_leads' => ['offsite_conversion.fb_pixel_lead', 'onsite_web_lead'],
         'add_to_cart' => ['omni_add_to_cart', 'add_to_cart', 'offsite_conversion.fb_pixel_add_to_cart'],
         'checkouts' => ['omni_initiated_checkout', 'initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout'],
         'landing_page_views' => ['landing_page_view', 'omni_landing_page_view'],
@@ -147,23 +150,78 @@ class MetaAds implements AdsPlatform
             landingPageViews: $this->pick($actions, self::ACTIONS['landing_page_views']),
             raw: ['actions' => $actions, 'action_values' => $values],
             engagements: $this->pick($actions, self::ACTIONS['engagements']),
+            formLeads: $this->pick($actions, self::ACTIONS['form_leads']),
+            webLeads: $this->pick($actions, self::ACTIONS['web_leads']),
         );
     }
 
-    public function periodReach(AdAccount $account, array $periods): Collection
+    public function periodReach(AdAccount $account, array $periods, ?array $campaignIds = null): Collection
     {
-        if ($periods === []) {
+        if ($periods === [] || $campaignIds === []) {
             return collect();
         }
 
         $ranges = array_map(fn (Period $period): array => ['since' => $period->from->toDateString(), 'until' => $period->to->toDateString()], $periods);
 
-        return $this->paginate('act_'.$account->external_id.'/insights', [
+        return $this->paginate('act_'.$account->external_id.'/insights', array_filter([
             'level' => 'account',
             'time_ranges' => json_encode(array_values($ranges)),
             'fields' => self::REACH_FIELDS,
+            // Skupina kampaní: dosah jen za její kampaně, lidé se mezi nimi nezapočítají dvakrát.
+            'filtering' => $campaignIds !== null ? json_encode([['field' => 'campaign.id', 'operator' => 'IN', 'value' => array_values($campaignIds)]]) : null,
             'limit' => 50,
-        ])->map(fn (array $row): ReachStat => $this->reachStat($row))->values();
+        ]))->map(fn (array $row): ReachStat => $this->reachStat($row))->values();
+    }
+
+    /**
+     * Součty reklam za období, jeden dotaz (jedna stránka, 50 reklam
+     * s největší útratou). Na přehled nejlepších kreativ stačí.
+     */
+    public function adInsights(AdAccount $account, Period $period): array
+    {
+        $body = $this->request('act_'.$account->external_id.'/insights', [
+            'level' => 'ad',
+            'time_range' => json_encode(['since' => $period->from->toDateString(), 'until' => $period->to->toDateString()]),
+            'fields' => 'ad_id,ad_name,campaign_id,campaign_name,spend,impressions,inline_link_clicks,actions,action_values',
+            'use_account_attribution_setting' => 'true',
+            'sort' => json_encode(['spend_descending']),
+            'limit' => 50,
+        ]);
+
+        return collect($body['data'] ?? [])->filter(fn (array $row): bool => isset($row['ad_id']))->map(function (array $row): array {
+            $actions = $this->actionMap($row['actions'] ?? []);
+            $values = $this->actionMap($row['action_values'] ?? []);
+
+            return [
+                'external_id' => (string) $row['ad_id'],
+                'name' => (string) ($row['ad_name'] ?? 'Reklama '.$row['ad_id']),
+                'campaign_external_id' => isset($row['campaign_id']) ? (string) $row['campaign_id'] : null,
+                'campaign_name' => $row['campaign_name'] ?? null,
+                'spend' => (float) ($row['spend'] ?? 0),
+                'impressions' => (int) ($row['impressions'] ?? 0),
+                'link_clicks' => (int) ($row['inline_link_clicks'] ?? 0),
+                'purchases' => $this->pick($actions, self::ACTIONS['purchases']),
+                'purchase_value' => $this->pick($values, self::ACTIONS['purchases']),
+                'leads' => $this->pick($actions, self::ACTIONS['leads']),
+                'engagements' => $this->pick($actions, self::ACTIONS['engagements']),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * Stav všech kampaní účtu jedním dotazem (jedna stránka do 500 kampaní).
+     * Díky tomu je v tabulce vidět, která kampaň dnes běží a která je vypnutá.
+     */
+    public function campaignStatuses(AdAccount $account): array
+    {
+        $body = $this->request('act_'.$account->external_id.'/campaigns', [
+            'fields' => 'id,effective_status',
+            'limit' => 500,
+        ]);
+
+        return collect($body['data'] ?? [])
+            ->mapWithKeys(fn (array $campaign): array => [(string) $campaign['id'] => (string) ($campaign['effective_status'] ?? '')])
+            ->all();
     }
 
     /**

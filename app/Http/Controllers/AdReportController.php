@@ -48,6 +48,10 @@ class AdReportController extends Controller
             'summary' => self::markdown($report->summary),
             'facts' => self::markdown($report->facts),
             'causes' => self::markdown($report->causes),
+            'worked' => self::markdown($report->worked),
+            'notWorked' => self::markdown($report->not_worked),
+            'changes' => $view->changes(),
+            'targets' => $view->targets(),
             'recommendations' => self::markdown($report->recommendations),
             'sources' => collect($report->sources ?? [])->map(fn (array $source): array => $source + [
                 'synced_label' => filled($source['synced_at'] ?? null) ? Carbon::parse($source['synced_at'])->timezone('Europe/Prague')->format('j. n. Y H:i') : null,

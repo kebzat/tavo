@@ -49,6 +49,21 @@ class AdsSettings extends Settings
      */
     public array $overview_tiles;
 
+    /**
+     * Pod touhle útratou za 7 dní výkonová pravidla (cena za konverzi, ROAS,
+     * únava kreativ, skok útraty) mlčí. U malých čísel by svítila náhoda.
+     */
+    public int $min_spend;
+
+    /**
+     * Šest čísel na kartě v přehledu podle cíle (purchases, leads, traffic,
+     * awareness, recruitment). Nahrazuje overview_tiles.
+     */
+    public array $card_templates;
+
+    /** Výchozí dlaždice na detailu a v reportu podle cíle. */
+    public array $tile_templates;
+
     public static function group(): string
     {
         return 'ads';

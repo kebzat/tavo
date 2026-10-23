@@ -17,7 +17,11 @@ Pavel ručně, nic neodchází klientovi bez člověka.
 | Podklad k vyúčtování | Fakturace → klient → Podklad k vyúčtování | text podle přání klienta, zkopírovat nebo odeslat tlačítkem |
 | Checklisty | Checklisty → šablony | Onboarding marketingového klienta, Kontrola před spuštěním kampaně |
 | Fakta / příčiny / doporučení | Reporty → koncept | agent předvyplní, Pavel upraví, klient je vidí pod komentářem |
-| Boosting / awareness | Cíl klienta „Dosah a interakce“ | dosah, frekvence, CPM, interakce; bez pravidel ceny za konverzi |
+| Boosting / awareness | Cíl klienta nebo skupiny „Dosah a interakce“ | dosah, frekvence, CPM, interakce; bez pravidel ceny za konverzi |
+| Skupiny kampaní | Reklamy → klient → Nová skupina kampaní | prodej, boosting, nábor v jednom účtu zvlášť: vlastní cíl, rozpočet, čísla, upozornění, report |
+| Termíny | Reklamy → Termíny | konce licencí UGC, akce, Black Friday, čekání na podklady; visí v ranním přehledu do vyřešení |
+| Historie zásahů | Reklamy → klient → Zapsat zásah | co jsme změnili; graf, report a agent z toho vychází |
+| Tržby e-shopu, kvalita leadů | Reklamy → klient | skutečné objednávky a tržby, relevantní leady a obchody vedle čísel z reklam |
 
 ## Ráno, krok za krokem (Europe/Prague)
 
@@ -40,7 +44,7 @@ ho zastaví dřív, než by se k limitu přiblížil.
 
 | Kam | Běžně za den | Pojistka |
 |---|---|---|
-| **Meta** (jen čtení, `ads_read`) | jen v 6:00: 1 dotaz na seznam účtů + 4 na účet (stav, čísla, dosah, zamítnuté reklamy). 13 klientů ≈ 53 | `ApiGuard`: mimo ranní stažení nic neodejde, strop 200/den, při vytížení nad 75 % nebo „moc dotazů“ pauza do rána, žádné opakování, účet stažený ten den se podruhé nestahuje. Nikdy nezapisujeme do reklamních účtů. |
+| **Meta** (jen čtení, `ads_read`) | v 6:00: 1 dotaz na seznam účtů + 6 na účet (stav, čísla, dosah, zamítnuté reklamy, stav kampaní, čísla reklam) + 1 na skupinu kampaní (dosah). 13 klientů ≈ 80–100. Ruční obnova z detailu klienta: jeden účet, nejvýš jednou za 2 h | `ApiGuard`: mimo `ads:sync` nic neodejde, strop 300/den, při vytížení nad 75 % nebo „moc dotazů“ pauza do rána, žádné opakování, účet stažený ten den se podruhé nestahuje. Nikdy nezapisujeme do reklamních účtů. |
 | **Google Ads** | 2 na účet | stejná pojistka, strop 200/den |
 | **GA4** | 2 na property | stejná pojistka, strop 200/den |
 | **Weby klientů** (kontrola stránek) | 1 dotaz na adresu, nejvýš 5 adres na klienta, pauza 0,5 s | timeout 20 s, žádné opakování, vlastní User-Agent |
@@ -76,9 +80,11 @@ Co ban riskuje i tak, a není to technika:
 
 - **Sklik**: potřebuje API token a společné vyzkoušení, odhad bez přístupu
   by byl kód naslepo.
-- **Objednávky z e-shopů (Shoptet, Upgates)** jako zdroj pravdy: každý e-shop
-  potřebuje vlastní přístup k API, domluvit u konkrétních klientů.
-- **Fronta příspěvků k boostnutí** a čísla po jednotlivých reklamách: Meta
-  k tomu chce další oprávnění (stránky, App Review) a víc dotazů. Než do toho
-  půjdeme, vyhodnotit dopad na limity.
-- **Vyprodané produkty a končící akce** v upozorněních: potřebují data z e-shopu.
+- **Objednávky z e-shopů (Shoptet, Upgates)** přes API: každý e-shop
+  potřebuje vlastní přístup, domluvit u konkrétních klientů. Do té doby se
+  objednávky a tržby zapisují ručně (Reklamy → klient → Zapsat tržby e-shopu).
+- **Fronta příspěvků k boostnutí**: Meta k tomu chce další oprávnění (stránky,
+  App Review). Čísla jednotlivých reklam už stahujeme (`ads_read` stačí, jeden
+  dotaz na účet a den).
+- **Vyprodané produkty** v upozorněních: potřebují data z e-shopu. Končící akce
+  a licence hlídá kalendář termínů.

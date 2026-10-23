@@ -33,11 +33,12 @@ return [
 
         /*
          * Pojistka: nejvýš tolik dotazů na Metu za den (App\Support\Ads\Platforms\ApiGuard).
-         * Na Metu sahá jen ranní ads:sync: 1 dotaz na seznam účtů a 4 na účet,
-         * 20 klientů = 81 dotazů.
+         * Na Metu sahá jen ads:sync: ráno 1 dotaz na seznam účtů, 6 na účet
+         * a 1 na skupinu kampaní, 20 klientů se dvěma skupinami = 161 dotazů.
+         * Ruční obnova (--requested) přidá 6–8 dotazů na účet, nejvýš jednou za 2 h.
          * Strop je jen pro případ chyby, běžně se k němu nepřiblížíme.
          */
-        'daily_call_limit' => (int) env('META_DAILY_CALL_LIMIT', 200),
+        'daily_call_limit' => (int) env('META_DAILY_CALL_LIMIT', 300),
     ],
 
     'google_ads' => [
@@ -87,6 +88,19 @@ return [
      * konverze zpětně podle atribučního okna, včerejšek proto není konečný.
      */
     'sync_days' => (int) env('ADS_SYNC_DAYS', 7),
+
+    /*
+     * Když ranní stažení pár dní neprošlo, další běh doplní i chybějící dny,
+     * nejvýš tolik zpátky. 92 dní je u Mety pořád jeden dotaz (stahuje se po čtvrtletích).
+     */
+    'catch_up_days' => (int) env('ADS_CATCH_UP_DAYS', 92),
+
+    /*
+     * Ruční obnova čísel z detailu klienta (tlačítko Obnovit čísla). Odsud se
+     * na platformu nesahá, žádost vyřídí `ads:sync --requested` (každých 5 minut).
+     * Jeden účet jde obnovit nejvýš jednou za tolik minut.
+     */
+    'refresh_cooldown_minutes' => (int) env('ADS_REFRESH_COOLDOWN', 120),
 
     /*
      * Historie, kterou stáhne první ranní běh po připojení nového účtu, v měsících. Stahuje se

@@ -14,7 +14,7 @@ class AdDailyStat extends Model
     public const SUMS = [
         'spend', 'impressions', 'reach', 'clicks', 'link_clicks',
         'purchases', 'purchase_value', 'leads', 'add_to_cart', 'checkouts',
-        'landing_page_views', 'engagements',
+        'landing_page_views', 'engagements', 'form_leads', 'web_leads',
     ];
 
     public function account(): BelongsTo

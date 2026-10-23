@@ -2,31 +2,46 @@
 
 namespace App\Filament\Tools\Pages\Ads;
 
+use App\Enums\Ads\AdEventType;
 use App\Enums\Ads\AlertStatus;
 use App\Enums\Ads\PrimaryGoal;
 use App\Enums\Ads\ReportType;
+use App\Filament\Tools\Actions\Ads\AdChangeForm;
+use App\Filament\Tools\Actions\Ads\AdEventForm;
+use App\Filament\Tools\Actions\Ads\CampaignGroupForm;
 use App\Filament\Tools\Actions\Ads\ConnectAdAccountAction;
 use App\Filament\Tools\Actions\Ads\LogTimeAction;
 use App\Filament\Tools\Pages\Ads\Concerns\HasAdsPeriod;
+use App\Filament\Tools\Resources\AdEvents\AdEventResource;
 use App\Filament\Tools\Resources\AdReports\AdReportResource;
 use App\Filament\Tools\Resources\Clients\ClientResource;
 use App\Filament\Tools\Resources\TimeEntries\TimeEntryResource;
 use App\Models\Ads\AdAccount;
 use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdCampaign;
+use App\Models\Ads\AdChange;
 use App\Models\Ads\AdDailyStat;
+use App\Models\Ads\AdEvent;
 use App\Models\Ads\AdReport;
 use App\Models\Client;
 use App\Models\TimeEntry;
 use App\Settings\AdsSettings;
+use App\Support\Ads\AdsScope;
 use App\Support\Ads\Ai\AdsAdvisor;
 use App\Support\Ads\Billing;
-use App\Support\Ads\BudgetPace;
+use App\Support\Ads\BusinessResults;
+use App\Support\Ads\CampaignGroups;
 use App\Support\Ads\ClientPerformance;
+use App\Support\Ads\CsvExport;
+use App\Support\Ads\DataStatus;
 use App\Support\Ads\Format;
 use App\Support\Ads\MetricCatalog;
+use App\Support\Ads\Metrics;
 use App\Support\Ads\PerformanceView;
 use App\Support\Ads\Period;
 use App\Support\Ads\ReportBuilder;
+use App\Support\Ads\Stats;
+use App\Support\Ads\TopAds;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\CheckboxList;
@@ -48,8 +63,13 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 
 /**
- * Detail klienta v reklamách: hlavní čísla se srovnáním, graf po dnech,
- * cesta k nákupu, kampaně, čerpání rozpočtu, upozornění a reporty.
+ * Detail klienta v reklamách: stav dat, hlavní čísla se srovnáním a proti
+ * cíli, graf po dnech se zásahy a termíny, události po cestě k nákupu,
+ * kampaně se skupinami, čerpání rozpočtu, upozornění, termíny, historie
+ * zásahů a reporty.
+ *
+ * Nahoře se přepíná celý účet / skupina kampaní / kampaně mimo skupiny.
+ * Výběr platí pro čísla, graf, kampaně, report i export.
  */
 class AdsClient extends Page
 {
@@ -65,6 +85,10 @@ class AdsClient extends Page
 
     #[Url]
     public string $period = '30d';
+
+    /** Skupina kampaní: ID, „mimo“, nebo nic = celý účet. */
+    #[Url(as: 'skupina')]
+    public ?string $group = null;
 
     public static function getRoutePath(Panel $panel): string
     {
@@ -88,9 +112,107 @@ class AdsClient extends Page
 
     public function getSubheading(): ?string
     {
-        $period = $this->currentPeriod();
+        return $this->scope()->label().' · '.$this->periodHeading();
+    }
 
-        return $period->label().', srovnání s '.$period->previous()->label();
+    /** Na co se díváme: celý účet, skupina, nebo kampaně mimo skupiny. */
+    public function scope(): AdsScope
+    {
+        return AdsScope::for($this->freshClient(), $this->group);
+    }
+
+    public function dataStatus(): DataStatus
+    {
+        return DataStatus::for($this->freshClient()->adAccounts);
+    }
+
+    public function setGroup(?string $group): void
+    {
+        $this->group = $group === 'all' ? null : $group;
+    }
+
+    /**
+     * Přepínač nahoře: celý účet, skupiny, mimo skupiny. U každé útrata za
+     * zvolené období, ať je vidět, kolik jde mimo výkonnostní kampaně.
+     *
+     * @return list<array{key: string, label: string, spend: string, goal: ?string, active: bool, id: ?int}>
+     */
+    public function scopes(): array
+    {
+        $client = $this->freshClient();
+        $groups = $client->adCampaignGroups()->get();
+
+        if ($groups->isEmpty()) {
+            return [];
+        }
+
+        $period = $this->currentPeriod();
+        $byCampaign = Stats::byCampaign($client->activeAdAccountIds(), $period);
+        $campaigns = CampaignGroups::campaigns($client);
+        $sum = fn ($ids): float => collect($ids)->sum(fn (int $id): float => ($byCampaign[$id] ?? Metrics::empty())->spend());
+        $currency = $client->adCurrency();
+        $current = $this->scope()->key();
+
+        $rows = [['key' => 'all', 'label' => 'Celý účet', 'spend' => Format::money($byCampaign->sum(fn (Metrics $m): float => $m->spend()), $currency), 'goal' => null, 'active' => $current === 'all', 'id' => null]];
+
+        foreach ($groups as $group) {
+            $rows[] = [
+                'key' => (string) $group->getKey(),
+                'label' => $group->name,
+                'spend' => Format::money($sum($campaigns->where('ad_campaign_group_id', $group->getKey())->pluck('id')), $currency),
+                'goal' => $group->goal->templateLabel(),
+                'active' => $current === (string) $group->getKey(),
+                'id' => $group->getKey(),
+            ];
+        }
+
+        $rows[] = [
+            'key' => AdsScope::OUTSIDE,
+            'label' => 'Mimo skupiny',
+            'spend' => Format::money($sum($campaigns->whereNull('ad_campaign_group_id')->pluck('id')), $currency),
+            'goal' => null,
+            'active' => $current === AdsScope::OUTSIDE,
+            'id' => null,
+        ];
+
+        return $rows;
+    }
+
+    /** @return Collection<int, AdCampaign> Nové kampaně, které čekají na zařazení do skupiny. */
+    public function waitingCampaigns(): Collection
+    {
+        return CampaignGroups::waiting($this->freshClient());
+    }
+
+    /** @return array<int, string> Skupiny pro výběr u kampaně. */
+    public function groupOptions(): array
+    {
+        return $this->freshClient()->adCampaignGroups()->pluck('name', 'id')->all();
+    }
+
+    /** Ruční přesun kampaně do skupiny z tabulky kampaní. */
+    public function assignCampaign(int $campaignId, string $groupId): void
+    {
+        CampaignGroups::assign($this->freshClient(), $campaignId, is_numeric($groupId) ? (int) $groupId : null);
+
+        Notification::make()->success()->title(is_numeric($groupId) ? 'Kampaň zařazena' : 'Kampaň je mimo skupiny')->send();
+    }
+
+    /**
+     * Stav ruční obnovy: čeká, nebo kdy půjde znovu.
+     *
+     * @return array{pending: bool, next: ?string}
+     */
+    public function refreshState(): array
+    {
+        $accounts = $this->freshClient()->adAccounts->where('is_active', true)->reject(fn (AdAccount $account): bool => $account->isAnalytics());
+        $last = $accounts->pluck('refreshed_at')->filter()->max();
+        $next = $last ? Carbon::parse($last)->addMinutes((int) config('ads.refresh_cooldown_minutes')) : null;
+
+        return [
+            'pending' => $accounts->contains(fn (AdAccount $account): bool => $account->refresh_requested_at !== null),
+            'next' => $next?->isFuture() ? $next->timezone('Europe/Prague')->format('G:i') : null,
+        ];
     }
 
     /** @return array<string, string> */
@@ -118,13 +240,163 @@ class AdsClient extends Page
 
     public function performance(): PerformanceView
     {
-        return new PerformanceView(ClientPerformance::build($this->freshClient(), $this->currentPeriod()));
+        return new PerformanceView(ClientPerformance::build($this->freshClient(), $this->currentPeriod(), $this->scope(), $this->compare));
     }
 
-    /** @return Collection<int, AdAlert> */
+    /**
+     * Živá upozornění. U skupiny jen její a ta za celý účet (data, měření).
+     *
+     * @return Collection<int, AdAlert>
+     */
     public function alerts(): Collection
     {
-        return $this->client->adAlerts()->live()->worstFirst()->get();
+        $scope = $this->scope();
+
+        return $this->client->adAlerts()->live()
+            ->with('group')
+            ->when($scope->group !== null, fn ($query) => $query->where(fn ($query) => $query->whereNull('ad_campaign_group_id')->orWhere('ad_campaign_group_id', $scope->group->getKey())))
+            ->worstFirst()
+            ->get();
+    }
+
+    /** @return Collection<int, AdAlert> Co se za poslední týden samo vrátilo do normálu. */
+    public function recovered(): Collection
+    {
+        return $this->client->adAlerts()
+            ->where('status', AlertStatus::Resolved)
+            ->where('resolved_by', 'system')
+            ->whereDate('recovered_on', '>=', today()->subDays(7))
+            ->latest('recovered_on')
+            ->limit(8)
+            ->get();
+    }
+
+    /** @return Collection<int, AdEvent> Nevyřešené termíny: po termínu a do 60 dní dopředu. */
+    public function events(): Collection
+    {
+        return $this->client->adEvents()->open()
+            ->with(['group', 'campaign'])
+            ->whereDate('due_on', '<=', today()->addDays(60))
+            ->orderBy('due_on')
+            ->get();
+    }
+
+    /** @return Collection<int, AdChange> Poslední zásahy (bez ohledu na období). */
+    public function recentChanges(): Collection
+    {
+        $scope = $this->scope();
+
+        return $this->client->adChanges()
+            ->with(['group', 'campaign', 'user'])
+            ->when($scope->group !== null, fn ($query) => $query->where(fn ($query) => $query->whereNull('ad_campaign_group_id')->orWhere('ad_campaign_group_id', $scope->group->getKey())))
+            ->latest('changed_on')
+            ->latest('id')
+            ->limit(8)
+            ->get();
+    }
+
+    /**
+     * Skutečné výsledky vedle čísel z reklam: e-shop (objednávky, tržby)
+     * nebo leady (relevantní, obchody). Podle cíle klienta a skupin.
+     *
+     * @return array{shop: list<array<string, mixed>>, leads: list<array<string, mixed>>, show_shop: bool, show_leads: bool}
+     */
+    public function business(): array
+    {
+        $client = $this->freshClient();
+        $shop = BusinessResults::scopeFor($client, [PrimaryGoal::Purchases]);
+        $leads = BusinessResults::scopeFor($client, [PrimaryGoal::Leads, PrimaryGoal::Recruitment]);
+
+        return [
+            'shop' => $shop ? BusinessResults::shop($client, $shop) : [],
+            'leads' => $leads ? BusinessResults::leads($client, $leads) : [],
+            'show_shop' => $shop !== null,
+            'show_leads' => $leads !== null,
+            'shop_scope' => $shop?->label(),
+            'leads_scope' => $leads?->label(),
+        ];
+    }
+
+    /** @return array{rows: list<array<string, mixed>>, period: ?string, tests_url: string} */
+    public function topAds(): array
+    {
+        $scope = $this->scope();
+
+        return [
+            'rows' => TopAds::for($scope),
+            'period' => TopAds::periodLabel($scope),
+            'tests_url' => ClientResource::getUrl('edit', ['record' => $this->client]),
+        ];
+    }
+
+    public function logShopResultAction(): Action
+    {
+        return Action::make('logShopResult')
+            ->label('Zapsat tržby e-shopu')
+            ->icon(Heroicon::OutlinedBanknotes)
+            ->color('gray')
+            ->size('sm')
+            ->modalHeading('Objednávky a tržby z e-shopu')
+            ->modalDescription('Čísla z administrace e-shopu (Shoptet, Upgates) za období. Ukážou se vedle toho, co si připsaly reklamy, a z nich se počítají náklady na obrat.')
+            ->modalWidth('xl')
+            ->fillForm(fn (): array => ['period_from' => now()->subMonthNoOverflow()->startOfMonth()->toDateString(), 'period_to' => now()->subMonthNoOverflow()->endOfMonth()->toDateString()])
+            ->schema([
+                Grid::make(2)->schema([
+                    DatePicker::make('period_from')->label('Od')->native(false)->displayFormat('j. n. Y')->required(),
+                    DatePicker::make('period_to')->label('Do')->native(false)->displayFormat('j. n. Y')->required()->afterOrEqual('period_from'),
+                    TextInput::make('orders')->label('Objednávek')->numeric()->minValue(0),
+                    TextInput::make('revenue')->label('Tržby s DPH')->numeric()->minValue(0)->suffix($this->client->adCurrency()),
+                ]),
+                TextInput::make('source')->label('Odkud čísla jsou')->placeholder('Shoptet → Přehledy → Objednávky'),
+                TextInput::make('note')->label('Poznámka')->maxLength(255),
+            ])
+            ->action(function (array $data): void {
+                $this->client->adBusinessResults()->create($data + ['user_id' => auth()->id()]);
+                Notification::make()->success()->title('Zapsáno')->send();
+            });
+    }
+
+    public function logLeadQualityAction(): Action
+    {
+        return Action::make('logLeadQuality')
+            ->label('Zapsat kvalitu leadů')
+            ->icon(Heroicon::OutlinedUserGroup)
+            ->color('gray')
+            ->size('sm')
+            ->modalHeading('Co se s leady stalo')
+            ->modalDescription('Čísla od klienta za období: kolik leadů eviduje, kolik bylo relevantních a kolik skončilo obchodem.')
+            ->modalWidth('xl')
+            ->fillForm(fn (): array => ['period_from' => now()->subMonthNoOverflow()->startOfMonth()->toDateString(), 'period_to' => now()->subMonthNoOverflow()->endOfMonth()->toDateString()])
+            ->schema([
+                Grid::make(2)->schema([
+                    DatePicker::make('period_from')->label('Od')->native(false)->displayFormat('j. n. Y')->required(),
+                    DatePicker::make('period_to')->label('Do')->native(false)->displayFormat('j. n. Y')->required()->afterOrEqual('period_from'),
+                    TextInput::make('leads')->label('Leadů u klienta')->numeric()->minValue(0),
+                    TextInput::make('contacted')->label('Ozvali se / dovolali se')->numeric()->minValue(0),
+                    TextInput::make('qualified')->label('Relevantní')->numeric()->minValue(0),
+                    TextInput::make('deals')->label('Obchody')->numeric()->minValue(0),
+                    TextInput::make('deal_value')->label('Hodnota obchodů')->numeric()->minValue(0)->suffix($this->client->adCurrency()),
+                    TextInput::make('source')->label('Odkud čísla jsou')->placeholder('CRM klienta, tabulka, telefonát'),
+                ]),
+                TextInput::make('note')->label('Poznámka')->maxLength(255),
+            ])
+            ->action(function (array $data): void {
+                $this->client->leadFeedback()->create($data);
+                Notification::make()->success()->title('Zapsáno')->send();
+            });
+    }
+
+    public function resolveEvent(int $id): void
+    {
+        $event = $this->client->adEvents()->findOrFail($id);
+        $event->update(['resolved_at' => now(), 'resolved_by' => auth()->id()]);
+
+        Notification::make()->success()->title('Termín vyřešen')->send();
+    }
+
+    public function calendarUrl(): string
+    {
+        return AdEventResource::getUrl();
     }
 
     /** @return Collection<int, AdReport> */
@@ -136,7 +408,7 @@ class AdsClient extends Page
     /**
      * Připojené účty se stavem synchronizace.
      *
-     * @return Collection<int, array{name: string, platform: string, status: string, ok: bool, synced: ?string, error: ?string, active: bool, manager_url: ?string}>
+     * @return Collection<int, array{name: string, platform: string, status: string, ok: bool, synced: ?string, through: ?string, error: ?string, active: bool, manager_url: ?string}>
      */
     public function accounts(): Collection
     {
@@ -147,30 +419,33 @@ class AdsClient extends Page
                 'status' => $account->statusLabel(),
                 'ok' => in_array($account->status, [null, ...AdAccount::OK_STATUSES], true) && blank($account->last_sync_error),
                 'synced' => $account->last_synced_at?->diffForHumans(),
+                'through' => $account->data_through?->format('j. n. Y'),
                 'error' => $account->last_sync_error,
                 'active' => $account->is_active,
                 'manager_url' => $account->managerUrl(),
             ]);
     }
 
-    /** @return array{label: string, percent: float, expected: float, pace: ?string, projected: ?string}|null */
+    /** @return array{label: string, percent: float, expected: float, pace: ?string, projected: ?string, note: ?string}|null */
     public function budget(): ?array
     {
-        $client = $this->freshClient();
-        $pace = BudgetPace::for($client->activeAdAccountIds(), $client->adSettings?->monthly_budget);
+        $scope = $this->scope();
+        $pace = $scope->budgetPace($this->dataStatus());
 
         if ($pace === null) {
             return null;
         }
 
-        $currency = $client->adCurrency();
+        $currency = $scope->currency();
 
         return [
             'label' => Format::money($pace->spent, $currency).' z '.Format::money($pace->budget, $currency),
             'percent' => min(100, round($pace->spentPercent(), 1)),
             'expected' => min(100, round($pace->expected / $pace->budget * 100, 1)),
-            'pace' => $pace->pacePercent() !== null ? Format::number($pace->pacePercent()).' % plánu k dnešku' : null,
+            'pace' => $pace->pacePercent() !== null ? Format::number($pace->pacePercent()).' % plánu'.($pace->partial ? '' : ' k dnešku') : null,
+            // Odhad z neúplných dat by zkresloval, ukazujeme ho jen z kompletních dní.
             'projected' => $pace->projected() !== null ? 'Odhad za měsíc '.Format::money($pace->projected(), $currency) : null,
+            'note' => $pace->note(),
         ];
     }
 
@@ -188,10 +463,13 @@ class AdsClient extends Page
             return [];
         }
 
+        // U skupiny cíl, cena a ROAS skupiny. Paušál a reporty jsou vždy klienta.
+        $scope = $this->scope();
+
         return array_values(array_filter([
-            ['label' => 'Hlavní cíl', 'value' => $settings->primary_goal->getLabel()],
-            $settings->target_cpa ? ['label' => 'Cílová cena za konverzi', 'value' => Format::unitPrice($settings->target_cpa, $currency)] : null,
-            $settings->target_roas ? ['label' => 'Cílový ROAS', 'value' => Format::roas($settings->target_roas)] : null,
+            ['label' => 'Hlavní cíl', 'value' => $scope->goal()->getLabel()],
+            $scope->targetCpa() ? ['label' => 'Cílová cena za konverzi', 'value' => Format::unitPrice($scope->targetCpa(), $currency)] : null,
+            $scope->targetRoas() ? ['label' => 'Cílový ROAS', 'value' => Format::roas($scope->targetRoas())] : null,
             $settings->fee_czk ? ['label' => 'Náš paušál', 'value' => Format::money($settings->fee_czk).' / měsíc'] : null,
             $settings->included_hours ? ['label' => 'Hodin v paušálu', 'value' => Format::count($settings->included_hours)] : null,
             $settings->hourly_rate ? ['label' => 'Práce navíc', 'value' => Format::money($settings->hourly_rate).' / h'] : null,
@@ -233,7 +511,7 @@ class AdsClient extends Page
 
     public function acknowledgeAlert(int $id): void
     {
-        $this->updateAlert($id, AlertStatus::Acknowledged, 'Upozornění se řeší');
+        $this->updateAlert($id, AlertStatus::Acknowledged, 'Řešíte');
     }
 
     public function resolveAlert(int $id): void
@@ -244,6 +522,149 @@ class AdsClient extends Page
     public function dismissAlert(int $id): void
     {
         $this->updateAlert($id, AlertStatus::Dismissed, 'Upozornění zamítnuto, týden se neozve');
+    }
+
+    public function reopenAlert(int $id): void
+    {
+        $this->updateAlert($id, AlertStatus::Open, 'Upozornění je zase nové');
+    }
+
+    /** Čekám na klienta: upozornění dál platí, jen víme, na co se čeká. */
+    public function waitAlertAction(): Action
+    {
+        return Action::make('waitAlert')
+            ->label('Čekám na klienta')
+            ->size('xs')
+            ->color('gray')
+            ->modalHeading('Čekám na klienta')
+            ->modalWidth('md')
+            ->schema([
+                TextInput::make('waiting_for')->label('Na co čekáme')->placeholder('nové fotky produktů, schválení rozpočtu…')->maxLength(255),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $this->client->adAlerts()->findOrFail($arguments['alert'])->moveTo(AlertStatus::Waiting, auth()->user()?->name, $data['waiting_for'] ?? null);
+                Notification::make()->success()->title('Čeká se na klienta')->send();
+            });
+    }
+
+    /** Odložit: do zvoleného dne upozornění nesvítí, pak se ozve, pokud problém trvá. */
+    public function snoozeAlertAction(): Action
+    {
+        return Action::make('snoozeAlert')
+            ->label('Odložit')
+            ->size('xs')
+            ->color('gray')
+            ->modalHeading('Odložit upozornění')
+            ->modalDescription('Do zvoleného dne nebude svítit v přehledu ani v e-mailu. Když problém potom trvá, ozve se znovu.')
+            ->modalWidth('md')
+            ->schema([
+                Select::make('days')->label('Na jak dlouho')->options([1 => 'Do zítřka', 3 => 'Na 3 dny', 7 => 'Na týden', 14 => 'Na 2 týdny'])->default(3)->required(),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $until = today()->addDays((int) $data['days']);
+                $this->client->adAlerts()->findOrFail($arguments['alert'])->snooze($until, auth()->user()?->name);
+                Notification::make()->success()->title('Odloženo do '.$until->format('j. n.'))->send();
+            });
+    }
+
+    public function createGroupAction(): Action
+    {
+        return Action::make('createGroup')
+            ->label('Nová skupina kampaní')
+            ->icon(Heroicon::OutlinedRectangleGroup)
+            ->color('gray')
+            ->modalHeading('Nová skupina kampaní')
+            ->modalDescription('Zaškrtněte kampaně, které k sobě patří (třeba Prodej, Brand, Nábor). Skupina má vlastní cíl, rozpočet, čísla, upozornění i report.')
+            ->modalWidth('3xl')
+            ->schema(fn (): array => CampaignGroupForm::schema($this->freshClient()))
+            ->fillForm(fn (): array => ['goal' => $this->freshClient()->adGoal()->value])
+            ->action(function (array $data): void {
+                $group = CampaignGroupForm::save($this->freshClient(), $data);
+                $this->group = (string) $group->getKey();
+                Notification::make()->success()->title('Skupina '.$group->name.' uložena')->send();
+            });
+    }
+
+    public function editGroupAction(): Action
+    {
+        return Action::make('editGroup')
+            ->label('Upravit skupinu')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->color('gray')
+            ->size('sm')
+            ->visible(fn (): bool => $this->scope()->group !== null)
+            ->modalHeading(fn (): string => 'Skupina '.$this->scope()->group?->name)
+            ->modalWidth('3xl')
+            ->schema(fn (): array => CampaignGroupForm::schema($this->freshClient()))
+            ->fillForm(fn (): array => CampaignGroupForm::fill($this->scope()->group))
+            ->extraModalFooterActions(fn (): array => [
+                Action::make('deleteGroup')
+                    ->label('Smazat skupinu')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('Kampaně zůstanou, jen budou mimo skupiny. Upozornění skupiny zmizí.')
+                    ->cancelParentActions()
+                    ->action(function (): void {
+                        $this->scope()->group?->delete();
+                        $this->group = null;
+                        Notification::make()->success()->title('Skupina smazána')->send();
+                    }),
+            ])
+            ->action(function (array $data): void {
+                $group = CampaignGroupForm::save($this->freshClient(), $data, $this->scope()->group);
+                Notification::make()->success()->title('Skupina '.$group->name.' uložena')->send();
+            });
+    }
+
+    public function logChangeAction(): Action
+    {
+        return Action::make('logChange')
+            ->label('Zapsat zásah')
+            ->icon(Heroicon::OutlinedWrenchScrewdriver)
+            ->color('gray')
+            ->size('sm')
+            ->modalHeading('Zapsat zásah')
+            ->modalDescription('Co jsme v účtu nebo na webu změnili. Ukáže se v grafu a v reportu a agent z toho vychází, když hledá příčinu změny.')
+            ->modalWidth('2xl')
+            ->schema(fn (): array => AdChangeForm::schema($this->freshClient(), $this->scope()->group?->getKey()))
+            ->action(function (array $data): void {
+                AdChangeForm::create($this->freshClient(), $data);
+                Notification::make()->success()->title('Zásah zapsán')->send();
+            });
+    }
+
+    public function addEventAction(): Action
+    {
+        return Action::make('addEvent')
+            ->label('Přidat termín')
+            ->icon(Heroicon::OutlinedCalendarDays)
+            ->color('gray')
+            ->size('sm')
+            ->modalHeading('Nový termín')
+            ->modalDescription('Konec licence, začátek akce, příprava Black Friday, čekání na podklady. Upozorníme předem a v ranním přehledu termín visí, dokud ho neoznačíte jako vyřešený.')
+            ->modalWidth('2xl')
+            ->schema(fn (): array => AdEventForm::schema($this->freshClient()))
+            ->fillForm(fn (): array => ['type' => AdEventType::LicenseEnd->value, 'remind_days' => 7, 'ad_campaign_group_id' => $this->scope()->group?->getKey()])
+            ->action(function (array $data): void {
+                AdEventForm::save($data, $this->freshClient());
+                Notification::make()->success()->title('Termín uložen')->send();
+            });
+    }
+
+    public function editEventAction(): Action
+    {
+        return Action::make('editEvent')
+            ->label('Upravit')
+            ->size('xs')
+            ->color('gray')
+            ->modalHeading('Upravit termín')
+            ->modalWidth('2xl')
+            ->schema(fn (): array => AdEventForm::schema($this->freshClient()))
+            ->fillForm(fn (array $arguments): array => AdEventForm::fill($this->client->adEvents()->findOrFail($arguments['event'])))
+            ->action(function (array $data, array $arguments): void {
+                AdEventForm::save($data, $this->freshClient(), $this->client->adEvents()->findOrFail($arguments['event']));
+                Notification::make()->success()->title('Termín uložen')->send();
+            });
     }
 
     public function reportUrl(int $id): string
@@ -258,6 +679,9 @@ class AdsClient extends Page
             $this->logTimeAction(),
             $this->settingsAction(),
             ActionGroup::make([
+                $this->refreshAction(),
+                $this->exportAction(),
+                $this->createGroupAction(),
                 $this->historyAction(),
                 ConnectAdAccountAction::make($this->client),
                 $this->adviceAction(),
@@ -305,10 +729,17 @@ class AdsClient extends Page
                     DatePicker::make('from')->label('Od')->native(false)->displayFormat('j. n. Y')->required(),
                     DatePicker::make('to')->label('Do')->native(false)->displayFormat('j. n. Y')->required()->afterOrEqual('from'),
                 ]),
+                Select::make('group')
+                    ->label('Za co')
+                    ->options(fn (): array => $this->groupOptions())
+                    ->placeholder('Celý účet')
+                    ->default(fn (): ?int => $this->scope()->group?->getKey())
+                    ->visible(fn (): bool => $this->groupOptions() !== []),
             ])
             ->action(function (array $data, ReportBuilder $builder): void {
                 $type = $data['type'] instanceof ReportType ? $data['type'] : ReportType::from($data['type']);
-                $report = $builder->create($this->freshClient(), $type, Period::between($data['from'], $data['to']));
+                $scope = AdsScope::for($this->freshClient(), $data['group'] ?? null);
+                $report = $builder->create($this->freshClient(), $type, Period::between($data['from'], $data['to']), $scope);
 
                 $this->redirect(AdReportResource::getUrl('edit', ['record' => $report]));
             });
@@ -477,6 +908,49 @@ class AdsClient extends Page
     }
 
     /**
+     * Ruční obnova čísel. Odsud se na Metu nesahá: zapíše žádost, kterou
+     * do pár minut vyřídí `ads:sync --requested`. Jeden účet nejvýš jednou
+     * za ads.refresh_cooldown_minutes, ať se nepřibližujeme limitům.
+     */
+    private function refreshAction(): Action
+    {
+        return Action::make('refresh')
+            ->label('Obnovit čísla')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->requiresConfirmation()
+            ->modalHeading('Obnovit čísla z reklamních systémů?')
+            ->modalDescription(fn (): string => 'Stáhne se posledních '.config('ads.sync_days').' dní (a chybějící dny), stav kampaní a dosah, pak se přepočítají upozornění. Trvá to do 5 minut. Jeden účet jde obnovit jednou za '.((int) config('ads.refresh_cooldown_minutes') / 60).' h.')
+            ->modalSubmitActionLabel('Obnovit')
+            ->action(function (): void {
+                $cooldown = now()->subMinutes((int) config('ads.refresh_cooldown_minutes'));
+                $accounts = $this->client->adAccounts()->active()->get();
+                $queued = $accounts
+                    ->filter(fn (AdAccount $account): bool => $account->refresh_requested_at === null && ($account->refreshed_at === null || $account->refreshed_at->lt($cooldown)))
+                    ->each(fn (AdAccount $account) => $account->forceFill(['refresh_requested_at' => now()])->save())
+                    ->count();
+
+                $queued > 0
+                    ? Notification::make()->success()->title('Čísla se stáhnou do 5 minut')->body('Stránku pak obnovte.')->send()
+                    : Notification::make()->warning()->title('Teď to nejde')->body('Obnova už čeká, nebo proběhla před chvílí. Další bude možná v '.($this->refreshState()['next'] ?? 'nejbližších minutách').'.')->send();
+            });
+    }
+
+    private function exportAction(): Action
+    {
+        return Action::make('export')
+            ->label('Stáhnout CSV')
+            ->icon(Heroicon::OutlinedArrowDownTray)
+            ->modalHeading('Export do CSV')
+            ->modalDescription(fn (): string => $this->scope()->label().', '.$this->currentPeriod()->label().'. Středník a desetinná čárka, otevře se rovnou v Excelu.')
+            ->modalWidth('md')
+            ->schema([
+                Select::make('layout')->label('Jak')->options(CsvExport::LAYOUTS)->default('days_campaigns')->required(),
+            ])
+            ->modalSubmitActionLabel('Stáhnout')
+            ->action(fn (array $data) => (new CsvExport($this->scope(), $this->currentPeriod(), $data['layout']))->download());
+    }
+
+    /**
      * Doplnění starší historie u účtů, které mají jen část (propojené dřív,
      * kdy se stahovalo 90 dní). Jen zapíše přání, chybějící úsek před
      * nejstarším dnem stáhne ranní `ads:sync`.
@@ -528,7 +1002,7 @@ class AdsClient extends Page
                 $client = $this->freshClient();
                 $advice = $advisor->advise(
                     $client,
-                    ClientPerformance::build($client, $this->currentPeriod()),
+                    ClientPerformance::build($client, $this->currentPeriod(), $this->scope(), $this->compare),
                     $this->alerts()->pluck('title')->all(),
                 );
 
@@ -545,11 +1019,7 @@ class AdsClient extends Page
 
     private function updateAlert(int $id, AlertStatus $status, string $message): void
     {
-        $alert = $this->client->adAlerts()->findOrFail($id);
-        $alert->update([
-            'status' => $status,
-            'resolved_at' => $status === AlertStatus::Resolved ? Carbon::now() : null,
-        ]);
+        $this->client->adAlerts()->findOrFail($id)->moveTo($status, auth()->user()?->name);
 
         Notification::make()->success()->title($message)->send();
     }

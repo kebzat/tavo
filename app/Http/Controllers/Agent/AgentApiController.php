@@ -145,6 +145,8 @@ class AgentApiController extends Controller
             'facts' => ['nullable', 'string', 'max:10000'],
             'causes' => ['nullable', 'string', 'max:10000'],
             'recommendations' => ['nullable', 'string', 'max:10000'],
+            'worked' => ['nullable', 'string', 'max:10000'],
+            'not_worked' => ['nullable', 'string', 'max:10000'],
         ]);
 
         $report->forceFill(collect($data)->filter(fn ($value, string $key): bool => filled($value) && blank($report->{$key}))->all())->save();

@@ -4,13 +4,17 @@ namespace App\Support\Ads;
 
 use App\Models\Ads\AdAccount;
 use App\Models\Ads\AdCampaign;
+use App\Models\Ads\AdCampaignGroup;
 use App\Models\Ads\AdDailyStat;
 use App\Models\Ads\AdSyncRun;
+use App\Models\Ads\AdTopAd;
 use App\Models\Ads\AnalyticsDailyStat;
 use App\Support\Ads\Platforms\AdsApiException;
 use App\Support\Ads\Platforms\AdsPlatform;
 use App\Support\Ads\Platforms\AnalyticsPlatform;
 use App\Support\Ads\Platforms\DailyStat;
+use App\Support\Ads\Platforms\HasAdInsights;
+use App\Support\Ads\Platforms\HasCampaignStatus;
 use App\Support\Ads\Platforms\MetaAds;
 use App\Support\Ads\Platforms\Platforms;
 use App\Support\Ads\Platforms\TrafficStat;
@@ -86,16 +90,27 @@ class AccountSync
                 'status' => $info->status,
                 'last_synced_at' => now(),
                 'last_sync_error' => null,
-            ])->save();
+            ]);
+            $account->markDataThrough($period);
+            $account->save();
 
             $run->update(['status' => 'ok', 'rows' => $rows, 'finished_at' => now()]);
 
             if ($withReach && $platform instanceof AdsPlatform && $account->platform->hasPeriodReach()) {
                 $this->syncReach($account, $platform);
+                $this->syncGroupReach($account, $platform);
             }
 
             if ($withReach && $platform instanceof MetaAds) {
                 $this->syncIssues($account, $platform);
+            }
+
+            if ($withReach && $platform instanceof HasCampaignStatus) {
+                $this->syncCampaignStatuses($account, $platform);
+            }
+
+            if ($withReach && $platform instanceof HasAdInsights) {
+                $this->syncTopAds($account, $platform);
             }
         } catch (AdsApiException $e) {
             $account->forceFill(['last_sync_error' => $e->getMessage()])->save();
@@ -131,6 +146,90 @@ class AccountSync
         }
 
         DB::transaction(fn () => PeriodReach::store($account, $periods, $stats));
+    }
+
+    /**
+     * Přesný dosah skupin kampaní, jeden dotaz na skupinu, která má v účtu
+     * kampaně. Když se nepovede, dlaždice dosahu skupiny ukáže pomlčku.
+     */
+    private function syncGroupReach(AdAccount $account, AdsPlatform $platform): void
+    {
+        $periods = PeriodReach::ranges();
+        $groups = AdCampaignGroup::query()
+            ->where('client_id', $account->client_id)
+            ->whereHas('campaigns', fn ($query) => $query->where('ad_account_id', $account->getKey()))
+            ->get();
+
+        foreach ($groups as $group) {
+            $externalIds = GroupReach::externalIds($group, $account);
+
+            try {
+                $stats = $platform->periodReach($account, $periods, $externalIds);
+            } catch (AdsApiException $e) {
+                Log::warning('Reklamy: dosah skupiny se nestáhl.', [
+                    'account' => $account->external_id,
+                    'group' => $group->name,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
+
+            DB::transaction(fn () => GroupReach::store($group, $account, $periods, $externalIds, $stats));
+        }
+    }
+
+    /** Součty reklam za 30 dní (nejlepší reklamy), jeden dotaz na účet. Když se nepovede, zůstanou včerejší. */
+    private function syncTopAds(AdAccount $account, HasAdInsights $platform): void
+    {
+        $period = Period::preset('30d');
+
+        try {
+            $ads = $platform->adInsights($account, $period);
+        } catch (AdsApiException $e) {
+            Log::warning('Reklamy: čísla reklam se nestáhla.', [
+                'account' => $account->external_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        $now = now();
+
+        DB::transaction(function () use ($account, $ads, $period, $now): void {
+            AdTopAd::query()->where('ad_account_id', $account->getKey())->delete();
+            AdTopAd::query()->insert(array_map(fn (array $ad): array => $ad + [
+                'ad_account_id' => $account->getKey(),
+                'date_from' => $period->from->toDateString(),
+                'date_to' => $period->to->toDateString(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], $ads));
+        });
+    }
+
+    /** Stav kampaní (běží, vypnutá), jeden dotaz na účet. Když se nepovede, zůstane včerejší. */
+    private function syncCampaignStatuses(AdAccount $account, HasCampaignStatus $platform): void
+    {
+        try {
+            $statuses = $platform->campaignStatuses($account);
+        } catch (AdsApiException $e) {
+            Log::warning('Reklamy: stav kampaní se nestáhl.', [
+                'account' => $account->external_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        foreach ($account->campaigns()->get() as $campaign) {
+            $status = $statuses[$campaign->external_id] ?? null;
+
+            if ($status !== null && $status !== $campaign->status) {
+                $campaign->update(['status' => $status]);
+            }
+        }
     }
 
     /**
@@ -197,7 +296,9 @@ class AccountSync
     }
 
     /**
-     * Kampaně z odpovědi, založené nebo přejmenované.
+     * Kampaně z odpovědi, založené nebo přejmenované. Nezařazená kampaň,
+     * jejíž název odpovídá pravidlu některé skupiny klienta, se zařadí sama.
+     * Ostatní čekají na zařazení (přehled je ukáže).
      *
      * @param  Collection<int, DailyStat>  $stats
      * @return array<string, int> external_id => id
@@ -205,6 +306,8 @@ class AccountSync
     private function campaigns(AdAccount $account, Collection $stats): array
     {
         $ids = [];
+        $groups = AdCampaignGroup::query()->where('client_id', $account->client_id)->ordered()->get()
+            ->filter(fn (AdCampaignGroup $group): bool => $group->ruleWords() !== []);
 
         // keyBy nechá poslední výskyt, takže platí nejnovější název kampaně.
         foreach ($stats->keyBy('campaignId') as $stat) {
@@ -212,6 +315,14 @@ class AccountSync
                 ['ad_account_id' => $account->getKey(), 'external_id' => $stat->campaignId],
                 ['name' => $stat->campaignName, 'objective' => $stat->objective],
             );
+
+            if ($campaign->ad_campaign_group_id === null && $campaign->grouped_by === null) {
+                $match = $groups->first(fn (AdCampaignGroup $group): bool => $group->matchesName($campaign->name));
+
+                if ($match) {
+                    $campaign->update(['ad_campaign_group_id' => $match->getKey(), 'grouped_by' => 'rule']);
+                }
+            }
 
             $ids[$stat->campaignId] = $campaign->getKey();
         }

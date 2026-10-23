@@ -38,10 +38,11 @@ class AdsWithIssues implements Rule
                 $disapproved->isNotEmpty()
                     ? 'Zamítnuté reklamy ('.$disapproved->count().')'
                     : 'Reklamy s problémem ('.count($issues).')',
-                "Meta u těchto reklam hlásí problém:\n".$list
-                    ."\n\nOtevřete reklamu ve Správci reklam, upravte text nebo kreativu podle zásad, případně požádejte o nové posouzení. Zamítnutá reklama nic neutrácí, ale kampaň může přijít o nejlepší kreativu.",
+                'Otevřete reklamu ve Správci reklam, upravte text nebo kreativu podle zásad, případně požádejte o nové posouzení. Zamítnutá reklama nic neutrácí, ale kampaň může přijít o nejlepší kreativu.',
                 ['count' => count($issues), 'disapproved' => $disapproved->count()],
                 $account,
+                facts: "Meta u těchto reklam hlásí problém:\n".$list,
+                basis: 'Ranní kontrola reklam '.$account->issues_checked_at?->format('j. n. G:i'),
             );
         }
 

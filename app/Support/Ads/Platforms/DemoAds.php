@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /** Vymyšlený reklamní systém pro ukázková data. Chová se jako Meta, jen nevolá žádné API. */
-class DemoAds implements AdsPlatform
+class DemoAds implements AdsPlatform, HasAdInsights, HasCampaignStatus
 {
     public function platform(): AdPlatform
     {
@@ -52,6 +52,11 @@ class DemoAds implements AdsPlatform
             }
 
             foreach ($spec['campaigns'] as $i => $campaign) {
+                // Vypnutá kampaň v posledních 60 dnech nic neutrácí, předtím běžela.
+                if (($campaign['paused'] ?? false) && DemoCatalog::daysAgo($date) <= 60) {
+                    continue;
+                }
+
                 $stats->push($this->day($account->external_id, $i, $campaign, $date, $spec));
             }
         }
@@ -77,11 +82,17 @@ class DemoAds implements AdsPlatform
         $linkClicks = (int) round($impressions * $campaign['ctr'] / 100 * $fatigue * $noise('c', 0.2));
         $conversions = $broken ? 0.0 : max(0.0, round($linkClicks * $campaign['cr'] / 100 * $noise('k', 0.5)));
         $isShop = $campaign['aov'] > 0;
+        $kind = $campaign['kind'] ?? ($isShop ? 'sales' : 'leads');
+        $conversions = $kind === 'awareness' ? 0.0 : $conversions;
 
         return new DailyStat(
             campaignId: "{$accountId}_{$index}",
             campaignName: $campaign['name'],
-            objective: $isShop ? 'OUTCOME_SALES' : 'OUTCOME_LEADS',
+            objective: match ($kind) {
+                'awareness' => 'OUTCOME_ENGAGEMENT',
+                'sales' => 'OUTCOME_SALES',
+                default => 'OUTCOME_LEADS',
+            },
             date: $date,
             spend: $spend,
             impressions: $impressions,
@@ -95,6 +106,10 @@ class DemoAds implements AdsPlatform
             checkouts: $isShop && ! $broken ? round($linkClicks * 0.05 * $noise('o', 0.3)) : 0,
             // Část prokliků odejde dřív, než se stránka načte.
             landingPageViews: round($linkClicks * 0.78 * $noise('l', 0.1)),
+            engagements: $kind === 'awareness' ? round($impressions * 0.035 * $noise('e', 0.3)) : round($impressions * 0.004),
+            // Leady: zhruba dvě třetiny z formuláře na Metě, zbytek z webu.
+            formLeads: $isShop ? 0 : round($conversions * 0.65),
+            webLeads: $isShop ? 0 : $conversions - round($conversions * 0.65),
         );
     }
 
@@ -102,11 +117,12 @@ class DemoAds implements AdsPlatform
      * Dosah za období z vymyšlených denních čísel. Lidé se přes dny opakují,
      * takže frekvence s délkou období roste, jako u skutečného účtu.
      */
-    public function periodReach(AdAccount $account, array $periods): Collection
+    public function periodReach(AdAccount $account, array $periods, ?array $campaignIds = null): Collection
     {
         return collect($periods)
-            ->map(function (Period $period) use ($account): ReachStat {
-                $days = $this->dailyStats($account, $period);
+            ->map(function (Period $period) use ($account, $campaignIds): ReachStat {
+                $days = $this->dailyStats($account, $period)
+                    ->when($campaignIds !== null, fn ($days) => $days->whereIn('campaignId', $campaignIds));
                 $impressions = (int) $days->sum('impressions');
                 $frequency = min(4.2, 1.25 + 0.06 * $period->days()) * (1 + DemoCatalog::noise($account->external_id.'|reach|'.$period->from->toDateString()) * 0.08);
                 $reach = $frequency > 0 ? (int) round($impressions / $frequency) : 0;
@@ -121,6 +137,52 @@ class DemoAds implements AdsPlatform
                 );
             })
             ->values();
+    }
+
+    /**
+     * Ukázkové reklamy: každá kampaň má dvě až tři kreativy, které si dělí
+     * její čísla v různém poměru, ať je v přehledu vidět vítěz a propadák.
+     */
+    public function adInsights(AdAccount $account, Period $period): array
+    {
+        $creatives = ['Video UGC', 'Carousel produktů', 'Statický banner'];
+        $ads = [];
+
+        foreach ($this->dailyStats($account, $period)->groupBy('campaignId') as $campaignId => $days) {
+            $count = 2 + (crc32((string) $campaignId) % 2);
+
+            for ($i = 0; $i < $count; $i++) {
+                $share = [[0.55, 0.45], [0.5, 0.3, 0.2]][$count - 2][$i];
+                // Kreativa s menší útratou má jinou účinnost, ať se pořadí podle ceny liší od pořadí podle útraty.
+                $efficiency = 1 + DemoCatalog::noise($campaignId.'|ad|'.$i) * 0.45;
+
+                $ads[] = [
+                    'external_id' => $campaignId.'_ad'.$i,
+                    'name' => $creatives[$i].' · '.$days->first()->campaignName,
+                    'campaign_external_id' => (string) $campaignId,
+                    'campaign_name' => $days->first()->campaignName,
+                    'spend' => round($days->sum('spend') * $share, 2),
+                    'impressions' => (int) round($days->sum('impressions') * $share),
+                    'link_clicks' => (int) round($days->sum('linkClicks') * $share * $efficiency),
+                    'purchases' => round($days->sum('purchases') * $share * $efficiency),
+                    'purchase_value' => round($days->sum('purchaseValue') * $share * $efficiency, 2),
+                    'leads' => round($days->sum('leads') * $share * $efficiency),
+                    'engagements' => round($days->sum('engagements') * $share),
+                ];
+            }
+        }
+
+        return $ads;
+    }
+
+    /** Ukázkové kampaně běží, jen ty s `paused` v katalogu jsou vypnuté. */
+    public function campaignStatuses(AdAccount $account): array
+    {
+        $spec = DemoCatalog::adAccounts()[$account->external_id] ?? ['campaigns' => []];
+
+        return collect($spec['campaigns'])
+            ->mapWithKeys(fn (array $campaign, int $i): array => ["{$account->external_id}_{$i}" => ($campaign['paused'] ?? false) ? 'PAUSED' : 'ACTIVE'])
+            ->all();
     }
 
     /** @param  array<string, mixed>  $spec */

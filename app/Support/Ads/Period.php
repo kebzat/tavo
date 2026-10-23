@@ -14,10 +14,23 @@ use Carbon\CarbonInterface;
 final class Period
 {
     public const PRESETS = [
+        'yesterday' => 'Včera',
+        'day_before' => 'Předevčírem',
+        '2d' => 'Poslední 2 dny',
         '7d' => 'Posledních 7 dní',
         '30d' => 'Posledních 30 dní',
         'this_month' => 'Tento měsíc',
         'last_month' => 'Minulý měsíc',
+    ];
+
+    /**
+     * S čím období porovnat. „Předchozí“ je úsek stejné délky těsně před ním
+     * (u měsíce stejné dny minulého měsíce), „před týdnem“ tytéž dny v týdnu
+     * o týden dřív: včerejší úterý s úterým minulého týdne.
+     */
+    public const COMPARISONS = [
+        'previous' => 'S předchozím obdobím',
+        'week_ago' => 'Se stejnými dny před týdnem',
     ];
 
     private function __construct(
@@ -37,6 +50,9 @@ final class Period
         $yesterday = $today->subDay();
 
         return match ($key) {
+            'yesterday' => new self($yesterday, $yesterday, 'yesterday'),
+            'day_before' => new self($yesterday->subDay(), $yesterday->subDay(), 'day_before'),
+            '2d' => new self($yesterday->subDay(), $yesterday, '2d'),
             '30d' => new self($yesterday->subDays(29), $yesterday, '30d'),
             // Prvního v měsíci ještě žádný celý den nemáme, ukážeme včerejšek.
             'this_month' => $today->day === 1
@@ -107,6 +123,14 @@ final class Period
         }
 
         return new self($this->from->subDays($this->days()), $this->from->subDay());
+    }
+
+    /** Srovnávací období podle volby (COMPARISONS). Neznámá volba = předchozí. */
+    public function comparison(?string $mode): self
+    {
+        return $mode === 'week_ago'
+            ? new self($this->from->subDays(7), $this->to->subDays(7))
+            : $this->previous();
     }
 
     public function days(): int

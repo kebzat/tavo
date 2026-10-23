@@ -68,6 +68,7 @@ class AdsMetricsTest extends TestCase
             'name' => $name.' (Meta)',
             'status' => 'active',
             'last_synced_at' => now()->subDay(),
+            'data_through' => now()->subDay()->toDateString(),
         ]);
         $account->campaigns()->create(['external_id' => '1', 'name' => 'Prospecting']);
 
@@ -246,9 +247,9 @@ class AdsMetricsTest extends TestCase
         $this->artisan('ads:sync')->assertSuccessful();
 
         $ranges = PeriodReach::ranges();
-        // Seznam nasdílených účtů jednou za den, pak stav účtu, čísla, dosah
-        // a zamítnuté reklamy: čtyři dotazy na účet a den, ne víc.
-        Http::assertSentCount(5);
+        // Seznam nasdílených účtů jednou za den, pak stav účtu, čísla, dosah,
+        // zamítnuté reklamy, stav kampaní a čísla reklam: šest dotazů na účet a den, ne víc.
+        Http::assertSentCount(7);
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/ads?') && str_contains(urldecode($request->url()), 'DISAPPROVED'));
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'level=account')
             && str_contains(urldecode($request->url()), '"since":"2026-09-23","until":"2026-09-29"')
@@ -324,8 +325,9 @@ class AdsMetricsTest extends TestCase
             ['spend', 'conversions', 'cost_per_conversion', 'roas', 'purchase_value', 'link_clicks', 'ctr', 'cpm'],
             MetricCatalog::tiles(null, PrimaryGoal::Purchases),
         );
+        // U leadů je rozpad na formulář na Metě a poptávku z webu (Pavel chce vědět, o jaký typ jde).
         $this->assertSame(
-            ['spend', 'conversions', 'cost_per_conversion', 'conversion_rate', 'link_clicks', 'cpc', 'ctr', 'cpm'],
+            ['spend', 'conversions', 'cost_per_conversion', 'form_leads', 'web_leads', 'conversion_rate', 'link_clicks', 'cpc', 'ctr', 'cpm'],
             MetricCatalog::tiles(null, PrimaryGoal::Leads),
         );
 
@@ -333,7 +335,13 @@ class AdsMetricsTest extends TestCase
         $this->dny($client, '2026-09-23', '2026-09-29', ['spend' => 100, 'impressions' => 1000, 'link_clicks' => 20]);
         $view = new PerformanceView(ClientPerformance::build($client, Period::preset('7d')));
 
-        $this->assertSame(['spend', 'conversions', 'cost_per_conversion', 'impressions', 'ctr', 'cpm'], array_column($view->tiles(), 'key'));
+        $this->assertSame(['spend', 'conversions', 'cost_per_conversion', 'landing_page_views', 'landing_page_view_rate', 'impressions', 'ctr', 'cpm'], array_column($view->tiles(), 'key'));
+
+        // Šablonu jde změnit v Nastavení reklam a platí pro všechny s tímhle cílem.
+        $settings = app(AdsSettings::class);
+        $settings->tile_templates = ['traffic' => ['spend', 'ctr']] + $settings->tile_templates;
+        $settings->save();
+        $this->assertSame(['spend', 'ctr'], MetricCatalog::defaults(PrimaryGoal::Traffic));
 
         // Uložený výběr ve starých klíčích platí dál, výchozí sada se ukládá jako null.
         $this->assertSame(['cost_per_conversion', 'purchase_value', 'link_clicks'], MetricCatalog::tiles(['value', 'clicks', 'cost'], PrimaryGoal::Purchases));
@@ -389,18 +397,22 @@ class AdsMetricsTest extends TestCase
         $page = Livewire::test(AdsOverview::class);
         $metrics = collect($page->instance()->cards()->first()['metrics'])->keyBy('key');
 
-        $this->assertSame(MetricCatalog::OVERVIEW_DEFAULT, app(AdsSettings::class)->overview_tiles);
-        $this->assertCount(6, $metrics);
+        // Karta leadového klienta jede podle šablony Leady.
+        $this->assertSame(MetricCatalog::CARD_DEFAULTS['leads'], $metrics->keys()->all());
         $this->assertSame('Poptávky', $metrics['conversions']['label']);
-        // ROAS u poptávek nedává smysl: pomlčka.
-        $this->assertSame('–', $metrics['roas']['value']);
 
-        $page->call('setOverviewTile', 3, 'landing_page_views')
-            ->call('setOverviewTile', 0, 'nesmysl')
-            ->call('setOverviewTile', 6, 'reach')
+        $page->call('setOverviewTile', 3, 'landing_page_views', 'leads')
+            ->call('setOverviewTile', 4, 'roas', 'leads')
+            ->call('setOverviewTile', 0, 'nesmysl', 'leads')
+            ->call('setOverviewTile', 6, 'reach', 'leads')
             ->assertSee('Zobrazení cílové stránky');
 
-        $this->assertSame(['spend', 'conversions', 'cost_per_conversion', 'landing_page_views', 'ctr', 'cpm'], app(AdsSettings::class)->overview_tiles);
+        $this->assertSame(['spend', 'conversions', 'cost_per_conversion', 'landing_page_views', 'roas', 'ctr'], app(AdsSettings::class)->card_templates['leads']);
+        // Šablona e-shopu zůstala, jak byla.
+        $this->assertSame(MetricCatalog::CARD_DEFAULTS['purchases'], app(AdsSettings::class)->card_templates['purchases']);
+        // ROAS u poptávek nedává smysl: pomlčka.
+        $metrics = collect($page->instance()->cards()->first()['metrics'])->keyBy('key');
+        $this->assertSame('–', $metrics['roas']['value']);
     }
 
     public function test_prehled_ukaze_dosah_jen_kdyz_ho_mame(): void
@@ -408,7 +420,7 @@ class AdsMetricsTest extends TestCase
         $client = $this->klient();
         $this->dny($client, '2026-09-23', '2026-09-29', ['spend' => 100, 'impressions' => 1000, 'link_clicks' => 20]);
         $settings = app(AdsSettings::class);
-        $settings->overview_tiles = ['spend', 'reach', 'frequency', 'unique_ctr', 'ctr', 'cpm'];
+        $settings->card_templates = ['purchases' => ['spend', 'reach', 'frequency', 'unique_ctr', 'ctr', 'cpm']] + $settings->card_templates;
         $settings->save();
         $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
         Filament::setCurrentPanel('tools');
