@@ -6,6 +6,7 @@ use App\Models\AgentPublication;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\AgentUnavailable;
 use App\Support\Agent\GitHubError;
+use App\Support\Agent\InstantPublisher;
 use App\Support\Agent\Publisher;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -87,7 +88,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             'active' => $active->values(),
             'history' => $history->values(),
             'running' => $active->contains(fn (AgentPublication $p): bool => $p->status->isRunning()),
-            'configured' => $this->type !== 'git' || $publisher->configured(),
+            'configured' => $this->type !== 'git' || $this->instant() || $publisher->configured(),
             // Vrátit jde poslední zveřejněnou úpravu (ne vrácení samo).
             'revertable' => collect($recent)->first(fn (AgentPublication $p): bool => $p->status->isMerged() && ! $p->isRevert()),
         ]);
@@ -123,6 +124,12 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->filter(fn (Action $action): bool => $action->isVisible())
             ->values()
             ->all();
+    }
+
+    /** Web na tomhle serveru: zveřejnění rovnou ze serveru, bez GitHubu. */
+    public function instant(): bool
+    {
+        return $this->type === 'git' && InstantPublisher::enabled($this->project);
     }
 
     /** „3 snímky“, „5 souborů“ */
@@ -161,7 +168,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
                 'prazdny' => 'Vloženo, hotovo',
                 default => 'Zveřejnit na web',
             })
-            ->modalSubmitAction(fn (Action $action) => $action->visible($this->type !== 'git' || app(Publisher::class)->configured()))
+            ->modalSubmitAction(fn (Action $action) => $action->visible($this->type !== 'git' || $this->instant() || app(Publisher::class)->configured()))
             ->modalCancelActionLabel('Zavřít')
             ->action(fn (array $arguments) => $this->type === 'git' ? $this->publish($arguments) : $this->acknowledge($arguments));
     }
@@ -173,13 +180,14 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->icon(Heroicon::OutlinedRocketLaunch)
             ->size('sm')
             ->visible(fn (): bool => $this->type === 'git')
-            ->disabled(fn (array $arguments): bool => ! app(Publisher::class)->configured() || ($this->find($arguments)['tests'] ?? null) === 'failed')
+            ->disabled(fn (array $arguments): bool => ! ($this->instant() || app(Publisher::class)->configured()) || ($this->find($arguments)['tests'] ?? null) === 'failed')
             ->requiresConfirmation()
             ->modalIcon(Heroicon::OutlinedRocketLaunch)
             ->modalHeading(fn (array $arguments): string => 'Zveřejnit „'.($this->find($arguments)['title'] ?? '').'“?')
             ->modalDescription(fn (array $arguments): string => (($this->find($arguments)['sensitive'] ?? []) !== []
                 ? 'Pozor, úprava mění i nastavení serveru (soubory v .github/ nebo infra/). '
-                : '').match ($this->find($arguments)['tests'] ?? null) {
+                : '').match ($this->instant() ? 'instant' : ($this->find($arguments)['tests'] ?? null)) {
+                    'instant' => 'Nahraje se rovnou na web, obvykle do 15 sekund.',
                     'passed' => 'Testy už prošly, úprava se hned sloučí a nasadí na web, obvykle do 2 minut.',
                     'running' => 'Testy ještě běží. Jakmile projdou, úprava se sama sloučí a nasadí na web.',
                     default => 'Nejdřív proběhnou testy, pak se úprava sama nasadí na web.',
@@ -227,7 +235,9 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->size('xs')
             ->requiresConfirmation()
             ->modalHeading(fn (array $arguments): string => 'Vrátit „'.(AgentPublication::find($arguments['id'] ?? null)?->title ?? '').'“?')
-            ->modalDescription('Web se vrátí do stavu před touhle úpravou. Jde to stejnou cestou jako zveřejnění: testy, pak nasazení, obvykle do 5 minut.')
+            ->modalDescription(fn (): string => $this->instant()
+                ? 'Web se vrátí na verzi před touhle úpravou, za pár sekund. Databáze zůstane, jak je.'
+                : 'Web se vrátí do stavu před touhle úpravou. Jde to stejnou cestou jako zveřejnění: testy, pak nasazení, obvykle do 5 minut.')
             ->modalSubmitActionLabel('Vrátit')
             ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
             ->action(function (array $arguments): void {

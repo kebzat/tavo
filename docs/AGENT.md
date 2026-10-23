@@ -100,7 +100,37 @@ snímku před tím časem (přidané po něm smaže, nahraná média a cache zů
 s `databaze` i databázi ze zálohy (smaže i objednávky a zprávy od té doby).
 `agent vratit <projekt>` ukáže snímky.
 
-### Git: Zveřejnit
+### Taveo: Zveřejnit rovnou ze serveru (bez GitHubu)
+
+Web taveo běží na stejném serveru jako agent, takže tlačítko Zveřejnit ho
+nahraje **rovnou ze serveru, bez testů a bez čekání na GitHub**, obvykle do
+15 sekund (rozhodl Tom 23. 10. 2026). GitHub je jen historie.
+
+1. Jakmile se úprava objeví v kartě, služba agenta předem sestaví **vydání**:
+   commit větve (ten, který člověk viděl) spojený s `main` z GitHubu, vendor bez
+   dev balíčků, `npm run build`. Složka `/projekty/taveo/vydani/<strom>`.
+   Konflikt s `main` se nesestaví, karta řekne, ať agent sloučí `main` do větve.
+2. **Zveřejnit** → fronta → root `agent nasadit taveo <strom>`: stránka údržby,
+   `db:zaloha`, současná verze stranou (`/srv/agent/vydani-zaloha/taveo/predchozi`),
+   rsync (pevný seznam výjimek v `agent.sh`, bez symlinků), migrace, cache,
+   kontrola, že web vrací 200.
+3. Potom se úprava sloučí do `main` na GitHubu (pull request, squash), na to se
+   nečeká. Nasazení z GitHubu (`deploy.yml`) porovná strom se
+   `storage/app/nasazeny-strom` na serveru a stejnou verzi znovu nenasadí.
+4. **Vrátit** → `agent nasadit-zpet taveo`: zpátky verze před posledním
+   nasazením tlačítkem (databáze zůstává), na GitHubu revert pull requestu.
+
+Kód nikdo nečte a testy neběží, pojistkou je záloha databáze před každým
+nahráním a Vrátit. Weby v gitu, které neběží tady, jdou dál cestou níž.
+`AGENT_DEPLOY_PROJECTS` (výchozí `taveo`) říká, které projekty jdou ze serveru.
+
+| Kus | Kde |
+|---|---|
+| Vydání | `server.js`, `spustitVydani()`, `POST/GET /api/projekty/<projekt>/vydani` |
+| Nahrání na web | `agent.sh`, `nasadit` / `nasadit-zpet`, fronta |
+| Průběh, historie | `App\Support\Agent\InstantPublisher` |
+
+### Git: Zveřejnit přes GitHub (ostatní projekty)
 
 1. Agent dokončí úpravu a pošle větev `agent/…`. K ní přiloží **popis a snímky**
    do `/projekty/<projekt>/predani/<větev bez agent/>/`.
@@ -161,6 +191,10 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
    ssh root@88.198.31.29 'install -m 755 /srv/agent/docker/agent.sh /usr/local/bin/agent && agent sluzba'
    ```
 5. Kontrola: Nástroje → Agent → taveo, karta Hotová práce bez žlutého upozornění.
+
+**Po každé změně `agent.sh` nebo `agent-fronta.py`** (třeba okamžité zveřejnění
+23. 10. 2026) je potřeba je na server nahrát ručně, krok 4. Samy se z GitHubu
+neaktualizují, běží jako root.
 
 Když token vyprší, karta ukáže „GitHub token neplatí“. Stačí vytvořit nový (krok 1–2)
 a na serveru `php artisan optimize`.

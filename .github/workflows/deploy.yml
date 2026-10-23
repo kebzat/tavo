@@ -40,88 +40,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: PHP 8.4
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: mbstring, intl, zip, gd, exif, pdo_mysql, pdo_sqlite, bcmath
-          coverage: none
-
-      - name: Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
-      # Název kontroly = název jobu v ci.yml („Testy a kontrola formátu“).
-      - name: Prošly testy v pull requestu?
-        id: testy
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          hlava=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
-            --jq '[.[] | select(.merged_at != null)][0].head.sha // empty' || true)
-          zelene=0
-          if [ -n "$hlava" ]; then
-            zelene=$(gh api -X GET "repos/$GITHUB_REPOSITORY/commits/$hlava/check-runs" \
-              -f check_name='Testy a kontrola formátu' \
-              --jq '[.check_runs[] | select(.conclusion == "success")] | length' || echo 0)
-          fi
-          if [ "${zelene:-0}" -gt 0 ]; then
-            echo "Pull request prošel testy ($hlava), znovu se netestuje."
-            echo "proslo=1" >> "$GITHUB_OUTPUT"
-          else
-            echo "K commitu není pull request se zelenými testy, testuje se tady."
-          fi
-
-      # Jen načíst: na konci je ve vendor verze bez dev balíčků, ta se pod
-      # klíčem CI ukládat nesmí.
-      - name: Cache vendor (testy)
-        if: steps.testy.outputs.proslo != '1'
-        uses: actions/cache/restore@v4
-        with:
-          path: vendor
-          key: vendor-dev-${{ hashFiles('composer.lock') }}
-
-      - name: Testy (jen bez zeleného pull requestu)
-        if: steps.testy.outputs.proslo != '1'
-        run: |
-          composer install --prefer-dist --no-interaction --no-progress
-          npm ci
-          npm run build
-          cp .env.example .env
-          php artisan key:generate
-          vendor/bin/pint --test
-          php artisan test --parallel
-          rm .env
-
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-deploy-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
-
-      - name: Composer install (bez dev balíčků)
-        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
-
-
-      - name: Cache node_modules
-        id: node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ hashFiles('package-lock.json') }}
-
-      - name: Sestavit assety
-        run: |
-          [ -d node_modules/.bin ] || npm ci
-          npm run build
-
-      # Server občas utne nové SSH spojení hned při navázání („Connection reset
-      # by peer"), když jich z jedné adresy přijde víc rychle za sebou. Proto
-      # jedno sdílené spojení (ControlMaster) pro všechny kroky, klíč serveru
-      # jedním dotazem a opakované navázání s pauzou.
       - name: Připravit SSH
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
@@ -168,7 +86,110 @@ jobs:
           done
           echo "Spojení se serverem se nepodařilo navázat."; exit 1
 
+      # Tlačítko Zveřejnit v nástrojích nahrává taveo rovnou ze serveru (agent
+      # nasadit) a do storage/app/nasazeny-strom zapíše strom té verze. Když je
+      # na webu přesně tenhle strom, není co nasazovat (GitHub je tu jen historie).
+      - name: Už je tahle verze na webu?
+        id: stejne
+        run: |
+          strom=$(git rev-parse 'HEAD^{tree}')
+          na_webu=$(ssh "$REMOTE" "cat '${{ secrets.DEPLOY_PATH }}/storage/app/nasazeny-strom' 2>/dev/null" || true)
+          if [ "$strom" = "$na_webu" ]; then
+            echo "Na webu už je ${strom:0:7} (nahráno z nástrojů), nasazení se přeskočí."
+            echo "preskocit=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: PHP 8.4
+        if: steps.stejne.outputs.preskocit != '1'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, zip, gd, exif, pdo_mysql, pdo_sqlite, bcmath
+          coverage: none
+
+      - name: Node 20
+        if: steps.stejne.outputs.preskocit != '1'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # Název kontroly = název jobu v ci.yml („Testy a kontrola formátu“).
+      - name: Prošly testy v pull requestu?
+        if: steps.stejne.outputs.preskocit != '1'
+        id: testy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hlava=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[] | select(.merged_at != null)][0].head.sha // empty' || true)
+          zelene=0
+          if [ -n "$hlava" ]; then
+            zelene=$(gh api -X GET "repos/$GITHUB_REPOSITORY/commits/$hlava/check-runs" \
+              -f check_name='Testy a kontrola formátu' \
+              --jq '[.check_runs[] | select(.conclusion == "success")] | length' || echo 0)
+          fi
+          if [ "${zelene:-0}" -gt 0 ]; then
+            echo "Pull request prošel testy ($hlava), znovu se netestuje."
+            echo "proslo=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "K commitu není pull request se zelenými testy, testuje se tady."
+          fi
+
+      # Jen načíst: na konci je ve vendor verze bez dev balíčků, ta se pod
+      # klíčem CI ukládat nesmí.
+      - name: Cache vendor (testy)
+        if: steps.stejne.outputs.preskocit != '1' && steps.testy.outputs.proslo != '1'
+        uses: actions/cache/restore@v4
+        with:
+          path: vendor
+          key: vendor-dev-${{ hashFiles('composer.lock') }}
+
+      - name: Testy (jen bez zeleného pull requestu)
+        if: steps.stejne.outputs.preskocit != '1' && steps.testy.outputs.proslo != '1'
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+          npm run build
+          cp .env.example .env
+          php artisan key:generate
+          vendor/bin/pint --test
+          php artisan test --parallel
+          rm .env
+
+      - name: Cache Composer
+        if: steps.stejne.outputs.preskocit != '1'
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-deploy-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Composer install (bez dev balíčků)
+        if: steps.stejne.outputs.preskocit != '1'
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
+
+
+      - name: Cache node_modules
+        if: steps.stejne.outputs.preskocit != '1'
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Sestavit assety
+        if: steps.stejne.outputs.preskocit != '1'
+        run: |
+          [ -d node_modules/.bin ] || npm ci
+          npm run build
+
+      # Server občas utne nové SSH spojení hned při navázání („Connection reset
+      # by peer"), když jich z jedné adresy přijde víc rychle za sebou. Proto
+      # jedno sdílené spojení (ControlMaster) pro všechny kroky, klíč serveru
+      # jedním dotazem a opakované navázání s pauzou.
       - name: Zapnout režim údržby
+        if: steps.stejne.outputs.preskocit != '1'
         id: maintenance
         run: |
           ssh "$REMOTE" \
@@ -178,6 +199,7 @@ jobs:
       # skončí se starým kódem i starou databází a krok níž web nahodí zpět.
       # Příkaz se nahraje napřed sám, ať funguje i na serveru, kde ještě není.
       - name: Zálohovat databázi
+        if: steps.stejne.outputs.preskocit != '1'
         run: |
           rsync -az -e ssh app/Console/Commands/DbBackup.php \
             "$REMOTE:${{ secrets.DEPLOY_PATH }}/app/Console/Commands/DbBackup.php"
@@ -185,6 +207,7 @@ jobs:
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan db:zaloha"
 
       - name: Nahrát soubory
+        if: steps.stejne.outputs.preskocit != '1'
         run: |
           rsync -az --delete --human-readable \
             --exclude-from=.github/deploy-exclude.txt \
@@ -192,6 +215,7 @@ jobs:
             ./ "$REMOTE:${{ secrets.DEPLOY_PATH }}/"
 
       - name: Migrace, cache a nahození webu
+        if: steps.stejne.outputs.preskocit != '1'
         run: |
           ssh "$REMOTE" bash -se <<'REMOTE_SCRIPT'
             set -euo pipefail
@@ -236,6 +260,7 @@ jobs:
             "cd '${{ secrets.DEPLOY_PATH }}' && ${{ secrets.PHP_BIN }} artisan up || true"
 
       - name: Ověřit, že web běží
+        if: steps.stejne.outputs.preskocit != '1'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_URL }})
