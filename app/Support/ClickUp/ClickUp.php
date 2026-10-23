@@ -78,6 +78,17 @@ class ClickUp
         return isset($data['id']) ? (string) $data['id'] : null;
     }
 
+    /** Nový komentář k úkolu (když odpověď do vlákna nejde). Vrátí ID komentáře. */
+    public function comment(string $taskId, string $text): ?string
+    {
+        $data = $this->call(fn (PendingRequest $http) => $http->post('/task/'.rawurlencode($taskId).'/comment', [
+            'comment_text' => $text,
+            'notify_all' => false,
+        ]));
+
+        return isset($data['id']) ? (string) $data['id'] : null;
+    }
+
     /**
      * Všechny seznamy týmu: prostor, složka, název. Pro přiřazení ke klientům.
      *

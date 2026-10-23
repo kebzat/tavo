@@ -234,6 +234,24 @@ class ClickUpAgentTest extends TestCase
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply') && str_contains($request['comment_text'], 'limitům předplatného'));
     }
 
+    public function test_kdyz_do_vlakna_odpovedet_nejde_odpovi_komentarem_k_ukolu(): void
+    {
+        $this->klient();
+        Http::fake([
+            'api.clickup.com/api/v2/task/T1/comment' => Http::sequence()->push(['comments' => []])->push(['id' => 'K1']),
+            'api.clickup.com/api/v2/task/T1' => Http::response(['id' => 'T1', 'name' => 'Úkol', 'list' => ['id' => 'L1'], 'space' => ['id' => 'SP-TOM']]),
+            'api.clickup.com/api/v2/comment/*/reply' => Http::response(['err' => 'Cannot reply to a reply'], 400),
+            'agent.test/api/projekty/*/ulohy' => Http::response(['zarazeno' => true], 202),
+        ]);
+
+        $this->webhook()->assertOk();
+
+        $job = AgentJob::query()->sole();
+        $this->assertSame(AgentJob::STATUS_RUNNING, $job->status);
+        $this->assertSame(['K1'], $job->reply_comment_ids);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_ends_with($request->url(), 'task/T1/comment') && str_starts_with($request['comment_text'], 'Agent: pouštím se'));
+    }
+
     public function test_ztracena_uloha_se_uzavre_a_napise_to(): void
     {
         $this->fakeClickUp();

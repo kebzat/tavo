@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Support\Agent\AgentServer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -198,7 +199,15 @@ class ClickUpAgent
     {
         $text = self::SIGNATURE.' '.preg_replace('/'.preg_quote(self::TRIGGER, '/').'\b/iu', 'agent', $text);
 
-        $job->rememberReply($this->clickUp->reply($job->clickup_comment_id, $text));
+        // Spouštěč může být i v odpovědi ve vlákně a na odpověď ClickUp odpovědět nedovolí.
+        // Pak jde odpověď jako běžný komentář k úkolu.
+        try {
+            $id = $this->clickUp->reply($job->clickup_comment_id, $text);
+        } catch (RuntimeException) {
+            $id = $this->clickUp->comment($job->clickup_task_id, $text);
+        }
+
+        $job->rememberReply($id);
     }
 
     /**
