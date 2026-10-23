@@ -103,6 +103,11 @@ function projekty() {
 
 const projekt = (slug) => projekty().find((p) => p.slug === slug) || null;
 const slozka = (p) => `/projekty/${p.slug}/kod`;
+// Živý web (server) se v terminálu a v aplikaci Claude upravuje v kopii, na web
+// ho pošle tlačítko Zveřejnit (viz kopie webu). Úlohy z ClickUpu jdou rovnou na živý.
+const kopieSlozka = (p) => `/projekty/${p.slug}/kopie`;
+const maKopii = (p) => p.typ === 'server' && fs.existsSync(path.join(kopieSlozka(p), '.git'));
+const pracovni = (p) => (maKopii(p) ? kopieSlozka(p) : slozka(p));
 
 /**
  * Běží v okně Claude, nebo už jen shell po jeho ukončení? tmux hlásí vždy
@@ -210,7 +215,7 @@ function ulozene(p) {
 
             const soubor = path.join(koren, s, f);
             const info = hlavicka(soubor);
-            if (info.cwd !== slozka(p)) continue;
+            if (info.cwd !== slozka(p) && info.cwd !== kopieSlozka(p)) continue;
 
             vysledek.push({ session, nazev: info.nazev, aktualizace: Math.floor(fs.statSync(soubor).mtimeMs / 1000) });
         }
@@ -304,10 +309,11 @@ function pripravitClaude(cwd) {
  * Konverzace v aplikaci Claude bez vlastního názvu začínají názvem projektu
  * (grillnor-…), ne názvem serveru, ať se na mobilu projekty rozliší.
  */
-function prostredi(p) {
+function prostredi(p, cwd = slozka(p)) {
     const nazevVAplikaci = ['-e', `CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX=${p.slug}`];
 
-    return p.typ === 'server'
+    // Na živém webu git ukazuje snímky, kopie má vlastní git (co se změnilo).
+    return p.typ === 'server' && cwd === slozka(p)
         ? [...nazevVAplikaci, '-e', `GIT_DIR=/snimky/${p.slug}.git`, '-e', `GIT_WORK_TREE=/projekty/${p.slug}/kod`]
         : nazevVAplikaci;
 }
@@ -324,23 +330,29 @@ async function zalozit(p, { autor, session, nahradit }) {
         if (otevrene) return otevrene.id;
     }
 
-    // Před každou konverzací u živého webu snímek souborů a záloha databáze.
-    if (p.typ === 'server') {
+    // Živý web: konverzace běží v kopii. Když ještě není, založí se (pár vteřin).
+    // Když to nejde (server ještě nemá agent kopie-db), postaru na živém webu,
+    // a před tím snímek souborů a záloha databáze.
+    if (p.typ === 'server' && !maKopii(p)) {
+        await pripravitKopii(p).catch((e) => console.error(`kopie ${p.slug}: ${e.message}`));
+    }
+    if (p.typ === 'server' && !maKopii(p)) {
         const zaloha = await fronta({ akce: 'zaloha', projekt: p.slug });
         if (!zaloha.ok) {
             throw new Error(`Záloha webu se nepovedla, konverzaci nezakládám. ${zaloha.vystup || ''}`.trim());
         }
     }
 
-    pripravitClaude(slozka(p));
+    const cwd = pracovni(p);
+    pripravitClaude(cwd);
 
     const id = session || crypto.randomUUID();
     const prikaz = `bash -lc 'claude ${session ? '--resume' : '--session-id'} ${id}; exec bash'`;
     const existuje = (await okna(p.slug)).length > 0;
 
     const args = existuje
-        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', slozka(p), ...prostredi(p), '-n', 'konverzace', prikaz]
-        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', slozka(p), ...prostredi(p), '-n', 'konverzace', prikaz];
+        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'konverzace', prikaz]
+        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', cwd, ...prostredi(p, cwd), '-n', 'konverzace', prikaz];
 
     const okno = (await tmux(args)).trim();
     await tmux(['set-option', '-w', '-t', okno, '@session', id]);
@@ -592,6 +604,132 @@ function spustitVydani(p, { sha = null, nasadit = false, zpet = false }) {
     return uloha;
 }
 
+// ---------------------------------------------------------------- kopie živého webu
+
+/**
+ * Živý web (projekt typu server) se v terminálu a v aplikaci Claude neupravuje
+ * přímo: agent pracuje v kopii (/projekty/<projekt>/kopie, vlastní databáze
+ * <databáze>_kopie) a na živý web ji pošle tlačítko Zveřejnit v nástrojích.
+ *
+ *   - kopie má git: značka `zivy` = stav živého webu, změny = rozdíl proti ní,
+ *   - Zveřejnit: root (agent nasadit-kopii) udělá snímek a zálohu databáze,
+ *     nahraje soubory, spustí migrace a cache. Změny obsahu v databázi
+ *     agent píše jako migrace, živá data (objednávky, zprávy) zůstávají,
+ *   - Zahodit: kopie zpátky na živý web, databáze kopie znovu z živé,
+ *   - Vrátit: soubory živého webu ze snímku před zveřejněním (agent obnovit).
+ *
+ * Úlohy z ClickUpu jdou dál rovnou na živý web (viz odpracovat).
+ */
+const KOPIE_PORT = 8090;
+const KOPIE_VYNECHAT = ['/.git/', '/storage/logs/', '/storage/framework/cache/', '/storage/framework/sessions/',
+    '/storage/framework/views/', '/bootstrap/cache/', '/node_modules/'];
+const KOPIE_GIT_VYNECHAT = ['.env', '.env.*', 'vendor/', 'node_modules/', 'storage/', 'bootstrap/cache/', 'public/storage', '*.log'];
+
+const gitKopie = (p, args) => prikaz('git', ['-C', kopieSlozka(p), '-c', 'user.name=Kopie webu', '-c', 'user.email=agent@taveo.cz', ...args]);
+
+/** Změněné soubory v kopii proti živému webu (i nové a smazané). */
+async function zmenyKopie(p) {
+    if (!maKopii(p)) return [];
+    await gitKopie(p, ['add', '-A']);
+    const vypis = await gitKopie(p, ['diff', '--cached', '--name-status', 'zivy']);
+    return vypis.split('\n').filter(Boolean).map((r) => {
+        const [stav, ...soubor] = r.split('\t');
+        return { stav: stav[0], soubor: soubor.join('\t') };
+    });
+}
+
+/** Databáze kopie znovu z živé (root, fronta). Vrací jméno databáze kopie. */
+async function databazeKopie(p) {
+    const r = await fronta({ akce: 'kopie-db', projekt: p.slug }, 300);
+    const jmeno = r.ok && (r.vystup.match(/Kopie databáze: ([A-Za-z0-9_]+)/) || [])[1];
+    if (!jmeno) throw new Error(`Kopii databáze se nepodařilo připravit. ${r.vystup || ''}`.trim());
+    return jmeno;
+}
+
+/** .env kopie: jako živý, jen vlastní databáze a adresa náhledu v kontejneru. */
+function envKopie(p, databaze) {
+    const zive = fs.readFileSync(path.join(slozka(p), '.env'), 'utf8');
+    const zmenit = { DB_DATABASE: databaze, APP_URL: `http://127.0.0.1:${KOPIE_PORT}`, APP_ENV: 'local', APP_DEBUG: 'true', SESSION_DOMAIN: '', SESSION_SECURE_COOKIE: 'false' };
+    let obsah = zive.split('\n').filter((r) => !Object.keys(zmenit).some((k) => r.startsWith(`${k}=`))).join('\n').trimEnd();
+    obsah += '\n\n# Kopie webu pro agenta (nástroje Taveo). Nesahat, přepíše se při obnovení kopie.\n'
+        + Object.entries(zmenit).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
+    fs.writeFileSync(path.join(kopieSlozka(p), '.env'), obsah, { mode: 0o600 });
+}
+
+/**
+ * Kopie z živého webu: soubory (rsync), databáze, .env, git se značkou `zivy`.
+ * Nezveřejněné změny nepřepíše, leda s `prepsat`.
+ */
+async function pripravitKopii(p, { prepsat = false } = {}) {
+    if (!prepsat && (await zmenyKopie(p)).length > 0) {
+        throw new Error('V kopii jsou nezveřejněné změny. Zveřejněte je, nebo zahoďte.');
+    }
+
+    const kopie = kopieSlozka(p);
+    fs.mkdirSync(kopie, { recursive: true });
+    await prikaz('rsync', ['-a', '--delete', ...KOPIE_VYNECHAT.map((v) => `--exclude=${v}`), `${slozka(p)}/`, `${kopie}/`]);
+    for (const d of ['storage/logs', 'storage/framework/cache/data', 'storage/framework/sessions', 'storage/framework/views', 'bootstrap/cache']) {
+        fs.mkdirSync(path.join(kopie, d), { recursive: true });
+    }
+    envKopie(p, await databazeKopie(p));
+
+    if (!fs.existsSync(path.join(kopie, '.git'))) {
+        await gitKopie(p, ['init', '-q', '-b', 'main']);
+    }
+    fs.writeFileSync(path.join(kopie, '.git', 'info', 'exclude'), KOPIE_GIT_VYNECHAT.join('\n') + '\n');
+    await gitKopie(p, ['add', '-A']);
+    await gitKopie(p, ['commit', '-q', '--allow-empty', '-m', `Živý web ${new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' })}`]);
+    await gitKopie(p, ['tag', '-f', 'zivy']);
+
+    // Aplikace Claude (serverový režim) má běžet v kopii: služba ji do tří minut spustí znovu.
+    const rc = (await okna(p.slug)).find((o) => o.rc);
+    if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
+}
+
+/** Smaže předání (popis, snímky) živého webu: po zveřejnění nebo zahození už neplatí. */
+function smazatPredaniKopie(p) {
+    const koren = path.join('/projekty', p.slug, 'predani');
+    for (const jmeno of fs.existsSync(koren) ? fs.readdirSync(koren) : []) {
+        if (VETEV.test(jmeno)) fs.rmSync(path.join(koren, jmeno), { recursive: true, force: true });
+    }
+}
+
+/** Úloha kopie na pozadí (zveřejnit / zahodit / vrátit / obnovit), stav jako u vydání. */
+function spustitUlohuKopie(p, akce, { cas = null } = {}) {
+    const uloha = { id: crypto.randomUUID(), projekt: p.slug, akce, stav: akce === 'zverejnit' ? 'nahrava' : 'pripravuje', vystup: '', konflikt: false, cas: Date.now() };
+    ulozitUlohuVydani(uloha);
+
+    (async () => {
+        if (akce === 'zverejnit') {
+            if ((await zmenyKopie(p)).length === 0) throw new Error('V kopii nejsou žádné změny.');
+            const r = await fronta({ akce: 'nasadit-kopii', projekt: p.slug }, 300);
+            if (!r.ok) throw new Error(r.vystup);
+            await gitKopie(p, ['add', '-A']);
+            await gitKopie(p, ['commit', '-q', '--allow-empty', '-m', `Zveřejněno ${new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' })}`]);
+            await gitKopie(p, ['tag', '-f', 'zivy']);
+            smazatPredaniKopie(p);
+            uloha.vystup = r.vystup;
+        } else if (akce === 'zahodit') {
+            await pripravitKopii(p, { prepsat: true });
+            smazatPredaniKopie(p);
+        } else if (akce === 'vratit') {
+            const r = await fronta({ akce: 'obnovit', projekt: p.slug, cas, databaze: false }, 300);
+            if (!r.ok) throw new Error(r.vystup);
+            await pripravitKopii(p, { prepsat: true });
+            uloha.vystup = r.vystup;
+        } else {
+            await pripravitKopii(p);
+        }
+        uloha.stav = 'hotovo';
+        ulozitUlohuVydani(uloha);
+    })().catch((e) => {
+        Object.assign(uloha, { stav: 'chyba', vystup: e.message });
+        ulozitUlohuVydani(uloha);
+    });
+
+    return uloha;
+}
+
 // ---------------------------------------------------------------- HTTP API
 
 const odpoved = (res, status, data) => {
@@ -652,6 +790,34 @@ async function api(req, res) {
     const p = casti[0] === 'api' && casti[1] === 'projekty' ? projekt(casti[2]) : null;
     if (!p) {
         return odpoved(res, 404, { chyba: 'Projekt neexistuje.' });
+    }
+
+    // Kopie živého webu: stav (změny proti živému) a úlohy (viz spustitUlohuKopie).
+    if (casti[3] === 'kopie' && p.typ === 'server') {
+        if (req.method === 'GET' && casti.length === 4) {
+            const zmeny = await zmenyKopie(p);
+            return odpoved(res, 200, {
+                existuje: maKopii(p),
+                zmeny,
+                migrace: zmeny.filter((z) => z.soubor.startsWith('database/')).length,
+                nahled: `http://127.0.0.1:${KOPIE_PORT}`,
+            });
+        }
+
+        const akce = casti[4] || 'obnovit';
+        if (req.method === 'POST' && casti.length <= 5 && ['zverejnit', 'zahodit', 'vratit', 'obnovit'].includes(akce)) {
+            const { cas } = await telo(req);
+            if (akce === 'vratit' && !(Number.isInteger(cas) && cas > 0)) {
+                return odpoved(res, 400, { chyba: 'Chybí čas, do kterého se vrací.' });
+            }
+            return odpoved(res, 202, spustitUlohuKopie(p, akce, { cas }));
+        }
+    }
+
+    // Stav úlohy na pozadí (vydání, kopie). 404 = neexistuje.
+    if (req.method === 'GET' && casti[3] === 'uloha' && casti.length === 5 && UUID.test(casti[4] || '')) {
+        const soubor = path.join(VYDANI_ULOHY, `${casti[4]}.json`);
+        return fs.existsSync(soubor) ? odpoved(res, 200, JSON.parse(fs.readFileSync(soubor, 'utf8'))) : odpoved(res, 404, { chyba: 'Úloha neexistuje.' });
     }
 
     // Okamžité zveřejnění: sestavit / nahrát vydání a stav úlohy (viz spustitVydani).
@@ -860,12 +1026,13 @@ async function hlidatAplikaci() {
         if (rc?.claude) continue;
         if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
 
-        pripravitClaude(slozka(p));
+        const cwd = pracovni(p);
+        pripravitClaude(cwd);
         const prikaz = `bash -lc 'claude remote-control --name "TAVEO · ${p.slug}" --remote-control-session-name-prefix ${p.slug} --spawn same-dir; exec bash'`;
         const existuje = (await okna(p.slug)).length > 0;
         const args = existuje
-            ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', slozka(p), ...prostredi(p), '-n', 'aplikace-claude', prikaz]
-            : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', slozka(p), ...prostredi(p), '-n', 'aplikace-claude', prikaz];
+            ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'aplikace-claude', prikaz]
+            : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', cwd, ...prostredi(p, cwd), '-n', 'aplikace-claude', prikaz];
 
         try {
             const okno = (await tmux(args)).trim();
@@ -1014,8 +1181,12 @@ async function odpracovat(p, uloha) {
     console.log(`${new Date().toISOString()} úloha ${uloha.id}: start v ${p.slug} (${navazat ? 'navazuje' : 'nová'} ${session})`);
 
     const { stdout, stderr, chyba } = await new Promise((resolve) => {
+        // Paměť projektu říká „pracuj v kopii“, úlohy z ClickUpu ale jdou rovnou na web.
+        const zadani = p.typ === 'server'
+            ? `Tahle úloha je z ClickUpu: pracuj přímo na živém webu v aktuální složce (${slozka(p)}), kopii webu ani předání do karty nepoužívej.\n\n${uloha.zadani}`
+            : uloha.zadani;
         const proces = execFile('claude', [
-            '-p', uloha.zadani,
+            '-p', zadani,
             ...(navazat ? ['--resume', session] : ['--session-id', session]),
             '--output-format', 'json',
             '--permission-mode', 'auto',

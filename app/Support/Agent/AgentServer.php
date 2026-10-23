@@ -211,6 +211,44 @@ class AgentServer
         return $response->status() === 404 ? null : $response->throw()->json();
     }
 
+    /**
+     * Kopie živého webu (projekt typu server): jestli je, co se v ní proti
+     * živému webu změnilo a kolik z toho je v database/ (migrace).
+     *
+     * @return array{existuje: bool, zmeny: list<array{stav: string, soubor: string}>, migrace: int, nahled: string}
+     */
+    public function copyStatus(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get($this->projectPath($slug).'/kopie'));
+    }
+
+    /**
+     * Úloha kopie na pozadí: zverejnit (na živý web), zahodit (zpátky na živý),
+     * vratit (živý web ze snímku z `$time`), obnovit (založit z živého).
+     *
+     * @return array{id: string, stav: string}
+     */
+    public function startCopyJob(string $slug, string $action, ?int $time = null): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->timeout(30)->post($this->projectPath($slug).'/kopie/'.$action, array_filter(['cas' => $time])));
+    }
+
+    /**
+     * Stav úlohy na pozadí (vydání, kopie): sestavuje / pripravuje / nahrava / hotovo / chyba.
+     *
+     * @return array{id: string, stav: string, vystup: string, konflikt: bool}|null
+     */
+    public function job(string $slug, string $id): ?array
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/uloha/'.rawurlencode($id));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->status() === 404 ? null : $response->throw()->json();
+    }
+
     /** Po zveřejnění: server si stáhne novou verzi služby z main. Nečeká se. */
     public function updateService(): void
     {

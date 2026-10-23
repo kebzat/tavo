@@ -36,6 +36,8 @@ Použití:
   agent obnovit <projekt> <čas> [databaze]   živý web do stavu před časem (unix)
   agent nasadit <projekt> <strom>   vydání ze služby agenta na web (tlačítko Zveřejnit)
   agent nasadit-zpet <projekt>      web zpátky na verzi před posledním nasazením (Vrátit)
+  agent kopie-db <projekt>          databáze kopie živého webu znovu z živé
+  agent nasadit-kopii <projekt>     kopii živého webu na živý web (tlačítko Zveřejnit)
   agent odebrat <projekt>       agent ztratí přístup, snímky a zálohy zůstanou
   agent prihlasit               přihlášení Claude Code (jednou)
   agent sluzba                  nahraje novou verzi služby, běžící konverzace zůstanou
@@ -287,6 +289,69 @@ nasadit_zpet() {
     echo "Web je zpátky na předchozí verzi. Databáze zůstala, jak byla."
 }
 
+kopie_db() {
+    # Databáze pro kopii živého webu (agent v ní pracuje, živá zůstává):
+    # <databáze>_kopie, tabulky znovu z živé. Přístup dostane uživatel webu z .env.
+    local slug=$1
+    [ "$(typ_projektu "$slug")" = server ] || chyba "kopii má jen web na serveru"
+    local db zdroj uzivatel; db=$(zaznam "$slug" | cut -f4); zdroj=$(zaznam "$slug" | cut -f3)
+    [ -n "$db" ] || chyba "web nemá databázi"
+    uzivatel=$(grep -E '^DB_USERNAME=' "$zdroj/.env" | tail -1 | cut -d= -f2- | tr -d "\"'")
+    [[ "$db" =~ ^[A-Za-z0-9_]{1,50}$ && "$uzivatel" =~ ^[A-Za-z0-9_]{1,64}$ ]] || chyba "neplatné jméno databáze nebo uživatele"
+    local kopie="${db}_kopie" mysql=(mysql --defaults-extra-file=/root/.my.cnf)
+    "${mysql[@]}" -e "CREATE DATABASE IF NOT EXISTS \`$kopie\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON \`$kopie\`.* TO '$uzivatel'@'localhost';"
+    # mysqldump tabulky živé přepíše (DROP TABLE IF EXISTS jen v kopii).
+    ( set -o pipefail; mysqldump --defaults-extra-file=/root/.my.cnf --single-transaction --quick "$db" | "${mysql[@]}" "$kopie" ) || chyba "kopii databáze se nepodařilo nahrát"
+    echo "Kopie databáze: $kopie"
+}
+
+nasadit_kopii() {
+    # Tlačítko Zveřejnit u živého webu (přes frontu): kopie, ve které pracoval
+    # agent (/srv/agent/projekty/<projekt>/kopie), na živý web. Předtím snímek
+    # a záloha databáze (Vrátit = agent obnovit). Databáze se nepřepisuje,
+    # jen se spustí migrace, které agent v kopii připravil.
+    local slug=$1
+    [ "$(typ_projektu "$slug")" = server ] || chyba "kopii má jen web na serveru"
+    local zdroj=$PROJEKTY/$slug/kopie cil db
+    cil=$(zaznam "$slug" | cut -f3); db=$(zaznam "$slug" | cut -f4)
+    [ -d "$zdroj/.git" ] && [ "$(realpath -e "$zdroj")" = "$zdroj" ] || chyba "kopie webu není připravená"
+    [ -d "$cil" ] && [ "$(realpath -e "$cil")" = "$cil" ] || chyba "složka webu $cil neexistuje"
+    local laravel=""; [ -f "$cil/artisan" ] && [ -f "$zdroj/artisan" ] && laravel=1
+    local uzivatel skupina adresa php=/usr/local/lsws/lsphp84/bin/php zacatek=$SECONDS
+    uzivatel=$(stat -c %U "$cil"); skupina=$(stat -c %G "$cil")
+    [ "$uzivatel" != root ] || chyba "web patří rootovi, nevím, pod kým běží"
+    adresa=$(grep -E '^APP_URL=' "$cil/.env" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d "\"'")
+    web() { (cd "$cil" && runuser -u "$uzivatel" -- "$php" artisan "$@"); }
+
+    snimek "$slug" "Před zveřejněním z nástrojů"
+    [ -z "$db" ] || zalohovat_db "$slug" "$db"
+
+    if [ -n "$laravel" ]; then
+        web down --render=errors::503 --retry=5 >/dev/null 2>&1 || true
+        trap 'web up >/dev/null 2>&1 || true' EXIT
+    fi
+    # Data webu a soubory kopie (její .env, git) se nepřenesou ani nesmažou.
+    # Odkazy (symlinky) z kopie se nepřenesou, kopii zakládá agent.
+    rsync -rt --delete --no-links --chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r --chown="$uzivatel:$skupina" \
+        --exclude=/.env --exclude='/.env.*' --exclude=/.git/ --exclude=/storage/ --exclude=/bootstrap/cache/ \
+        --exclude=/public/storage --exclude=/public/.well-known/ --exclude=/node_modules/ \
+        --exclude=/wp-config.php --exclude=/wp-content/uploads/ --exclude=/wp-content/cache/ \
+        "$zdroj/" "$cil/"
+    if [ -n "$laravel" ]; then
+        web migrate --force
+        web optimize >/dev/null
+        web queue:restart >/dev/null 2>&1 || true
+        web up >/dev/null
+        trap - EXIT
+    fi
+
+    if [ -n "$adresa" ]; then
+        local kod; kod=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$adresa" || true)
+        [ "$kod" = 200 ] || chyba "web po nahrání vrací $kod. Vrátit: agent vratit $slug"
+    fi
+    echo "Na webu za $((SECONDS - zacatek)) s."
+}
+
 obnovit() {
     # Tlačítko Vrátit v nástrojích (přes frontu): živý web do stavu před
     # časem $2 (unix). Soubory z posledního snímku před ním, databáze ze
@@ -382,6 +447,8 @@ case "${1:-}" in
     obnovit) obnovit "${2:?název projektu}" "${3:?čas (unix)}" "${4:-}" ;;
     nasadit) nasadit "${2:?název projektu}" "${3:?strom vydání}" ;;
     nasadit-zpet) nasadit_zpet "${2:?název projektu}" ;;
+    kopie-db) kopie_db "${2:?název projektu}" ;;
+    nasadit-kopii) nasadit_kopii "${2:?název projektu}" ;;
     odebrat) odebrat "${2:?název projektu}" ;;
     preposlat) preposlat ;;
     sluzba) sluzba ;;

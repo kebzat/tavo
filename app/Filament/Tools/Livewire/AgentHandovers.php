@@ -5,6 +5,7 @@ namespace App\Filament\Tools\Livewire;
 use App\Models\AgentPublication;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\AgentUnavailable;
+use App\Support\Agent\CopyPublisher;
 use App\Support\Agent\GitHubError;
 use App\Support\Agent\InstantPublisher;
 use App\Support\Agent\Publisher;
@@ -25,10 +26,10 @@ use Livewire\Component;
  *
  * - git: zkontrolovat (snímky, popis) a zveřejnit na web jedním tlačítkem,
  *   průběh, poslední zveřejnění jde vrátit ({@see Publisher}),
+ * - server (živý web): agent pracuje v kopii webu, Zveřejnit ji nahraje na
+ *   živý web najednou ({@see CopyPublisher}). Úlohy z ClickUpu jdou rovnou
+ *   na živý web a v kartě nejsou,
  * - prazdny (Shoptet, Upgates): hotové texty a kódy ke zkopírování.
- *
- * U živého webu (server) se karta neukazuje: úprav je moc (i z ClickUpu)
- * a na webu jsou hned. Vrátit web jde ručně, `agent vratit` / `agent obnovit`.
  *
  * Obnovuje se sama: během zveřejnění každých 10 s (a rovnou ho posouvá),
  * jinak po 30 s, ať je vidět, když agent něco dokončí.
@@ -47,6 +48,13 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             'empty' => 'Teď tu nic nečeká. Až agent dokončí úpravu, objeví se tady i se snímky.',
             'history' => 'Dřív zveřejněno',
         ],
+        'server' => [
+            'icon' => 'heroicon-o-rocket-launch',
+            'heading' => 'Hotová práce',
+            'description' => 'Agent pracuje na kopii webu. Zkontrolujte, co udělal, a jedním klikem to nahrajte na živý web.',
+            'empty' => 'Teď tu nic nečeká. Až agent v kopii něco dokončí, objeví se to tady i se snímky.',
+            'history' => 'Dřív zveřejněno',
+        ],
         'prazdny' => [
             'icon' => 'heroicon-o-clipboard-document-list',
             'heading' => 'Hotové podklady',
@@ -58,10 +66,12 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
 
     public string $project;
 
-    /** git / prazdny (živý web kartu nemá) */
+    /** git / server / prazdny */
     public string $type = 'git';
 
     private ?array $loaded = null;
+
+    private ?array $copyState = null;
 
     private ?string $error = null;
 
@@ -84,6 +94,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
         return view('filament.tools.partials.agent-handovers', [
             'copy' => self::COPY[$this->type] ?? self::COPY['git'],
             'handovers' => $this->handovers(),
+            'copyState' => $this->copyState(),
             'error' => $this->error,
             'active' => $active->values(),
             'history' => $history->values(),
@@ -112,14 +123,31 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
     }
 
     /**
+     * Kopie živého webu: existuje, změny proti živému, z toho v databázi.
+     *
+     * @return array{existuje: bool, zmeny: list<array{stav: string, soubor: string}>, migrace: int}|null
+     */
+    public function copyState(): ?array
+    {
+        if ($this->type !== 'server') {
+            return null;
+        }
+
+        $state = $this->copyState ??= rescue(fn (): array => app(AgentServer::class)->copyStatus($this->project), [], report: false);
+
+        return isset($state['existuje'], $state['zmeny']) ? $state : null;
+    }
+
+    /**
      * Tlačítka u jedné hotové práce, jen ta, která k typu projektu patří.
+     * U živého webu jen kontrola: zveřejňuje se celá kopie najednou.
      *
      * @param  array<string, mixed>  $item
      * @return list<Action>
      */
     public function rowActions(array $item): array
     {
-        return collect(['discard', 'review', 'publish'])
+        return collect($this->type === 'server' ? ['review'] : ['discard', 'review', 'publish'])
             ->map(fn (string $name): Action => ($this->{$name.'Action'})(['name' => $item['name'], 'sha' => $item['sha']]))
             ->filter(fn (Action $action): bool => $action->isVisible())
             ->values()
@@ -159,6 +187,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->modalHeading(fn (array $arguments): string => $this->find($arguments)['title'] ?? 'Hotová práce')
             ->modalDescription(match ($this->type) {
                 'prazdny' => 'Texty a kódy od agenta. Zkopírujte je tlačítkem a vložte, kam říká popis.',
+                'server' => 'Takhle to agent udělal v kopii webu. Zveřejnit nahraje na živý web všechno, co v kopii čeká.',
                 default => 'Takhle to agent udělal a vyzkoušel. Když sedí, zveřejněte. Když ne, napište mu do terminálu, co upravit.',
             })
             ->modalContent(fn (array $arguments): ?View => ($item = $this->find($arguments))
@@ -166,11 +195,16 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
                 : null)
             ->modalSubmitActionLabel(match ($this->type) {
                 'prazdny' => 'Vloženo, hotovo',
+                'server' => 'Zveřejnit kopii na web',
                 default => 'Zveřejnit na web',
             })
             ->modalSubmitAction(fn (Action $action) => $action->visible($this->type !== 'git' || $this->instant() || app(Publisher::class)->configured()))
             ->modalCancelActionLabel('Zavřít')
-            ->action(fn (array $arguments) => $this->type === 'git' ? $this->publish($arguments) : $this->acknowledge($arguments));
+            ->action(fn (array $arguments) => match ($this->type) {
+                'git' => $this->publish($arguments),
+                'server' => $this->publishCopy(),
+                default => $this->acknowledge($arguments),
+            });
     }
 
     public function publishAction(): Action
@@ -200,6 +234,8 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
     public function discardAction(): Action
     {
         return Action::make('discard')
+            // U živého webu se zahazuje celá kopie (Zahodit změny nahoře), ne jedna úprava.
+            ->visible(fn (): bool => $this->type !== 'server')
             ->label(match ($this->type) {
                 'prazdny' => 'Hotovo',
                 default => 'Zahodit',
@@ -226,6 +262,73 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->action(fn (array $arguments) => $this->acknowledge($arguments));
     }
 
+    /** Živý web: celá kopie na živý web (snímek, záloha, soubory, migrace). */
+    public function publishCopyAction(): Action
+    {
+        return Action::make('publishCopy')
+            ->label('Zveřejnit na web')
+            ->icon(Heroicon::OutlinedRocketLaunch)
+            ->size('sm')
+            ->requiresConfirmation()
+            ->modalIcon(Heroicon::OutlinedRocketLaunch)
+            ->modalHeading('Zveřejnit kopii na živý web?')
+            ->modalDescription(fn (): string => 'Nahraje se všechno, co v kopii čeká ('.$this->plural(count($this->copyState()['zmeny'] ?? []), 'změněný soubor', 'změněné soubory', 'změněných souborů').')'
+                .(($this->copyState()['migrace'] ?? 0) > 0 ? ', včetně změn v databázi' : '')
+                .'. Před tím se uloží snímek a záloha databáze, obvykle do 20 sekund. Kdyby se něco nepovedlo, jde vrátit.')
+            ->modalSubmitActionLabel('Zveřejnit')
+            ->action(fn () => $this->publishCopy());
+    }
+
+    /** Živý web: kopie zpátky na živý web, nezveřejněné změny pryč. */
+    public function discardCopyAction(): Action
+    {
+        return Action::make('discardCopy')
+            ->label('Zahodit změny')
+            ->icon(Heroicon::OutlinedTrash)
+            ->color('gray')
+            ->link()
+            ->size('sm')
+            ->extraAttributes(['class' => 'whitespace-nowrap'])
+            ->requiresConfirmation()
+            ->modalHeading('Zahodit změny v kopii?')
+            ->modalDescription('Kopie se vrátí na stav živého webu, i její databáze. Na živém webu se nic nezmění.')
+            ->modalSubmitActionLabel('Zahodit')
+            ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
+            ->action(function (): void {
+                try {
+                    app(AgentServer::class)->startCopyJob($this->project, 'zahodit');
+                } catch (AgentUnavailable $e) {
+                    Notification::make()->danger()->title('Nepovedlo se')->body($e->getMessage())->send();
+
+                    return;
+                }
+
+                $this->copyState = null;
+                Notification::make()->success()->title('Kopie se vrací na živý web')->body('Trvá to pár vteřin.')->send();
+            });
+    }
+
+    /** Živý web bez kopie: založit ji (jinak se založí sama s první konverzací). */
+    public function prepareCopyAction(): Action
+    {
+        return Action::make('prepareCopy')
+            ->label('Připravit kopii')
+            ->icon(Heroicon::OutlinedDocumentDuplicate)
+            ->color('gray')
+            ->size('sm')
+            ->action(function (): void {
+                try {
+                    app(AgentServer::class)->startCopyJob($this->project, 'obnovit');
+                } catch (AgentUnavailable $e) {
+                    Notification::make()->danger()->title('Nepovedlo se')->body($e->getMessage())->send();
+
+                    return;
+                }
+
+                Notification::make()->success()->title('Kopie se připravuje')->body('Za chvilku je hotová.')->send();
+            });
+    }
+
     public function revertAction(): Action
     {
         return Action::make('revert')
@@ -235,9 +338,11 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
             ->size('xs')
             ->requiresConfirmation()
             ->modalHeading(fn (array $arguments): string => 'Vrátit „'.(AgentPublication::find($arguments['id'] ?? null)?->title ?? '').'“?')
-            ->modalDescription(fn (): string => $this->instant()
+            ->modalDescription(fn (): string => $this->type === 'server'
+                ? 'Soubory živého webu se vrátí do stavu před tímhle zveřejněním, za pár vteřin. Databáze zůstane, jak je (změny z migrací se nevracejí).'
+                : ($this->instant()
                 ? 'Web se vrátí na verzi před touhle úpravou, za pár sekund. Databáze zůstane, jak je.'
-                : 'Web se vrátí do stavu před touhle úpravou. Jde to stejnou cestou jako zveřejnění: testy, pak nasazení, obvykle do 5 minut.')
+                : 'Web se vrátí do stavu před touhle úpravou. Jde to stejnou cestou jako zveřejnění: testy, pak nasazení, obvykle do 5 minut.'))
             ->modalSubmitActionLabel('Vrátit')
             ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
             ->action(function (array $arguments): void {
@@ -280,6 +385,29 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
 
         $this->loaded = null;
         Notification::make()->success()->title('Zveřejňuje se')->body('Průběh je vidět tady na stránce. Klidně ji zavřete, dokončí se samo.')->send();
+    }
+
+    private function publishCopy(): void
+    {
+        $state = $this->copyState();
+
+        if (($state['zmeny'] ?? []) === []) {
+            Notification::make()->warning()->title('V kopii nejsou žádné změny')->send();
+
+            return;
+        }
+
+        try {
+            app(CopyPublisher::class)->start($this->project, array_column($this->handovers(), 'title'), count($state['zmeny']), auth()->user());
+        } catch (AgentUnavailable $e) {
+            Notification::make()->danger()->title('Zveřejnění se nespustilo')->body($e->getMessage())->send();
+
+            return;
+        }
+
+        $this->loaded = null;
+        $this->copyState = null;
+        Notification::make()->success()->title('Zveřejňuje se')->body('Za pár vteřin je na webu, průběh je vidět tady.')->send();
     }
 
     /** @param  array<string, mixed>  $arguments */

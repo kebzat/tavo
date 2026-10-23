@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\PublicationStatus;
 use App\Enums\UserRole;
 use App\Filament\Tools\Livewire\AgentHandovers;
-use App\Filament\Tools\Pages\Agent\AgentProject;
 use App\Models\AgentPublication;
 use App\Models\User;
 use App\Support\Agent\GitHubError;
@@ -326,18 +325,6 @@ class AgentPublishTest extends TestCase
 
         $this->assertSame(PublicationStatus::Merged, $publication->refresh()->status);
         $this->assertSame('Sloučeno, bez nasazení', $publication->status->getLabel());
-    }
-
-    public function test_zivy_web_kartu_nema(): void
-    {
-        Livewire::actingAs($this->spravce())
-            ->test(AgentProject::class, ['project' => 'grillnor'])
-            ->assertOk()
-            ->assertDontSeeLivewire('tools.agent-handovers');
-
-        Livewire::actingAs($this->spravce())
-            ->test(AgentProject::class, ['project' => 'svet-cejlonu'])
-            ->assertSeeLivewire('tools.agent-handovers');
     }
 
     public function test_podklady_pro_shoptet_jdou_zkopirovat_a_odskrtnout(): void

@@ -81,6 +81,8 @@ class InstantPublisher
     public function advance(AgentPublication $publication): void
     {
         try {
+            // Přes …/vydani/<id>: tuhle cestu zná i služba před aktualizací (zveřejnění
+            // nového kódu tlačítkem čeká na starou službu, ta se aktualizuje až po něm).
             $job = $this->agent->release($publication->project, (string) $publication->job_id);
         } catch (AgentUnavailable $e) {
             Log::warning('Zveřejnění: služba agenta zatím neodpovídá', ['publication' => $publication->getKey(), 'error' => $e->getMessage()]);

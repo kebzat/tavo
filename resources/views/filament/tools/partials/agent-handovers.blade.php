@@ -15,6 +15,29 @@
                 <p class="px-6 py-3 text-sm text-danger-600 dark:text-danger-400">{{ $error }}</p>
             @endif
 
+            {{-- Živý web: co v kopii čeká na zveřejnění. Zveřejňuje se celá kopie najednou. --}}
+            @if ($copyState && ! $running)
+                @if (! $copyState['existuje'])
+                    <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Kopie webu ještě není. Založí se sama s první konverzací, nebo hned tlačítkem.</p>
+                        {{ $this->prepareCopyAction }}
+                    </div>
+                @elseif ($copyState['zmeny'] !== [])
+                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 bg-primary-50/60 px-6 py-4 dark:bg-primary-500/10">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-950 dark:text-white">Čeká na zveřejnění: {{ $this->plural(count($copyState['zmeny']), 'změněný soubor', 'změněné soubory', 'změněných souborů') }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $copyState['migrace'] > 0 ? 'Včetně změn v databázi. ' : '' }}Na živém webu zatím nejsou. Zveřejní se všechny najednou.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            {{ $this->discardCopyAction }}
+                            {{ $this->publishCopyAction }}
+                        </div>
+                    </div>
+                @endif
+            @endif
+
             {{-- Průběh zveřejnění: testy → nasazení → na webu. --}}
             @foreach ($active as $publication)
                 <div wire:key="zverejneni-{{ $publication->id }}" class="flex flex-wrap items-center gap-x-6 gap-y-3 px-6 py-4">
@@ -129,7 +152,7 @@
                 </div>
             @endforeach
 
-            @if ($handovers === [] && $active->isEmpty() && ! $error)
+            @if ($handovers === [] && $active->isEmpty() && ! $error && ($copyState['zmeny'] ?? []) === [] && ($copyState['existuje'] ?? true))
                 <p class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $copy['empty'] }}</p>
             @endif
 
