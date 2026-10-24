@@ -124,7 +124,13 @@ class Publisher
         }
 
         if (InstantPublisher::enabled($project)) {
-            return app(InstantPublisher::class)->start($project, $item, self::title($item), $this->repo($project), $user);
+            $instant = app(InstantPublisher::class);
+
+            if (($blocker = $instant->blocker($project)) !== null) {
+                throw new GitHubError($blocker);
+            }
+
+            return $instant->start($project, $item, self::title($item), $this->repo($project), $user);
         }
 
         $repo = $this->repo($project) ?? throw new GitHubError('Projekt nemá repozitář na GitHubu.');

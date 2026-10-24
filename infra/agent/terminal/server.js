@@ -480,20 +480,27 @@ function predaniSlozky(p) {
  * Tlačítko Zveřejnit u webu, který běží na tomhle serveru (taveo): bez GitHubu
  * a bez testů, na webu do pár sekund. Git je jen historie, doplní ho web potom.
  *
- *   1. vydání: commit větve agenta (ten, který člověk viděl) spojený s main
- *      z GitHubu, sestavený (vendor bez dev balíčků, npm run build). Složka
+ *   1. vydání: commit větve agenta (ten, který člověk viděl) spojený s tím,
+ *      co je teď na webu, a s main z GitHubu, sestavený (vendor bez dev
+ *      balíčků, npm run build). Složka
  *      /projekty/<projekt>/vydani/<strom>, strom = git tree spojení, takže
  *      stejné spojení se sestaví jen jednou. Sestavuje se předem, jakmile se
  *      úprava objeví v nástrojích, po kliknutí už jen nahrání.
  *   2. nahrání dělá root (fronta → agent nasadit): záloha databáze, předchozí
  *      verze stranou (Vrátit), rsync, migrace, cache.
  *
+ * Co je na webu, si služba pamatuje sama (refs/web/aktualni: strom webu,
+ * rodič = main, ze kterého vznikl). Historie na GitHubu dobíhá až po nahrání,
+ * takže samotný main nestačí: úprava zveřejněná před chvílí, nebo taková,
+ * která se do historie nedostala, by z webu zmizela.
+ *
  * Konflikt s main se nesestaví, nástroje řeknou, ať agent sloučí main do větve.
  */
 const VYDANI_PROJEKTY = ['taveo'];
 const VYDANI_DOMOV = path.join(HOME, '.taveo-vydani');
 const VYDANI_ULOHY = path.join(VYDANI_DOMOV, 'ulohy');
-const VYDANI_PONECHAT = 6;
+const VYDANI_PONECHAT = 3; // jedno má ~190 MB
+const CACHE_PONECHAT = 2; // vendor a node_modules podle zámku, od každého
 const vydaniSlozka = (p) => path.join('/projekty', p.slug, 'vydani');
 const sestavovani = new Map(); // strom → Promise, ať se stejné vydání nesestavuje dvakrát
 
@@ -505,24 +512,62 @@ const prikaz = (cmd, args, cwd) => new Promise((resolve, reject) => {
 
 const hashSouboru = (soubor) => crypto.createHash('sha256').update(fs.readFileSync(soubor)).digest('hex').slice(0, 16);
 
-/** Spojení commitu `sha` z větve agenta s main z GitHubu. Vrací strom a main. */
+const vydaniRepo = (p) => path.join(VYDANI_DOMOV, `${p.slug}.git`);
+const konfliktniSoubory = (e) => e.message.split('\n').filter((r) => /^[\w./-]+$/.test(r)).join(', ') || 'konflikt';
+
+async function stahnoutMain(p, repo) {
+    const origin = await prikaz('git', ['-C', slozka(p), 'remote', 'get-url', 'origin']);
+    await prikaz('git', ['--git-dir', repo, 'fetch', '-q', origin, '+refs/heads/main:refs/heads/main']);
+}
+
+/** Commit verze, která je na webu (refs/web/aktualni), nebo null. */
+async function naWebu(repo, ref = 'refs/web/aktualni') {
+    return prikaz('git', ['--git-dir', repo, 'rev-parse', '-q', '--verify', `${ref}^{commit}`]).catch(() => null);
+}
+
+/** Zapamatuje si strom, který je teď na webu. Rodič = main, ze kterého vznikl. */
+async function zapamatovatWeb(repo, strom, main, zprava) {
+    const commit = await prikaz('git', ['-c', 'user.name=Služba agenta', '-c', 'user.email=agent@taveo.cz',
+        '--git-dir', repo, 'commit-tree', strom, '-p', main, '-m', zprava]);
+    await prikaz('git', ['--git-dir', repo, 'update-ref', 'refs/web/aktualni', commit]);
+}
+
+/**
+ * Spojení commitu `sha` z větve agenta s tím, co je na webu, a s main
+ * z GitHubu. Vrací strom a main.
+ */
 async function spojit(p, sha) {
-    const repo = path.join(VYDANI_DOMOV, `${p.slug}.git`);
+    const repo = vydaniRepo(p);
     if (!fs.existsSync(repo)) {
         await prikaz('git', ['init', '-q', '--bare', repo]);
     }
-    const origin = await prikaz('git', ['-C', slozka(p), 'remote', 'get-url', 'origin']);
-    await prikaz('git', ['--git-dir', repo, 'fetch', '-q', origin, '+refs/heads/main:refs/heads/main']);
+    await stahnoutMain(p, repo);
     await prikaz('git', ['--git-dir', repo, 'fetch', '-q', schranka(p), sha]);
+    const main = await prikaz('git', ['--git-dir', repo, 'rev-parse', 'main']);
+
+    // Web = main, ze kterého vznikl, plus úpravy zveřejněné tlačítkem. K tomu
+    // všechno, co do main mezitím přibylo (i ty samé úpravy, až dorazí do historie).
+    let zaklad = main;
+    const web = await naWebu(repo);
+    if (web) {
+        let strom;
+        try {
+            strom = (await prikaz('git', ['--git-dir', repo, 'merge-tree', '--write-tree', '--name-only', `--merge-base=${web}^1`, web, main])).split('\n')[0];
+        } catch (e) {
+            throw new Error(`To, co je teď na webu, nejde spojit s historií na GitHubu (${konfliktniSoubory(e)}). Ozvěte se Tomovi.`);
+        }
+        zaklad = await prikaz('git', ['-c', 'user.name=Služba agenta', '-c', 'user.email=agent@taveo.cz',
+            '--git-dir', repo, 'commit-tree', strom, '-p', main, '-p', web, '-m', 'Web a main']);
+    }
 
     let strom;
     try {
-        strom = (await prikaz('git', ['--git-dir', repo, 'merge-tree', '--write-tree', '--name-only', 'main', sha])).split('\n')[0];
+        strom = (await prikaz('git', ['--git-dir', repo, 'merge-tree', '--write-tree', '--name-only', zaklad, sha])).split('\n')[0];
     } catch (e) {
-        throw Object.assign(new Error(`Úprava se srazí s tím, co je mezitím na webu: ${e.message.split('\n').filter((r) => /^[\w./-]+$/.test(r)).join(', ') || 'konflikt'}`), { konflikt: true });
+        throw Object.assign(new Error(`Úprava se srazí s tím, co je mezitím na webu: ${konfliktniSoubory(e)}`), { konflikt: true });
     }
 
-    return { repo, strom, main: await prikaz('git', ['--git-dir', repo, 'rev-parse', 'main']) };
+    return { repo, strom, main };
 }
 
 /** Balíčky podle zámku (composer.lock, package-lock.json), sdílené mezi vydáními. */
@@ -545,6 +590,12 @@ async function cacheBalicku(druh, zdroj) {
     }
     fs.rmSync(cil, { recursive: true, force: true });
     fs.renameSync(docasna, cil);
+
+    // Starší zámky pryč, každý má přes 100 MB.
+    const koren = path.dirname(cil);
+    const stare = fs.readdirSync(koren).filter((d) => d.startsWith(`${druh}-`) && !d.includes('.tmp-'))
+        .map((d) => ({ d, t: fs.statSync(path.join(koren, d)).mtimeMs })).sort((a, b) => b.t - a.t).slice(CACHE_PONECHAT);
+    for (const { d } of stare) fs.rmSync(path.join(koren, d), { recursive: true, force: true });
 
     return hotovo;
 }
@@ -590,6 +641,34 @@ async function sestavitVydani(p, sha) {
     return prace;
 }
 
+/**
+ * Po nahrání: refs/web/aktualni = nová verze, refs/web/predchozi = ta, kterou
+ * root odložil pro Vrátit. Vrátit vezme strom předchozí, ale rodičem je main
+ * z teď: vrácená úprava, která už v main je, tak při dalším zveřejnění
+ * zůstane venku.
+ */
+async function zapamatovatNasazeni(p, uloha, zpet) {
+    const repo = vydaniRepo(p);
+    if (!zpet) {
+        const web = await naWebu(repo);
+        if (web) await prikaz('git', ['--git-dir', repo, 'update-ref', 'refs/web/predchozi', web]);
+        await zapamatovatWeb(repo, uloha.strom, uloha.main, `Zveřejněno ${uloha.sha}`);
+
+        return;
+    }
+
+    const predchozi = await naWebu(repo, 'refs/web/predchozi');
+    if (!predchozi) {
+        // Předchozí verzi nahrál ještě někdo jiný: co je na webu, nevíme, základem bude main.
+        await prikaz('git', ['--git-dir', repo, 'update-ref', '-d', 'refs/web/aktualni']).catch(() => {});
+
+        return;
+    }
+    await stahnoutMain(p, repo).catch(() => {});
+    const main = await prikaz('git', ['--git-dir', repo, 'rev-parse', 'main']);
+    await zapamatovatWeb(repo, `${predchozi}^{tree}`, main, 'Vráceno na předchozí verzi');
+}
+
 function ulozitUlohuVydani(uloha) {
     fs.mkdirSync(VYDANI_ULOHY, { recursive: true });
     fs.writeFileSync(path.join(VYDANI_ULOHY, `${uloha.id}.json`), JSON.stringify(uloha));
@@ -612,6 +691,9 @@ function spustitVydani(p, { sha = null, nasadit = false, zpet = false }) {
             if (!nasadit) return;
         }
         const r = await fronta(zpet ? { akce: 'nasadit-zpet', projekt: p.slug } : { akce: 'nasadit', projekt: p.slug, strom: uloha.strom }, 300);
+        if (r.ok) {
+            await zapamatovatNasazeni(p, uloha, zpet).catch((e) => console.error(`Vydání: nepovedlo se zapamatovat, co je na webu: ${e.message}`));
+        }
         Object.assign(uloha, { stav: r.ok ? 'hotovo' : 'chyba', vystup: r.vystup });
         ulozitUlohuVydani(uloha);
     })().catch((e) => {
