@@ -7,6 +7,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -64,7 +65,10 @@ class NanoBanana
         ];
     }
 
-    /** Ověří klíč a model bez generování (nic se neplatí). Vrátí název modelu. */
+    /**
+     * Ověří klíč a model bez generování (nic se neplatí). Vrátí název modelu.
+     * Bezplatný tarif projde, obrázky na něm ale nejdou: to ukáže až {@see generate()}.
+     */
     public function check(): string
     {
         return (string) ($this->send(fn (PendingRequest $http): Response => $http->get($this->model()))->json('displayName') ?: $this->model());
@@ -92,7 +96,14 @@ class NanoBanana
         }
 
         if ($response->failed()) {
-            throw new RuntimeException('Gemini odmítl požadavek ('.$response->status().'): '.($response->json('error.message') ?? 'bez popisu'));
+            $message = (string) ($response->json('error.message') ?? 'bez popisu');
+
+            // Bezplatný tarif má u obrázkových modelů limit 0, ověření modelu to nepozná.
+            if ($response->status() === 429 && (str_contains($message, 'free_tier') || str_contains($message, 'limit: 0'))) {
+                throw new RuntimeException('Klíč je na bezplatném tarifu Googlu, kde obrázky generovat nejde (limit 0). V Google AI Studiu u projektu s tímto klíčem zapněte placení (Billing), pak to začne fungovat.');
+            }
+
+            throw new RuntimeException('Gemini odmítl požadavek ('.$response->status().'): '.Str::limit($message, 400));
         }
 
         return $response;

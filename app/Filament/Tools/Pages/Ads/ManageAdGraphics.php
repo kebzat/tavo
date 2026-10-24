@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Pages\Ads;
 
+use App\Models\AdGraphic;
 use App\Settings\AdGraphicsSettings;
 use App\Support\AdGraphics\NanoBanana;
 use BackedEnum;
@@ -44,6 +45,11 @@ class ManageAdGraphics extends SettingsPage
                         ->label('Stav')
                         ->state(fn (): string => app(AdGraphicsSettings::class)->imagesEnabled() ? 'Zapnuté, klíč je uložený' : 'Vypnuté, chybí klíč')
                         ->color(fn (): string => app(AdGraphicsSettings::class)->imagesEnabled() ? 'success' : 'gray'),
+                    TextEntry::make('last_error')
+                        ->label('Poslední chyba při generování')
+                        ->state(fn (): ?string => ($graphic = $this->lastError()) ? $graphic->image_error.' ('.$graphic->updated_at->format('j. n. H:i').', zadání „'.$graphic->title.'“)' : null)
+                        ->color('danger')
+                        ->visible(fn (): bool => $this->lastError() !== null),
                     TextInput::make('gemini_api_key')
                         ->label('API klíč')
                         ->password()
@@ -77,11 +83,32 @@ class ManageAdGraphics extends SettingsPage
                 ->visible(fn (): bool => app(AdGraphicsSettings::class)->imagesEnabled())
                 ->action(function (NanoBanana $images): void {
                     try {
-                        Notification::make()->title('Klíč funguje')->body('Model: '.$images->check().'. Nic se nezaplatilo.')->success()->send();
+                        Notification::make()->title('Klíč platí')->body('Model: '.$images->check().'. Nic se nezaplatilo. Jestli jdou i obrázky (na bezplatném tarifu Googlu ne), ukáže Vyzkoušet obrázek.')->success()->send();
                     } catch (RuntimeException $e) {
                         Notification::make()->title('Klíč nefunguje')->body($e->getMessage())->danger()->persistent()->send();
                     }
                 }),
+            Action::make('try')
+                ->label('Vyzkoušet obrázek')
+                ->icon(Heroicon::OutlinedPhoto)
+                ->color('gray')
+                ->visible(fn (): bool => app(AdGraphicsSettings::class)->imagesEnabled())
+                ->requiresConfirmation()
+                ->modalDescription('Vygeneruje jeden malý zkušební obrázek. U Googlu to stojí zhruba 1 Kč.')
+                ->action(function (NanoBanana $images): void {
+                    try {
+                        $image = $images->generate('A simple photo of a cup of tea on a wooden table, soft daylight.');
+                        Notification::make()->title('Obrázky fungují')->body('Google vrátil obrázek ('.round(strlen($image['data']) / 1024).' kB).')->success()->send();
+                    } catch (RuntimeException $e) {
+                        Notification::make()->title('Obrázek se nevygeneroval')->body($e->getMessage())->danger()->persistent()->send();
+                    }
+                }),
         ];
+    }
+
+    /** Zadání s poslední chybou generování obrázků (za týden). */
+    private function lastError(): ?AdGraphic
+    {
+        return AdGraphic::query()->whereNotNull('image_error')->where('updated_at', '>', now()->subWeek())->latest('updated_at')->first();
     }
 }
