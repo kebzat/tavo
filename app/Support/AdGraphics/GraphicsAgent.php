@@ -8,6 +8,7 @@ use App\Settings\AdGraphicsSettings;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\ClaudeUsage;
 use App\Support\Agent\UsageLimit;
+use App\Support\Knowledge\KnowledgeBase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -39,6 +40,7 @@ class GraphicsAgent
         private readonly AgentServer $agent,
         private readonly NanoBanana $images,
         private readonly AdGraphicsSettings $settings,
+        private readonly KnowledgeBase $knowledge,
     ) {}
 
     /** Pošle zadání agentovi. Chybu zapíše do zadání, nevyhazuje ji. */
@@ -139,6 +141,7 @@ class GraphicsAgent
         }
 
         [$summary, $block] = $this->parse($result);
+        [$summary] = $ok ? $this->knowledge->capture($job, $summary, self::SOURCE) : [$summary];
         $outputs = $block['varianty'] ?? [];
 
         $graphic->update([
@@ -163,6 +166,8 @@ class GraphicsAgent
         if (! $ok || ! $graphic || ($block['varianty'] ?? []) === []) {
             return;
         }
+
+        [$summary] = $this->knowledge->capture($job, $summary, self::SOURCE);
 
         $job->update(['status' => AgentJob::STATUS_DONE, 'result' => $result, 'error' => null]);
         $graphic->update([
@@ -339,6 +344,8 @@ class GraphicsAgent
             '[/grafika]',
             'Když Figma nevyšla, "figma" vynech.',
             'Konverzace zůstane otevřená. Když tě v ní později někdo požádá o změnu, uprav PNG i Figmu a odpověz znovu tímhle blokem se všemi aktuálními návrhy, web si podle něj obnoví galerii.',
+            '',
+            $this->knowledge->briefing($graphic->client),
         );
 
         return implode("\n", array_filter($lines, fn ($line): bool => $line !== null));

@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Models\Marketing\ClientBriefing;
 use App\Support\AdGraphics\GraphicsAgent;
 use App\Support\ClickUp\ClickUpAgent;
+use App\Support\Knowledge\BrainAgent;
 use App\Support\Marketing\ClientContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -158,9 +159,10 @@ class AgentApiController extends Controller
     /**
      * Výsledek úlohy od služby agenta. Úloha z ClickUpu odpoví do ClickUpu
      * ({@see ClickUpAgent::finish()}), reklamní grafika uloží návrhy
-     * ({@see GraphicsAgent::finish()}). Jen jednou, doběhlá úloha se nemění.
+     * ({@see GraphicsAgent::finish()}), mozek návrhy poznatků nebo odpověď
+     * ({@see BrainAgent::finish()}). Jen jednou, doběhlá úloha se nemění.
      */
-    public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent, GraphicsAgent $graphics): JsonResponse
+    public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent, GraphicsAgent $graphics, BrainAgent $brain): JsonResponse
     {
         // Grafika: konverzace po úloze zůstává otevřená a může poslat další výsledek.
         abort_unless($job->status === AgentJob::STATUS_RUNNING || $job->source === GraphicsAgent::SOURCE, 409, 'Úloha už je uzavřená.');
@@ -172,7 +174,11 @@ class AgentApiController extends Controller
             'chyba' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $job->source === GraphicsAgent::SOURCE ? $graphics->finish($job, $data) : $agent->finish($job, $data);
+        match ($job->source) {
+            GraphicsAgent::SOURCE => $graphics->finish($job, $data),
+            BrainAgent::SOURCE, BrainAgent::SOURCE_QUESTION => $brain->finish($job, $data),
+            default => $agent->finish($job, $data),
+        };
 
         return response()->json(['ok' => true]);
     }

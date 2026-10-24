@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdReportController;
 use App\Http\Controllers\Agent\AdGraphicApiController;
 use App\Http\Controllers\Agent\AgentApiController;
+use App\Http\Controllers\Agent\KnowledgeApiController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
@@ -67,6 +68,13 @@ Route::prefix('nastroje/api/agent')
         Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
         Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');
+
+        // Mozek TAVEO (docs/MOZEK.md): hledání, podklady ke zpracování, návrhy poznatků.
+        Route::get('/mozek', [KnowledgeApiController::class, 'search'])->name('agent.api.mozek');
+        Route::get('/mozek/seznam', [KnowledgeApiController::class, 'index'])->name('agent.api.mozek.seznam');
+        Route::get('/mozek/zdroje/{source}', [KnowledgeApiController::class, 'source'])->name('agent.api.mozek.zdroj');
+        Route::get('/mozek/zdroje/{source}/soubory/{index}', [KnowledgeApiController::class, 'file'])->whereNumber('index')->name('agent.api.mozek.soubor');
+        Route::post('/mozek/navrhy', [KnowledgeApiController::class, 'propose'])->name('agent.api.mozek.navrhy');
     });
 
 // Agent při práci na reklamní grafice: podklady a obrázky z Gemini. Ověřuje
