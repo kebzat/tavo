@@ -8,6 +8,7 @@ use App\Settings\AdGraphicsSettings;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\ClaudeUsage;
 use App\Support\Agent\UsageLimit;
+use App\Support\Knowledge\KnowledgeBase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -36,6 +37,7 @@ class GraphicsAgent
         private readonly AgentServer $agent,
         private readonly NanoBanana $images,
         private readonly AdGraphicsSettings $settings,
+        private readonly KnowledgeBase $knowledge,
     ) {}
 
     /** Pošle zadání agentovi. Chybu zapíše do zadání, nevyhazuje ji. */
@@ -127,6 +129,7 @@ class GraphicsAgent
         }
 
         [$summary, $block] = $this->parse($result);
+        [$summary] = $ok ? $this->knowledge->capture($job, $summary, self::SOURCE) : [$summary];
         $outputs = $block['varianty'] ?? [];
 
         $graphic->update([
@@ -305,6 +308,8 @@ class GraphicsAgent
             '{"figma": "https://www.figma.com/design/…", "varianty": [{"soubor": "01-kapnete-citron-1080x1350.png", "nazev": "Kápněte citron", "format": "IG příspěvek 1080×1350", "text": "návrh textu k příspěvku"}]}',
             '[/grafika]',
             'Když Figma nevyšla, "figma" vynech.',
+            '',
+            $this->knowledge->briefing($graphic->client),
         );
 
         return implode("\n", array_filter($lines, fn ($line): bool => $line !== null));

@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\ClaudeUsage;
 use App\Support\Agent\UsageLimit;
+use App\Support\Knowledge\KnowledgeBase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -49,7 +50,7 @@ class ClickUpAgent
     /** Začátek našich odpovědí. Neobsahuje spouštěč, takže odpověď nespustí další běh. */
     private const SIGNATURE = 'Agent:';
 
-    public function __construct(private readonly ClickUp $clickUp, private readonly AgentServer $agent) {}
+    public function __construct(private readonly ClickUp $clickUp, private readonly AgentServer $agent, private readonly KnowledgeBase $knowledge) {}
 
     public static function mentions(string $text): bool
     {
@@ -208,7 +209,9 @@ class ClickUpAgent
         ]);
 
         $link = $job->project ? "\n\nKonverzace v nástrojích: ".AgentProject::getUrl(['project' => $job->project], panel: 'tools') : '';
+        [$result, $learned] = $ok ? $this->knowledge->capture($job, $result, 'clickup') : [$result, 0];
         [$result, $notes] = $ok ? $this->postComments($job, $result) : [$result, []];
+        $notes = $learned > 0 ? [...$notes, 'Do mozku TAVEO jsem navrhl '.($learned === 1 ? '1 poznatek' : "{$learned} poznatky").' ke schválení.'] : $notes;
         $notes = $notes === [] ? '' : "\n\n".implode("\n", $notes);
 
         $this->say($job, $ok
@@ -403,6 +406,8 @@ class ClickUpAgent
             '  [komentar @Pavel]',
             '  text komentáře (bez „@Pavel“, označení přidá systém)',
             '  [/komentar]',
+            '',
+            $this->knowledge->briefing($client),
         ], fn ($line): bool => $line !== null));
     }
 }

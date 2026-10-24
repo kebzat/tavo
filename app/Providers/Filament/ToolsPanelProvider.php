@@ -65,6 +65,7 @@ class ToolsPanelProvider extends PanelProvider
             ->navigationGroups([
                 'CRM',
                 'Reklamy',
+                'Mozek',
                 'Checklisty',
             ])
             // Po přihlášení se chodí do CRM, ne na seznam checklistů —

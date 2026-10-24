@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AgentJob;
 use App\Models\Client;
+use App\Models\KnowledgeEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -362,6 +363,31 @@ class ClickUpAgentTest extends TestCase
             && str_contains($t, 'Nenašel jsem v ClickUpu, koho označit: Klient.')
             && ! str_contains($t, '[komentar'));
         $this->assertSame(['K1', 'K2', 'R1'], $job->refresh()->reply_comment_ids);
+    }
+
+    public function test_poznatek_ze_zaveru_jde_do_mozku_a_ne_do_clickupu(): void
+    {
+        Http::fake(['api.clickup.com/api/v2/comment/*/reply' => Http::response(['id' => 'R1'])]);
+        $client = Client::query()->updateOrCreate(['slug' => 'svet-cejlonu'], ['name' => 'Svět Cejlonu', 'agent_project' => 'svet-cejlonu']);
+        $job = AgentJob::create(['clickup_task_id' => 'T1', 'clickup_comment_id' => 'C50', 'clickup_thread_id' => 'C50', 'clickup_user_id' => self::TOM, 'client_id' => $client->id, 'project' => 'svet-cejlonu', 'task_name' => 'Úprava banneru', 'author' => 'Tom', 'instruction' => 'x', 'status' => AgentJob::STATUS_RUNNING, 'started_at' => now()]);
+
+        $this->withToken(self::TOKEN)->postJson("/nastroje/api/agent/ulohy/{$job->id}/vysledek", ['ok' => true, 'vysledek' => <<<'TXT'
+            Banner je vyměněný.
+
+            [poznatek klient]
+            Bannery Světa Cejlonu se mění v Upgates, ne v kódu
+            Šablona je jen pro čtení, obrázek jde nahrát v Obsah → Bannery.
+            [/poznatek]
+            TXT])->assertOk();
+
+        $entry = KnowledgeEntry::query()->sole();
+        $this->assertSame('Bannery Světa Cejlonu se mění v Upgates, ne v kódu', $entry->title);
+        $this->assertSame($client->id, $entry->client_id);
+        $this->assertSame(KnowledgeEntry::STATUS_PROPOSED, $entry->status);
+        $this->assertSame('clickup', $entry->origin_type);
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'reply')
+            && ! str_contains($request['comment'][0]['text'], '[poznatek')
+            && str_contains($request['comment'][0]['text'], 'Do mozku TAVEO jsem navrhl 1 poznatek ke schválení.'));
     }
 
     public function test_dalsi_agent_ve_stejnem_ukolu_navaze_na_konverzaci(): void

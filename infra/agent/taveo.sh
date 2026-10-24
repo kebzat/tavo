@@ -1,7 +1,7 @@
 #!/bin/bash
 # Příkaz `taveo` v kontejneru agenta: čte data klientů z nástrojů TAVEO
 # a zapisuje koncepty (ranní přehled, návrhy úkolů, rozhodnutí, podklady
-# k reportu). Nic neodesílá klientovi a nic nemění v reklamách.
+# k reportu, návrhy poznatků do mozku). Nic neodesílá klientovi a nic nemění v reklamách.
 # Rozhraní: /nastroje/api/agent (App\Http\Controllers\Agent\AgentApiController).
 set -euo pipefail
 
@@ -29,6 +29,9 @@ taveo ukoly <slug> < ukoly.json         návrhy úkolů ke schválení: {"tasks"
 taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
 taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF
                                         jedna část konceptu reportu v Markdownu (jen prázdná pole se doplní)
+taveo mozek "co hledám" [slug]          hledání v mozku TAVEO (schválené poznatky, JSON)
+taveo mozek-navrh firma|klient|postup "nadpis" [slug] < text.md
+                                        návrh poznatku do mozku, schválí ho člověk v nástrojích
 TXT
 }
 
@@ -50,6 +53,14 @@ case "${1:-}" in
         [ "${3:-}" = nefungovalo ] && pole=not_worked
         [ -n "$pole" ] || { echo "Použití: taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF" >&2; exit 1; }
         jq -Rs --arg pole "$pole" '{($pole): .}' | volat POST "/reporty/${2:?id reportu}" --data-binary @-
+        ;;
+    mozek)
+        volat GET /mozek -G --data-urlencode "q=${2:?co hledáte}" ${3:+--data-urlencode "klient=$3"}
+        ;;
+    mozek-navrh)
+        jq -Rs --arg v "${2:?firma, klient nebo postup}" --arg n "${3:?nadpis}" --arg k "${4:-}" \
+            '{poznatky: [{vrstva: $v, nadpis: $n, text: .} + (if $k == "" then {} else {klient: $k} end)]}' \
+            | volat POST /mozek/navrhy --data-binary @-
         ;;
     *) napoveda ;;
 esac
