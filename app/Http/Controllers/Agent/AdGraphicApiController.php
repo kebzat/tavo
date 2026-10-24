@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Agent při práci na reklamní grafice: stáhne nahrané podklady a nechá si
  * vygenerovat obrázek přes Gemini. Přístup jen s tokenem zadání (hlavička
- * X-Grafika-Token) a jen dokud úloha běží. Klíč ke Gemini zůstává tady.
+ * X-Grafika-Token), dokud úloha běží a den po ní. Klíč ke Gemini zůstává tady.
  */
 class AdGraphicApiController extends Controller
 {
@@ -57,9 +57,12 @@ class AdGraphicApiController extends Controller
             $image = $images->generate($data['popis'], Formats::aspectRatio($width ?: 1, $height ?: 1), $references);
         } catch (RuntimeException $e) {
             Log::info('Reklamní grafika: Gemini obrázek nevytvořil.', ['graphic' => $graphic->getKey(), 'error' => $e->getMessage()]);
+            $graphic->update(['image_error' => $e->getMessage()]);
 
             return response()->json(['chyba' => $e->getMessage()], 502);
         }
+
+        $graphic->update(['image_error' => null]);
 
         return response($image['data'], 200, [
             'Content-Type' => $image['mime'],
@@ -70,6 +73,7 @@ class AdGraphicApiController extends Controller
     private function authorizeAgent(Request $request, AdGraphic $graphic): void
     {
         abort_unless($graphic->tokenMatches($request->header('X-Grafika-Token')), 401, 'Neplatný token.');
-        abort_unless($graphic->status === AdGraphic::STATUS_RUNNING, 409, 'Zadání už neběží.');
+        // Po doběhnutí platí token ještě den: konverzace zůstává otevřená a člověk může chtít změnu.
+        abort_unless($graphic->status === AdGraphic::STATUS_RUNNING || $graphic->finished_at?->gt(now()->subDay()), 409, 'Zadání už neběží.');
     }
 }

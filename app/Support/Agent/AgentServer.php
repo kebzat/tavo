@@ -70,14 +70,19 @@ class AgentServer
      * Otevře konverzaci a vrátí ID okna (@3). Bez `$session` založí novou,
      * se `$session` naváže na uloženou (běží-li už, vrátí její okno).
      * `$replace` je prázdná nová konverzace, ze které se navazuje: zavře se.
+     * `$task` (konverzace úlohy grafiky: id úlohy a závěrečná značka): další
+     * výsledek z probuzené konverzace jde na web jako u úlohy.
      * U webu na serveru před novým oknem proběhne záloha.
+     *
+     * @param  array{id: int, konec: string}|null  $task
      */
-    public function openConversation(string $slug, string $author, ?string $session = null, ?string $replace = null): string
+    public function openConversation(string $slug, string $author, ?string $session = null, ?string $replace = null, ?array $task = null): string
     {
         return $this->call(fn (PendingRequest $http) => $http->timeout(150)->post($this->projectPath($slug).'/konverzace', [
             'autor' => $author,
             'session' => $session,
             'nahradit' => $replace,
+            'uloha' => $task,
         ]))['okno'];
     }
 

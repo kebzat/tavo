@@ -218,7 +218,7 @@ function ulozene(p) {
             const info = hlavicka(soubor);
             if (info.cwd !== slozka(p) && info.cwd !== kopieSlozka(p)) continue;
 
-            vysledek.push({ session, nazev: info.nazev, aktualizace: Math.floor(fs.statSync(soubor).mtimeMs / 1000) });
+            vysledek.push({ session, nazev: info.nazev, cwd: info.cwd, aktualizace: Math.floor(fs.statSync(soubor).mtimeMs / 1000) });
         }
     }
 
@@ -320,7 +320,7 @@ function prostredi(p, cwd = slozka(p)) {
         : nazevVAplikaci;
 }
 
-async function zalozit(p, { autor, session, nahradit }) {
+async function zalozit(p, { autor, session, nahradit, uloha }) {
     const bezici = await konverzacniOkna(p.slug);
 
     if (session) {
@@ -345,11 +345,23 @@ async function zalozit(p, { autor, session, nahradit }) {
         }
     }
 
-    const cwd = pracovni(p);
+    // Uložená konverzace se probouzí ve své složce (úloha grafiky u živého webu
+    // běžela ve složce webu, ne v kopii), jinak ji `--resume` nenajde.
+    const cwd = (session && ulozene(p).find((k) => k.session === session)?.cwd) || pracovni(p);
     pripravitClaude(cwd);
 
     const id = session || crypto.randomUUID();
-    const prikaz = `bash -lc 'claude ${session ? '--resume' : '--session-id'} ${id}; exec bash'`;
+    // Probuzení konverzace úlohy (grafika): s háčkem Stop, ať další výsledek dojde na web.
+    const pokracuje = session && Number.isInteger(uloha?.id) && typeof uloha.konec === 'string' ? { id: uloha.id, konec: uloha.konec } : null;
+    const soubor = (pripona) => path.join(ULOHY_LOG, `${pokracuje?.id}.${pripona}`);
+    if (pokracuje) {
+        fs.mkdirSync(ULOHY_LOG, { recursive: true });
+        fs.rmSync(soubor('stop'), { force: true });
+        fs.writeFileSync(soubor('nastaveni.json'), JSON.stringify({
+            hooks: { Stop: [{ hooks: [{ type: 'command', command: `cat > ${soubor('stop')}` }] }] },
+        }));
+    }
+    const prikaz = `bash -lc 'claude ${session ? '--resume' : '--session-id'} ${id}${pokracuje ? ` --settings ${soubor('nastaveni.json')}` : ''}; exec bash'`;
     const existuje = (await okna(p.slug)).length > 0;
 
     const args = existuje
@@ -360,6 +372,10 @@ async function zalozit(p, { autor, session, nahradit }) {
     await tmux(['set-option', '-w', '-t', okno, '@session', id]);
     await tmux(['set-option', '-w', '-t', okno, '@autor', radek(autor, 60)]);
     await tmux(['set-option', '-w', '-t', okno, 'automatic-rename', 'off']);
+
+    if (pokracuje) {
+        pokracovani(pokracuje, okno, soubor, (stop) => String(stop?.last_assistant_message || '').includes(pokracuje.konec));
+    }
 
     if (!session && autor) {
         const autori = cteniJson(AUTORI, {});
@@ -1233,11 +1249,15 @@ async function odpracovat(p, uloha) {
  * Úloha, na kterou se dá dívat (reklamní grafika): běží jako obyčejná
  * konverzace v okně tmuxu, takže ji nástroje ukážou v terminálu stejně jako
  * konverzaci s člověkem. Konec pozná háček Stop (Claude dopsal odpověď),
- * zapíše ho do souboru a odtud se vezme výsledek. Okno se pak zavře.
+ * zapíše ho do souboru a odtud se vezme výsledek.
  * Když Claude jen čeká na příkaz na pozadí, není hotovo, ledaže odpověď
  * už obsahuje závěrečnou značku úlohy (`konec`, třeba „[/grafika]“).
  * Po zásahu člověka (psal do terminálu) se čeká jen na značku: odpověď
  * na jeho zprávu ještě není výsledek. Limit se pak prodlužuje od zásahu.
+ *
+ * Okno po úloze zůstane otevřené jako běžná konverzace (s kontextem úlohy),
+ * sama se uspí jako ostatní. Když v ní Claude později znovu odpoví se
+ * značkou (člověk chtěl změnu), výsledek jde na web znovu.
  */
 async function vTerminalu(p, uloha, cwd, session, navazat) {
     fs.mkdirSync(ULOHY_LOG, { recursive: true });
@@ -1253,7 +1273,11 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
         if (o.session === session) await tmux(['kill-window', '-t', o.id]).catch(() => {});
     }
 
-    const prikaz = `bash -lc 'claude ${navazat ? '--resume' : '--session-id'} ${session} --permission-mode auto --settings ${soubor('nastaveni.json')} "$(cat ${soubor('zadani')})"'`;
+    // Celé zadání jen v souboru, ne v příkazové řádce: `pkill -f` / `pgrep -f`
+    // s textem ze zadání (třeba port serveru náhledu) by jinak trefil i Clauda.
+    const uvod = `${radek(uloha.zadani.split('\n')[0], 120)}\n\nCelé zadání je v souboru ${soubor('zadani')}. Přečti si ho celé a postupuj podle něj.`;
+    fs.writeFileSync(soubor('uvod'), uvod);
+    const prikaz = `bash -lc 'claude ${navazat ? '--resume' : '--session-id'} ${session} --permission-mode auto --settings ${soubor('nastaveni.json')} "$(cat ${soubor('uvod')})"'`;
     const args = (await okna(p.slug)).length > 0
         ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'uloha', prikaz]
         : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-x', '160', '-y', '45', '-c', cwd, ...prostredi(p, cwd), '-n', 'uloha', prikaz];
@@ -1265,8 +1289,10 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
     await tmux(['set-option', '-w', '-t', okno, 'automatic-rename', 'off']);
 
     const konec = Date.now() + ULOHA_LIMIT_MIN * 60 * 1000;
+    const hotovo = (stop) => uloha.konec && String(stop?.last_assistant_message || '').includes(uloha.konec);
     let stop = null;
     let chyba = null;
+    let chybi = 0;
 
     while (!stop && !chyba) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -1274,34 +1300,60 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
         // Háček píše soubor průběžně, nedopsaný JSON se přečte příště.
         try { stop = JSON.parse(fs.readFileSync(soubor('stop'), 'utf8')); } catch { /* ještě nedoběhl */ }
         const ceka = stop?.background_tasks?.some((t) => t.status === 'running') || zasahy.has(okno);
-        if (stop && ceka && !(uloha.konec && String(stop.last_assistant_message || '').includes(uloha.konec))) {
+        if (stop && ceka && !hotovo(stop)) {
             fs.rmSync(soubor('stop'), { force: true });
             stop = null;
         }
         if (stop) break;
 
-        if (!(await okna(p.slug)).some((o) => o.id === okno)) {
+        // Okno musí chybět dvakrát po sobě: pomalý tmux občas vrátí prázdný seznam.
+        chybi = (await okna(p.slug)).some((o) => o.id === okno) ? 0 : chybi + 1;
+        if (chybi >= 2) {
             chyba = 'Claude skončil bez výsledku.';
         } else if (Date.now() > Math.max(konec, (zasahy.get(okno) || 0) + ZASAH_NAVIC_MIN * 60 * 1000)) {
-            chyba = `Nestihl jsem to do ${ULOHA_LIMIT_MIN} minut.`;
+            chyba = `Nestihl jsem to do ${ULOHA_LIMIT_MIN} minut. Konverzace zůstala otevřená, agent v ní může pokračovat.`;
         }
     }
 
     zasahy.delete(okno);
+    fs.rmSync(soubor('stop'), { force: true });
     const obrazovka = await tmux(['capture-pane', '-p', '-J', '-t', okno, '-S', '-3000']).catch(() => '');
     fs.writeFileSync(path.join(ULOHY_LOG, `${uloha.id}.log`), [obrazovka, stop ? JSON.stringify(stop) : '', chyba ? `CHYBA: ${chyba}` : ''].join('\n'));
-    // Zadání nese jednorázový token, po úloze ho nenechávat ležet.
-    for (const s of ['stop', 'zadani', 'nastaveni.json']) fs.rmSync(soubor(s), { force: true });
-
-    // Chvíli nechat dopsat konverzaci na disk, pak okno (i servery, co si agent pustil) zavřít.
-    setTimeout(() => tmux(['kill-window', '-t', okno]).catch(() => {}), stop ? 3000 : 0);
+    // Úloha skončila, okno je dál obyčejná konverzace (Claude si zadání už přečetl).
+    await tmux(['set-option', '-wu', '-t', okno, '@uloha']).catch(() => {});
+    pokracovani(uloha, okno, soubor, hotovo);
 
     const vysledek = typeof stop?.last_assistant_message === 'string' ? stop.last_assistant_message : null;
-    if (/usage limit|limit reached|rate limit/i.test(`${chyba ? obrazovka.slice(-2000) : ''}${vysledek && !vysledek.includes('[grafika]') ? vysledek : ''}`)) {
+    if (/usage limit|limit reached|rate limit/i.test(`${chyba ? obrazovka.slice(-2000) : ''}${vysledek && !hotovo(stop) ? vysledek : ''}`)) {
         chyba = 'Narazil jsem na limit předplatného Claude.';
     }
 
     return { ok: !chyba, session: stop?.session_id || session, vysledek, chyba };
+}
+
+/**
+ * Dokud okno po úloze žije, hlídá další odpovědi Clauda (člověk v terminálu
+ * chtěl změnu). Odpověď se závěrečnou značkou jde na web jako nový výsledek.
+ * Když okno zmizí (uspání, nové kolo úlohy), hlídání i soubory úlohy končí.
+ */
+function pokracovani(uloha, okno, soubor, hotovo) {
+    const hlidka = setInterval(async () => {
+        const zije = await tmux(['display-message', '-p', '-t', okno, '#{window_id}']).then((id) => id.trim() === okno, () => false);
+        if (!zije) {
+            clearInterval(hlidka);
+            for (const s of ['stop', 'zadani', 'uvod', 'nastaveni.json']) fs.rmSync(soubor(s), { force: true });
+            return;
+        }
+
+        let stop = null;
+        try { stop = JSON.parse(fs.readFileSync(soubor('stop'), 'utf8')); } catch { return; }
+        fs.rmSync(soubor('stop'), { force: true });
+
+        if (hotovo(stop)) {
+            console.log(`${new Date().toISOString()} úloha ${uloha.id}: nový výsledek z pokračování konverzace`);
+            await vysledekUlohy(uloha, { ok: true, session: stop.session_id, vysledek: stop.last_assistant_message, chyba: null });
+        }
+    }, 5000);
 }
 
 /** Výsledek na web (ten odpoví do ClickUpu). Při výpadku sítě ještě dvakrát. */

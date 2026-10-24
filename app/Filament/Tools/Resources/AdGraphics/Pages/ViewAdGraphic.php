@@ -7,6 +7,7 @@ use App\Filament\Tools\Resources\AdGraphics\AdGraphicResource;
 use App\Models\AdGraphic;
 use App\Support\AdGraphics\GraphicsAgent;
 use App\Support\Agent\AgentServer;
+use App\Support\Agent\AgentUnavailable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -58,23 +59,43 @@ class ViewAdGraphic extends ViewRecord
     }
 
     /**
-     * Terminál běžící úlohy: výchozí jen ke sledování, po Zasáhnout (`$write`)
-     * jde agentovi psát. Volá ho terminál při každém připojení (vstupenka platí
-     * minutu). Null: úloha čeká ve frontě, už doběhla, nebo služba agenta je
-     * starší a pouští úlohu bez okna.
+     * Terminál konverzace posledního kola: během práce výchozí jen ke sledování,
+     * po Zasáhnout (`$write`) jde agentovi psát, po doběhnutí rovnou. Volá ho
+     * terminál při každém připojení (vstupenka platí minutu). Null: úloha čeká
+     * ve frontě, nebo konverzace spí.
      */
     public function terminalUrl(bool $write = false): ?string
     {
-        $session = $this->latest()->isRunning() ? $this->latest()->agentJob?->session : null;
+        $window = $this->window();
+
+        return $window ? app(AgentServer::class)->terminalUrl($this->latest()->project, $window, (string) auth()->user()?->name, request()->getHost(), readOnly: ! $write) : null;
+    }
+
+    /** Probudí uspanou konverzaci posledního kola (agent v ní pokračuje s kontextem). */
+    public function wake(): void
+    {
+        $job = $this->latest()->agentJob;
+
+        if ($job?->session === null || $this->latest()->isRunning() || $this->window() !== null) {
+            return;
+        }
+
+        try {
+            app(AgentServer::class)->openConversation($this->latest()->project, (string) auth()->user()?->name, $job->session, task: ['id' => $job->getKey(), 'konec' => GraphicsAgent::RESULT_END]);
+        } catch (AgentUnavailable $e) {
+            Notification::make()->danger()->title('Konverzace se neprobudila')->body($e->getMessage())->send();
+        }
+    }
+
+    private function window(): ?string
+    {
+        $session = $this->latest()->agentJob?->session;
 
         if ($session === null) {
             return null;
         }
 
-        $agent = app(AgentServer::class);
-        $window = rescue(fn (): ?string => collect($agent->conversations($this->latest()->project))->whereNotNull('okno')->firstWhere('session', $session)['okno'] ?? null, null, report: false);
-
-        return $window ? $agent->terminalUrl($this->latest()->project, $window, (string) auth()->user()?->name, request()->getHost(), readOnly: ! $write) : null;
+        return rescue(fn (): ?string => collect(app(AgentServer::class)->conversations($this->latest()->project))->whereNotNull('okno')->firstWhere('session', $session)['okno'] ?? null, null, report: false);
     }
 
     public function imageUrl(AdGraphic $round, string $file): string

@@ -162,7 +162,8 @@ class AgentApiController extends Controller
      */
     public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent, GraphicsAgent $graphics): JsonResponse
     {
-        abort_unless($job->status === AgentJob::STATUS_RUNNING, 409, 'Úloha už je uzavřená.');
+        // Grafika: konverzace po úloze zůstává otevřená a může poslat další výsledek.
+        abort_unless($job->status === AgentJob::STATUS_RUNNING || $job->source === GraphicsAgent::SOURCE, 409, 'Úloha už je uzavřená.');
 
         $data = $request->validate([
             'ok' => ['required', 'boolean'],
