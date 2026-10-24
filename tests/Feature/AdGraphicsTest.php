@@ -36,6 +36,9 @@ class AdGraphicsTest extends TestCase
     /** Využití 5h relace Claude ze služby agenta. */
     private int $usage = 20;
 
+    /** Odpověď Gemini na generování: null = obrázek, jinak chybová odpověď [status, zpráva]. */
+    private ?array $geminiError = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,9 +60,11 @@ class AdGraphicsTest extends TestCase
                 ['kind' => 'session', 'percent' => $this->usage, 'resets_at' => now()->addHours(2)->toIso8601String()],
             ]]),
             'agent.test/api/projekty' => Http::response([['slug' => 'svet-cejlonu', 'typ' => 'prazdny', 'zdroj' => '', 'vlakna' => []]]),
-            'generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent' => Http::response(['candidates' => [[
-                'content' => ['parts' => [['inlineData' => ['mimeType' => 'image/png', 'data' => base64_encode('PNGDATA')]]]],
-            ]]]),
+            'generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent' => fn () => $this->geminiError
+                ? Http::response(['error' => ['code' => $this->geminiError[0], 'message' => $this->geminiError[1]]], $this->geminiError[0])
+                : Http::response(['candidates' => [[
+                    'content' => ['parts' => [['inlineData' => ['mimeType' => 'image/png', 'data' => base64_encode('PNGDATA')]]]],
+                ]]]),
             'generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image' => Http::response(['displayName' => 'Nano Banana']),
         ]);
     }
@@ -186,10 +191,32 @@ class AdGraphicsTest extends TestCase
         preg_match('/\?t=([^.]+)\./', (string) $page->instance()->terminalUrl(write: true), $match);
         $this->assertArrayNotHasKey('r', json_decode(base64_decode(strtr($match[1], '-_', '+/')), true));
 
-        // Doběhlá úloha terminál nemá.
-        $graphic->update(['status' => AdGraphic::STATUS_DONE]);
-        $page = Livewire::test(ViewAdGraphic::class, ['record' => $graphic->getKey()])->assertDontSee('Co agent dělá');
-        $this->assertNull($page->instance()->terminalUrl());
+        // Po doběhnutí okno zůstává: pokračovat v konverzaci s kontextem.
+        $graphic->update(['status' => AdGraphic::STATUS_DONE, 'finished_at' => now()]);
+        $page = Livewire::test(ViewAdGraphic::class, ['record' => $graphic->getKey()])->assertDontSee('Co agent dělá')->assertSee('Pokračovat s agentem');
+        preg_match('/\?t=([^.]+)\./', (string) $page->instance()->terminalUrl(write: true), $match);
+        $this->assertSame('@7', json_decode(base64_decode(strtr($match[1], '-_', '+/')), true)['v']);
+    }
+
+    public function test_uspanou_konverzaci_jde_z_detailu_probudit(): void
+    {
+        $this->prihlasit();
+        $graphic = $this->zadani();
+        app(GraphicsAgent::class)->start($graphic);
+        $session = $graphic->refresh()->agentJob->session;
+        $graphic->update(['status' => AdGraphic::STATUS_DONE, 'finished_at' => now()]);
+
+        Http::fake(['agent.test/api/projekty/svet-cejlonu/konverzace' => fn (Request $request) => $request->method() === 'POST'
+            ? Http::response(['okno' => '@9'], 201)
+            : Http::response([['session' => $session, 'okno' => null, 'uloha' => false]])]);
+
+        $page = Livewire::test(ViewAdGraphic::class, ['record' => $graphic->getKey()]);
+        $this->assertNull($page->instance()->terminalUrl(write: true), 'spí, okno nemá');
+
+        $page->call('wake');
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && str_ends_with($request->url(), '/konverzace')
+            && $request['session'] === $session
+            && $request['uloha'] === ['id' => $graphic->agent_job_id, 'konec' => '[/grafika]']);
     }
 
     public function test_bez_formatu_se_zadani_neulozi(): void
@@ -204,7 +231,7 @@ class AdGraphicsTest extends TestCase
         $this->assertSame(0, AdGraphic::query()->count());
     }
 
-    public function test_vysledek_agenta_ulozi_navrhy_a_figmu_a_zneplatni_token(): void
+    public function test_vysledek_agenta_ulozi_navrhy_a_figmu_a_token_plati_jeste_pro_pokracovani(): void
     {
         $graphic = $this->zadani();
         app(GraphicsAgent::class)->start($graphic);
@@ -225,9 +252,35 @@ class AdGraphicsTest extends TestCase
         $this->assertSame('Pět návrhů, dva ve Figmě. Zkontrolujte ceny.', $graphic->result);
         $this->assertSame('https://www.figma.com/design/17isApmzgHZ0S8lM2kGUZh', $graphic->figma_url);
         $this->assertCount(1, $graphic->outputs, 'soubor mimo složku se zahodí');
-        $this->assertNull($graphic->token_hash);
+        $this->assertNotNull($graphic->token_hash, 'konverzace zůstává otevřená, agent může ještě generovat');
         $this->assertSame(AgentJob::STATUS_DONE, $job->refresh()->status);
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'clickup'));
+    }
+
+    public function test_dalsi_vysledek_z_pokracovani_konverzace_obnovi_galerii(): void
+    {
+        $graphic = $this->zadani();
+        app(GraphicsAgent::class)->start($graphic);
+        $job = $graphic->refresh()->agentJob;
+
+        // Agent shodil sám sebe těsně před koncem, úloha skončila chybou.
+        $this->vysledek($job, ['ok' => false, 'chyba' => 'Claude skončil bez výsledku.']);
+        $this->assertSame(AdGraphic::STATUS_FAILED, $graphic->refresh()->status);
+
+        // Člověk v konverzaci napsal, agent odpověděl závěrem: kolo je hotové.
+        $blok = '[grafika]{"figma": "https://www.figma.com/design/ABC", "varianty": [{"soubor": "01-a-1080x1350.png", "nazev": "A", "format": "IG", "text": ""}]}[/grafika]';
+        $this->vysledek($job, ['ok' => true, 'vysledek' => "Hotovo.\n".$blok]);
+        $graphic->refresh();
+        $this->assertSame(AdGraphic::STATUS_DONE, $graphic->status);
+        $this->assertNull($graphic->error);
+        $this->assertSame('01-a-1080x1350.png', $graphic->outputs[0]['soubor']);
+
+        // Další změna vymění návrhy, odpověď bez bloku galerii nechá.
+        $this->vysledek($job, ['ok' => true, 'vysledek' => str_replace('01-a-', '02-b-', $blok)]);
+        $this->vysledek($job, ['ok' => true, 'vysledek' => 'Jen odpověď na otázku.']);
+        $graphic->refresh();
+        $this->assertSame(AdGraphic::STATUS_DONE, $graphic->status);
+        $this->assertSame('02-b-1080x1350.png', $graphic->outputs[0]['soubor']);
     }
 
     public function test_vysledek_bez_navrhu_je_chyba(): void
@@ -241,7 +294,7 @@ class AdGraphicsTest extends TestCase
         $this->assertStringContainsString('nevrátil žádný návrh', $graphic->error);
     }
 
-    public function test_agent_si_stahne_podklad_jen_se_spravnym_tokenem_a_jen_behem_prace(): void
+    public function test_agent_si_stahne_podklad_jen_se_spravnym_tokenem_a_jen_behem_prace_a_den_po_ni(): void
     {
         Storage::fake('local');
         Storage::disk('local')->put('reklamni-grafika/abc.png', 'LOGO');
@@ -254,8 +307,11 @@ class AdGraphicsTest extends TestCase
         $this->get($url, ['X-Grafika-Token' => $token])->assertOk()->assertDownload('logo.png');
         $this->get("/nastroje/api/grafika/{$graphic->getKey()}/podklady/5", ['X-Grafika-Token' => $token])->assertNotFound();
 
+        // Po doběhnutí ještě den (pokračování v konverzaci), pak už ne.
         $this->vysledek($graphic->refresh()->agentJob, ['ok' => false, 'chyba' => 'konec']);
-        $this->get($url, ['X-Grafika-Token' => $token])->assertUnauthorized();
+        $this->get($url, ['X-Grafika-Token' => $token])->assertOk();
+        $this->travel(2)->days();
+        $this->get($url, ['X-Grafika-Token' => $token])->assertStatus(409);
     }
 
     public function test_obrazek_z_gemini_s_klicem_na_webu_a_limitem(): void
@@ -369,10 +425,32 @@ class AdGraphicsTest extends TestCase
         $this->prihlasit();
         $this->klic('AIza-tajny');
 
-        Livewire::test(ManageAdGraphics::class)->callAction('check')->assertNotified('Klíč funguje');
+        Livewire::test(ManageAdGraphics::class)->callAction('check')->assertNotified('Klíč platí');
+        Livewire::test(ManageAdGraphics::class)->callAction('try')->assertNotified('Obrázky fungují');
 
         $stored = DB::table('settings')->where('group', 'grafika')->where('name', 'gemini_api_key')->value('payload');
         $this->assertStringNotContainsString('AIza-tajny', (string) $stored);
+    }
+
+    public function test_bezplatny_tarif_googlu_vysvetli_a_ukaze_v_detailu_i_nastaveni(): void
+    {
+        $this->prihlasit();
+        $this->klic();
+        $this->geminiError = [429, 'You exceeded your current quota. * Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.5-flash-preview-image'];
+        $graphic = $this->zadani(['ai_images' => true]);
+        app(GraphicsAgent::class)->start($graphic);
+
+        $this->post("/nastroje/api/grafika/{$graphic->getKey()}/obrazek", ['popis' => 'Tea'], ['X-Grafika-Token' => $this->tokenZeZadani()])
+            ->assertStatus(502)
+            ->assertJsonPath('chyba', fn (string $chyba): bool => str_contains($chyba, 'bezplatném tarifu'));
+        $this->assertStringContainsString('Billing', (string) $graphic->refresh()->image_error);
+        $this->assertStringContainsString("-w '%{http_code}\\n'", $this->task['zadani'], 'agent chybu uvidí');
+
+        Livewire::test(ViewAdGraphic::class, ['record' => $graphic->getKey()])->assertSee('Obrázky z Nano Banana se nevygenerovaly');
+        Livewire::test(ManageAdGraphics::class)
+            ->assertSee('Poslední chyba při generování')
+            ->callAction('try')
+            ->assertNotified('Obrázek se nevygeneroval');
     }
 
     public function test_pomer_stran_pro_gemini(): void

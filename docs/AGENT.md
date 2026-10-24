@@ -282,12 +282,23 @@ Formulář v nástrojích → agent na pozadí připraví návrhy reklam jako PN
   obyčejná konverzace v okně tmuxu (`terminal: true` v úloze, okno má `@uloha`),
   aby šla sledovat. Konec pozná háček Stop z `--settings` (zapíše `~/.taveo-ulohy/<id>.stop`,
   odtud `last_assistant_message` jako výsledek). Když agent čeká na příkaz na pozadí,
-  ještě není hotovo, ledaže odpověď už obsahuje `[/grafika]` (`konec` v úloze). Pak
-  služba okno zavře.
+  ještě není hotovo, ledaže odpověď už obsahuje `[/grafika]` (`konec` v úloze).
+  Celé zadání je jen v souboru `~/.taveo-ulohy/<id>.zadani`, Claude dostane v příkazové
+  řádce jen úvod s cestou: dřív `pgrep -f "http.server <port>" | xargs kill` (úklid
+  serveru náhledu) trefil i Clauda, protože měl celé zadání v argv, a úloha spadla těsně
+  před koncem.
+- **Po úloze okno zůstává** jako běžná konverzace (`@uloha` se smaže, uspí se po 12 h).
+  Dokud žije, služba hlídá háček dál: odpověď s `[/grafika]` (člověk chtěl změnu) pošle
+  na web znovu a `GraphicsAgent::finish()` obnoví galerii, i u kola, které skončilo chybou.
+  Odpověď bez bloku galerii nechá. Token zadání platí ještě den po doběhnutí (obrázky
+  a podklady v pokračování). Probuzená konverzace (po uspání) háček nemá, galerii pak
+  obnoví až Upravit návrhy.
 - **Terminál v detailu:** blok „Co agent dělá“ = terminál téhle konverzace. Výchozí jen
   ke sledování (vstupenka s `r: 1`, služba pustí jen kolečko myši), **Zasáhnout** ji vymění
   za vstupenku s psaním. Divák má vlastní sezení tmuxu jen s oknem úlohy (`link-window`),
-  takže po konci úlohy nevidí jiné konverzace projektu. Když do úlohy někdo napíše,
+  takže po konci úlohy nevidí jiné konverzace projektu. Po doběhnutí je pod návrhy
+  „Pokračovat s agentem“ (rovnou na psaní), uspanou konverzaci jde tamtéž probudit.
+  Probouzí se ve své složce (u živého webu `kod/`, ne v kopii), jinak ji `--resume` nenajde. Když do úlohy někdo napíše,
   služba ji ukončí až po odpovědi s `[/grafika]` (odpověď na jeho zprávu ještě není
   výsledek) a limit se od posledního zásahu prodlouží o 15 min. Úloha je vidět i v seznamu
   konverzací projektu jako „Úloha běží“, sama se tam ale neotevře. Výsledek přijde na `/nastroje/api/agent/ulohy/{id}/vysledek`,
@@ -312,7 +323,11 @@ Formulář v nástrojích → agent na pozadí připraví návrhy reklam jako PN
   tokenem zadání v hlavičce `X-Grafika-Token`. Token platí, jen dokud úloha běží, a pustí
   jen k podkladům a obrázkům svého zadání. Strop obrázků na zadání je v nastavení (12),
   počítá se i nepovedený pokus. Model jde přepsat (výchozí `gemini-2.5-flash-image`).
-  „Ověřit klíč“ se jen zeptá na model, nic neplatí.
+  „Ověřit klíč“ se jen zeptá na model, nic neplatí, a **bezplatný tarif nepozná**: Google
+  na něm u obrázkových modelů vrací 429 s `limit: 0`. To odhalí „Vyzkoušet obrázek“
+  (jeden obrázek, asi 1 Kč) a ukáže česky, že je potřeba zapnout placení (Billing) u projektu
+  klíče v Google AI Studiu. Chyba generování se ukládá k zadání (`image_error`) a je vidět
+  v detailu i v nastavení, agent ji vidí v odpovědi (curl bez `-f`).
 
 ## Z terminálu přes SSH
 
