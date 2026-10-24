@@ -372,6 +372,10 @@ na web se nedostane a vidí ji každý, kdo s projektem pracuje.
 
 `agent odebrat <projekt>` agentovi přístup vezme. Snímky, zálohy a paměť zůstanou.
 
+Web jinde (FTP, WordPress, Shoptet, Upgates na cizím hostingu): projekt `prazdny`
+a přístupy do Nástrojů → **Trezor** ([TREZOR.md](TREZOR.md)). Agent hesla nedostane,
+používá je přes `taveo ftp…`, `taveo wp`, `taveo prihlasit`.
+
 ## Pojistky
 
 | Riziko | Pojistka |

@@ -4,6 +4,7 @@ use App\Http\Controllers\AdReportController;
 use App\Http\Controllers\Agent\AdGraphicApiController;
 use App\Http\Controllers\Agent\AgentApiController;
 use App\Http\Controllers\Agent\KnowledgeApiController;
+use App\Http\Controllers\Agent\VaultApiController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
@@ -75,6 +76,18 @@ Route::prefix('nastroje/api/agent')
         Route::get('/mozek/zdroje/{source}', [KnowledgeApiController::class, 'source'])->name('agent.api.mozek.zdroj');
         Route::get('/mozek/zdroje/{source}/soubory/{index}', [KnowledgeApiController::class, 'file'])->whereNumber('index')->name('agent.api.mozek.soubor');
         Route::post('/mozek/navrhy', [KnowledgeApiController::class, 'propose'])->name('agent.api.mozek.navrhy');
+
+        // Trezor přístupů (docs/TREZOR.md): agent hesla nedostane, práci s nimi dělá web.
+        Route::get('/trezor', [VaultApiController::class, 'index'])->name('agent.api.trezor');
+        Route::prefix('/trezor/{entry}')->whereNumber('entry')->group(function () {
+            Route::get('/ftp', [VaultApiController::class, 'ftpList'])->name('agent.api.trezor.ftp');
+            Route::get('/ftp/soubor', [VaultApiController::class, 'ftpFile'])->name('agent.api.trezor.ftp.soubor');
+            Route::get('/ftp/zip', [VaultApiController::class, 'ftpZip'])->name('agent.api.trezor.ftp.zip');
+            Route::post('/ftp/nahrat', [VaultApiController::class, 'ftpUpload'])->name('agent.api.trezor.ftp.nahrat');
+            Route::get('/nahrani/{upload}', [VaultApiController::class, 'upload'])->name('agent.api.trezor.nahrani');
+            Route::post('/wp', [VaultApiController::class, 'wordpress'])->name('agent.api.trezor.wp');
+            Route::post('/prihlasit', [VaultApiController::class, 'login'])->name('agent.api.trezor.prihlasit');
+        });
     });
 
 // Agent při práci na reklamní grafice: podklady a obrázky z Gemini. Ověřuje
