@@ -155,6 +155,41 @@ class AdGraphicsTest extends TestCase
         $this->assertStringContainsString('Generování obrázků je vypnuté', $prompt);
         $this->assertStringContainsString('create_new_file', $prompt);
         $this->assertTrue($graphic->tokenMatches($this->tokenZeZadani()));
+        $this->assertTrue($this->task['terminal'], 'úloha běží v okně, ať jde sledovat');
+    }
+
+    public function test_bezici_ulohu_jde_sledovat_v_terminalu_jen_ke_cteni(): void
+    {
+        $this->prihlasit();
+        $graphic = $this->zadani();
+        app(GraphicsAgent::class)->start($graphic);
+        $session = $graphic->refresh()->agentJob->session;
+
+        $okna = [];
+        Http::fake(['agent.test/api/projekty/svet-cejlonu/konverzace' => function () use (&$okna) {
+            return Http::response($okna);
+        }]);
+
+        // Úloha ještě čeká ve frontě, okno nemá.
+        $page = Livewire::test(ViewAdGraphic::class, ['record' => $graphic->getKey()])->assertOk()->assertSee('Co agent dělá');
+        $this->assertNull($page->instance()->terminalUrl());
+
+        $okna = [
+            ['session' => 'cizi-konverzace', 'okno' => '@2', 'uloha' => false],
+            ['session' => $session, 'okno' => '@7', 'uloha' => true],
+        ];
+        preg_match('/\?t=([^.]+)\./', (string) $page->instance()->terminalUrl(), $match);
+        $ticket = json_decode(base64_decode(strtr($match[1], '-_', '+/')), true);
+        $this->assertSame(['p' => 'svet-cejlonu', 'v' => '@7', 'r' => 1], array_intersect_key($ticket, array_flip(['p', 'v', 'r'])));
+
+        // Zasáhnout: vstupenka, se kterou jde psát.
+        preg_match('/\?t=([^.]+)\./', (string) $page->instance()->terminalUrl(write: true), $match);
+        $this->assertArrayNotHasKey('r', json_decode(base64_decode(strtr($match[1], '-_', '+/')), true));
+
+        // Doběhlá úloha terminál nemá.
+        $graphic->update(['status' => AdGraphic::STATUS_DONE]);
+        $page = Livewire::test(ViewAdGraphic::class, ['record' => $graphic->getKey()])->assertDontSee('Co agent dělá');
+        $this->assertNull($page->instance()->terminalUrl());
     }
 
     public function test_bez_formatu_se_zadani_neulozi(): void

@@ -69,6 +69,8 @@ class GraphicsAgent
                 'zadani' => $this->prompt($graphic, $token),
                 'session' => $job->session,
                 'autor' => 'Grafika · '.($graphic->author ?: 'nástroje'),
+                'terminal' => true,
+                'konec' => '[/grafika]',
             ]);
         } catch (Throwable $e) {
             Log::warning('Reklamní grafika: úlohu agenta se nepodařilo spustit.', ['graphic' => $graphic->getKey(), 'error' => $e->getMessage()]);
