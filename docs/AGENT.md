@@ -276,9 +276,21 @@ Formulář v nástrojích → agent na pozadí připraví návrhy reklam jako PN
   počet návrhů (výchozí 5), styl (web, písma, barvy, inspirace), podklady (logo,
   fotky, až 10 souborů na disk `local`, `storage/app/private/reklamni-grafika`)
   a jestli smí generovat obrázky.
-- **Běh:** stejně jako úloha z ClickUpu. `AgentJob` se `source = grafika`, služba
-  agenta ji odpracuje v projektu klienta (`claude -p`, 30 min, pojistka předplatného
-  `CLICKUP_AGENT_MAX_USAGE`). Výsledek přijde na `/nastroje/api/agent/ulohy/{id}/vysledek`,
+- **Běh:** fronta jako u úlohy z ClickUpu. `AgentJob` se `source = grafika`, služba
+  agenta ji odpracuje v projektu klienta (30 min, pojistka předplatného
+  `CLICKUP_AGENT_MAX_USAGE`). Na rozdíl od ClickUpu ne přes `claude -p`, ale jako
+  obyčejná konverzace v okně tmuxu (`terminal: true` v úloze, okno má `@uloha`),
+  aby šla sledovat. Konec pozná háček Stop z `--settings` (zapíše `~/.taveo-ulohy/<id>.stop`,
+  odtud `last_assistant_message` jako výsledek). Když agent čeká na příkaz na pozadí,
+  ještě není hotovo, ledaže odpověď už obsahuje `[/grafika]` (`konec` v úloze). Pak
+  služba okno zavře.
+- **Terminál v detailu:** blok „Co agent dělá“ = terminál téhle konverzace. Výchozí jen
+  ke sledování (vstupenka s `r: 1`, služba pustí jen kolečko myši), **Zasáhnout** ji vymění
+  za vstupenku s psaním. Divák má vlastní sezení tmuxu jen s oknem úlohy (`link-window`),
+  takže po konci úlohy nevidí jiné konverzace projektu. Když do úlohy někdo napíše,
+  služba ji ukončí až po odpovědi s `[/grafika]` (odpověď na jeho zprávu ještě není
+  výsledek) a limit se od posledního zásahu prodlouží o 15 min. Úloha je vidět i v seznamu
+  konverzací projektu jako „Úloha běží“, sama se tam ale neotevře. Výsledek přijde na `/nastroje/api/agent/ulohy/{id}/vysledek`,
   `AgentApiController` ho podle `source` pošle do `GraphicsAgent::finish()`, ne do ClickUpu.
   Ztracené úlohy po 2 h uzavře `clickup:hlidat` (u grafiky bez ClickUpu).
 - **Výstup:** agent ukládá do `/projekty/<projekt>/predani/grafika-<id>/` (PNG, `popis.md`,

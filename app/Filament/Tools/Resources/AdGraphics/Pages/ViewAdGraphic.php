@@ -6,6 +6,7 @@ use App\Filament\Tools\Pages\Agent\AgentProject;
 use App\Filament\Tools\Resources\AdGraphics\AdGraphicResource;
 use App\Models\AdGraphic;
 use App\Support\AdGraphics\GraphicsAgent;
+use App\Support\Agent\AgentServer;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -54,6 +55,26 @@ class ViewAdGraphic extends ViewRecord
     public function latest(): AdGraphic
     {
         return $this->rounds()->last();
+    }
+
+    /**
+     * Terminál běžící úlohy: výchozí jen ke sledování, po Zasáhnout (`$write`)
+     * jde agentovi psát. Volá ho terminál při každém připojení (vstupenka platí
+     * minutu). Null: úloha čeká ve frontě, už doběhla, nebo služba agenta je
+     * starší a pouští úlohu bez okna.
+     */
+    public function terminalUrl(bool $write = false): ?string
+    {
+        $session = $this->latest()->isRunning() ? $this->latest()->agentJob?->session : null;
+
+        if ($session === null) {
+            return null;
+        }
+
+        $agent = app(AgentServer::class);
+        $window = rescue(fn (): ?string => collect($agent->conversations($this->latest()->project))->whereNotNull('okno')->firstWhere('session', $session)['okno'] ?? null, null, report: false);
+
+        return $window ? $agent->terminalUrl($this->latest()->project, $window, (string) auth()->user()?->name, request()->getHost(), readOnly: ! $write) : null;
     }
 
     public function imageUrl(AdGraphic $round, string $file): string

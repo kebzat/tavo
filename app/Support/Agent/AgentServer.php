@@ -86,7 +86,10 @@ class AgentServer
      * pošle zpět na /nastroje/api/agent/ulohy/{id}. Služba je řadí, v jednom
      * projektu běží nejvýš jedna. Se `session` naváže na předchozí konverzaci.
      *
-     * @param  array{id: int, zadani: string, session: ?string, autor: string}  $task
+     * S `terminal` běží úloha v okně tmuxu jako konverzace a jde sledovat v terminálu,
+     * `konec` je značka v závěrečné odpovědi (hotovo, i když něco běží na pozadí).
+     *
+     * @param  array{id: int, zadani: string, session: ?string, autor: string, terminal?: bool, konec?: string}  $task
      */
     public function runTask(string $slug, array $task): void
     {
@@ -255,14 +258,15 @@ class AgentServer
         $this->call(fn (PendingRequest $http) => $http->post('/api/aktualizovat'));
     }
 
-    /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. */
-    public function terminalUrl(string $slug, string $window, string $user, ?string $host = null): string
+    /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. `$readOnly`: jen sledovat, psát nejde. */
+    public function terminalUrl(string $slug, string $window, string $user, ?string $host = null, bool $readOnly = false): string
     {
         $payload = rtrim(strtr(base64_encode((string) json_encode([
             'p' => $slug,
             'v' => $window,
             'u' => $user,
             'exp' => time() + self::TICKET_TTL,
+            ...($readOnly ? ['r' => 1] : []),
         ])), '+/', '-_'), '=');
 
         $signature = rtrim(strtr(base64_encode(hash_hmac('sha256', $payload, (string) $this->secret, true)), '+/', '-_'), '=');

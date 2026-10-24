@@ -131,11 +131,11 @@ async function okna(slug) {
         return [];
     }
 
-    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}', '#{@trvala}'].join('\t');
+    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}', '#{@trvala}', '#{@uloha}'].join('\t');
     const vystup = await tmux(['list-windows', '-t', `=${slug}`, '-F', format]);
 
     return vystup.trim().split('\n').filter(Boolean).map((r) => {
-        const [id, session, autor, aktivita, pid, rc, trvala] = r.split('\t');
+        const [id, session, autor, aktivita, pid, rc, trvala, uloha] = r.split('\t');
         return {
             id,
             session: session || null,
@@ -144,6 +144,7 @@ async function okna(slug) {
             claude: bezi(pid, 'claude'),
             rc: rc === '1',
             trvala: trvala === '1',
+            uloha: Boolean(uloha),
         };
     });
 }
@@ -239,13 +240,14 @@ async function konverzace(p) {
             okno: okno?.id || null,
             trvala: okno?.trvala || false,
             claude: okno?.claude || false,
+            uloha: okno?.uloha || false,
             nova: false,
         };
     });
 
     // Okno, ve kterém ještě nikdo nic nenapsal, na disku konverzaci nemá.
     for (const o of bezici.filter((o) => !disk.some((k) => k.session === o.session))) {
-        seznam.push({ session: o.session, nazev: 'Nová konverzace', aktualizace: o.aktivita, autor: o.autor, okno: o.id, trvala: o.trvala, claude: o.claude, nova: true });
+        seznam.push({ session: o.session, nazev: 'Nová konverzace', aktualizace: o.aktivita, autor: o.autor, okno: o.id, trvala: o.trvala, claude: o.claude, uloha: o.uloha, nova: true });
     }
 
     return seznam.sort((a, b) => (Boolean(b.okno) - Boolean(a.okno)) || (b.aktualizace - a.aktualizace));
@@ -901,7 +903,7 @@ async function api(req, res) {
             return odpoved(res, 422, { chyba: 'Neplatná konverzace.' });
         }
 
-        zaraditUlohu(p, { id: data.id, zadani: data.zadani, session: data.session || null, autor: radek(data.autor || 'ClickUp', 60) });
+        zaraditUlohu(p, { id: data.id, zadani: data.zadani, session: data.session || null, autor: radek(data.autor || 'ClickUp', 60), terminal: data.terminal === true, konec: typeof data.konec === 'string' ? data.konec : null });
         return odpoved(res, 202, { zarazeno: true, ve_fronte: (fronty.get(p.slug) || []).length });
     }
 
@@ -1125,6 +1127,9 @@ const ULOHY_LOG = path.join(HOME, '.taveo-ulohy');
 const API_WEBU = process.env.TAVEO_API_URL || 'https://taveo.cz/nastroje/api/agent';
 const fronty = new Map();
 const bezici = new Set();
+// Okno úlohy → kdy do něj naposledy někdo psal (zásah člověka z terminálu).
+const zasahy = new Map();
+const ZASAH_NAVIC_MIN = 15;
 
 function zaraditUlohu(p, uloha) {
     fronty.set(p.slug, [...(fronty.get(p.slug) || []), uloha]);
@@ -1180,6 +1185,13 @@ async function odpracovat(p, uloha) {
 
     console.log(`${new Date().toISOString()} úloha ${uloha.id}: start v ${p.slug} (${navazat ? 'navazuje' : 'nová'} ${session})`);
 
+    if (uloha.terminal) {
+        const vysledek = await vTerminalu(p, uloha, cwd, session, navazat);
+        await vysledekUlohy(uloha, vysledek);
+        console.log(`${new Date().toISOString()} úloha ${uloha.id}: ${vysledek.ok ? 'hotovo' : 'chyba'} (v terminálu)`);
+        return;
+    }
+
     const { stdout, stderr, chyba } = await new Promise((resolve) => {
         // Paměť projektu říká „pracuj v kopii“, úlohy z ClickUpu ale jdou rovnou na web.
         const zadani = p.typ === 'server'
@@ -1215,6 +1227,81 @@ async function odpracovat(p, uloha) {
     });
 
     console.log(`${new Date().toISOString()} úloha ${uloha.id}: ${ok ? 'hotovo' : 'chyba'}`);
+}
+
+/**
+ * Úloha, na kterou se dá dívat (reklamní grafika): běží jako obyčejná
+ * konverzace v okně tmuxu, takže ji nástroje ukážou v terminálu stejně jako
+ * konverzaci s člověkem. Konec pozná háček Stop (Claude dopsal odpověď),
+ * zapíše ho do souboru a odtud se vezme výsledek. Okno se pak zavře.
+ * Když Claude jen čeká na příkaz na pozadí, není hotovo, ledaže odpověď
+ * už obsahuje závěrečnou značku úlohy (`konec`, třeba „[/grafika]“).
+ * Po zásahu člověka (psal do terminálu) se čeká jen na značku: odpověď
+ * na jeho zprávu ještě není výsledek. Limit se pak prodlužuje od zásahu.
+ */
+async function vTerminalu(p, uloha, cwd, session, navazat) {
+    fs.mkdirSync(ULOHY_LOG, { recursive: true });
+    const soubor = (pripona) => path.join(ULOHY_LOG, `${uloha.id}.${pripona}`);
+    fs.rmSync(soubor('stop'), { force: true });
+    fs.writeFileSync(soubor('zadani'), uloha.zadani);
+    fs.writeFileSync(soubor('nastaveni.json'), JSON.stringify({
+        hooks: { Stop: [{ hooks: [{ type: 'command', command: `cat > ${soubor('stop')}` }] }] },
+    }));
+
+    // Stejná konverzace otevřená v nástrojích by se s úlohou prala o soubor.
+    for (const o of await konverzacniOkna(p.slug)) {
+        if (o.session === session) await tmux(['kill-window', '-t', o.id]).catch(() => {});
+    }
+
+    const prikaz = `bash -lc 'claude ${navazat ? '--resume' : '--session-id'} ${session} --permission-mode auto --settings ${soubor('nastaveni.json')} "$(cat ${soubor('zadani')})"'`;
+    const args = (await okna(p.slug)).length > 0
+        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'uloha', prikaz]
+        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-x', '160', '-y', '45', '-c', cwd, ...prostredi(p, cwd), '-n', 'uloha', prikaz];
+
+    const okno = (await tmux(args)).trim();
+    await tmux(['set-option', '-w', '-t', okno, '@session', session]);
+    await tmux(['set-option', '-w', '-t', okno, '@autor', uloha.autor]);
+    await tmux(['set-option', '-w', '-t', okno, '@uloha', String(uloha.id)]);
+    await tmux(['set-option', '-w', '-t', okno, 'automatic-rename', 'off']);
+
+    const konec = Date.now() + ULOHA_LIMIT_MIN * 60 * 1000;
+    let stop = null;
+    let chyba = null;
+
+    while (!stop && !chyba) {
+        await new Promise((r) => setTimeout(r, 2000));
+
+        // Háček píše soubor průběžně, nedopsaný JSON se přečte příště.
+        try { stop = JSON.parse(fs.readFileSync(soubor('stop'), 'utf8')); } catch { /* ještě nedoběhl */ }
+        const ceka = stop?.background_tasks?.some((t) => t.status === 'running') || zasahy.has(okno);
+        if (stop && ceka && !(uloha.konec && String(stop.last_assistant_message || '').includes(uloha.konec))) {
+            fs.rmSync(soubor('stop'), { force: true });
+            stop = null;
+        }
+        if (stop) break;
+
+        if (!(await okna(p.slug)).some((o) => o.id === okno)) {
+            chyba = 'Claude skončil bez výsledku.';
+        } else if (Date.now() > Math.max(konec, (zasahy.get(okno) || 0) + ZASAH_NAVIC_MIN * 60 * 1000)) {
+            chyba = `Nestihl jsem to do ${ULOHA_LIMIT_MIN} minut.`;
+        }
+    }
+
+    zasahy.delete(okno);
+    const obrazovka = await tmux(['capture-pane', '-p', '-J', '-t', okno, '-S', '-3000']).catch(() => '');
+    fs.writeFileSync(path.join(ULOHY_LOG, `${uloha.id}.log`), [obrazovka, stop ? JSON.stringify(stop) : '', chyba ? `CHYBA: ${chyba}` : ''].join('\n'));
+    // Zadání nese jednorázový token, po úloze ho nenechávat ležet.
+    for (const s of ['stop', 'zadani', 'nastaveni.json']) fs.rmSync(soubor(s), { force: true });
+
+    // Chvíli nechat dopsat konverzaci na disk, pak okno (i servery, co si agent pustil) zavřít.
+    setTimeout(() => tmux(['kill-window', '-t', okno]).catch(() => {}), stop ? 3000 : 0);
+
+    const vysledek = typeof stop?.last_assistant_message === 'string' ? stop.last_assistant_message : null;
+    if (/usage limit|limit reached|rate limit/i.test(`${chyba ? obrazovka.slice(-2000) : ''}${vysledek && !vysledek.includes('[grafika]') ? vysledek : ''}`)) {
+        chyba = 'Narazil jsem na limit předplatného Claude.';
+    }
+
+    return { ok: !chyba, session: stop?.session_id || session, vysledek, chyba };
 }
 
 /** Výsledek na web (ten odpoví do ClickUpu). Při výpadku sítě ještě dvakrát. */
@@ -1291,18 +1378,31 @@ server.on('upgrade', (req, socket, head) => {
         return socket.destroy();
     }
 
-    wss.handleUpgrade(req, socket, head, (ws) => pripojit(ws, p, v));
+    // Okno musí v projektu běžet: jinak by tmux ukázal jiné okno projektu
+    // (třeba po konci úlohy) a okno úlohy se připojuje samo (link-window).
+    okna(p.slug).then((seznam) => {
+        const okno = seznam.find((o) => o.id === v.v);
+        if (!okno) {
+            socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+            return socket.destroy();
+        }
+        wss.handleUpgrade(req, socket, head, (ws) => pripojit(ws, p, v, Boolean(okno?.uloha)));
+    });
 });
 
-function pripojit(ws, p, v) {
+function pripojit(ws, p, v, uloha = false) {
     // Každé připojení má vlastní sezení ve skupině projektu. Sdílí okna, ale
     // přepnutí konverzace u Toma nepřepne konverzaci Pavlovi. Po odpojení zmizí.
     const id = `${p.slug}-w${crypto.randomBytes(3).toString('hex')}`;
+    // Úloha: vlastní sezení jen s jejím oknem, bez ostatních oken projektu.
+    // Když úloha skončí, sezení zmizí s ní a spojení se zavře.
+    const sezeni = uloha
+        ? ['new-session', '-s', id, '-n', 'prazdne', 'tail -f /dev/null', ';', 'link-window', '-s', v.v, '-t', `${id}:9`, ';', 'kill-window', '-t', `${id}:0`]
+        : ['new-session', '-t', `=${p.slug}`, '-s', id, ';', 'select-window', '-t', `${id}:${v.v}`];
     const term = pty.spawn('tmux', [
-        'new-session', '-t', `=${p.slug}`, '-s', id, ';',
+        ...sezeni, ';',
         'set-option', '-t', id, 'destroy-unattached', 'on', ';',
-        'set-option', '-t', id, 'status', 'off', ';',
-        'select-window', '-t', `${id}:${v.v}`,
+        'set-option', '-t', id, 'status', 'off',
     ], {
         name: 'xterm-256color',
         cols: 120,
@@ -1320,7 +1420,10 @@ function pripojit(ws, p, v) {
         let data;
         try { data = JSON.parse(zprava.toString()); } catch { return; }
 
-        if (data.t === 'i' && typeof data.d === 'string') {
+        // Jen ke sledování projde kolečko myši, psaní ne. Psaní do úlohy = zásah.
+        const mys = typeof data.d === 'string' && /^(\x1b\[<\d+;\d+;\d+[Mm])+$/.test(data.d);
+        if (data.t === 'i' && typeof data.d === 'string' && (!v.r || mys)) {
+            if (uloha && !mys) zasahy.set(v.v, Date.now());
             term.write(data.d);
         } else if (data.t === 'r') {
             const cols = Math.max(20, Math.min(400, Number(data.c) || 80));

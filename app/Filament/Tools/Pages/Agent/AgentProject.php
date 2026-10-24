@@ -141,6 +141,7 @@ class AgentProject extends Page
                 'status' => match (true) {
                     $item['okno'] === null => ['label' => 'Uspaná', 'color' => 'gray'],
                     ! $item['claude'] => ['label' => 'Claude ukončen', 'color' => 'warning'],
+                    $item['uloha'] ?? false => ['label' => 'Úloha běží', 'color' => 'warning'],
                     $item['trvala'] ?? false => ['label' => 'Trvalá', 'color' => 'primary'],
                     default => ['label' => 'Běží', 'color' => 'success'],
                 },
@@ -308,6 +309,7 @@ class AgentProject extends Page
 
     private function latestRunning(): ?string
     {
-        return collect($this->conversations())->whereNotNull('okno')->sortByDesc('aktualizace')->first()['okno'] ?? null;
+        // Úlohu na pozadí (grafika) neotevírat samo, psaním by se do ní zasáhlo.
+        return collect($this->conversations())->whereNotNull('okno')->reject(fn (array $item): bool => $item['uloha'] ?? false)->sortByDesc('aktualizace')->first()['okno'] ?? null;
     }
 }
