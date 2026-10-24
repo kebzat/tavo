@@ -18,13 +18,18 @@ use Illuminate\Support\Str;
  *   (záloha databáze, předchozí verze stranou, migrace, cache) → Na webu.
  *
  * Git je jen historie: po nahrání se úprava sloučí do main na GitHubu
- * ({@see syncHistory()}), na to se nečeká. Nasazení z GitHubu (deploy.yml)
- * pozná, že stejná verze už na webu je, a nic nedělá.
+ * ({@see syncHistory()}), na to se nečeká. Sloučení má v popisu [skip ci],
+ * nasazení z GitHubu (deploy.yml) se tak vůbec nespustí. Vydání se spojuje
+ * s tím, co je na webu (pamatuje si to služba agenta), ne jen s main, takže
+ * úprava, která ještě není v historii, z webu nezmizí.
  *
  * Vrátit nahraje zpátky verzi webu před posledním nasazením (databáze zůstává).
  */
 class InstantPublisher
 {
+    /** Popis sloučení v historii. [skip ci]: na webu už je, GitHub ho nemá nasazovat znovu. */
+    private const HISTORY_MESSAGE = "Na webu už je, zveřejněno tlačítkem v nástrojích Taveo.\n\n[skip ci]";
+
     public function __construct(
         private readonly AgentServer $agent,
         private readonly GitHub $github,
@@ -41,6 +46,32 @@ class InstantPublisher
         if (Cache::add('agent-vydani-'.$project.'-'.$sha, true, now()->addMinutes(30))) {
             rescue(fn () => $this->agent->startRelease($project, $sha, deploy: false), report: false);
         }
+    }
+
+    /**
+     * Proč teď zveřejnit nejde, nebo null. Vydání se spojuje s tím, co je na
+     * webu: dvě nahrání naráz by o sobě nevěděla. A vrácená úprava je v main,
+     * dokud do historie nedorazí i vrácení, další vydání by ji jinak přineslo zpátky.
+     */
+    public function blocker(string $project): ?string
+    {
+        $running = AgentPublication::query()->where('project', $project)->running()->first();
+
+        if ($running !== null) {
+            return 'Právě se zveřejňuje „'.$running->title.'“. Počkejte, až doběhne, pak to zkuste znovu.';
+        }
+
+        $revert = AgentPublication::query()->with('reverts')->where('project', $project)
+            ->whereNotNull('reverts_id')
+            ->where('status', PublicationStatus::Done)
+            ->whereNull('merge_sha')
+            ->whereNull('error')
+            ->where('created_at', '>', now()->subDays(2))
+            ->get()
+            ->first(fn (AgentPublication $p): bool => $p->repo !== null && $p->reverts?->error === null && $this->github->configured());
+
+        return $revert === null ? null
+            : '„'.$revert->title.'“ se ještě zapisuje do historie na GitHubu, obvykle do minuty. Pak to zkuste znovu.';
     }
 
     /** @param  array<string, mixed>  $item  hotová práce ze služby agenta */
@@ -130,7 +161,7 @@ class InstantPublisher
                 }
 
                 $pull = $this->github->revert($original->pr_node_id, $publication->title);
-                $merged = $this->github->merge($publication->repo, $pull['number'], $pull['sha'], $publication->title);
+                $merged = $this->github->merge($publication->repo, $pull['number'], $pull['sha'], $publication->title, self::HISTORY_MESSAGE);
                 $publication->update(['pr_number' => $pull['number'], 'pr_node_id' => $pull['node_id'], 'merge_sha' => $merged, 'merged_at' => now()]);
                 rescue(fn () => $this->github->deleteBranch($publication->repo, $pull['branch']), report: false);
 
@@ -143,7 +174,7 @@ class InstantPublisher
             }
 
             $pull = $this->github->openPull($publication->repo, $publication->branch, $publication->title, trim(($publication->description ?? '')."\n\n---\nZveřejnil(a) ".($publication->user?->name ?? 'neznámý').' tlačítkem v nástrojích Taveo, rovnou na web.'));
-            $merged = $this->github->merge($publication->repo, $pull['number'], $publication->sha, $publication->title);
+            $merged = $this->github->merge($publication->repo, $pull['number'], $publication->sha, $publication->title, self::HISTORY_MESSAGE);
             $publication->update(['pr_number' => $pull['number'], 'pr_node_id' => $pull['node_id'], 'merge_sha' => $merged, 'merged_at' => now()]);
 
             rescue(fn () => $this->github->deleteBranch($publication->repo, $publication->branch), report: false);

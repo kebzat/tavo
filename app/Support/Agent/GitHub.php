@@ -105,13 +105,14 @@ class GitHub
      * Sloučí pull request, jen když je pořád na zkontrolovaném commitu.
      * Vrací commit sloučení na main.
      */
-    public function merge(string $repo, int $number, string $sha, string $title): string
+    public function merge(string $repo, int $number, string $sha, string $title, ?string $message = null): string
     {
-        $response = $this->request('put', "repos/{$repo}/pulls/{$number}/merge", [
+        $response = $this->request('put', "repos/{$repo}/pulls/{$number}/merge", array_filter([
             'sha' => $sha,
             'merge_method' => 'squash',
             'commit_title' => $title.' (#'.$number.')',
-        ]);
+            'commit_message' => $message,
+        ]));
 
         if (in_array($response->status(), [405, 409], true)) {
             throw new GitHubError($response->status() === 409

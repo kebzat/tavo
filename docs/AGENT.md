@@ -133,21 +133,32 @@ nahraje **rovnou ze serveru, bez testů a bez čekání na GitHub**, obvykle do
 15 sekund (rozhodl Tom 23. 10. 2026). GitHub je jen historie.
 
 1. Jakmile se úprava objeví v kartě, služba agenta předem sestaví **vydání**:
-   commit větve (ten, který člověk viděl) spojený s `main` z GitHubu, vendor bez
-   dev balíčků, `npm run build`. Složka `/projekty/taveo/vydani/<strom>`.
+   commit větve (ten, který člověk viděl) spojený s tím, **co je teď na webu**,
+   a s `main` z GitHubu, vendor bez dev balíčků, `npm run build`. Složka
+   `/projekty/taveo/vydani/<strom>` (drží se poslední 3, cache balíčků 2 od každého).
    Konflikt s `main` se nesestaví, karta řekne, ať agent sloučí `main` do větve.
+   Po kliknutí se spojení počítá znovu, starší úprava tak nepřepíše novější.
 2. **Zveřejnit** → fronta → root `agent nasadit taveo <strom>`: stránka údržby,
    `db:zaloha`, současná verze stranou (`/srv/agent/vydani-zaloha/taveo/predchozi`),
    rsync (pevný seznam výjimek v `agent.sh`, bez symlinků), migrace, cache,
    kontrola, že web vrací 200.
 3. Potom se úprava sloučí do `main` na GitHubu (pull request, squash), na to se
-   nečeká. Nasazení z GitHubu (`deploy.yml`) porovná strom se
-   `storage/app/nasazeny-strom` na serveru a stejnou verzi znovu nenasadí.
+   nečeká. Sloučení má v popisu `[skip ci]`, nasazení z GitHubu se nespustí
+   (pojistkou zůstává `storage/app/nasazeny-strom`, stejnou verzi `deploy.yml` přeskočí).
 4. **Vrátit** → `agent nasadit-zpet taveo`: zpátky verze před posledním
    nasazením tlačítkem (databáze zůstává), na GitHubu revert pull requestu.
 
+**Co je na webu** si pamatuje služba (`refs/web/aktualni` v `~/.taveo-vydani/taveo.git`:
+strom webu, rodič = `main`, ze kterého vznikl; `refs/web/predchozi` pro Vrátit).
+Nové vydání = web + co do `main` mezitím přibylo + úprava. Úprava, která ještě
+nedorazila do historie (nebo se tam nedostala vůbec), proto z webu nezmizí.
+Zveřejnit počká, dokud se nahrává jiná úprava, a po Vrátit, dokud vrácení
+nedorazí do historie (jinak by vrácená úprava z `main` přišla zpátky).
+Web nasazený jinou cestou (`deploy.yml` po ručním sloučení) služba nevidí,
+jen jeho `main` se do dalšího vydání dostane.
+
 Kód nikdo nečte a testy neběží, pojistkou je záloha databáze před každým
-nahráním a Vrátit. Weby v gitu, které neběží tady, jdou dál cestou níž.
+nahráním (`storage/app/backups` na webu, posledních 10) a Vrátit. Weby v gitu, které neběží tady, jdou dál cestou níž.
 `AGENT_DEPLOY_PROJECTS` (výchozí `taveo`) říká, které projekty jdou ze serveru.
 
 | Kus | Kde |

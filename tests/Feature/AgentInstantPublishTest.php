@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Filament\Tools\Livewire\AgentHandovers;
 use App\Models\AgentPublication;
 use App\Models\User;
+use App\Support\Agent\GitHubError;
 use App\Support\Agent\Publisher;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
@@ -138,6 +139,8 @@ class AgentInstantPublishTest extends TestCase
         $this->assertNotNull($publication->merge_sha);
         $this->assertTrue($this->called('DELETE /api/projekty/taveo/predani/paticka'));
         $this->assertTrue($this->called('POST /api/aktualizovat'));
+        // Na webu už je: sloučení do main nasazení z GitHubu nespustí.
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/merge') && str_contains($r->data()['commit_message'] ?? '', '[skip ci]'));
 
         // Zveřejněná úprava už v kartě není.
         $this->assertSame([], app(Publisher::class)->handovers('taveo'));
@@ -206,6 +209,45 @@ class AgentInstantPublishTest extends TestCase
         $this->assertSame('Vrácení: Patička s Instagramem', $revert->title);
         $this->assertSame(10, $revert->pr_number);
         $this->assertTrue($this->called('POST /graphql'));
+    }
+
+    public function test_dokud_se_jina_uprava_nahrava_dalsi_pocka(): void
+    {
+        AgentPublication::create([
+            'project' => 'taveo', 'repo' => 'kebzat/tavo', 'branch' => 'agent/menu', 'sha' => str_repeat('d', 40),
+            'title' => 'Nové menu', 'status' => PublicationStatus::Publishing, 'job_id' => self::JOB,
+        ]);
+
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'taveo'])
+            ->callAction(TestAction::make('publish')->arguments(['name' => 'paticka', 'sha' => self::SHA]))
+            ->assertNotified('Zveřejnění se nespustilo');
+
+        $this->assertSame(1, AgentPublication::count());
+        Http::assertNotSent(fn (Request $r) => str_ends_with($r->url(), '/vydani') && ($r->data()['nasadit'] ?? null) === true);
+    }
+
+    public function test_po_vraceni_se_ceka_na_historii(): void
+    {
+        $original = AgentPublication::create([
+            'project' => 'taveo', 'repo' => 'kebzat/tavo', 'branch' => 'agent/menu', 'sha' => str_repeat('d', 40), 'title' => 'Nové menu',
+            'status' => PublicationStatus::Done, 'job_id' => 'uloha-1', 'pr_number' => 8, 'pr_node_id' => 'PR_8', 'merge_sha' => str_repeat('e', 40),
+        ]);
+        $revert = AgentPublication::create([
+            'project' => 'taveo', 'repo' => 'kebzat/tavo', 'branch' => 'agent/menu', 'title' => 'Vrácení: Nové menu',
+            'status' => PublicationStatus::Done, 'job_id' => 'uloha-2', 'reverts_id' => $original->id,
+        ]);
+
+        try {
+            app(Publisher::class)->start('taveo', 'paticka', self::SHA, $this->spravce());
+            $this->fail('Zveřejnění mělo počkat na historii vrácení.');
+        } catch (GitHubError $e) {
+            $this->assertStringContainsString('Vrácení: Nové menu', $e->getMessage());
+        }
+
+        // Vrácení dorazilo do main: už nic nebrání.
+        $revert->update(['merge_sha' => str_repeat('f', 40)]);
+        $this->assertSame(PublicationStatus::Publishing, app(Publisher::class)->start('taveo', 'paticka', self::SHA, $this->spravce())->status);
     }
 
     public function test_bez_tokenu_githubu_jde_zverejnit_jen_bez_historie(): void
