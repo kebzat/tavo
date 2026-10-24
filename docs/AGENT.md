@@ -267,6 +267,41 @@ php artisan clickup:napojit --webhook  # založí webhook, vypíše CLICKUP_WEBH
 php artisan config:cache
 ```
 
+## Reklamní grafika (Reklamy → Reklamní grafika)
+
+Formulář v nástrojích → agent na pozadí připraví návrhy reklam jako PNG a ve Figmě.
+
+- **Zadání:** klient (jen s projektem agenta), co propagovat, formáty (předvolby
+  1080×1350, 1080×1080, 1080×1920, 1200×628, 1920×600, 300×250 a vlastní rozměr),
+  počet návrhů (výchozí 5), styl (web, písma, barvy, inspirace), podklady (logo,
+  fotky, až 10 souborů na disk `local`, `storage/app/private/reklamni-grafika`)
+  a jestli smí generovat obrázky.
+- **Běh:** stejně jako úloha z ClickUpu. `AgentJob` se `source = grafika`, služba
+  agenta ji odpracuje v projektu klienta (`claude -p`, 30 min, pojistka předplatného
+  `CLICKUP_AGENT_MAX_USAGE`). Výsledek přijde na `/nastroje/api/agent/ulohy/{id}/vysledek`,
+  `AgentApiController` ho podle `source` pošle do `GraphicsAgent::finish()`, ne do ClickUpu.
+  Ztracené úlohy po 2 h uzavře `clickup:hlidat` (u grafiky bez ClickUpu).
+- **Výstup:** agent ukládá do `/projekty/<projekt>/predani/grafika-<id>/` (PNG, `popis.md`,
+  zdroje v `zdroj/`). Na konci vrátí blok `[grafika] {"figma": …, "varianty": […]} [/grafika]`,
+  web si z něj uloží jména souborů a odkaz na Figmu. Obrázky ukazuje přes stejnou routu
+  jako snímky Hotové práce (`agent.snimek`). U projektu bez kódu je složka vidět i v kartě
+  Hotové podklady. Když ji tam někdo zahodí, zmizí obrázky i z galerie (Figma zůstane).
+- **Figma:** MCP `figma` je v kontejneru připojený pro všechny projekty (`claude mcp add
+  --scope user figma https://mcp.figma.com/mcp`), účet Taveo, plán Starter. Zápis jde přes
+  `generate_figma_design` (code to canvas) do nového souboru v konceptech účtu. Zachytávací
+  skript se v prohlížeči nesmí čekat přes `await` (nevrátí se), pokyn je v zadání úlohy.
+  Při vypršení přihlášení k Figmě: v terminálu `/mcp` → figma → Authenticate.
+- **Úpravy:** tlačítko Upravit návrhy = nové kolo (`parent_id` na první zadání), agent
+  naváže na stejnou konverzaci (`--resume`) a vyjde ze složky předchozího kola. Nové
+  návrhy přidá do stejného souboru ve Figmě.
+- **Obrázky (Nano Banana):** klíč z Google AI Studia se vkládá v Reklamy → Reklamní grafika
+  → Nastavení (`AdGraphicsSettings`, šifrovaně). Agent ho nevidí: obrázek si vyžádá
+  `POST /nastroje/api/grafika/{id}/obrazek` (popis, poměr stran, až 3 předlohy) s jednorázovým
+  tokenem zadání v hlavičce `X-Grafika-Token`. Token platí, jen dokud úloha běží, a pustí
+  jen k podkladům a obrázkům svého zadání. Strop obrázků na zadání je v nastavení (12),
+  počítá se i nepovedený pokus. Model jde přepsat (výchozí `gemini-2.5-flash-image`).
+  „Ověřit klíč“ se jen zeptá na model, nic neplatí.
+
 ## Z terminálu přes SSH
 
 Z Macu (přístup roota má klíč `~/.ssh/id_rsa`):
