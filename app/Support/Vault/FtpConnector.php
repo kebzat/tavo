@@ -14,6 +14,8 @@ class FtpConnector
             throw new VaultException('Tenhle přístup není FTP.');
         }
 
-        return new NativeFtpClient($entry);
+        return $entry->ftpProtocol() === 'sftp'
+            ? new SftpClient($entry)
+            : new NativeFtpClient($entry);
     }
 }

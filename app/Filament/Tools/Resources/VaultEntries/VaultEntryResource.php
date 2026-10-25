@@ -23,7 +23,6 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -156,16 +155,23 @@ class VaultEntryResource extends Resource
                             ? 'Uloženo. Vyplň, jen když ho měníš.'
                             : 'Pro agenta: ve WordPressu Uživatelé → profil → Aplikační hesla → Přidat. Projde i přes ochranu „nejsem robot“ a jde kdykoli zrušit.')
                         ->maxLength(200),
+                    Select::make('settings.protocol')
+                        ->label('Protokol')
+                        ->options(VaultEntry::ftpProtocols())
+                        ->default('ftps')
+                        ->selectablePlaceholder(false)
+                        ->helperText('Jak to máš v FileZille. Uživatel sftp_… nebo port 22 = SFTP.')
+                        ->live()
+                        ->afterStateUpdated(function (Set $set, Get $get, ?string $state): void {
+                            if (in_array((int) $get('settings.port'), [0, 21, 22], true)) {
+                                $set('settings.port', $state === 'sftp' ? 22 : 21);
+                            }
+                        })
+                        ->visible(fn (Get $get): bool => $type($get) === VaultType::Ftp),
                     TextInput::make('settings.port')
                         ->label('Port')
                         ->numeric()
                         ->default(21)
-                        ->visible(fn (Get $get): bool => $type($get) === VaultType::Ftp),
-                    Toggle::make('settings.tls')
-                        ->label('Šifrované spojení (FTPS)')
-                        ->default(true)
-                        ->helperText('Vypni, jen když server šifrování neumí.')
-                        ->inline(false)
                         ->visible(fn (Get $get): bool => $type($get) === VaultType::Ftp),
                     TextInput::make('settings.root')
                         ->label('Složka webu')
@@ -378,7 +384,7 @@ class VaultEntryResource extends Resource
             $ftp->close();
         }
 
-        return 'Přihlášení na FTP prošlo. '.($items === []
+        return 'Přihlášení na '.strtoupper($record->ftpProtocol()).' prošlo. '.($items === []
             ? 'Složka webu je prázdná, zkontroluj, jestli je nastavená správně.'
             : 'Ve složce webu: '.collect($items)->take(5)->pluck('name')->implode(', ').(count($items) > 5 ? '…' : '.'));
     }

@@ -5,7 +5,7 @@ namespace App\Support\Vault;
 use App\Models\VaultEntry;
 use FTP\Connection;
 
-/** FTP a FTPS přes rozšíření PHP `ftp`, pasivní režim. */
+/** FTP a FTPS přes rozšíření PHP `ftp`, pasivní režim. SFTP je SftpClient. */
 class NativeFtpClient implements FtpClient
 {
     private Connection $ftp;
@@ -20,12 +20,13 @@ class NativeFtpClient implements FtpClient
 
         $host = (string) preg_replace('~^s?ftps?://~i', '', trim((string) $entry->url, " /\t"));
         $port = (int) $entry->setting('port', 21) ?: 21;
-        $connection = $entry->setting('tls', true)
+        $tls = $entry->ftpProtocol() === 'ftps';
+        $connection = $tls
             ? @ftp_ssl_connect($host, $port, 20)
             : @ftp_connect($host, $port, 20);
 
         if (! $connection) {
-            throw new VaultException("Na FTP server {$host}:{$port} se nepodařilo připojit.");
+            throw new VaultException("Na FTP server {$host}:{$port} se nepodařilo připojit. Když hosting dává SFTP (port 22, u zcomu uživatel sftp_…), přepni v přístupu Protokol na SFTP.");
         }
 
         if (! @ftp_login($connection, (string) $entry->username, (string) $entry->secret)) {
@@ -33,7 +34,7 @@ class NativeFtpClient implements FtpClient
 
             throw new VaultException(
                 'FTP server odmítl přihlášení. Zkontroluj uživatele a heslo'
-                .($entry->setting('tls', true) ? ', případně vypni šifrování (některé servery FTPS neumí).' : '.')
+                .($tls ? ', případně zkus Protokol „FTP bez šifrování“ (některé servery FTPS neumí).' : '.')
             );
         }
 

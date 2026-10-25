@@ -20,7 +20,7 @@ enum VaultType: string implements HasIcon, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Ftp => 'FTP',
+            self::Ftp => 'FTP / SFTP',
             self::WordPress => 'WordPress',
             self::Shoptet => 'Shoptet',
             self::Upgates => 'Upgates',

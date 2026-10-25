@@ -76,6 +76,37 @@ class VaultEntry extends Model
         return ($this->settings ?? [])[$key] ?? $default;
     }
 
+    /** Jak se připojit k FTP přístupu: ftp, ftps, nebo sftp (SSH). */
+    public function ftpProtocol(): string
+    {
+        $protocol = $this->setting('protocol');
+
+        if (array_key_exists((string) $protocol, self::ftpProtocols())) {
+            return $protocol;
+        }
+
+        return self::guessFtpProtocol((string) $this->url, (string) $this->username, $this->setting('port'), $this->setting('tls', true));
+    }
+
+    public static function ftpProtocols(): array
+    {
+        return [
+            'sftp' => 'SFTP (přes SSH)',
+            'ftps' => 'FTP se šifrováním (FTPS)',
+            'ftp' => 'FTP bez šifrování',
+        ];
+    }
+
+    /** Přístupy uložené před výběrem protokolu: SFTP prozradí adresa, port 22 nebo uživatel `sftp_…` (zcom). */
+    public static function guessFtpProtocol(string $url, string $username, mixed $port, mixed $tls): string
+    {
+        if (str_starts_with(strtolower(trim($url)), 'sftp://') || (int) $port === 22 || str_starts_with(strtolower($username), 'sftp')) {
+            return 'sftp';
+        }
+
+        return $tls ? 'ftps' : 'ftp';
+    }
+
     public function loginUrl(): ?string
     {
         if (filled($this->setting('login_url'))) {
@@ -107,6 +138,7 @@ class VaultEntry extends Model
             'nazev' => $this->name,
             'adresa' => $this->url,
             'uzivatel' => $this->username,
+            'protokol' => $this->type === VaultType::Ftp ? $this->ftpProtocol() : null,
             'slozka' => $this->type === VaultType::Ftp ? $this->setting('root', '/') : null,
             'smi' => $this->agentAccessLabel(),
             'umi' => $this->agentCommands(),
