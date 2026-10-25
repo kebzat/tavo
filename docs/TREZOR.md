@@ -18,14 +18,14 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 |---|---|
 | Data | `vault_entries` (heslo, aplikační heslo, klíč 2FA a poznámka šifrované klíčem aplikace, cast `encrypted`), `vault_uploads`, `vault_logs` |
 | Stránka | `App\Filament\Tools\Resources\VaultEntries` (seznam, přidání, úpravy, Nahrání od agenta, Historie) |
-| Práce za agenta | `App\Support\Vault`: `FtpConnector`/`NativeFtpClient` (FTP/FTPS, rozšíření PHP `ftp`), `FtpZipper`, `FtpUploader`, `WordPressApi`, `LoginBroker` |
+| Práce za agenta | `App\Support\Vault`: `FtpConnector` → `NativeFtpClient` (FTP/FTPS, rozšíření PHP `ftp`) nebo `SftpClient` (SFTP přes SSH, knihovna phpseclib), `FtpZipper`, `FtpUploader`, `WordPressApi`, `LoginBroker` |
 | Rozhraní pro agenta | `/nastroje/api/agent/trezor…` (token agenta), `App\Http\Controllers\Agent\VaultApiController` |
 | Příkazy | `taveo trezor`, `ftp`, `ftp-soubor`, `ftp-stahnout`, `ftp-nahrat`, `nahrani`, `wp`, `prihlasit` (`infra/agent/taveo.sh`) |
 
 ## Pro lidi
 
 - **Přidat přístup:** druh, klient (nebo TAVEO), adresa, uživatel, heslo a „Co smí agent“.
-  Formulář se mění podle druhu (FTP: port, FTPS, složka webu; WordPress: aplikační heslo;
+  Formulář se mění podle druhu (FTP: protokol FTP/FTPS/SFTP, port, složka webu; WordPress: aplikační heslo;
   přihlášení: adresa přihlášení a klíč 2FA).
 - **Zobrazit:** chce heslo do nástrojů, pak je trezor 10 minut odemčený (v tomhle přihlášení).
   Každé zobrazení jde do historie. Uložená hesla se do formuláře úprav nenačítají,
@@ -73,7 +73,10 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
   Při prvním skutečném účtu zkontrolovat Vyzkoušet a případně doplnit adresu přihlášení.
 - WordPress Pizza di Gomma (pizzadigomma.eu) má na přihlášení Turnstile, agent tam jde jen
   přes aplikační heslo a FTP.
-- FTP potřebuje na serveru rozšíření PHP `ftp` (v kontejneru je, na produkčním lsphp84 ověří
+- **SFTP** (zcom: uživatel `sftp_…`) jde přes phpseclib, rozšíření PHP nepotřebuje. Ověřeno proti místnímu SFTP serveru
+  (výpis, stažení, ZIP, nahrání po schválení, vrácení). Otisk klíče serveru se zatím neověřuje.
+  Přístupy uložené před výběrem protokolu doplnila migrace (`sftp` podle `sftp://`, portu 22 nebo uživatele `sftp…`).
+- FTP a FTPS potřebují na serveru rozšíření PHP `ftp` (v kontejneru je, na produkčním lsphp84 ověří
   první Vyzkoušet, jinak hláška „chybí rozšíření“). Ověřeno proti skutečnému FTP serveru
   (pyftpdlib) včetně nahrání a vrácení, FTPS jen v kódu.
 - Hesla šifruje `APP_KEY`. Kdo má `.env` i databázi, hesla přečte, proto `.env` jen pro vlastníka

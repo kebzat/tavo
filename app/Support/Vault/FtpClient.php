@@ -5,7 +5,7 @@ namespace App\Support\Vault;
 /**
  * Spojení na FTP jednoho přístupu z trezoru. Cesty jsou vždy relativní
  * ke složce webu (nastavení přístupu `root`), ven z ní se nedostanou.
- * V testech se nahrazuje (FtpConnector::fake), skutečné je NativeFtpClient.
+ * V testech se nahrazuje přes FtpConnector, skutečné jsou NativeFtpClient (FTP, FTPS) a SftpClient.
  */
 interface FtpClient
 {

@@ -303,6 +303,30 @@ class VaultTest extends TestCase
         VaultPath::normalize('wp-content/../../etc');
     }
 
+    public function test_sftp_pozna_podle_nastaveni_i_u_starsich_pristupu(): void
+    {
+        $entry = new VaultEntry(['type' => VaultType::Ftp, 'url' => 'pizzadigomma-www.zcom.cz', 'username' => 'sftp_pizza', 'settings' => ['port' => 1300, 'tls' => true]]);
+        $this->assertSame('sftp', $entry->ftpProtocol());
+        $this->assertSame('sftp', $entry->toAgent()['protokol']);
+
+        $entry->settings = ['protocol' => 'ftp'];
+        $this->assertSame('ftp', $entry->ftpProtocol());
+
+        $this->assertSame('ftps', VaultEntry::guessFtpProtocol('ftp.pizzadigomma.eu', 'pizza', 21, true));
+        $this->assertSame('ftp', VaultEntry::guessFtpProtocol('ftp.pizzadigomma.eu', 'pizza', 21, false));
+        $this->assertSame('sftp', VaultEntry::guessFtpProtocol('sftp://ftp.pizzadigomma.eu', 'pizza', null, true));
+        $this->assertSame('sftp', VaultEntry::guessFtpProtocol('ftp.pizzadigomma.eu', 'pizza', 22, true));
+    }
+
+    public function test_sftp_se_pripojuje_pres_ssh_a_chybu_rekne_srozumitelne(): void
+    {
+        $entry = new VaultEntry(['type' => VaultType::Ftp, 'url' => '127.0.0.1', 'username' => 'pizza', 'settings' => ['protocol' => 'sftp', 'port' => 1]]);
+        $entry->secret = 'heslo';
+
+        $this->expectExceptionMessage('Na SFTP server 127.0.0.1:1 se nepodařilo připojit');
+        (new FtpConnector)->open($entry);
+    }
+
     public function test_v_nastrojich_se_heslo_uklada_do_kolonek_a_zobrazi_az_po_zadani_hesla(): void
     {
         $tom = User::factory()->create(['role' => UserRole::Admin, 'name' => 'Tom', 'password' => 'heslo-toma-123']);
@@ -317,6 +341,7 @@ class VaultTest extends TestCase
                 'url' => 'ftp.pizzadigomma.eu',
                 'username' => 'pizza',
                 'secret' => 'nove-ftp-heslo',
+                'settings.protocol' => 'sftp',
                 'settings.root' => '/www',
                 'agent_access' => 'approve',
             ])
@@ -326,6 +351,8 @@ class VaultTest extends TestCase
         $entry = VaultEntry::query()->sole();
         $this->assertSame('nove-ftp-heslo', $entry->secret);
         $this->assertSame('Tom', $entry->created_by);
+        $this->assertSame('sftp', $entry->ftpProtocol());
+        $this->assertSame(22, (int) $entry->setting('port'));
 
         // Do formuláře úprav se heslo nenačte a prázdné pole ho nesmaže.
         Livewire::test(EditVaultEntry::class, ['record' => $entry->getKey()])
