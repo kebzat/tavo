@@ -7,6 +7,7 @@ use App\Filament\Tools\Livewire\ClaudeUsageMeter;
 use App\Filament\Tools\Livewire\ClientBrain;
 use App\Filament\Tools\Pages\Today;
 use App\Http\Controllers\Tools\AgentHandoverImageController;
+use App\Http\Controllers\Tools\AgentHandoverPageController;
 use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\RememberStaffIp;
 use App\Support\Agent\AgentServer;
@@ -104,8 +105,11 @@ class ToolsPanelProvider extends PanelProvider
                 PanelsRenderHook::TOPBAR_END,
                 fn (): string => app(AgentServer::class)->configured() ? Blade::render('@livewire(\'tools.claude-usage\')') : '',
             )
-            // Snímky k hotové práci agenta. Za přihlášením do nástrojů, i s 2FA.
-            ->authenticatedRoutes(fn () => Route::get('agent/{project}/snimek/{name}/{file}', AgentHandoverImageController::class)->name('agent.snimek'))
+            // Snímky a stránky ke čtení z hotové práce agenta. Za přihlášením do nástrojů, i s 2FA.
+            ->authenticatedRoutes(function (): void {
+                Route::get('agent/{project}/snimek/{name}/{file}', AgentHandoverImageController::class)->name('agent.snimek');
+                Route::get('agent/{project}/stranka/{name}/{file}', AgentHandoverPageController::class)->name('agent.stranka');
+            })
             ->discoverResources(in: app_path('Filament/Tools/Resources'), for: 'App\Filament\Tools\Resources')
             ->discoverPages(in: app_path('Filament/Tools/Pages'), for: 'App\Filament\Tools\Pages')
             ->middleware([

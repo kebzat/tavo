@@ -19,10 +19,17 @@
         <div x-data="{ copied: false }" class="overflow-hidden rounded-lg ring-1 ring-gray-950/10 dark:ring-white/10">
             <div class="flex items-center justify-between gap-3 bg-gray-50 px-3 py-2 dark:bg-white/5">
                 <span class="font-mono text-xs text-gray-600 dark:text-gray-300">{{ $code['soubor'] }}</span>
-                <x-filament::button size="xs" color="gray" icon="heroicon-m-clipboard-document"
-                    x-on:click="navigator.clipboard.writeText($refs.code.innerText).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
-                    <span x-text="copied ? 'Zkopírováno' : 'Zkopírovat'">Zkopírovat</span>
-                </x-filament::button>
+                <div class="flex items-center gap-2">
+                    @if (isset($pages[$code['soubor']]))
+                        <x-filament::button size="xs" color="primary" icon="heroicon-m-arrow-top-right-on-square" tag="a" :href="$pages[$code['soubor']]" target="_blank" rel="noopener">
+                            Otevřít jako stránku
+                        </x-filament::button>
+                    @endif
+                    <x-filament::button size="xs" color="gray" icon="heroicon-m-clipboard-document"
+                        x-on:click="navigator.clipboard.writeText($refs.code.innerText).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                        <span x-text="copied ? 'Zkopírováno' : 'Zkopírovat'">Zkopírovat</span>
+                    </x-filament::button>
+                </div>
             </div>
             <pre x-ref="code" class="max-h-72 overflow-auto bg-white p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-gray-800 dark:bg-gray-900 dark:text-gray-200">{{ $code['obsah'] }}</pre>
         </div>
