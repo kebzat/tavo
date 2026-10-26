@@ -1,5 +1,8 @@
 [Unit]
 Description=Zpracování fronty agenta TAVEO
+# Bez stropu spuštění: výchozí 5 za 10 s frontu po pár rychlých požadavcích
+# (nové projekty klientů) vypne a dál nic nezpracuje (26. 10. 2026).
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot

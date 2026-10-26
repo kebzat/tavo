@@ -1,5 +1,8 @@
 [Unit]
 Description=Fronta požadavků agenta TAVEO (zálohy, nové projekty)
+# Bez stropu spuštění: výchozí 5 za 10 s frontu po pár rychlých požadavcích
+# (nové projekty klientů) vypne a dál nic nezpracuje (26. 10. 2026).
+StartLimitIntervalSec=0
 
 [Path]
 DirectoryNotEmpty=/srv/agent/fronta/pozadavky

@@ -22,9 +22,18 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
   kde uspanou probudit nejde. Doba se mění proměnnou `USPAT_PO_HODINACH`.
 - Konverzace běží dál i po zavření stránky. V jedné může být víc lidí zároveň
   a každý vidí totéž, mezi konverzacemi si ale každý přepíná sám.
+- Seznam projektů je podle abecedy (jméno klienta, jinak název projektu). Nad ním
+  jde zvolit **Zobrazit** 10 / 20 / 50 / Vše a **Mřížka** (po třech) nebo **Seznam**.
+  Volba platí do odhlášení.
 - **Přidat projekt** (v seznamu projektů) umí repozitář z GitHubu a projekt bez
   kódu. Web na serveru připojí jen root přes SSH, protože dává agentovi přístup
   k živému webu.
+- **Založit agenty klientům** (vidět, dokud je aktivní klient bez projektu): zaškrtnutým
+  klientům založí projekt bez kódu se stejným názvem jako zkratka klienta (existující
+  projekt, který nepatří jinému klientovi, jen přiřadí). Zakládá `agent:projekty-klientu`
+  na pozadí po jednom s odstupem 3 s (`clients.agent_project_request`), nad seznamem je vidět,
+  komu se zakládá a komu se nepovedlo a proč. Když fronta na serveru neodpovídá, ostatní
+  na ni nečekají, skončí hned se stejnou chybou.
 - Klient má v kartě pole **Projekt agenta**, pak se v seznamu ukazuje jeho jméno
   a z karty klienta vede tlačítko Agent.
 - **Aplikace Claude (desktop, claude.ai/code, mobil):** každá konverzace z nástrojů
@@ -289,8 +298,9 @@ nad seznamem klientů ukáže složky, které ještě klienta nemají, a u vybra
 - založí klienta (nebo napojí stávajícího se stejným názvem) a uloží mu `clickup_folder_id`.
   `@agent` u úkolu z kteréhokoli seznamu složky pak jde do projektu klienta. Klient
   s přiřazeným seznamem (`clickup_list_id`) má přednost (`ClickUpAgent::resolve()`),
-- založí projekt agenta bez kódu se stejným názvem jako zkratka klienta. Když už projekt
-  existuje a nepatří jinému klientovi, jen ho přiřadí,
+- zařadí založení projektu agenta bez kódu se stejným názvem jako zkratka klienta (na pozadí,
+  stejně jako Agent → Založit agenty klientům). Když už projekt existuje a nepatří jinému
+  klientovi, jen ho přiřadí,
 - zařadí načtení složky do archivu klienta (`clients.clickup_import`). `clickup:nacist`
   (každou minutu, bez žádosti nic nevolá) načte **každý seznam s úkoly** jako dokument
   „ClickUp: seznam“ (stav, termíny, kdo řeší, štítky, vlastní pole, popis, checklisty,
@@ -400,6 +410,18 @@ Každý projekt má **paměť** `CLAUDE.md` o složku výš než kód. Claude ji
 na web se nedostane a vidí ji každý, kdo s projektem pracuje.
 
 `agent odebrat <projekt>` agentovi přístup vezme. Snímky, zálohy a paměť zůstanou.
+
+**Fronta stojí** (projekty se nezakládají, „Server na požadavek neodpověděl. Běží služba
+taveo-agent-fronta?“): systemd frontu vypne, když se spustí víc než 5× za 10 s. Tak se
+26. 10. 2026 zastavila po pátém projektu z ClickUpu. Jednotky v `infra/agent` mají proto
+`StartLimitIntervalSec=0`. Na serveru to Tom zapne doplňkem (funguje, ať jsou jednotky kdekoli)
+a frontu znovu spustí:
+
+```bash
+ssh root@88.198.31.29 'for u in service path; do d=/etc/systemd/system/taveo-agent-fronta.$u.d; mkdir -p $d; printf "[Unit]\nStartLimitIntervalSec=0\n" > $d/bez-stropu.conf; done; systemctl daemon-reload; systemctl reset-failed taveo-agent-fronta.service taveo-agent-fronta.path; systemctl restart taveo-agent-fronta.path; systemctl status taveo-agent-fronta.path --no-pager'
+```
+
+Požadavky, které mezitím čekaly v `/srv/agent/fronta/pozadavky`, se pak zpracují samy.
 
 Web jinde (FTP, WordPress, Shoptet, Upgates na cizím hostingu): projekt `prazdny`
 a přístupy do Nástrojů → **Trezor** ([TREZOR.md](TREZOR.md)). Agent hesla nedostane,

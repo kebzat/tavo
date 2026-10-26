@@ -130,13 +130,20 @@ class ClickUpClientImportTest extends TestCase
             ->assertNotified('Založeno klientů: 2');
 
         $client = Client::query()->where('clickup_folder_id', 'F1')->sole();
-        $this->assertSame(['Květinářství Bláha', 'kvetinarstvi-blaha', 'kvetinarstvi-blaha'], [$client->name, $client->slug, $client->agent_project]);
+        $this->assertSame(['Květinářství Bláha', 'kvetinarstvi-blaha', null], [$client->name, $client->slug, $client->agent_project]);
         $this->assertSame(ClientImport::STATUS_QUEUED, $client->clickup_import['status']);
         $this->assertSame('Pavel', $client->clickup_import['author']);
 
+        // Projekt agenta se zakládá na pozadí, v kliknutí ne (fronta na serveru).
+        $this->assertSame([], $this->added);
+        $this->assertSame('queued', $client->agent_project_request['status']);
+        $this->artisan('agent:projekty-klientu')->assertSuccessful();
+        $this->assertSame('kvetinarstvi-blaha', $client->refresh()->agent_project);
+        $this->assertContains('kvetinarstvi-blaha', $this->added);
+
         // Stávající klient se stejným názvem se jen napojí, projekt mu zůstane.
         $this->assertSame('F2', $existing->refresh()->clickup_folder_id);
-        $this->assertSame(['kvetinarstvi-blaha'], $this->added);
+        $this->assertNotContains('svet-cejlonu', $this->added);
         $this->assertSame($before + 1, Client::query()->count());
 
         // Napojené složky už ve výběru nejsou.
