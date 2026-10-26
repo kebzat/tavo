@@ -101,11 +101,17 @@ class KnowledgeSource extends Model
 
     /**
      * HTML stránka v dokumentu (rozbor, plán od agenta): první soubor .html.
+     * Dokument načtený odjinud (ClickUp) stránku nemá.
      *
      * @return array{path: string, name?: string}|null
      */
     public function pageFile(): ?array
     {
+        // Přílohy z ClickUpu nejsou rozbor ke čtení, stránka bez přihlášení by je zveřejnila.
+        if (filled($this->external_ref)) {
+            return null;
+        }
+
         return collect($this->files ?? [])->first(fn (array $file): bool => (bool) preg_match('/\.html?$/i', $file['name'] ?? $file['path'] ?? ''));
     }
 
