@@ -56,8 +56,9 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 - **WordPress:** aplikační heslo (Uživatelé → profil → Aplikační hesla) projde i přes ochranu
   „nejsem robot“ a jde kdykoli zrušit. Zápis jen s „i měnit“ a nikdy `/wp/v2/users`,
   aplikační hesla ani `/wp/v2/settings` (agent by si jinak mohl založit vlastní přístup,
-  který trezor nezruší). Aktualizace pluginů REST API WordPressu neumí, ty jdou přes FTP
-  nebo přihlášení.
+  který trezor nezruší). Parametry jdou v cestě (`/wp/v2/posts?per_page=100&page=2`),
+  kromě `_method` a `rest_route`, které by ta pravidla obešly. Aktualizace pluginů REST API
+  WordPressu neumí, ty jdou přes FTP nebo přihlášení.
 - **Přihlášení** (`LoginBroker`): web otevře přihlašovací stránku, najde formulář s heslem,
   vyplní ho (i s kódem 2FA, když je uložený klíč) a agentovi vrátí jen cookies. Agent si je
   vloží do prohlížeče (`browser_run_code_unsafe`: `await page.context().addCookies(cookies)`).
