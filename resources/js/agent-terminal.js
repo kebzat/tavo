@@ -13,6 +13,9 @@ import '@xterm/xterm/css/xterm.css';
  * Zprávy ven: {t: 'i', d: text} vstup z klávesnice, {t: 'r', c, r} velikost.
  * Zprávy dovnitř: výstup terminálu jako text.
  */
+/** Jak dlouho čekat na vstupenku a na otevření spojení (ms). */
+const CONNECT_TIMEOUT = 10000;
+
 class TavoAgentTerminal {
     constructor(element, { url, onState, onCopy }) {
         this.url = url;
@@ -20,6 +23,7 @@ class TavoAgentTerminal {
         this.onCopy = onCopy ?? (() => {});
         this.socket = null;
         this.attempts = 0;
+        this.runs = 0;
         this.pendingCopy = null;
 
         this.term = new Terminal({
@@ -140,9 +144,22 @@ class TavoAgentTerminal {
 
     async connect() {
         this.disconnect();
+        const run = ++this.runs;
         this.onState('connecting');
 
-        const url = await this.url();
+        let url;
+        try {
+            // Livewire po chybě (vypršelá stránka, výpadek) slib nemusí nikdy splnit.
+            url = await Promise.race([
+                this.url(),
+                new Promise((resolve, reject) => setTimeout(() => reject(new Error('timeout')), CONNECT_TIMEOUT)),
+            ]);
+        } catch {
+            if (run === this.runs) this.retry(run);
+            return;
+        }
+        if (run !== this.runs) return; // mezitím jiné připojení
+
         if (! url) {
             this.term.reset();
             this.onState('none');
@@ -152,7 +169,12 @@ class TavoAgentTerminal {
         const socket = new WebSocket(url);
         this.socket = socket;
 
+        // Spojení, které se neotevře ani neodmítne, prohlížeč drží donekonečna
+        // (zachytí ho antivirus nebo doplněk). Zavřít a zkusit znovu.
+        const timeout = setTimeout(() => socket.readyState === WebSocket.CONNECTING && socket.close(), CONNECT_TIMEOUT);
+
         socket.onopen = () => {
+            clearTimeout(timeout);
             this.attempts = 0;
             this.term.reset();
             this.onState('open');
@@ -163,19 +185,26 @@ class TavoAgentTerminal {
         socket.onmessage = (event) => this.term.write(event.data);
 
         socket.onclose = () => {
+            clearTimeout(timeout);
             if (this.socket !== socket) return; // odpojili jsme sami (jiné vlákno)
             this.socket = null;
-
-            // Výpadek spojení (uspaný notebook, restart LiteSpeedu): zkusit znovu,
-            // s čerstvou vstupenkou. Po třech nezdarech nechat na člověku.
-            if (this.attempts < 3) {
-                this.attempts++;
-                this.onState('reconnecting');
-                setTimeout(() => this.socket === null && this.connect(), 1500 * this.attempts);
-            } else {
-                this.onState('closed');
-            }
+            this.retry(run);
         };
+    }
+
+    /**
+     * Výpadek spojení (uspaný notebook, restart LiteSpeedu): zkusit znovu,
+     * s čerstvou vstupenkou. Po třech nezdarech nechat na člověku.
+     */
+    retry(run) {
+        if (this.attempts < 3) {
+            this.attempts++;
+            this.onState('reconnecting');
+            setTimeout(() => run === this.runs && this.connect(), 1500 * this.attempts);
+        } else {
+            this.attempts = 0;
+            this.onState('closed');
+        }
     }
 
     disconnect() {
