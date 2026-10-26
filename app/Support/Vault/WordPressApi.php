@@ -15,7 +15,11 @@ use Illuminate\Support\Facades\Http;
  */
 class WordPressApi
 {
-    private const WRITE_BLOCKED = ['~^/wp/v2/users~', '~application-passwords~', '~^/wp/v2/settings~'];
+    // WordPress porovnává cesty bez ohledu na velikost písmen, proto `i`.
+    private const WRITE_BLOCKED = ['~^/wp/v2/users~i', '~application-passwords~i', '~^/wp/v2/settings~i'];
+
+    // `_method` změní metodu (GET by zapisoval) a `rest_route` cestu, obojí by obešlo pravidla výš.
+    private const QUERY_BLOCKED = ['_method', 'rest_route'];
 
     public function call(VaultEntry $entry, string $method, string $path, array $query = [], array $body = []): Response
     {
@@ -29,7 +33,14 @@ class WordPressApi
             throw new VaultException('Metoda '.$method.' není povolená.');
         }
 
+        // Parametry v cestě (`/wp/v2/posts?per_page=100&page=2`) platí, výslovný `dotaz` má přednost.
+        parse_str((string) parse_url($path, PHP_URL_QUERY), $inPath);
+        $query = [...$inPath, ...$query];
         $path = '/'.ltrim(parse_url($path, PHP_URL_PATH) ?: '', '/');
+
+        if (array_intersect(array_map('strtolower', array_keys($query)), self::QUERY_BLOCKED) !== []) {
+            throw new VaultException('Parametry _method a rest_route agent přes trezor posílat nesmí, metoda a cesta se zadávají zvlášť.');
+        }
 
         if ($method !== 'GET') {
             if (! $entry->agentAllows('write')) {
@@ -37,7 +48,7 @@ class WordPressApi
             }
 
             foreach (self::WRITE_BLOCKED as $pattern) {
-                if (preg_match($pattern, $path)) {
+                if (preg_match($pattern, rawurldecode($path))) {
                     throw new VaultException('Uživatele, aplikační hesla a nastavení webu agent přes trezor měnit nesmí.');
                 }
             }

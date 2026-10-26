@@ -245,6 +245,36 @@ class VaultTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_wordpress_posle_parametry_z_cesty_a_obejit_pravidla_nejde(): void
+    {
+        Http::fake(['pizzadigomma.eu/wp-json/*' => Http::response([])]);
+
+        $entry = VaultEntry::query()->create([
+            'type' => VaultType::WordPress,
+            'name' => 'WordPress',
+            'url' => 'https://pizzadigomma.eu',
+            'username' => 'taveo-agent',
+            'app_password' => 'abcd efgh ijkl mnop',
+            'agent_access' => 'write',
+        ]);
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/wp", ['cesta' => '/wp/v2/posts?per_page=100&page=2', 'dotaz' => ['page' => 3]], $this->agent())
+            ->assertOk();
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://pizzadigomma.eu/wp-json/wp/v2/posts?per_page=100&page=3');
+
+        foreach ([
+            ['cesta' => '/wp/v2/posts?_method=DELETE'],
+            ['cesta' => '/wp/v2/posts', 'dotaz' => ['rest_route' => '/wp/v2/users/1']],
+            ['metoda' => 'POST', 'cesta' => '/wp/v2/Users/1', 'data' => ['password' => 'x']],
+            ['metoda' => 'POST', 'cesta' => '/wp/v2/%75sers/1', 'data' => ['password' => 'x']],
+        ] as $payload) {
+            $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/wp", $payload, $this->agent())->assertStatus(422);
+        }
+
+        Http::assertSentCount(1);
+    }
+
     public function test_prihlaseni_do_shoptetu_vrati_jen_cookies(): void
     {
         Http::fake([
