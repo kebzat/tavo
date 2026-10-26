@@ -17,6 +17,7 @@ use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -25,51 +26,71 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Mozek a archiv klienta přímo u konverzace s agentem (lišta nad
  * terminálem): co agent o klientovi ví, návrhy ke schválení a dokumenty
  * v archivu, nahrání nového bez odchodu ze stránky. Totéž, co agent
- * dostane na začátku konverzace (KnowledgeBase::opening). Viz docs/MOZEK.md.
+ * dostane na začátku konverzace (KnowledgeBase::opening). Projekt bez
+ * klienta (web TAVEO, marketing) ukáže Mozek TAVEO: firemní poznatky,
+ * postupy a archiv firmy. Viz docs/MOZEK.md.
  */
 class ClientBrain extends Component implements HasActions, HasSchemas
 {
     use InteractsWithActions;
     use InteractsWithSchemas;
 
-    public int $clientId;
+    /** Null: projekt bez klienta, mozek firmy. */
+    public ?int $clientId = null;
+
+    /** Firemních poznatků je hodně, v panelu jen nejnovější (vždy v hlavě první). */
+    private const FIRM_LISTED = 40;
 
     public function render(): View
     {
         $client = $this->client();
-        $entries = $client->knowledgeEntries()
+        $entries = $this->entries()
             ->whereIn('status', [KnowledgeEntry::STATUS_PROPOSED, KnowledgeEntry::STATUS_APPROVED])
+            ->orderByDesc('always')
             ->latest('updated_at')
             ->get();
 
         return view('filament.tools.partials.client-brain', [
             'client' => $client,
+            'heading' => $client ? 'Mozek klienta '.$client->name : 'Mozek TAVEO',
             'proposed' => $entries->where('status', KnowledgeEntry::STATUS_PROPOSED)->values(),
-            'approved' => $entries->where('status', KnowledgeEntry::STATUS_APPROVED)->values(),
-            'sources' => $client->knowledgeSources()->latest('id')->limit(50)->get(),
-            'clientUrl' => ClientResource::getUrl('edit', ['record' => $client]),
-            'entriesUrl' => KnowledgeEntryResource::getUrl('index', ['filters' => ['client' => ['value' => $client->getKey()]]]),
+            'approved' => $entries->where('status', KnowledgeEntry::STATUS_APPROVED)->when(! $client, fn ($approved) => $approved->take(self::FIRM_LISTED))->values(),
+            'approvedCount' => $entries->where('status', KnowledgeEntry::STATUS_APPROVED)->count(),
+            'sources' => $this->sources()->latest('id')->limit(50)->get(),
+            'clientUrl' => $client ? ClientResource::getUrl('edit', ['record' => $client]) : null,
+            'entriesUrl' => KnowledgeEntryResource::getUrl('index', $client ? ['filters' => ['client' => ['value' => $client->getKey()]]] : []),
         ]);
     }
 
-    public function client(): Client
+    public function client(): ?Client
     {
-        return Client::query()->findOrFail($this->clientId);
+        return $this->clientId ? Client::query()->findOrFail($this->clientId) : null;
+    }
+
+    /** Poznatky klienta, bez klienta poznatky firmy a postupy (bez klienta). */
+    private function entries(): Builder
+    {
+        return KnowledgeEntry::query()->where('client_id', $this->clientId);
+    }
+
+    private function sources(): Builder
+    {
+        return KnowledgeSource::query()->where('client_id', $this->clientId);
     }
 
     public function approve(int $id): void
     {
-        $this->client()->knowledgeEntries()->proposed()->find($id)?->approve(KnowledgeEntryResource::reviewer());
+        $this->entries()->proposed()->find($id)?->approve(KnowledgeEntryResource::reviewer());
     }
 
     public function reject(int $id): void
     {
-        $this->client()->knowledgeEntries()->proposed()->find($id)?->reject(KnowledgeEntryResource::reviewer());
+        $this->entries()->proposed()->find($id)?->reject(KnowledgeEntryResource::reviewer());
     }
 
     public function download(int $sourceId, int $index): ?StreamedResponse
     {
-        $file = ($this->client()->knowledgeSources()->find($sourceId)?->files ?? [])[$index] ?? null;
+        $file = ($this->sources()->find($sourceId)?->files ?? [])[$index] ?? null;
 
         return is_array($file) && Storage::disk('local')->exists($file['path'] ?? '')
             ? Storage::disk('local')->download($file['path'], $file['name'] ?? basename($file['path']))
@@ -83,7 +104,7 @@ class ClientBrain extends Component implements HasActions, HasSchemas
             ->icon(Heroicon::OutlinedArrowUpTray)
             ->color('gray')
             ->size('sm')
-            ->modalHeading(fn (): string => 'Nahrát do archivu: '.$this->client()->name)
+            ->modalHeading(fn (): string => 'Nahrát do archivu: '.($this->client()?->name ?? 'TAVEO'))
             ->modalDescription('Agent dokument najde v této i dalších konverzacích. Když ho potřebujete hned, napište mu, ať se podívá do archivu.')
             ->modalWidth('3xl')
             ->modalSubmitActionLabel('Uložit')
