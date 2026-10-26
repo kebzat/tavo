@@ -15,6 +15,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Js;
 use Livewire\Attributes\Computed;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -90,6 +91,19 @@ class ViewKnowledgeSource extends ViewRecord
         $proposed = fn (): int => $this->getRecord()->entries()->proposed()->count();
 
         return [
+            // HTML dokument (rozbor, plán) jako stálá stránka. Odkaz otevře každý, i bez přihlášení.
+            Action::make('page')
+                ->label('Otevřít stránku')
+                ->icon(Heroicon::OutlinedGlobeAlt)
+                ->visible(fn (): bool => $this->getRecord()->pageFile() !== null)
+                ->url(fn (): ?string => $this->getRecord()->pageUrl(), shouldOpenInNewTab: true),
+            Action::make('copyPage')
+                ->label('Zkopírovat odkaz')
+                ->tooltip('Otevře ho kdokoli s odkazem, i bez přihlášení. Smazáním dokumentu odkaz přestane fungovat.')
+                ->icon(Heroicon::OutlinedLink)
+                ->color('gray')
+                ->visible(fn (): bool => $this->getRecord()->pageFile() !== null)
+                ->alpineClickHandler(fn (): string => 'navigator.clipboard.writeText('.Js::from($this->getRecord()->pageUrl()).').then(() => new FilamentNotification().title('.Js::from('Odkaz zkopírován').').success().send())'),
             Action::make('approveAll')
                 ->label(fn (): string => 'Schválit všechny ('.$proposed().')')
                 ->icon(Heroicon::OutlinedCheck)

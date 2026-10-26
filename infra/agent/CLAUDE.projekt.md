@@ -50,11 +50,13 @@ Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.
 do `/projekty/{{PROJEKT}}/predani/<krátký-popis>/`: `popis.md` (první řádek `# Nadpis`, pak
 **přesně kam to v administraci vložit**) a každý kód nebo text jako vlastní
 soubor (`paticka.html`, `styl.css`, `popis-produktu.txt`), náhled jako `*.png`.
-V nástrojích u nich bude tlačítko Zkopírovat. Rozbor nebo plán ke čtení pro kolegy
-dej jako `.html` (vzhled TAVEO, písma jen z Bunny Fonts, bez externích skriptů):
-má tlačítko **Otevřít jako stránku** a odkaz `/nastroje/agent/{{PROJEKT}}/stranka/<krátký-popis>/<soubor>.html`.
-Pro někoho bez přihlášení je u něj **Odkaz bez přihlášení** (podepsaný, 30 dní). Ten vydá jen člověk v nástrojích,
-ty ho nevyrobíš, proto do stránky nepiš nic, co nesmí vidět klient.
+V nástrojích u nich bude tlačítko Zkopírovat. Po „Hotovo“ předání i se soubory zmizí.
+
+**Rozbor nebo plán ke čtení** (pro kolegy nebo klienta) nedávej do předání, ale do archivu
+klienta jako `.html` (vzhled TAVEO, písma jen z Bunny Fonts, bez externích skriptů):
+`taveo archiv-nahrat <slug> "Název" --druh vysledky --popis "…" soubor.html`. Odpověď vrátí
+`stranka`: stálou adresu `/stranka/…`, kterou otevře každý s odkazem i bez přihlášení. Pošli ji
+člověku. Do stránky proto nepiš nic, co nesmí vidět klient (marže jen po domluvě).
 
 ## Pravidla
 

@@ -209,6 +209,7 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
 | Karta v nástrojích | `Filament/Tools/Livewire/AgentHandovers`, snímky přes `/nastroje/agent/<projekt>/snimek/…` |
 | Stránka ke čtení | HTML z podkladů na `/nastroje/agent/<projekt>/stranka/<složka>/<soubor>.html` (`AgentHandoverPageController`). Jen pro přihlášené do nástrojů, odkaz jde poslat kolegovi. Běží v sandboxu (CSP `sandbox`, bez cookies nástrojů), povolené jsou jen inline styly a skripty a písma z Bunny Fonts. Bez `<html>` doplní kostru s češtinou a viewportem. |
 | Odkaz bez přihlášení | Stejná stránka na `/sdilene/<projekt>/<složka>/<soubor>.html?expires=…&signature=…` pro kolegu nebo klienta bez účtu v nástrojích. Podepsaný odkaz (`signed:relative`) platí 30 dní, vydá ho jen přihlášený tlačítkem v kontrole podkladů (`AgentHandovers::shareUrl`). Bez podpisu nebo po vypršení 403, noindex. |
+| Stálá stránka | Rozbor nebo plán, který má vydržet, patří do archivu klienta (`taveo archiv-nahrat … soubor.html`). Má stálou adresu `/stranka/…` bez přihlášení, viz docs/MOZEK.md (Archiv klienta). Hotové podklady po „Hotovo“ zmizí i s odkazy. |
 | Aktualizace služby | `POST /api/aktualizovat` → fronta → `agent aktualizovat` |
 
 ### Zapnutí (jednou, Tom)

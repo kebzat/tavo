@@ -65,6 +65,12 @@ class ArchiveRelationManager extends RelationManager
                     ->url(fn (): string => KnowledgeSourceResource::getUrl('create', ['klient' => $this->getOwnerRecord()->getKey()])),
             ])
             ->recordActions([
+                // Rozbor nebo plán od agenta (HTML) jako stálá stránka, odkaz jde poslat dál.
+                Action::make('page')
+                    ->label('Stránka')
+                    ->icon(Heroicon::OutlinedGlobeAlt)
+                    ->visible(fn (KnowledgeSource $record): bool => $record->pageFile() !== null)
+                    ->url(fn (KnowledgeSource $record): ?string => $record->pageUrl(), shouldOpenInNewTab: true),
                 Action::make('open')
                     ->label('Otevřít')
                     ->url(fn (KnowledgeSource $record): string => KnowledgeSourceResource::getUrl('view', ['record' => $record])),

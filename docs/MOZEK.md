@@ -44,6 +44,11 @@ Technicky jsou to podklady mozku s klientem (`knowledge_sources.client_id`), nav
 obsahu (`summary`, píše ho knihovník přes `POST /mozek/navrhy` s `popis`). Soubory zůstávají uložené
 (`storage/app/private/mozek`), smazáním dokumentu zmizí i soubory, poznatky z něj zůstanou.
 
+- **Stránka ke čtení** (`page_key`): dokument se souborem `.html` (rozbor, plán od agenta) má stálou
+  stránku `/stranka/<klient-nazev-náhodná-část>` (`ArchivePageController`, sandbox jako hotové podklady,
+  noindex, 60 požadavků za minutu). Otevře ji každý s odkazem, i bez přihlášení. Klíč vznikne při prvním
+  zobrazení (`KnowledgeSource::pageUrl()`), smazáním dokumentu stránka zmizí. V archivu je u dokumentu
+  „Stránka“, v detailu „Otevřít stránku“ a „Zkopírovat odkaz“, agent ji dostane v `stranka`.
 - **Učit se, nebo jen uložit** (`learn`): vypnuté = stav „Uloženo“, knihovník neběží (měsíční exporty,
   tabulky). Agent v projektu dokument i tak najde a přečte celý. „Udělat z nich poznatky“ ho pustí dodatečně.
 - **Mozek projektu**: každá nová konverzace v projektu agenta (terminál, aplikace Claude, i po `/clear`

@@ -142,6 +142,7 @@ class KnowledgeApiController extends Controller
             'stav' => $source->refresh()->statusLabel(),
             'chyba' => $source->error,
             'v_nastrojich' => KnowledgeSourceResource::getUrl('view', ['record' => $source], panel: 'tools'),
+            'stranka' => $source->pageUrl(),
         ], 201, options: self::JSON);
     }
 
