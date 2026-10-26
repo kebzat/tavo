@@ -159,6 +159,26 @@ class ClientForm
             ->all();
     }
 
+    /**
+     * Složky z ClickUpu („Prostor › Složka“), na hodinu jako seznamy.
+     *
+     * @return array<string, string>
+     */
+    private static function clickUpFolders(?string $current): array
+    {
+        $clickUp = app(ClickUp::class);
+
+        $folders = $clickUp->configured()
+            ? rescue(fn (): array => Cache::remember('clickup.folder-options', now()->addHour(), fn (): array => $clickUp->folders()), [], report: false)
+            : [];
+
+        return collect($folders)
+            ->mapWithKeys(fn (array $folder): array => [$folder['id'] => $folder['space'].' › '.$folder['name']])
+            ->when($current && ! collect($folders)->contains('id', $current), fn ($options) => $options->put($current, 'Složka '.$current))
+            ->sort()
+            ->all();
+    }
+
     /** „říjen – listopad 2026: 30 000 Kč · od února 2027: 5 000 Kč (předběžně)“ */
     private static function pricingPreview(Client $client): string
     {
@@ -259,6 +279,14 @@ class ClientForm
                         ->placeholder('Nepřiřazený')
                         ->unique(ignoreRecord: true)
                         ->helperText('Komentář „@agent …“ u úkolu z tohoto seznamu spustí agenta v projektu klienta.'),
+
+                    Select::make('clickup_folder_id')
+                        ->label('ClickUp složka')
+                        ->options(fn (?Client $record): array => self::clickUpFolders($record?->clickup_folder_id))
+                        ->searchable()
+                        ->placeholder('Nepřiřazená')
+                        ->unique(ignoreRecord: true)
+                        ->helperText('„@agent …“ u úkolu z kteréhokoli seznamu složky spustí agenta v projektu klienta. Archiv ze složky: Načíst z ClickUpu znovu nahoře.'),
 
                     Toggle::make('is_archived')
                         ->label('Archivovaný')

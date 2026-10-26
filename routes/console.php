@@ -93,6 +93,14 @@ Schedule::command('clickup:hlidat')
     ->everyFifteenMinutes()
     ->onOneServer();
 
+// Klienti z ClickUpu: složka do archivu klienta (Klienti → Načíst z ClickUpu). Bez žádosti nic nevolá,
+// velká složka trvá minuty (ClickUp pustí 100 dotazů za minutu), proto na pozadí. Viz docs/AGENT.md.
+Schedule::command('clickup:nacist')
+    ->everyMinute()
+    ->withoutOverlapping(120)
+    ->runInBackground()
+    ->onOneServer();
+
 // Zveřejnění práce agenta z nástrojů: testy, sloučení a nasazení na GitHubu
 // běží minuty, tohle je posouvá dál. Bez rozběhnutých nic nevolá. Viz docs/AGENT.md.
 Schedule::command('agent:zverejneni')

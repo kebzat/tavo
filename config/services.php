@@ -101,6 +101,8 @@ return [
     'clickup' => [
         // Osobní API token (pk_…). Agent jím čte úkol a odpovídá do komentářů.
         'token' => env('CLICKUP_API_TOKEN'),
+        // Jen pro lokální náhled s falešným ClickUpem, jinak výchozí.
+        'url' => env('CLICKUP_API_URL', 'https://api.clickup.com'),
         // Tajemství webhooku, ClickUp ho vrátí při založení (php artisan clickup:napojit).
         'webhook_secret' => env('CLICKUP_WEBHOOK_SECRET'),
         'team_id' => env('CLICKUP_TEAM_ID'),

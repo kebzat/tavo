@@ -149,7 +149,7 @@ class ClickUpAgent
             ]);
 
             if ($project === null) {
-                $this->reject($job, 'seznam „'.($task['list_name'] ?? '?').'“ nemá v nástrojích Taveo přiřazený projekt. Přiřaďte ho v Klienti → klient → ClickUp seznam a Projekt agenta.');
+                $this->reject($job, 'seznam „'.($task['list_name'] ?? '?').'“ nemá v nástrojích Taveo přiřazený projekt. Přiřaďte ho v Klienti → klient → ClickUp seznam a Projekt agenta, nebo klienta načtěte z ClickUpu (Klienti → Načíst z ClickUpu).');
 
                 return;
             }
@@ -304,14 +304,16 @@ class ClickUpAgent
 
     /**
      * Klient a projekt agenta pro seznam úkolu. Klient s přiřazeným seznamem
-     * má přednost, jinak platí projekt celého prostoru.
+     * má přednost, pak klient celé složky (načtený z ClickUpu), jinak platí
+     * projekt celého prostoru.
      *
-     * @param  array{list_id: ?string, space_id: ?string}  $task
+     * @param  array{list_id: ?string, folder_id?: ?string, space_id: ?string}  $task
      * @return array{0: ?Client, 1: ?string}
      */
     public function resolve(array $task): array
     {
-        $client = $task['list_id'] ? Client::query()->where('clickup_list_id', $task['list_id'])->first() : null;
+        $client = ($task['list_id'] ? Client::query()->where('clickup_list_id', $task['list_id'])->first() : null)
+            ?? (filled($task['folder_id'] ?? null) ? Client::query()->where('clickup_folder_id', $task['folder_id'])->first() : null);
         $spaceProject = config('services.clickup.space_projects')[$task['space_id'] ?? ''] ?? null;
 
         return [$client, $client?->agent_project ?: $spaceProject];

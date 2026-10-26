@@ -281,6 +281,32 @@ php artisan clickup:napojit --webhook  # založí webhook, vypíše CLICKUP_WEBH
 php artisan config:cache
 ```
 
+### Klienti z ClickUpu (Klienti → Načíst z ClickUpu)
+
+Složka v ClickUpu (prostory Projekty PAVELVCELIS.cz a Projekty TAVEO.cz) = klient. Tlačítko
+nad seznamem klientů ukáže složky, které ještě klienta nemají, a u vybraných:
+
+- založí klienta (nebo napojí stávajícího se stejným názvem) a uloží mu `clickup_folder_id`.
+  `@agent` u úkolu z kteréhokoli seznamu složky pak jde do projektu klienta. Klient
+  s přiřazeným seznamem (`clickup_list_id`) má přednost (`ClickUpAgent::resolve()`),
+- založí projekt agenta bez kódu se stejným názvem jako zkratka klienta. Když už projekt
+  existuje a nepatří jinému klientovi, jen ho přiřadí,
+- zařadí načtení složky do archivu klienta (`clients.clickup_import`). `clickup:nacist`
+  (každou minutu, bez žádosti nic nevolá) načte **každý seznam s úkoly** jako dokument
+  „ClickUp: seznam“ (stav, termíny, kdo řeší, štítky, vlastní pole, popis, checklisty,
+  podúkoly, všechny komentáře, přílohy do 30 MB jako soubory dokumentu, nejvýš 500 MB na
+  klienta) a **každý Doc** složky nebo jejích seznamů jako „ClickUp Doc: název“ se všemi
+  stránkami. Prázdný seznam ani Doc bez textu dokument nemá. Archivované seznamy se načtou taky.
+
+Dokumenty jsou jen uložené (knihovník je nečte, poznatky jde udělat ručně v detailu)
+a nemají stránku bez přihlášení. **Načíst z ClickUpu znovu** u klienta je přepíše podle
+ClickUpu (`knowledge_sources.external_ref`), nové přidá, ostatní dokumenty archivu nechá.
+Průběh je nahoře v Archivu klienta. ClickUp pustí 100 dotazů za minutu, na úkol jsou
+potřeba asi 2, takže složka se 100 úkoly trvá pár minut (při 429 se čeká, `X-RateLimit-Reset`).
+Docs jsou z API v3 (`/workspaces/{team}/docs?parent_id=` a pohledy typu `doc` ve složce).
+Kód: `App\Support\ClickUp\ClientImport`, testy `ClickUpClientImportTest`. Lokální náhled
+s falešným ClickUpem: `CLICKUP_API_URL`.
+
 ## Reklamní grafika (Reklamy → Reklamní grafika)
 
 Formulář v nástrojích → agent na pozadí připraví návrhy reklam jako PNG a ve Figmě.

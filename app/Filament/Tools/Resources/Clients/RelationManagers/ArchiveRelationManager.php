@@ -4,6 +4,7 @@ namespace App\Filament\Tools\Resources\Clients\RelationManagers;
 
 use App\Filament\Tools\Resources\KnowledgeSources\KnowledgeSourceResource;
 use App\Models\KnowledgeSource;
+use App\Support\ClickUp\ClientImport;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -41,6 +42,9 @@ class ArchiveRelationManager extends RelationManager
     {
         return $table
             ->defaultSort('id', 'desc')
+            // Průběh načtení ze složky v ClickUpu (Klienti → Načíst z ClickUpu).
+            ->description(fn (): ?string => ClientImport::summary($this->getOwnerRecord()))
+            ->poll(fn (): ?string => in_array($this->getOwnerRecord()->refresh()->clickup_import['status'] ?? null, [ClientImport::STATUS_QUEUED, ClientImport::STATUS_RUNNING], true) ? '10s' : null)
             ->columns([
                 Split::make([
                     Stack::make([
