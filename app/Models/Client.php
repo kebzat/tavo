@@ -152,6 +152,18 @@ class Client extends Model
         return $this->hasMany(ClientInvoice::class);
     }
 
+    /** Archiv klienta: podklady mozku s tímhle klientem (docs/MOZEK.md). */
+    public function knowledgeSources(): HasMany
+    {
+        return $this->hasMany(KnowledgeSource::class);
+    }
+
+    /** Poznatky mozku o klientovi. */
+    public function knowledgeEntries(): HasMany
+    {
+        return $this->hasMany(KnowledgeEntry::class);
+    }
+
     /** Ranní přehledy od agenta, nejnovější první. */
     public function briefings(): HasMany
     {

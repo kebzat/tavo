@@ -5,6 +5,7 @@ namespace App\Support\Knowledge;
 use App\Models\AgentJob;
 use App\Models\Client;
 use App\Models\KnowledgeEntry;
+use App\Models\KnowledgeSource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -29,6 +30,17 @@ class KnowledgeBase
     private const BRIEFING_ALWAYS = 8000;
 
     private const BRIEFING_CLIENT = 6000;
+
+    /**
+     * Úvod konverzace v projektu (háček SessionStart) je menší: Claude Code
+     * víc než 10 000 znaků z háčku do konverzace nevloží.
+     */
+    private const OPENING_ALWAYS = 3500;
+
+    private const OPENING_CLIENT = 3500;
+
+    /** Kolik dokumentů archivu vypsat jménem, zbytek dohledá `taveo archiv`. */
+    private const ARCHIVE_LISTED = 12;
 
     /**
      * Schválené poznatky podle slov dotazu, nejlepší první. Česká slova se
@@ -114,6 +126,15 @@ class KnowledgeBase
             $lines[] = $forClient->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n");
         }
 
+        $archive = $client ? $this->archiveLines($client) : [];
+
+        if ($archive !== []) {
+            $lines[] = '';
+            $lines[] = "Archiv klienta {$client->name} (data, strategie, výsledky, marže; celé dokumenty, ne jen poznatky):";
+            array_push($lines, ...$archive);
+            $lines[] = 'Seznam s adresami ke stažení: curl -sf -H "Authorization: Bearer $(cat ~/.config/taveo/token)" '.route('agent.api.archiv', $client->slug);
+        }
+
         return implode("\n", [
             ...$lines,
             '',
@@ -128,6 +149,67 @@ class KnowledgeBase
             '[/poznatek]',
             'Vrstva za slovem poznatek: klient (jen tenhle klient), firma (platí pro všechny), postup (návod na opakovanou práci). Žádné osobní údaje zákazníků ani hesla. Obyčejný průběh úlohy poznatek není.',
         ]);
+    }
+
+    /**
+     * Úvod každé konverzace v projektu agenta (terminál, aplikace Claude):
+     * háček SessionStart volá `taveo mozek-uvod` a tohle se vloží na začátek
+     * konverzace. Agent tak zná mozek klienta, jeho archiv a ví, jak se učit.
+     */
+    public function opening(string $project, ?Client $client): string
+    {
+        $always = $this->fit(KnowledgeEntry::query()->approved()->where('always', true)->orderBy('layer')->orderBy('id')->get(), self::OPENING_ALWAYS);
+        $forClient = $client
+            ? $this->fit(KnowledgeEntry::query()->approved()->where('client_id', $client->getKey())->where('always', false)->latest('updated_at')->get(), self::OPENING_CLIENT)
+            : collect();
+        $archive = $client ? $this->archiveLines($client) : [];
+
+        $lines = ['# Mozek TAVEO pro tuhle konverzaci', ''];
+        $lines[] = $client
+            ? "Projekt `{$project}` je klient **{$client->name}** (slug `{$client->slug}`). Níž je, co o něm mozek ví (schválené poznatky) a co je v jeho archivu. Drž se toho, pokud člověk neřekne jinak, a když si odporuje s tím, co vidíš, řekni to."
+            : "Projekt `{$project}` nepatří žádnému klientovi v nástrojích, platí jen obecné poznatky.";
+
+        if ($always->isNotEmpty()) {
+            array_push($lines, '', '## Platí vždy', $always->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n"));
+        }
+
+        if ($client) {
+            array_push($lines, '', "## Mozek klienta {$client->name}", $forClient->isNotEmpty()
+                ? $forClient->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n")
+                : 'Zatím nic schváleného. Tím spíš navrhuj, co se o klientovi dozvíš.');
+
+            array_push($lines, '', '## Archiv klienta', ...($archive !== []
+                ? [...$archive, '', "Celé dokumenty: `taveo archiv {$client->slug}` (seznam), `taveo archiv-stahnout <id> <složka>` (stáhne text a soubory). Čti je, když se otázka týká dat, strategie, výsledků nebo marží, a cituj, odkud číslo je."]
+                : ['Zatím prázdný. Dokumenty klienta (data, strategie, výsledky, marže) se nahrávají v Nástrojích → Klienti → '.$client->name.' → Archiv.']));
+        }
+
+        $slug = $client ? " {$client->slug}" : '';
+
+        return implode("\n", [
+            ...$lines,
+            '',
+            '## Hledání a učení',
+            "- Víc v mozku: `taveo mozek \"slova\"{$slug}` (postupy, starší zkušenosti, jiní klienti).",
+            '- Když se v konverzaci dozvíš něco, co se bude hodit příště (jak to klient chce, co fungovalo a co ne, domluva, číslo s datem), navrhni poznatek. Platit začne, až ho člověk schválí v Nástrojích → Mozek:',
+            '  `taveo mozek-navrh '.($client ? 'klient' : 'firma')." \"Nadpis jednou větou\"{$slug} <<'EOF'` … pár vět: co, proč, příklad, datum u čísel … `EOF`",
+            '  Před návrhem `taveo mozek-seznam` (ať nevznikne podruhé). Obyčejný průběh práce poznatek není. Žádná hesla ani osobní údaje zákazníků.',
+            '- Když tě člověk opraví („tohle klient nechce“), je to přesně ten poznatek, který stojí za návrh.',
+        ]);
+    }
+
+    /** @return list<string> dokumenty archivu klienta, nejnovější první, s popisem obsahu */
+    private function archiveLines(Client $client): array
+    {
+        $sources = $client->knowledgeSources()->latest('id')->limit(self::ARCHIVE_LISTED + 1)->get();
+        $more = $sources->count() > self::ARCHIVE_LISTED ? $client->knowledgeSources()->count() - self::ARCHIVE_LISTED : 0;
+
+        return $sources->take(self::ARCHIVE_LISTED)
+            ->map(fn (KnowledgeSource $source): string => '- #'.$source->getKey().' '.$source->title
+                .' ('.collect([$source->categoryLabel(), $source->document_date ? 'k '.$source->document_date->format('j. n. Y') : null, $source->sizeLabel()])->filter()->implode(', ').')'
+                .($source->summary ? ': '.Str::limit(preg_replace('/\s*\R\s*/u', ' ', $source->summary), 300) : ''))
+            ->push(...($more > 0 ? ["- … a {$more} starších"] : []))
+            ->values()
+            ->all();
     }
 
     /** Hledání v mozku z kontejneru (token agenta leží v souboru, jako u `taveo`). */

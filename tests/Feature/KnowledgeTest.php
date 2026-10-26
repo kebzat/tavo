@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Brain;
+use App\Filament\Tools\Resources\Clients\Pages\EditClient;
+use App\Filament\Tools\Resources\Clients\RelationManagers\ArchiveRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\KnowledgeRelationManager;
 use App\Filament\Tools\Resources\KnowledgeEntries\Pages\EditKnowledgeEntry;
 use App\Filament\Tools\Resources\KnowledgeEntries\Pages\ListKnowledgeEntries;
 use App\Filament\Tools\Resources\KnowledgeSources\Pages\CreateKnowledgeSource;
@@ -351,5 +354,137 @@ class KnowledgeTest extends TestCase
             ->call('approve', KnowledgeEntry::query()->value('id'));
 
         $this->assertSame(KnowledgeEntry::STATUS_APPROVED, KnowledgeEntry::query()->value('status'));
+    }
+
+    public function test_dokument_jen_do_archivu_agenta_nespusti_a_agent_ho_najde(): void
+    {
+        Storage::fake('local');
+        $this->prihlasit();
+        $client = $this->klient();
+
+        Livewire::withQueryParams(['klient' => $client->getKey()])
+            ->test(CreateKnowledgeSource::class)
+            ->assertSchemaStateSet(['client_id' => $client->getKey()])
+            ->fillForm([
+                'title' => 'Marže produktů 2026',
+                'category' => 'obchod',
+                'document_date' => '2026-09-30',
+                'file_paths' => [UploadedFile::fake()->create('marze.xlsx', 20, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+                'learn' => false,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $source = KnowledgeSource::query()->sole();
+        $this->assertSame(KnowledgeSource::STATUS_STORED, $source->status);
+        $this->assertSame($client->getKey(), $source->client_id);
+        $this->assertSame([], $this->tasks);
+
+        $this->getJson(route('agent.api.archiv', 'svet-cejlonu'))->assertUnauthorized();
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.archiv', 'svet-cejlonu'))
+            ->assertOk()
+            ->assertJsonPath('dokumenty.0.nazev', 'Marže produktů 2026')
+            ->assertJsonPath('dokumenty.0.druh', 'Obchodní data a marže')
+            ->assertJsonPath('dokumenty.0.k_datu', '2026-09-30')
+            ->assertJsonPath('dokumenty.0.soubory.0.jmeno', 'marze.xlsx')
+            ->assertJsonPath('dokumenty.0.soubory.0.adresa', route('agent.api.mozek.soubor', [$source, 0]));
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.archiv', ['slug' => 'svet-cejlonu', 'druh' => 'strategie']))->assertJsonCount(0, 'dokumenty');
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek.zdroj.popis', $source))->assertOk()->assertJsonPath('id', $source->getKey());
+
+        // Přece jen poznatky: knihovník dostane druh a datum.
+        app(BrainAgent::class)->process($source);
+        $this->assertTrue($source->refresh()->learn);
+        $this->assertStringContainsString('Druh: Obchodní data a marže, platí k 30. 9. 2026.', $this->tasks[0]['zadani']);
+        $this->assertStringContainsString('"popis"', $this->tasks[0]['zadani']);
+    }
+
+    public function test_knihovnik_posle_popis_dokumentu_do_archivu(): void
+    {
+        $source = KnowledgeSource::create(['title' => 'Strategie 2027', 'client_id' => $this->klient()->getKey(), 'body' => 'x']);
+
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.mozek.navrhy'), ['zdroj' => $source->getKey(), 'popis' => 'Vize a cíle na rok 2027.'])
+            ->assertOk()->assertJson(['zalozeno' => 0, 'popis' => 'uložen']);
+        $this->assertSame('Vize a cíle na rok 2027.', $source->refresh()->summary);
+
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.mozek.navrhy'), ['popis' => 'Bez zdroje.'])->assertStatus(422);
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.mozek.navrhy'), ['zdroj' => $source->getKey()])->assertJsonValidationErrors(['popis', 'poznatky']);
+    }
+
+    public function test_konverzace_v_projektu_klienta_zacne_mozkem_klienta_a_archivem(): void
+    {
+        $client = $this->klient();
+        $this->poznatek(['always' => true]);
+        $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Svět Cejlonu nechce slevy', 'body' => 'Jen dárek k objednávce.']);
+        $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Ještě neschválený', 'body' => 'x', 'status' => KnowledgeEntry::STATUS_PROPOSED]);
+        KnowledgeSource::create(['title' => 'Výsledky Q3', 'client_id' => $client->getKey(), 'category' => 'vysledky', 'summary' => 'Tržby a ROAS po měsících.', 'body' => 'x', 'status' => KnowledgeSource::STATUS_DONE]);
+
+        $this->get(route('agent.api.mozek.uvod', ['projekt' => 'svet-cejlonu']))->assertUnauthorized();
+
+        $text = $this->withToken(self::TOKEN)->get(route('agent.api.mozek.uvod', ['projekt' => 'svet-cejlonu']))->assertOk()->content();
+        $this->assertStringContainsString('klient **Svět Cejlonu** (slug `svet-cejlonu`)', $text);
+        $this->assertStringContainsString('Klientům nikdy neslibujeme konkrétní ROAS', $text);
+        $this->assertStringContainsString('Svět Cejlonu nechce slevy: Jen dárek k objednávce.', $text);
+        $this->assertStringNotContainsString('Ještě neschválený', $text);
+        $this->assertStringContainsString('Výsledky Q3 (Výsledky a reporty, 1 znaků): Tržby a ROAS po měsících.', $text);
+        $this->assertStringContainsString('taveo mozek-navrh klient "Nadpis jednou větou" svet-cejlonu', $text);
+        $this->assertLessThan(10000, mb_strlen($text));
+
+        $other = $this->withToken(self::TOKEN)->get(route('agent.api.mozek.uvod', ['projekt' => 'taveo']))->assertOk()->content();
+        $this->assertStringContainsString('nepatří žádnému klientovi', $other);
+        $this->assertStringNotContainsString('Svět Cejlonu nechce slevy', $other);
+
+        // Úlohy z ClickUpu a grafiky dostanou archiv v zadání.
+        $briefing = app(KnowledgeBase::class)->briefing($client);
+        $this->assertStringContainsString('Výsledky Q3', $briefing);
+        $this->assertStringContainsString(route('agent.api.archiv', 'svet-cejlonu'), $briefing);
+    }
+
+    public function test_smazani_dokumentu_z_archivu_smaze_soubory_a_poznatky_necha(): void
+    {
+        Storage::fake('local');
+        $this->prihlasit();
+        Storage::disk('local')->put('mozek/marze.xlsx', 'tajne');
+        $client = $this->klient();
+        $source = KnowledgeSource::create(['title' => 'Marže', 'client_id' => $client->getKey(), 'files' => [['path' => 'mozek/marze.xlsx', 'name' => 'marze.xlsx']], 'status' => KnowledgeSource::STATUS_DONE]);
+        $entry = $this->poznatek(['knowledge_source_id' => $source->getKey()]);
+
+        Livewire::test(ArchiveRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
+            ->assertCanSeeTableRecords([$source])
+            ->callTableAction('delete', $source);
+
+        $this->assertModelMissing($source);
+        Storage::disk('local')->assertMissing('mozek/marze.xlsx');
+        $this->assertNull($entry->refresh()->knowledge_source_id);
+    }
+
+    public function test_karta_klienta_ukaze_archiv_a_mozek_klienta(): void
+    {
+        Storage::fake('local');
+        $this->prihlasit();
+        Storage::disk('local')->put('mozek/vize.pdf', 'pdf');
+        $client = $this->klient();
+        $source = KnowledgeSource::create(['title' => 'Vize 2027', 'client_id' => $client->getKey(), 'category' => 'strategie', 'summary' => 'Cíle a směr na rok 2027.', 'files' => [['path' => 'mozek/vize.pdf', 'name' => 'vize.pdf']], 'status' => KnowledgeSource::STATUS_STORED]);
+        $proposed = $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Klient chce víc B2B', 'status' => KnowledgeEntry::STATUS_PROPOSED]);
+        $rejected = $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Zamítnutý', 'status' => KnowledgeEntry::STATUS_REJECTED]);
+
+        $this->get(EditClient::getUrl(['record' => $client]))->assertOk()->assertSee('Archiv')->assertSee('Mozek klienta');
+
+        Livewire::test(ArchiveRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
+            ->assertSee('Vize 2027')
+            ->assertSee('Vize a strategie')
+            ->assertSee('Uloženo');
+
+        Livewire::test(KnowledgeRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
+            ->assertCanSeeTableRecords([$proposed])
+            ->assertCanNotSeeTableRecords([$rejected])
+            ->callTableAction('approve', $proposed);
+        $this->assertSame(KnowledgeEntry::STATUS_APPROVED, $proposed->refresh()->status);
+
+        Livewire::test(ViewKnowledgeSource::class, ['record' => $source->getKey()])
+            ->assertSee('Cíle a směr na rok 2027.')
+            ->assertSee('vize.pdf')
+            ->assertSee('Udělat z nich poznatky')
+            ->call('download', 0)
+            ->assertFileDownloaded('vize.pdf');
     }
 }

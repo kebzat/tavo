@@ -1274,7 +1274,8 @@ async function odpracovat(p, uloha) {
     zapisJson(AUTORI, autori);
 
     // Proměnné z `prostredi` (tmux -e KLIC=hodnota) pro execFile jako objekt.
-    const env = { ...process.env };
+    // TAVEO_ULOHA: mozek klienta má úloha v zadání, háček SessionStart ho nepřidá.
+    const env = { ...process.env, TAVEO_ULOHA: '1' };
     const dvojice = prostredi(p);
     for (let i = 1; i < dvojice.length; i += 2) {
         const [klic, ...hodnota] = dvojice[i].split('=');
@@ -1360,9 +1361,10 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
     const uvod = `${radek(uloha.zadani.split('\n')[0], 120)}\n\nCelé zadání je v souboru ${soubor('zadani')}. Přečti si ho celé a postupuj podle něj.`;
     fs.writeFileSync(soubor('uvod'), uvod);
     const prikaz = `bash -lc 'claude ${navazat ? '--resume' : '--session-id'} ${session} --permission-mode auto --settings ${soubor('nastaveni.json')} "$(cat ${soubor('uvod')})"'`;
+    const prostrediUlohy = [...prostredi(p, cwd), '-e', 'TAVEO_ULOHA=1'];
     const args = (await okna(p.slug)).length > 0
-        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'uloha', prikaz]
-        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-x', '160', '-y', '45', '-c', cwd, ...prostredi(p, cwd), '-n', 'uloha', prikaz];
+        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostrediUlohy, '-n', 'uloha', prikaz]
+        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-x', '160', '-y', '45', '-c', cwd, ...prostrediUlohy, '-n', 'uloha', prikaz];
 
     const okno = (await tmux(args)).trim();
     await tmux(['set-option', '-w', '-t', okno, '@session', session]);

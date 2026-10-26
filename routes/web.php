@@ -71,12 +71,15 @@ Route::prefix('nastroje/api/agent')
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
         Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');
 
-        // Mozek TAVEO (docs/MOZEK.md): hledání, podklady ke zpracování, návrhy poznatků.
+        // Mozek TAVEO (docs/MOZEK.md): hledání, podklady ke zpracování, návrhy poznatků, archiv klienta.
         Route::get('/mozek', [KnowledgeApiController::class, 'search'])->name('agent.api.mozek');
         Route::get('/mozek/seznam', [KnowledgeApiController::class, 'index'])->name('agent.api.mozek.seznam');
         Route::get('/mozek/zdroje/{source}', [KnowledgeApiController::class, 'source'])->name('agent.api.mozek.zdroj');
         Route::get('/mozek/zdroje/{source}/soubory/{index}', [KnowledgeApiController::class, 'file'])->whereNumber('index')->name('agent.api.mozek.soubor');
         Route::post('/mozek/navrhy', [KnowledgeApiController::class, 'propose'])->name('agent.api.mozek.navrhy');
+        Route::get('/mozek/uvod', [KnowledgeApiController::class, 'opening'])->name('agent.api.mozek.uvod');
+        Route::get('/mozek/zdroje/{source}/popis', [KnowledgeApiController::class, 'sourceInfo'])->name('agent.api.mozek.zdroj.popis');
+        Route::get('/archiv/{slug}', [KnowledgeApiController::class, 'archive'])->name('agent.api.archiv');
 
         // Trezor přístupů (docs/TREZOR.md): agent hesla nedostane, práci s nimi dělá web.
         Route::get('/trezor', [VaultApiController::class, 'index'])->name('agent.api.trezor');

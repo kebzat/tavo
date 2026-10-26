@@ -58,6 +58,42 @@ class KnowledgeApiController extends Controller
             ->values(), options: self::JSON);
     }
 
+    /**
+     * Úvod konverzace v projektu agenta (háček SessionStart, `taveo mozek-uvod`):
+     * `?projekt=svet-cejlonu`. Klient se pozná podle projektu agenta na kartě.
+     */
+    public function opening(Request $request, KnowledgeBase $knowledge): Response
+    {
+        $project = (string) $request->validate(['projekt' => ['required', 'string', 'max:100']])['projekt'];
+        $client = Client::query()->where('agent_project', $project)->first();
+
+        return response($knowledge->opening($project, $client), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    /** Archiv klienta, nejnovější první: `?druh=obchod` jen jeden druh. */
+    public function archive(Request $request, string $slug): JsonResponse
+    {
+        $client = Client::query()->where('slug', $slug)->firstOrFail();
+
+        return response()->json([
+            'klient' => $client->slug,
+            'druhy' => KnowledgeSource::categories(),
+            'dokumenty' => $client->knowledgeSources()
+                ->when($request->filled('druh'), fn ($query) => $query->where('category', $request->string('druh')))
+                ->latest('id')
+                ->limit(200)
+                ->get()
+                ->map(fn (KnowledgeSource $source): array => $source->toAgent())
+                ->values(),
+        ], options: self::JSON);
+    }
+
+    /** Jeden dokument (podklady) s adresami ke stažení (`taveo archiv-stahnout`). */
+    public function sourceInfo(KnowledgeSource $source): JsonResponse
+    {
+        return response()->json($source->toAgent(), options: self::JSON);
+    }
+
     /** Vložený text podkladů (Markdown / prostý text). */
     public function source(KnowledgeSource $source): Response
     {
@@ -72,12 +108,16 @@ class KnowledgeApiController extends Controller
         return Storage::disk('local')->download($file['path'], $file['name'] ?? basename($file['path']));
     }
 
-    /** Návrhy poznatků. U podkladů nejvýš BrainAgent::MAX_PER_SOURCE celkem. */
+    /**
+     * Návrhy poznatků. U podkladů nejvýš BrainAgent::MAX_PER_SOURCE celkem.
+     * S podklady jde poslat i `popis` (co v nich je, pro archiv klienta).
+     */
     public function propose(Request $request, KnowledgeBase $knowledge): JsonResponse
     {
         $data = $request->validate([
             'zdroj' => ['nullable', 'integer', 'exists:knowledge_sources,id'],
-            'poznatky' => ['required', 'array', 'min:1', 'max:'.self::MAX_BATCH],
+            'popis' => ['nullable', 'string', 'max:2000', 'required_without:poznatky'],
+            'poznatky' => ['array', 'max:'.self::MAX_BATCH, 'required_without:popis'],
             'poznatky.*.vrstva' => ['required', 'string', 'in:'.implode(',', array_keys(KnowledgeEntry::layers()))],
             'poznatky.*.klient' => ['nullable', 'string', 'max:100'],
             'poznatky.*.nadpis' => ['required', 'string', 'max:300'],
@@ -88,11 +128,17 @@ class KnowledgeApiController extends Controller
         ]);
 
         $source = isset($data['zdroj']) ? KnowledgeSource::find($data['zdroj']) : null;
+
+        if (filled($data['popis'] ?? null)) {
+            abort_unless($source, 422, 'Popis patří k podkladům, chybí zdroj.');
+            $source->update(['summary' => trim($data['popis'])]);
+        }
+
         $room = $source ? max(0, BrainAgent::MAX_PER_SOURCE - $source->entries()->count()) : self::MAX_BATCH;
         $created = 0;
         $skipped = [];
 
-        foreach ($data['poznatky'] as $item) {
+        foreach ($data['poznatky'] ?? [] as $item) {
             $entry = $created < $room ? $knowledge->propose($item, [
                 'origin_type' => $source ? 'podklad' : 'agent',
                 'knowledge_source_id' => $source?->getKey(),
@@ -108,6 +154,7 @@ class KnowledgeApiController extends Controller
             'zalozeno' => $created,
             'preskoceno' => $skipped,
             'zbyva' => $source ? max(0, $room - $created) : null,
+            'popis' => filled($data['popis'] ?? null) ? 'uložen' : null,
         ], options: self::JSON);
     }
 }
