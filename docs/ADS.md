@@ -29,7 +29,7 @@ nikde neukládáme.
 1. Klient v Meta Business Suite → Nastavení firmy → Partneři přidá Business Manager
    Taveo a nasdílí mu reklamní účet (stačí oprávnění „Zobrazit výkon“).
 2. V Business Manageru Taveo přiřadíme účet systémovému uživateli.
-3. V nástrojích Reklamy → Přehled klientů → **Přidat klienta**. Účet se vybírá
+3. V nástrojích Reklamy → Přehled → **Přidat klienta**. Účet se vybírá
    ze seznamu toho, co token vidí, nic se neopisuje. Při propojení se vyplní cíl
    (nákupy, poptávky, návštěvnost), měsíční rozpočet, cílová cena za konverzi,
    cílový ROAS a náš paušál.
@@ -97,7 +97,7 @@ a ROAS, výběr čísel, prahy upozornění a report. Kampaň je nejvýš v jedn
 - Kód: `AdsScope` (na co se díváme), `CampaignGroups` (zařazování), `GroupReach`.
 
 Další účet téhož klienta: detail klienta → Další → Propojit účet. Vypnout nebo
-odpojit účet jde v Checklisty → Klienti → klient → Reklamní účty.
+odpojit účet jde v Klienti → Klienti → klient → Reklamní účty.
 
 ## Ukázková data
 
@@ -369,10 +369,10 @@ Report se dá vytisknout do PDF z prohlížeče, graf je SVG a tisk ho zachová.
 
 ## Hodiny nad paušál a fakturace
 
-- Čas se zapisuje na detailu klienta (Zapsat čas) nebo v Reklamy → Hodiny. Délka
+- Čas se zapisuje na detailu klienta (Zapsat čas) nebo v Klienti → Hodiny. Délka
   jako `1:30`, `1,5` nebo `45m`.
 - Paušál, hodiny v paušálu a sazba za práci navíc jsou u klienta v Cíle a paušál.
-- Fakturace (CRM → Fakturace) ukáže za měsíc paušál, odpracované hodiny, hodiny
+- Fakturace (Klienti → Fakturace) ukáže za měsíc paušál, odpracované hodiny, hodiny
   navíc a částku. Tlačítko Vyfakturováno uloží měsíc do `client_invoices` i s částkou
   a označí zapsané hodiny, takže jde i u klienta jen s paušálem. Hodiny dopsané
   po faktuře svítí oranžově. Nefakturovatelný čas (oprava naší chyby, interní

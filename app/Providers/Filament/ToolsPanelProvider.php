@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Tools\Livewire\AgentHandovers;
 use App\Filament\Tools\Livewire\ClaudeUsageMeter;
+use App\Filament\Tools\Livewire\ClientBrain;
 use App\Filament\Tools\Pages\Today;
 use App\Http\Controllers\Tools\AgentHandoverImageController;
 use App\Http\Middleware\NoIndex;
@@ -14,6 +15,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -42,6 +44,7 @@ class ToolsPanelProvider extends PanelProvider
     {
         Livewire::component('tools.claude-usage', ClaudeUsageMeter::class);
         Livewire::component('tools.agent-handovers', AgentHandovers::class);
+        Livewire::component('tools.client-brain', ClientBrain::class);
     }
 
     public function panel(Panel $panel): Panel
@@ -71,11 +74,15 @@ class ToolsPanelProvider extends PanelProvider
                 'gray' => Color::Stone,
                 'success' => Color::hex('#4f6b3a'),
             ])
+            // Menu podle práce, ne podle toho, kdy která část vznikla: nahoře
+            // denní věci (ranní přehled, agent), pak klienti (karta, hodiny,
+            // fakturace, trezor), reklamy, mozek, obchod a sbalené nastavení.
             ->navigationGroups([
-                'CRM',
-                'Reklamy',
-                'Mozek',
-                'Checklisty',
+                NavigationGroup::make('Klienti'),
+                NavigationGroup::make('Reklamy'),
+                NavigationGroup::make('Mozek'),
+                NavigationGroup::make('Obchod'),
+                NavigationGroup::make('Nastavení')->collapsed(),
             ])
             // Po přihlášení se chodí do CRM, ne na seznam checklistů —
             // obchod je denní práce, checklisty se otevírají párkrát za zakázku.

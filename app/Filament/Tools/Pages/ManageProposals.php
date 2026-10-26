@@ -22,13 +22,13 @@ class ManageProposals extends SettingsPage
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
 
-    protected static ?string $navigationLabel = 'Koncepty: společná fotka';
+    protected static ?string $navigationLabel = 'Fotka v konceptech spolupráce';
 
     protected static ?string $title = 'Potenciální spolupráce: společná fotka';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Checklisty';
+    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 
-    protected static ?int $navigationSort = 26;
+    protected static ?int $navigationSort = 40;
 
     protected static ?string $slug = 'spoluprace/nastaveni';
 

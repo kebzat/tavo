@@ -51,7 +51,7 @@ class AdGraphicResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reklamy';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 50;
 
     protected static ?string $slug = 'reklamy/grafika';
 

@@ -37,7 +37,7 @@ class SyncFailed implements Rule
                 return new Finding(
                     AlertSeverity::Critical,
                     "Nestahují se čísla z účtu {$account->name}",
-                    'Zkontrolujte, jestli nám klient účet v Business Manageru nesebral a jestli platí token Meta (Reklamy → Nastavení → Napojení ukazuje výsledek ranního stažení). Po opravě stačí tlačítko Obnovit čísla na detailu klienta, chybějící dny se doplní samy.',
+                    'Zkontrolujte, jestli nám klient účet v Business Manageru nesebral a jestli platí token Meta (Nastavení → Nastavení reklam → Napojení ukazuje výsledek ranního stažení). Po opravě stačí tlačítko Obnovit čísla na detailu klienta, chybějící dny se doplní samy.',
                     ['error' => $account->last_sync_error, 'last_synced_at' => $account->last_synced_at?->toIso8601String(), 'data_through' => $through?->toDateString()],
                     $account,
                     facts: collect([

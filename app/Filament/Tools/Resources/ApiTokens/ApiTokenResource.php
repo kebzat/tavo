@@ -36,9 +36,9 @@ class ApiTokenResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Přístupy agentů';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 
-    protected static ?int $navigationSort = 95;
+    protected static ?int $navigationSort = 50;
 
     protected static ?string $recordTitleAttribute = 'name';
 

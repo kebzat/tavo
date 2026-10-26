@@ -53,7 +53,9 @@ class VaultEntryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Trezor přístupů';
 
-    protected static ?int $navigationSort = 90;
+    protected static string|\UnitEnum|null $navigationGroup = 'Klienti';
+
+    protected static ?int $navigationSort = 70;
 
     protected static ?string $slug = 'trezor';
 

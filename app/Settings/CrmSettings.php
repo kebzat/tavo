@@ -5,7 +5,7 @@ namespace App\Settings;
 use Spatie\LaravelSettings\Settings;
 
 /**
- * Provozní nastavení CRM. Edituje se v panelu nástrojů: CRM → Nastavení.
+ * Provozní nastavení CRM. Edituje se v panelu nástrojů: Nastavení → Nastavení CRM.
  */
 class CrmSettings extends Settings
 {

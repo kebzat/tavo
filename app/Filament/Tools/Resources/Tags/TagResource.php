@@ -26,15 +26,15 @@ class TagResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
-    protected static ?string $navigationLabel = 'Štítky';
+    protected static ?string $navigationLabel = 'Štítky firem';
 
     protected static ?string $modelLabel = 'štítek';
 
     protected static ?string $pluralModelLabel = 'Štítky';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'name';
 

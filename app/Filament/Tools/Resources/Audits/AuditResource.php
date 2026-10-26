@@ -26,9 +26,9 @@ class AuditResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Audity';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Checklisty';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 70;
 
     protected static ?string $recordTitleAttribute = 'title';
 

@@ -25,9 +25,9 @@ class Pipeline extends Page
 
     protected static ?string $title = 'Pipeline';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 40;
 
     protected string $view = 'filament.tools.pages.pipeline';
 

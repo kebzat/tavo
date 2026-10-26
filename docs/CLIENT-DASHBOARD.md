@@ -10,7 +10,7 @@ co následuje.
 
 ## Kde se to plní
 
-Nástroje → Checklisty → **Klienti** → klient:
+Nástroje → **Klienti** → klient:
 
 | Co | Kde | Na přehledu |
 |---|---|---|
@@ -19,7 +19,7 @@ Nástroje → Checklisty → **Klienti** → klient:
 | Zapnutí odkazu | Přehled vidí klient | bez zapnutí 404, přihlášený vidí náhled vždy |
 | Úkoly | záložka Úkoly | Co jsme udělali, Čeká na vás, Co následuje |
 | Cíl a komentář měsíce | záložka Měsíce | hlavička, sekce Co jsme zjistili |
-| Hodiny | Reklamy → Hodiny nebo Zapsat čas | sečtené po úkolech a oblastech |
+| Hodiny | Klienti → Hodiny nebo Zapsat čas | sečtené po úkolech a oblastech |
 
 Při zápisu času se vybírá úkol (jde ho rovnou založit tlačítkem +). Oblast se pak
 bere z úkolu. Čas bez úkolu se v seznamu úkolů neukazuje, klient ho vidí jen
@@ -45,7 +45,7 @@ jinak z nastavení reklam. Přehled i Fakturace proto ukazují stejná čísla.
 
 **Změna částky do budoucna** (teď 30 000, od ledna 10 000) = další řádek téže
 oblasti: starému Do, novému Od. **Předběžně** = zatím nedomluvené, počítá se jen
-do CRM → Výhled, nefakturuje se a klient ho v přehledu nevidí. Když na předběžný
+do Klienti → Výhled paušálů, nefakturuje se a klient ho v přehledu nevidí. Když na předběžný
 paušál dojde měsíc, Fakturace ho ukáže oranžově k potvrzení.
 Výhled jde stejně jako Fakturace přepnout na vývoj (Tom) nebo marketing (Pavel),
 přihlášenému se otevře jeho oblast podle `users.billing_area`.

@@ -13,6 +13,7 @@ Platí jen poznatky, které schválil člověk.
 | **Zeptat se** (`/nastroje/mozek`) | Otázka na mozek. Agent hledá ve schválených poznatcích a odpoví s čísly poznatků (#id). Na „zapamatuj si…“ navrhne nový poznatek. Otázky jdou do jedné dlouhé konverzace, „Začít nový rozhovor“ ji založí znovu. Poznatky zůstávají. |
 | **Poznatky** (`/nastroje/mozek/poznatky`) | Návrhy ke schválení (hromadně i po jednom), platné, „vždy v hlavě“, archiv. Ručně napsaný poznatek platí hned. |
 | **Archiv a podklady** (`/nastroje/mozek/podklady`) | Vložený text nebo soubory (poznámky, e-maily, přepisy schůzek, PDF, Word, Excel). Knihovník je na pozadí přečte, napíše popis obsahu a pošle návrhy poznatků. Víc podkladů najednou bere jedny po druhých (fronta projektu). Podklady s klientem jsou jeho archiv, viz níž. |
+| **Agent → projekt klienta → Mozek klienta** | Tlačítka nad terminálem (`ClientBrain`): panel z boku s návrhy ke schválení, poznatky a archivem, Nahrát do archivu. Konverzace zůstává otevřená. |
 | **Klienti → klient → Archiv / Mozek klienta** | Archiv klienta (nahrát, stáhnout, smazat) a jeho poznatky (platné a ke schválení, schválit jde i tady). |
 
 ## Poznatek

@@ -27,7 +27,7 @@ i o zadání kódu.
 ## Tokeny agentů (`/nastroje/api`)
 
 Každý agent (skill `/audit-eshopu`, automatizace, skript) má vlastní token:
-**Nástroje → CRM → Přístupy agentů → Nový token.**
+**Nástroje → Nastavení → Přístupy agentů → Nový token.**
 
 | Oprávnění | Endpoint |
 |---|---|

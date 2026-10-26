@@ -35,7 +35,7 @@ class ClientResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Klienti';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Checklisty';
+    protected static string|\UnitEnum|null $navigationGroup = 'Klienti';
 
     protected static ?int $navigationSort = 10;
 

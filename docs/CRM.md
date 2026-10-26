@@ -253,7 +253,7 @@ PAGESPEED_ENABLED=true
 
 ## Import firem z CSV
 
-**CRM → Import firem.** Soubor v UTF-8, oddělovač čárka nebo středník (rozpozná se sám,
+**Obchod → Import firem.** Soubor v UTF-8, oddělovač čárka nebo středník (rozpozná se sám,
 BOM z Excelu taky). Očekávaná hlavička:
 
 ```
@@ -280,7 +280,7 @@ náhled prvních pěti řádků a po importu souhrn.
 
 ## Strojové rozhraní
 
-Každý agent má **vlastní token** s výčtem toho, co smí (Nástroje → CRM →
+Každý agent má **vlastní token** s výčtem toho, co smí (Nástroje → Nastavení →
 Přístupy agentů). Token se ukáže jednou při založení, jde zrušit jedním kliknutím
 a u každého je historie volání. Bez platného tokenu vrací rozhraní 401, s tokenem
 bez potřebného oprávnění 403. Podrobnosti v [SECURITY.md](SECURITY.md).

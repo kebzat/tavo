@@ -29,9 +29,9 @@ class CompanyResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Firmy';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 30;
 
     protected static ?string $recordTitleAttribute = 'name';
 

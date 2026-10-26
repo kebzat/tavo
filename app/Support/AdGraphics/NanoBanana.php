@@ -83,7 +83,7 @@ class NanoBanana
     private function send(callable $call): Response
     {
         if (! $this->configured()) {
-            throw new RuntimeException('Chybí klíč ke Gemini (Reklamy → Nastavení grafiky).');
+            throw new RuntimeException('Chybí klíč ke Gemini (Reklamy → Reklamní grafika → Nastavení).');
         }
 
         try {

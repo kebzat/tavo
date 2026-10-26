@@ -27,9 +27,9 @@ class Overview extends Page
 
     protected static ?string $title = 'Přehled';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 20;
 
     protected string $view = 'filament.tools.pages.overview';
 

@@ -29,9 +29,9 @@ class ChecklistResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Checklisty';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Checklisty';
+    protected static string|\UnitEnum|null $navigationGroup = 'Klienti';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 50;
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -314,7 +314,7 @@ class ClientForm
 
                     Repeater::make('retainers')
                         ->label('Paušál')
-                        ->helperText('Změnu částky do budoucna zapište jako další řádek téže oblasti: starému dejte Do (konec měsíce), novému Od (začátek dalšího). Všechno je pak vidět v CRM → Výhled.')
+                        ->helperText('Změnu částky do budoucna zapište jako další řádek téže oblasti: starému dejte Do (konec měsíce), novému Od (začátek dalšího). Všechno je pak vidět v Klienti → Výhled paušálů.')
                         ->relationship()
                         ->orderColumn('order_column')
                         ->addActionLabel('Přidat oblast')

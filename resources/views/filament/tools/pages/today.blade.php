@@ -60,7 +60,7 @@
                 @include('filament.tools.partials.company-row', ['company' => $company, 'overdue' => false])
             @empty
                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Všechny firmy už jsou oslovené. Naimportuj další rešerši přes CRM → Import firem.
+                    Všechny firmy už jsou oslovené. Naimportuj další rešerši přes Obchod → Import firem.
                 </p>
             @endforelse
         </div>

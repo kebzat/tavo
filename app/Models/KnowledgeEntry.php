@@ -124,6 +124,11 @@ class KnowledgeEntry extends Model
         return self::layers()[$this->layer] ?? $this->layer;
     }
 
+    public function originLabel(): string
+    {
+        return (self::originTypes()[$this->origin_type] ?? $this->origin_type).($this->origin ? ': '.$this->origin : '');
+    }
+
     public function statusLabel(): string
     {
         return self::statuses()[$this->status] ?? $this->status;

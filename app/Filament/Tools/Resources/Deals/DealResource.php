@@ -26,9 +26,9 @@ class DealResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Obchody';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 50;
 
     protected static ?string $recordTitleAttribute = 'title';
 

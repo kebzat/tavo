@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Filament\Tools\Livewire\ClientBrain;
 use App\Filament\Tools\Pages\Brain;
 use App\Filament\Tools\Resources\Clients\Pages\EditClient;
 use App\Filament\Tools\Resources\Clients\RelationManagers\ArchiveRelationManager;
@@ -547,5 +548,42 @@ class KnowledgeTest extends TestCase
         $this->assertStringContainsString('… a 22 starších', $text);
         $this->assertStringContainsString('taveo archiv-nahrat svet-cejlonu', $text);
         $this->assertStringContainsString('obchod (Obchodní data a marže)', $text);
+    }
+
+    public function test_mozek_klienta_u_konverzace_schvali_a_nahraje_bez_odchodu(): void
+    {
+        Storage::fake('local');
+        $this->prihlasit();
+        $client = $this->klient();
+        $proposed = $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Klient chce víc B2B', 'status' => KnowledgeEntry::STATUS_PROPOSED]);
+        $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Do reklam nepsat zdravotní tvrzení']);
+        $this->poznatek(['title' => 'Cizí obecný poznatek']);
+        Storage::disk('local')->put('mozek/vize.pdf', 'pdf');
+        $source = KnowledgeSource::create(['title' => 'Vize 2027', 'client_id' => $client->getKey(), 'summary' => 'Cíle na rok 2027.', 'files' => [['path' => 'mozek/vize.pdf', 'name' => 'vize.pdf']], 'status' => KnowledgeSource::STATUS_STORED]);
+
+        Livewire::test(ClientBrain::class, ['clientId' => $client->getKey()])
+            ->assertSee('Mozek klienta Svět Cejlonu')
+            ->assertSee('Ke schválení (1)')
+            ->assertSee('Do reklam nepsat zdravotní tvrzení')
+            ->assertDontSee('Cizí obecný poznatek')
+            ->assertSee('Cíle na rok 2027.')
+            ->call('approve', $proposed->getKey())
+            ->assertSee('Co agent o klientovi ví (2)')
+            ->call('download', $source->getKey(), 0)
+            ->assertFileDownloaded('vize.pdf')
+            ->callAction('upload', [
+                'title' => 'Poznámky k Black Friday',
+                'category' => 'strategie',
+                'body' => 'Jen dárkové sady se slevou 15 %.',
+                'learn' => false,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertNotified('Uloženo do archivu');
+
+        $this->assertSame(KnowledgeEntry::STATUS_APPROVED, $proposed->refresh()->status);
+        $new = KnowledgeSource::query()->where('title', 'Poznámky k Black Friday')->sole();
+        $this->assertSame($client->getKey(), $new->client_id);
+        $this->assertSame('Pavel', $new->author);
+        $this->assertSame([], $this->tasks);
     }
 }

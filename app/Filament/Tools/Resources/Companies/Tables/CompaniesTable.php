@@ -270,7 +270,7 @@ class CompaniesTable
                 ]),
             ])
             ->emptyStateHeading('Zatím žádné firmy')
-            ->emptyStateDescription('Naimportuj tabulku z rešerše přes CRM → Import firem, nebo přidej první firmu ručně.')
+            ->emptyStateDescription('Naimportuj tabulku z rešerše přes Obchod → Import firem, nebo přidej první firmu ručně.')
             ->emptyStateIcon(Heroicon::OutlinedBuildingOffice2);
     }
 

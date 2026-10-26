@@ -6,7 +6,7 @@ use Spatie\LaravelSettings\Settings;
 
 /**
  * Provozní nastavení reklam: komu chodí ranní souhrn a kdy se rozsvítí
- * upozornění. Edituje se v panelu nástrojů: Reklamy → Nastavení.
+ * upozornění. Edituje se v panelu nástrojů: Nastavení → Nastavení reklam.
  */
 class AdsSettings extends Settings
 {
