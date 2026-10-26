@@ -16,16 +16,21 @@ use Illuminate\Support\Facades\DB;
 /**
  * Účty, které nám klienti nasdíleli a které ještě nejsou u žádného klienta.
  *
- * Seznam stahuje jen ranní `ads:sync` (refresh(), jeden dotaz na platformu)
- * a ukládá do ad_shared_accounts. Nabídka při propojování čte jen odsud, na
- * Metu nesahá. Nově nasdílený účet se v nabídce objeví druhý den ráno.
- * Ukázkové platformy nic nestahují, ty se čtou rovnou.
+ * Seznam stahuje jen `ads:sync` (refresh(), jeden dotaz na platformu): ráno
+ * a na žádost z Nastavení reklam (Načíst účty znovu, vyřídí `--requested`
+ * do 5 minut). Ukládá se do ad_shared_accounts, nabídka při propojování čte
+ * jen odsud a na Metu nesahá. Ukázkové platformy nic nestahují, čtou se rovnou.
  */
 class AccountDirectory
 {
+    /** Načíst účty znovu jde nejvýš jednou za tolik minut. */
+    public const REQUEST_COOLDOWN_MINUTES = 10;
+
+    private const REQUEST_KEY = 'ads.directory.request';
+
     public function __construct(private readonly Platforms $platforms) {}
 
-    /** Stáhne seznam z platformy. Volá jen ranní stažení. */
+    /** Stáhne seznam z platformy. Volá jen ads:sync. */
     public function refresh(AdPlatform $platform): int
     {
         try {
@@ -65,6 +70,47 @@ class AccountDirectory
         return $accounts->count();
     }
 
+    /**
+     * Žádost o nové načtení seznamu (tlačítko Načíst účty znovu). Na platformu
+     * se odsud nesahá, žádost vyřídí `ads:sync --requested`. False, když už
+     * žádost čeká nebo seznam se ručně načítal před chvílí.
+     */
+    public function requestRefresh(): bool
+    {
+        if ($this->refreshPending() || $this->nextRequestAt()?->isFuture()) {
+            return false;
+        }
+
+        Cache::forever(self::REQUEST_KEY, ['requested_at' => now()->timestamp, 'done_at' => $this->requestState()['done_at'] ?? null]);
+
+        return true;
+    }
+
+    public function refreshPending(): bool
+    {
+        return filled($this->requestState()['requested_at'] ?? null);
+    }
+
+    /** Kdy půjde ručně načíst znovu. Null, když hned. */
+    public function nextRequestAt(): ?Carbon
+    {
+        $done = $this->requestState()['done_at'] ?? null;
+
+        return $done ? Carbon::createFromTimestamp($done)->addMinutes(self::REQUEST_COOLDOWN_MINUTES) : null;
+    }
+
+    /** Vyzvedne žádost o načtení. True, když nějaká čekala. Volá jen ads:sync --requested. */
+    public function takeRefreshRequest(): bool
+    {
+        if (! $this->refreshPending()) {
+            return false;
+        }
+
+        Cache::forever(self::REQUEST_KEY, ['requested_at' => null, 'done_at' => now()->timestamp]);
+
+        return true;
+    }
+
     /** @return Collection<int, AccountInfo> */
     public function available(AdPlatform $platform): Collection
     {
@@ -89,14 +135,20 @@ class AccountDirectory
         }
 
         if ($error = $this->lastError($platform)) {
-            return 'Ranní stažení seznamu účtů selhalo: '.$error;
+            return 'Načtení seznamu účtů selhalo: '.$error;
         }
 
         if (! $platform->isDemo() && $this->checkedAt($platform) === null) {
-            return 'Seznam nasdílených účtů se stáhne zítra ráno v 6:00.';
+            return 'Seznam účtů ještě není načtený. Načtěte ho v Nastavení reklam tlačítkem Načíst účty znovu (do 5 minut), jinak se stáhne ráno v 6:00.';
         }
 
         return $this->available($platform)->isEmpty() ? $this->howToShare($platform) : null;
+    }
+
+    /** Nápověda pod výběrem účtu: problém, nebo kde načíst účet, který v nabídce chybí. */
+    public function hint(AdPlatform $platform): ?string
+    {
+        return $this->problem($platform) ?? ($platform->isDemo() ? null : 'Účet v nabídce chybí? Nastavení reklam → Načíst účty znovu, do 5 minut tu bude.');
     }
 
     /** Kdy ranní stažení naposledy načetlo seznam. */
@@ -122,9 +174,9 @@ class AccountDirectory
     public function howToShare(AdPlatform $platform): string
     {
         return 'Žádný nový účet. '.match ($platform) {
-            AdPlatform::Meta => 'Klient ho musí nasdílet Business Manageru Taveo jako partnerovi a my ho přiřadit systémovému uživateli. V nabídce se objeví druhý den ráno.',
-            AdPlatform::GoogleAds => 'Klient musí přijmout žádost o propojení s MCC Taveo. V nabídce se objeví druhý den ráno.',
-            AdPlatform::Ga4 => 'Klient musí v GA4 přidat '.(app(Ga4::class)->serviceAccountEmail() ?? 'náš servisní účet').' jako čtenáře. V nabídce se objeví druhý den ráno.',
+            AdPlatform::Meta => 'Klient ho musí nasdílet Business Manageru Taveo jako partnerovi a my ho přiřadit systémovému uživateli. Pak v Nastavení reklam Načíst účty znovu.',
+            AdPlatform::GoogleAds => 'Klient musí přijmout žádost o propojení s MCC Taveo. Pak v Nastavení reklam Načíst účty znovu.',
+            AdPlatform::Ga4 => 'Klient musí v GA4 přidat '.(app(Ga4::class)->serviceAccountEmail() ?? 'náš servisní účet').' jako čtenáře. Pak v Nastavení reklam Načíst účty znovu.',
             AdPlatform::Demo, AdPlatform::DemoGa4 => 'Všechny ukázkové účty už jsou propojené.',
         };
     }
@@ -154,6 +206,12 @@ class AccountDirectory
                 status: $row->status,
                 business: $row->business,
             ));
+    }
+
+    /** @return array{requested_at?: ?int, done_at?: ?int} */
+    private function requestState(): array
+    {
+        return Cache::get(self::REQUEST_KEY, []);
     }
 
     /** @return array{checked_at?: int, error?: ?string} */

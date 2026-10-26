@@ -45,7 +45,7 @@ final class MarketingGuide
                 'Osobní údaje zákazníků do karty ani agentovi nedávej. Pracuje se souhrnnými čísly.',
             ],
             'asks' => [
-                'Nasdílet zbylé Meta účty BM Taveo. Do nabídky v Reklamy › Přidat klienta se dostanou druhý den ráno.',
+                'Nasdílet zbylé Meta účty BM Taveo. Do nabídky v Reklamy › Přidat klienta se dostanou ráno, nebo hned po Nastavení reklam › Načíst účty znovu.',
                 'Vyplnit karty klientů, u každého aspoň cíle, KPI, zdroj pravdy a tón komunikace.',
                 'U leadových klientů domluvit, odkud a jak často dostaneme zpětnou vazbu k leadům.',
                 'Změřit, kolik ti teď trvá jeden report a fakturace. Bez toho úsporu nevyhodnotíme.',

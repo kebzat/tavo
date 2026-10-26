@@ -39,7 +39,7 @@ class ConnectAdAccountAction
             ->icon(Heroicon::OutlinedPlus)
             ->color($client ? 'gray' : 'primary')
             ->modalHeading($client ? 'Propojit další účet' : 'Přidat klienta do reklam')
-            ->modalDescription('Klient nejdřív nasdílí účet Taveo: reklamní účet Meta Business Manageru Taveo, účet Google Ads pod MCC Taveo, GA4 property e-mailu našeho servisního účtu. V nabídce se objeví druhý den ráno, seznam stahuje jen ranní stažení v 6:00.')
+            ->modalDescription('Klient nejdřív nasdílí účet Taveo: reklamní účet Meta Business Manageru Taveo, účet Google Ads pod MCC Taveo, GA4 property e-mailu našeho servisního účtu. Seznam se načítá ráno v 6:00, nově nasdílený účet načtete hned v Nastavení reklam tlačítkem Načíst účty znovu.')
             ->modalSubmitActionLabel('Propojit')
             ->fillForm(fn (): array => [
                 // Skutečná platforma před ukázkovou, když je nastavená.
@@ -79,7 +79,7 @@ class ConnectAdAccountAction
                     ->options(fn (callable $get): array => ($platform = $platformOf($get('platform'))) ? $directory->options($platform) : [])
                     ->searchable()
                     ->required()
-                    ->helperText(fn (callable $get): ?string => ($platform = $platformOf($get('platform'))) ? $directory->problem($platform) : null),
+                    ->helperText(fn (callable $get): ?string => ($platform = $platformOf($get('platform'))) ? $directory->hint($platform) : null),
 
                 Section::make('Co s klientem hlídáme')
                     ->description('Jde změnit kdykoli na detailu klienta. Bez cílů se nehlídá cena za konverzi ani rozpočet.')
@@ -110,8 +110,9 @@ class ConnectAdAccountAction
                     'currency' => $info?->currency ?: 'CZK',
                     'timezone' => $info?->timezone,
                     'status' => $info?->status,
-                    // Čísla i historii stáhne až ranní ads:sync, na platformu se odsud nesahá.
+                    // Čísla i historii stáhne do 5 minut ads:sync --requested, na platformu se odsud nesahá.
                     'backfill_from' => AdAccount::historyStart(),
+                    'refresh_requested_at' => now(),
                 ]);
 
                 if ($client->adSettings()->doesntExist()) {
@@ -127,7 +128,7 @@ class ConnectAdAccountAction
                 Notification::make()
                     ->success()
                     ->title("{$account->name} je propojený s klientem {$client->name}")
-                    ->body('Čísla včetně historie za '.config('ads.backfill_months').' měsíce se stáhnou zítra ráno v 6:00. Do té doby je přehled klienta prázdný.')
+                    ->body('Čísla včetně historie za '.config('ads.backfill_months').' měsíce se stáhnou do 5 minut. Pak stránku obnovte.')
                     ->send();
             })
             ->successRedirectUrl(fn (array $data): string => AdsClient::getUrl(['client' => $client?->getKey() ?? $data['client_id']]));

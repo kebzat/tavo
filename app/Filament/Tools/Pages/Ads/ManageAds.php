@@ -13,11 +13,13 @@ use App\Support\Ads\Platforms\ApiGuard;
 use App\Support\Ads\Platforms\Ga4;
 use App\Support\Ads\Platforms\Platforms;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Pages\SettingsPage;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -50,7 +52,8 @@ class ManageAds extends SettingsPage
     {
         return $schema->components([
             Section::make('Napojení')
-                ->description('Přístupy jsou v .env na serveru, sem se nezadávají. Postup je v docs/ADS.md. Spojení ověřuje ranní stažení, výsledek je u každé platformy.')
+                ->description('Přístupy jsou v .env na serveru, sem se nezadávají. Postup je v docs/ADS.md. Spojení ověřuje ranní stažení a Načíst účty znovu, výsledek je u každé platformy.')
+                ->afterHeader([$this->reloadAccountsAction()])
                 ->columns(2)
                 ->schema(collect(AdPlatform::cases())->map(fn (AdPlatform $platform): TextEntry => TextEntry::make('platform_'.$platform->value)
                     ->label($platform->getLabel())
@@ -67,7 +70,7 @@ class ManageAds extends SettingsPage
                 ]),
 
             Section::make('Ochrana před přetížením')
-                ->description('Na Metu, Google Ads a GA4 sahá jen ranní stažení v 6:00, jednou denně. Všechno ostatní (přehledy, reporty, upozornění, agent) čte z databáze. U Mety je to jeden dotaz na seznam účtů, šest na účet (stav, čísla, dosah, zamítnuté reklamy, stav kampaní, čísla reklam) a jeden na skupinu kampaní (její dosah). Ruční obnova z detailu klienta stáhne jeden účet, nejvýš jednou za 2 hodiny. Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
+                ->description('Na Metu, Google Ads a GA4 sahá jen stažení ráno v 6:00 a ruční žádosti (Načíst účty znovu, Obnovit čísla, nově propojený účet). Všechno ostatní (přehledy, reporty, upozornění, agent) čte z databáze. U Mety je to jeden dotaz na seznam účtů, šest na účet (stav, čísla, dosah, zamítnuté reklamy, stav kampaní, čísla reklam) a jeden na skupinu kampaní (její dosah). Ruční obnova z detailu klienta stáhne jeden účet, nejvýš jednou za 2 hodiny. Načíst účty znovu je jeden dotaz na platformu, nejvýš jednou za 10 minut. Nově propojený účet se stáhne hned, i s historií. Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
                 ->columns(3)
                 ->schema(collect(['meta' => 'Meta', 'google_ads' => 'Google Ads', 'ga4' => 'GA4'])->map(fn (string $label, string $key): TextEntry => TextEntry::make('guard_'.$key)
                     ->label($label)
@@ -137,6 +140,37 @@ class ManageAds extends SettingsPage
         ]);
     }
 
+    /**
+     * Nově nasdílený účet hned, ne až druhý den ráno. Odsud se na platformy
+     * nesahá: zapíše žádost, kterou do 5 minut vyřídí `ads:sync --requested`
+     * (jeden dotaz na platformu), nejvýš jednou za 10 minut.
+     */
+    public function reloadAccountsAction(): Action
+    {
+        return Action::make('reloadAccounts')
+            ->label('Načíst účty znovu')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->color('gray')
+            ->visible(fn (): bool => collect(app(Platforms::class)->configured())->contains(fn (AdPlatform $platform): bool => ! $platform->isDemo()))
+            ->requiresConfirmation()
+            ->modalHeading('Načíst účty znovu?')
+            ->modalDescription('Stáhne aktuální seznam účtů, které klienti nasdíleli Taveo (Meta, Google Ads pod MCC, GA4). Trvá to do 5 minut, pak je nový účet v nabídce Přidat klienta a Propojit účet. Čísla se tím nestahují.')
+            ->modalSubmitActionLabel('Načíst')
+            ->action(function (): void {
+                $directory = app(AccountDirectory::class);
+
+                if ($directory->requestRefresh()) {
+                    Notification::make()->success()->title('Účty se načtou do 5 minut')->body('Pak stránku obnovte, výsledek bude u každé platformy.')->send();
+
+                    return;
+                }
+
+                Notification::make()->warning()->title('Teď to nejde')->body($directory->refreshPending()
+                    ? 'Načtení už čeká, proběhne do 5 minut.'
+                    : 'Účty se načítaly před chvílí. Znovu to půjde v '.$directory->nextRequestAt()?->timezone('Europe/Prague')->format('G:i').'.')->send();
+            });
+    }
+
     /** Účty s posledním úspěšným stažením, daty do a chybou. */
     private function dataState(): HtmlString
     {
@@ -191,12 +225,13 @@ class ManageAds extends SettingsPage
         }
 
         $directory = app(AccountDirectory::class);
-        $checked = $directory->checkedAt($platform);
+        $checked = $directory->checkedAt($platform)?->timezone('Europe/Prague');
 
         return $access.' '.match (true) {
-            $checked === null => 'Spojení ověří zítřejší ranní stažení.',
-            $directory->lastError($platform) !== null => 'Ranní stažení '.$checked->format('j. n. H:i').' selhalo: '.$directory->lastError($platform),
-            default => 'Ráno '.$checked->format('j. n. H:i').' vidělo '.$directory->count($platform).' nasdílených účtů.',
+            $directory->refreshPending() => 'Seznam účtů se načítá, do 5 minut.',
+            $checked === null => 'Spojení ověří ranní stažení, nebo hned Načíst účty znovu.',
+            $directory->lastError($platform) !== null => 'Načtení seznamu účtů '.$checked->format('j. n. G:i').' selhalo: '.$directory->lastError($platform),
+            default => 'Seznam účtů z '.$checked->format('j. n. G:i').', nasdílených účtů: '.$directory->count($platform).'.',
         };
     }
 

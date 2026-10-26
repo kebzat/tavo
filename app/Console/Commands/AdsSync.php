@@ -27,9 +27,10 @@ use Illuminate\Support\Carbon;
  * Když ranní stažení pár dní neprošlo, doplní se i chybějící dny
  * (config ads.catch_up_days), ať v číslech nezůstane díra.
  *
- * S --requested vyřídí ruční obnovy z detailu klienta (každých 5 minut,
- * u účtu nejvýš jednou za ads.refresh_cooldown_minutes) a hned po nich
- * znovu vyhodnotí upozornění klienta.
+ * S --requested vyřídí ruční žádosti (každých 5 minut): nové načtení seznamu
+ * účtů z Nastavení reklam, obnovu čísel z detailu klienta (u účtu nejvýš
+ * jednou za ads.refresh_cooldown_minutes) a první stažení právě propojeného
+ * účtu i s historií. Pak znovu vyhodnotí upozornění klienta.
  */
 class AdsSync extends Command
 {
@@ -39,7 +40,7 @@ class AdsSync extends Command
         {--from= : Začátek období (Y-m-d), přebíjí --days}
         {--to= : Konec období (Y-m-d), výchozí včerejšek}
         {--force : Stáhnout i účty, které se dnes už stáhly}
-        {--requested : Jen účty, u kterých někdo požádal o ruční obnovu (tlačítko Obnovit čísla)}';
+        {--requested : Jen ruční žádosti (Načíst účty znovu, Obnovit čísla, nově propojený účet)}';
 
     protected $description = 'Stáhne denní čísla z reklamních účtů klientů (jediný přístup na platformy)';
 
@@ -49,7 +50,7 @@ class AdsSync extends Command
 
         try {
             return $this->option('requested')
-                ? $this->syncRequested($sync, $platforms, $alerts)
+                ? $this->syncRequested($sync, $platforms, $directory, $alerts)
                 : $this->syncAll($sync, $platforms, $directory);
         } finally {
             ApiGuard::close();
@@ -57,11 +58,16 @@ class AdsSync extends Command
     }
 
     /**
-     * Ruční obnovy z detailu klienta. Stáhne stejné období jako ranní běh
-     * i s dosahem a zamítnutými reklamami, pak přepočítá upozornění.
+     * Ruční žádosti. Seznam účtů načte znovu ze všech napojených platforem.
+     * Účet stáhne stejné období jako ranní běh i s dosahem a zamítnutými
+     * reklamami (nově propojený i historii), pak přepočítá upozornění.
      */
-    private function syncRequested(AccountSync $sync, Platforms $platforms, AlertEngine $alerts): int
+    private function syncRequested(AccountSync $sync, Platforms $platforms, AccountDirectory $directory, AlertEngine $alerts): int
     {
+        if ($directory->takeRefreshRequest()) {
+            $this->refreshDirectory($platforms, $directory, evenIfToday: true);
+        }
+
         $accounts = AdAccount::query()
             ->active()
             ->whereNotNull('refresh_requested_at')
@@ -84,9 +90,13 @@ class AdsSync extends Command
 
             $period = $this->dailyPeriod($account);
             $run = $sync->sync($account, $period, withReach: true);
-            $run->status === 'ok'
-                ? $this->info("{$label}: obnoveno {$run->rows} řádků ({$period->label()}).")
-                : $this->error("{$label}: {$run->error}");
+
+            if ($run->status === 'ok') {
+                $this->info("{$label}: obnoveno {$run->rows} řádků ({$period->label()}).");
+                $this->backfill($sync, $account->refresh(), $label);
+            } else {
+                $this->error("{$label}: {$run->error}");
+            }
         }
 
         foreach ($accounts->pluck('client')->unique('id') as $client) {
@@ -101,19 +111,8 @@ class AdsSync extends Command
         $period = $this->period();
         $daily = ! $this->option('from') && ! $this->option('account');
 
-        // Seznam nasdílených účtů pro nabídku při propojování, jeden dotaz na platformu.
         if ($daily) {
-            foreach ($platforms->configured() as $platform) {
-                if ($platform->isDemo() || $directory->checkedAt($platform)?->isToday()) {
-                    continue;
-                }
-
-                try {
-                    $this->line($platform->shortLabel().': nasdílených účtů '.$directory->refresh($platform).'.');
-                } catch (AdsApiException $e) {
-                    $this->error($platform->shortLabel().': seznam účtů se nestáhl. '.$e->getMessage());
-                }
-            }
+            $this->refreshDirectory($platforms, $directory, evenIfToday: false);
         }
 
         $accounts = AdAccount::query()
@@ -160,6 +159,22 @@ class AdsSync extends Command
         // Selhání jednoho účtu se hlásí upozorněním, naplánovaný běh kvůli
         // němu nepadá. Nenulový kód jen když nevyšlo nic.
         return $failed === $accounts->count() ? self::FAILURE : self::SUCCESS;
+    }
+
+    /** Seznam nasdílených účtů pro nabídku při propojování, jeden dotaz na platformu. */
+    private function refreshDirectory(Platforms $platforms, AccountDirectory $directory, bool $evenIfToday): void
+    {
+        foreach ($platforms->configured() as $platform) {
+            if ($platform->isDemo() || (! $evenIfToday && $directory->checkedAt($platform)?->isToday())) {
+                continue;
+            }
+
+            try {
+                $this->line($platform->shortLabel().': nasdílených účtů '.$directory->refresh($platform).'.');
+            } catch (AdsApiException $e) {
+                $this->error($platform->shortLabel().': seznam účtů se nestáhl. '.$e->getMessage());
+            }
+        }
     }
 
     /**

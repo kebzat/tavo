@@ -151,7 +151,8 @@ tokenem. Basic Access se schvaluje automaticky po ověření značky.
 4. Do `.env`: `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_REFRESH_TOKEN`,
    `GOOGLE_ADS_LOGIN_CUSTOMER_ID` (číslo MCC). `GOOGLE_ADS_DEVELOPER_TOKEN` jen pokud
    ho API ještě chce.
-5. Klient přijme žádost o propojení s MCC Taveo a jeho účet se objeví v nabídce.
+5. Klient přijme žádost o propojení s MCC Taveo. Jeho účet se objeví v nabídce ráno, nebo hned
+   po Nastavení reklam → **Načíst účty znovu** (do 5 minut).
 
 Google má jednu metriku „konverze“. U e-shopu ji ukládáme jako nákupy (s hodnotou),
 u klienta s cílem Poptávky jako poptávky.
@@ -184,10 +185,10 @@ jen v `.env` webu, agent v kontejneru ho nemá.
 
 | Co | Jak to jde bez Mety |
 |---|---|
-| Nabídka účtů při propojování | Ranní stažení uloží seznam nasdílených účtů do `ad_shared_accounts` (1 dotaz na platformu). Nově nasdílený účet se v nabídce objeví druhý den ráno. |
-| Nový účet | Propojení jen zapíše `backfill_from`. Čísla i historii stáhne další ranní běh, do té doby je přehled prázdný. |
+| Nabídka účtů při propojování | Ranní stažení uloží seznam nasdílených účtů do `ad_shared_accounts` (1 dotaz na platformu). Nově nasdílený účet hned: Nastavení reklam → **Načíst účty znovu** jen zapíše žádost (`AccountDirectory::requestRefresh()`), vyřídí ji `ads:sync --requested` do 5 minut, nejvýš jednou za 10 minut. |
+| Nový účet | Propojení jen zapíše `backfill_from` a `refresh_requested_at`. Čísla i historii stáhne `ads:sync --requested` do 5 minut. |
 | Doplnit starší historii | Jen zapíše `backfill_from`, chybějící úsek stáhne ranní běh. |
-| Ověření spojení | Výsledek ranního stažení v Nastavení reklam → Napojení a Stav dat po účtech. |
+| Ověření spojení | Výsledek načtení seznamu účtů v Nastavení reklam → Napojení a Stav dat po účtech. |
 | Aktuálnější čísla přes den | Tlačítko Obnovit čísla jen zapíše žádost, vyřídí ji `ads:sync --requested` (tentýž příkaz, do 5 minut, jednou za 2 h na účet). |
 
 Ruční `./bin/art ads:sync` na serveru jde (je to tentýž příkaz), účty stažené ten den
@@ -205,7 +206,7 @@ nadměrný:
 | Jen ranní stažení | Viz výše. Z webu ani od agenta na platformu nic neodejde. |
 | Historie | Nový účet jednou 3 měsíce (1 dotaz navíc v ranním běhu), pak už nikdy. Delší historie je vypnutá. |
 | Jednou denně | `ads:sync` běží v 6:00. Seznam nasdílených účtů 1 dotaz, na účet Mety šest: stav účtu, čísla za 7 dní (a chybějící dny), dosah za přednastavená období, zamítnuté reklamy (jedna stránka, nejvýš 50), stav kampaní (jedna stránka) a čísla reklam za 30 dní (jedna stránka, 50 reklam). Na skupinu kampaní jeden dotaz (dosah). U 20 klientů se dvěma skupinami zhruba 160 dotazů denně. Účet stažený ten den se podruhé nestahuje. |
-| Ruční obnova | `ads:sync --requested` každých 5 minut, ale jen se žádostí z tlačítka. Jeden účet nejvýš jednou za 2 hodiny. |
+| Ruční obnova | `ads:sync --requested` každých 5 minut, ale jen se žádostí z tlačítka. Jeden účet nejvýš jednou za 2 hodiny, seznam účtů (Načíst účty znovu, 1 dotaz na platformu) nejvýš jednou za 10 minut. |
 | Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |
 | Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána. |
 | Denní strop | Nejvýš 300 dotazů na Metu za den (`META_DAILY_CALL_LIMIT`, Google a GA4 200). Strop chytí chybu v kódu dřív než Meta. |
@@ -224,7 +225,7 @@ facebookový profil Pavla ani Toma.
 | Čas | Příkaz | Co dělá |
 |---|---|---|
 | denně 6:00 | `ads:sync` | jediný přístup na platformy: seznam nasdílených účtů, přepíše posledních 7 dní všech zapnutých účtů (Meta konverze zpětně dopočítává) a chybějící dny, doplní požadovanou historii, stav kampaní, čísla reklam, dosah skupin, nové kampaně zařadí podle pravidel skupin |
-| každých 5 min | `ads:sync --requested` | jen ruční obnovy z tlačítka Obnovit čísla, bez žádosti nic |
+| každých 5 min | `ads:sync --requested` | jen ruční žádosti: Načíst účty znovu, Obnovit čísla, nově propojený účet. Bez žádosti nic |
 | denně 6:40 | `ads:alerts` | vyhodnotí pravidla za klienty i skupiny, otevře nová upozornění, zavře ta, která se vrátila do normálu |
 | všední dny 7:15 | `ads:digest` | e-mail „Reklamy: N upozornění“ s ranním souhrnem, termíny, co se vrátilo do normálu a včerejší útratou. Když není co hlásit, neodejde |
 | pondělí 6:45 | `ads:reports weekly` | koncepty týdenních reportů za minulý týden (i za skupiny se zapnutým reportem) |
