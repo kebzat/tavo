@@ -151,4 +151,26 @@ class AdsAccountReloadTest extends TestCase
         // Denní období a pak historie od začátku, kterou ještě nemáme.
         Http::assertSent(fn (Request $request): bool => str_contains((string) ($request->data()['query'] ?? ''), "BETWEEN '".AdAccount::historyStart()."'"));
     }
+
+    public function test_chyba_google_ads_rekne_skutecny_duvod(): void
+    {
+        Http::fake([
+            'oauth2.googleapis.com/*' => Http::response(['access_token' => 'ya29.test']),
+            'googleads.googleapis.com/*' => Http::response(['error' => [
+                'code' => 403,
+                'message' => 'The caller does not have permission',
+                'status' => 'PERMISSION_DENIED',
+                'details' => [[
+                    '@type' => 'type.googleapis.com/google.ads.googleads.v24.errors.GoogleAdsFailure',
+                    'errors' => [['errorCode' => ['authorizationError' => 'DEVELOPER_TOKEN_NOT_APPROVED'], 'message' => 'The developer token is only approved for use with test accounts.']],
+                ]],
+            ]], 403),
+        ]);
+
+        $this->artisan('ads:sync')->assertSuccessful();
+        $error = app(AccountDirectory::class)->lastError(AdPlatform::GoogleAds);
+
+        $this->assertStringContainsString('jen testovací přístup', $error);
+        $this->assertStringContainsString('DEVELOPER_TOKEN_NOT_APPROVED', $error);
+    }
 }
