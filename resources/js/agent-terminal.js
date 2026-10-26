@@ -24,6 +24,7 @@ class TavoAgentTerminal {
         this.socket = null;
         this.attempts = 0;
         this.runs = 0;
+        this.problem = null;
         this.pendingCopy = null;
 
         this.term = new Terminal({
@@ -148,13 +149,15 @@ class TavoAgentTerminal {
         this.onState('connecting');
 
         let url;
+        this.problem = null;
         try {
             // Livewire po chybě (vypršelá stránka, výpadek) slib nemusí nikdy splnit.
             url = await Promise.race([
                 this.url(),
                 new Promise((resolve, reject) => setTimeout(() => reject(new Error('timeout')), CONNECT_TIMEOUT)),
             ]);
-        } catch {
+        } catch (error) {
+            this.problem = error.message === 'timeout' ? 'Server nevydal vstupenku do 10 s.' : `Vstupenka: ${error.message}`;
             if (run === this.runs) this.retry(run);
             return;
         }
@@ -166,12 +169,23 @@ class TavoAgentTerminal {
             return;
         }
 
-        const socket = new WebSocket(url);
+        let socket;
+        try {
+            socket = new WebSocket(url);
+        } catch (error) {
+            this.problem = `WebSocket: ${error.message}`;
+            this.retry(run);
+            return;
+        }
         this.socket = socket;
 
         // Spojení, které se neotevře ani neodmítne, prohlížeč drží donekonečna
         // (zachytí ho antivirus nebo doplněk). Zavřít a zkusit znovu.
-        const timeout = setTimeout(() => socket.readyState === WebSocket.CONNECTING && socket.close(), CONNECT_TIMEOUT);
+        const timeout = setTimeout(() => {
+            if (socket.readyState !== WebSocket.CONNECTING) return;
+            this.problem = 'Spojení se do 10 s neotevřelo.';
+            socket.close();
+        }, CONNECT_TIMEOUT);
 
         socket.onopen = () => {
             clearTimeout(timeout);
@@ -184,10 +198,11 @@ class TavoAgentTerminal {
 
         socket.onmessage = (event) => this.term.write(event.data);
 
-        socket.onclose = () => {
+        socket.onclose = (event) => {
             clearTimeout(timeout);
             if (this.socket !== socket) return; // odpojili jsme sami (jiné vlákno)
             this.socket = null;
+            this.problem ??= `Spojení se zavřelo (kód ${event.code}).`;
             this.retry(run);
         };
     }
@@ -203,7 +218,7 @@ class TavoAgentTerminal {
             setTimeout(() => run === this.runs && this.connect(), 1500 * this.attempts);
         } else {
             this.attempts = 0;
-            this.onState('closed');
+            this.onState('closed', this.problem);
         }
     }
 
