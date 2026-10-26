@@ -40,6 +40,7 @@ class ArchiveRelationManager extends RelationManager
                     ->searchable(),
                 TextColumn::make('category')
                     ->label('Druh')
+                    ->visibleFrom('sm')
                     ->badge()
                     ->color('gray')
                     ->formatStateUsing(fn (KnowledgeSource $record): ?string => $record->categoryLabel())
