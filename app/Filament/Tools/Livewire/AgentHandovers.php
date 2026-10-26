@@ -174,6 +174,12 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
         return route('filament.tools.agent.snimek', ['project' => $this->project, 'name' => $name, 'file' => $file]);
     }
 
+    /** HTML z podkladů jako stránka ke čtení. Odkaz jde poslat, otevře ho jen přihlášený. */
+    public function pageUrl(string $name, string $file): ?string
+    {
+        return preg_match('/\.html?$/i', $file) ? route('filament.tools.agent.stranka', ['project' => $this->project, 'name' => $name, 'file' => $file]) : null;
+    }
+
     public function reviewAction(): Action
     {
         return Action::make('review')
@@ -190,7 +196,12 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
                 default => 'Takhle to agent udělal a vyzkoušel. Když sedí, zveřejněte. Když ne, napište mu do terminálu, co upravit.',
             })
             ->modalContent(fn (array $arguments): ?View => ($item = $this->find($arguments))
-                ? view('filament.tools.partials.agent-handover-review', ['item' => $item, 'component' => $this, 'body' => self::markdown($item['description'])])
+                ? view('filament.tools.partials.agent-handover-review', [
+                    'item' => $item,
+                    'component' => $this,
+                    'body' => self::markdown($item['description']),
+                    'pages' => collect($item['codes'])->mapWithKeys(fn (array $code): array => [$code['soubor'] => $this->pageUrl($item['name'], $code['soubor'])])->filter()->all(),
+                ])
                 : null)
             ->modalSubmitActionLabel(match ($this->type) {
                 'prazdny' => 'Vloženo, hotovo',

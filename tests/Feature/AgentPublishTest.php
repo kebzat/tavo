@@ -315,6 +315,34 @@ class AgentPublishTest extends TestCase
         $this->get(route('filament.tools.agent.snimek', ['project' => 'taveo', 'name' => 'predplatne', 'file' => '..%2F.env']))->assertNotFound();
     }
 
+    public function test_html_z_podkladu_jde_otevrit_jako_stranku_jen_po_prihlaseni(): void
+    {
+        $url = route('filament.tools.agent.stranka', ['project' => 'svet-cejlonu', 'name' => 'paticka', 'file' => 'paticka.html']);
+
+        $this->get($url)->assertRedirect();
+
+        $response = $this->actingAs($this->spravce())->get($url)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/html; charset=utf-8')
+            ->assertSee('<!doctype html>', false)
+            ->assertSee('<div class="paticka">Čaj z Cejlonu</div>', false);
+
+        $this->assertStringStartsWith('sandbox allow-scripts', $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('noindex', $response->headers->get('X-Robots-Tag'));
+
+        $this->get(route('filament.tools.agent.stranka', ['project' => 'svet-cejlonu', 'name' => 'paticka', 'file' => 'jina.html']))->assertNotFound();
+        $this->get(route('filament.tools.agent.stranka', ['project' => 'svet-cejlonu', 'name' => 'paticka', 'file' => 'styl.css']))->assertNotFound();
+        $this->get(route('filament.tools.agent.stranka', ['project' => 'svet-cejlonu', 'name' => 'paticka', 'file' => '..%2F.env']))->assertNotFound();
+    }
+
+    public function test_u_html_podkladu_je_odkaz_na_stranku(): void
+    {
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'svet-cejlonu', 'type' => 'prazdny'])
+            ->mountAction(TestAction::make('review')->arguments(['name' => 'paticka', 'sha' => null]))
+            ->assertMountedActionModalSee(['Otevřít jako stránku', '/agent/svet-cejlonu/stranka/paticka/paticka.html']);
+    }
+
     public function test_bez_automatickeho_nasazeni_je_uprava_jen_sloucena(): void
     {
         $this->gh['main_runs'] = [['name' => 'CI', 'status' => 'completed', 'conclusion' => 'success']];

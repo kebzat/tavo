@@ -50,7 +50,9 @@ Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.
 do `/projekty/{{PROJEKT}}/predani/<krátký-popis>/`: `popis.md` (první řádek `# Nadpis`, pak
 **přesně kam to v administraci vložit**) a každý kód nebo text jako vlastní
 soubor (`paticka.html`, `styl.css`, `popis-produktu.txt`), náhled jako `*.png`.
-V nástrojích u nich bude tlačítko Zkopírovat.
+V nástrojích u nich bude tlačítko Zkopírovat. Rozbor nebo plán ke čtení pro kolegy
+dej jako `.html` (vzhled TAVEO, písma jen z Bunny Fonts, bez externích skriptů):
+má tlačítko **Otevřít jako stránku** a odkaz `/nastroje/agent/{{PROJEKT}}/stranka/<krátký-popis>/<soubor>.html`.
 
 ## Pravidla
 

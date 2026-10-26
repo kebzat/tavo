@@ -82,7 +82,7 @@ git (Pavel), v ní zkontroluje snímky a popis. Co karta umí, záleží na typu
 |---|---|---|
 | git | Hotová práce | Zkontrolovat, **Zveřejnit** (testy → main → nasazení), Zahodit, Vrátit poslední zveřejnění |
 | server (živý web, grillnor) | Hotová práce | agent pracuje v **kopii webu**: Zkontrolovat, **Zveřejnit na web** (celá kopie najednou), Zahodit změny, Vrátit |
-| prazdny (Shoptet, Upgates) | Hotové podklady | Zkontrolovat s tlačítkem **Zkopírovat** u každého kódu, Hotovo |
+| prazdny (Shoptet, Upgates) | Hotové podklady | Zkontrolovat s tlačítkem **Zkopírovat** u každého kódu, u `.html` i **Otevřít jako stránku**, Hotovo |
 
 Podklady přikládá agent do `/projekty/<projekt>/predani/<krátký-popis>/`
 (`popis.md`, snímky `*.png`, u Shoptetu kódy jako `*.html`, `*.css`, `*.txt`). Návod pro agenta je v paměti každého projektu.
@@ -207,6 +207,7 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
 | Hotová práce ve službě | `GET/DELETE /api/projekty/<projekt>/predani`, snímky `…/predani/<jméno>/<soubor>` |
 | Pull request, testy, sloučení | `App\Support\Agent\Publisher`, `GitHub`, tabulka `agent_publications` |
 | Karta v nástrojích | `Filament/Tools/Livewire/AgentHandovers`, snímky přes `/nastroje/agent/<projekt>/snimek/…` |
+| Stránka ke čtení | HTML z podkladů na `/nastroje/agent/<projekt>/stranka/<složka>/<soubor>.html` (`AgentHandoverPageController`). Jen pro přihlášené do nástrojů, odkaz jde poslat kolegovi. Běží v sandboxu (CSP `sandbox`, bez cookies nástrojů), povolené jsou jen inline styly a skripty a písma z Bunny Fonts. Bez `<html>` doplní kostru s češtinou a viewportem. |
 | Aktualizace služby | `POST /api/aktualizovat` → fronta → `agent aktualizovat` |
 
 ### Zapnutí (jednou, Tom)
