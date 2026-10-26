@@ -31,7 +31,7 @@ class Briefings extends Page
 
     protected static ?string $slug = 'ranni-prehled';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament.tools.pages.agent.briefings';
 

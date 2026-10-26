@@ -137,14 +137,14 @@ dál chrání `noindex` a `robots.txt`, ne tajná adresa.
 
 ### Potenciální spolupráce
 
-Dopadová stránka pro firmu, kterou chceme získat (Checklisty → Potenciální
+Dopadová stránka pro firmu, kterou chceme získat (Obchod → Potenciální
 spolupráce). Sekce jdou v pořadí co jsme objevili → kdysi, dnes a s námi (tři screenshoty
 webu vedle sebe) → co doporučujeme → akční kroky → jak přemýšlíme, mezi ně se vkládají ukázky (tmavé pruhy s návrhem webu,
 fotkami nebo videem). Každá sekce je JSON pole z repeateru na modelu `Proposal`,
 prázdná se nezobrazí. Nadpisy sekcí jsou statické texty `spoluprace.*`.
 
 Před závěrečnou výzvou může stát společná fotka s nadpisem, stejná pro všechny
-koncepty (`ProposalSettings`, Checklisty → Koncepty: společná fotka). Bez fotky se
+koncepty (`ProposalSettings`, Nastavení → Fotka v konceptech spolupráce). Bez fotky se
 sekce nezobrazí.
 
 Nová stránka vzniká nesdílená, přihlášený správce ji vidí přes Náhled. Otevření
@@ -169,7 +169,7 @@ v [CLIENT-DASHBOARD.md](CLIENT-DASHBOARD.md).
 
 Vedle checklistu může mít klient **audit**: dlouhý dokument s nálezy, který dostane
 odkazem `/audit/{slug}` a může se k němu vracet. Spravuje se v panelu nástrojů
-(Checklisty → Audity). Sdílené audity a checklisty téhož klienta na sebe odkazují
+(Obchod → Audity). Sdílené audity a checklisty téhož klienta na sebe odkazují
 tlačítkem v tmavé hlavičce.
 
 Text je v **Markdownu**, převádí ho `App\Support\AuditMarkdown`. Nad běžným Markdownem

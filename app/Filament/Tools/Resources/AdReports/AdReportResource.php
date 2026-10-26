@@ -49,7 +49,7 @@ class AdReportResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reklamy';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 40;
 
     protected static ?string $slug = 'reklamy/reporty';
 
@@ -156,7 +156,7 @@ class AdReportResource extends Resource
 
                     TextEntry::make('view_log')
                         ->label('Jednotlivá otevření')
-                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v CRM → Nastavení CRM.')
+                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v Nastavení → Nastavení CRM.')
                         ->listWithLineBreaks()
                         ->placeholder('Zatím žádné.')
                         ->state(fn (?AdReport $record): array => $record?->viewLog() ?? []),

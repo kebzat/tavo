@@ -7,7 +7,7 @@ use Spatie\LaravelSettings\Settings;
 /**
  * Společný obsah všech stránek „Potenciální spolupráce". Zatím fotka
  * s nadpisem a krátkým textem před závěrečnou výzvou. Edituje se v panelu
- * nástrojů: Checklisty → Koncepty: společná fotka.
+ * nástrojů: Nastavení → Fotka v konceptech spolupráce.
  */
 class ProposalSettings extends Settings
 {

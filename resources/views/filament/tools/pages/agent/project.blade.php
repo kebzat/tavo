@@ -29,9 +29,16 @@
                         @endif
                     </div>
 
-                    <x-filament::button size="sm" icon="heroicon-m-plus" wire:click="newConversation" wire:target="newConversation,autoStart,select">
-                        Nová konverzace
-                    </x-filament::button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        {{-- Mozek a archiv klienta bez odchodu od konverzace. --}}
+                        @if ($client = $this->client())
+                            @livewire('tools.client-brain', ['clientId' => $client->getKey()], key('mozek-klienta'))
+                        @endif
+
+                        <x-filament::button size="sm" icon="heroicon-m-plus" wire:click="newConversation" wire:target="newConversation,autoStart,select">
+                            Nová konverzace
+                        </x-filament::button>
+                    </div>
                 </div>
 
                 <div wire:ignore

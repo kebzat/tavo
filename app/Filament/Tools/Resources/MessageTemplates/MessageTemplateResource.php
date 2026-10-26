@@ -26,9 +26,9 @@ class MessageTemplateResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Šablony zpráv';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 80;
 
     protected static ?string $recordTitleAttribute = 'name';
 

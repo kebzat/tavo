@@ -27,9 +27,9 @@ class ManageCrm extends SettingsPage
 
     protected static ?string $title = 'Nastavení CRM';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 10;
 
     public function form(Schema $schema): Schema
     {
@@ -77,7 +77,7 @@ class ManageCrm extends SettingsPage
                 ]),
 
             Section::make('Strojové rozhraní')
-                ->description('Agenti mají vlastní tokeny v CRM → Přístupy agentů.')
+                ->description('Agenti mají vlastní tokeny v Nastavení → Přístupy agentů.')
                 ->schema([
                     TextEntry::make('import_token')
                         ->label('Starý společný token (CRM_IMPORT_TOKEN v .env)')

@@ -29,7 +29,7 @@ class AgentProjects extends Page
 
     protected static ?string $slug = 'agent';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.tools.pages.agent.projects';
 

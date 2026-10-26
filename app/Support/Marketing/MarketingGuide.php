@@ -126,6 +126,26 @@ final class MarketingGuide
     {
         return [
             [
+                'id' => 'agent-mozek-klienta',
+                'label' => 'Mozek klienta',
+                'title' => 'Mozek klienta: agent ví, co o klientovi víme',
+                'intro' => 'Každý klient má vlastní archiv dokumentů a vlastní mozek. Agent ho dostane na začátku každé konverzace v projektu klienta, takže mu nemusíš pořád dokola vysvětlovat, co klient chce a co se domluvilo.',
+                'where' => ['Nástroje', 'Agent', 'klient', 'Mozek klienta'],
+                'how' => [
+                    'Nad konverzací je tlačítko Mozek klienta. Z boku ukáže, co agent o klientovi ví, návrhy ke schválení a archiv. Konverzace přitom běží dál.',
+                    'Nahrát do archivu: vize, strategie, data, výsledky, marže, zápisy ze schůzek. Vyber druh a k jakému datu to platí. Tabulky stačí uložit, ze strategií a zápisů ať agent udělá poznatky.',
+                    'Dokument můžeš poslat i rovnou agentovi do konverzace. Uloží ho do archivu sám a řekne ti to.',
+                    'Co se agent v konverzaci dozví (třeba „tohle klient nechce“), navrhne jako poznatek. Platit začne, až ho schválíš.',
+                    'Totéž najdeš i u klienta (Klienti › klient) v záložkách Archiv a Mozek klienta.',
+                ],
+                'images' => [
+                    self::image('agent-mozek-klienta') + [
+                        'alt' => 'Panel Mozek klienta vedle konverzace: návrh ke schválení, co agent o klientovi ví a dokumenty v archivu',
+                        'caption' => 'Tlačítko Mozek klienta nad konverzací: návrhy, poznatky a archiv na jednom místě.',
+                    ],
+                ],
+            ],
+            [
                 'id' => 'agent-clickup',
                 'label' => 'Agent v ClickUpu',
                 'title' => 'Agent v ClickUpu',
@@ -242,7 +262,7 @@ final class MarketingGuide
                 'title' => 'Upozornění na míru klientovi',
                 'asked' => 'Pro každého klienta nastavit období, toleranci, minimum dat a naléhavost. Nechci opakovaný spam.',
                 'question' => 8,
-                'where' => ['Reklamy', 'Přehled klientů', 'klient', 'Cíle a paušál', 'Upozornění pro tohoto klienta'],
+                'where' => ['Reklamy', 'Přehled', 'klient', 'Cíle a paušál', 'Upozornění pro tohoto klienta'],
                 'how' => [
                     'Prázdné pole znamená, že platí společné nastavení. Vyplň jen to, co má být u klienta jinak.',
                     'Naléhavost Vysoká povýší Pozor na Hoří (velký rozpočet, akce s termínem). Nízká ho sníží na Tip (malý účet, awareness).',
@@ -257,7 +277,7 @@ final class MarketingGuide
                 'title' => 'Karta klienta (mozek)',
                 'asked' => 'MOZEK, který zná klienty a mohu mu postupně dávat nové vědomosti, data z meetingů, maily a informace.',
                 'question' => 25,
-                'where' => ['Checklisty', 'Klienti', 'klient', 'Karta klienta'],
+                'where' => ['Klienti', 'Klienti', 'klient', 'Karta klienta'],
                 'how' => [
                     'Cíle, KPI, rozsah, rozpočet, zdroj pravdy, omezení, schvalování, tón a zakázaná slova, sezona. Agent ji čte při každém přehledu i psaní textů. Co v ní není, si nedomýšlí.',
                     'Rozhodnutí a dohody mají datum, zdroj a „platí do“. Agent tak pozná, co je zastaralé, a upozorní na rozpory.',
@@ -286,7 +306,7 @@ final class MarketingGuide
                 'title' => 'Kvalita leadů',
                 'asked' => 'Sledovat relevanci, kontaktovatelnost, obchody a hodnotu. Bez zpětné vazby neoznačovat levný lead za úspěch.',
                 'question' => 8,
-                'where' => ['Checklisty', 'Klienti', 'klient', 'Kvalita leadů'],
+                'where' => ['Klienti', 'Klienti', 'klient', 'Kvalita leadů'],
                 'how' => [
                     'Tlačítkem Zapsat zpětnou vazbu zapíšeš za období: kolik leadů klient eviduje, kolik se ozvalo, kolik bylo relevantních, obchody, jejich hodnotu a odkud to víš.',
                     'Když leadový klient má za 30 dní aspoň 5 leadů a poslední zpětná vazba je starší než 3 týdny, přijde upozornění.',
@@ -300,7 +320,7 @@ final class MarketingGuide
                 'title' => 'Paměť kreativních testů',
                 'asked' => 'Co jsme testovali, proč, kdy, s jakým rozpočtem a výsledkem. Rozlišovat neúspěšný test od testu s nedostatkem dat.',
                 'question' => 11,
-                'where' => ['Checklisty', 'Klienti', 'klient', 'Kreativní testy'],
+                'where' => ['Klienti', 'Klienti', 'klient', 'Kreativní testy'],
                 'how' => [
                     'Před spuštěním: Zapsat test, hypotéza, argument, hook, formát, cílová stránka a rozpočet.',
                     'Po testu doplň výsledek, verdikt (Běží, Funguje, Nefunguje, Málo dat) a poučení pro další zadání.',
@@ -314,7 +334,7 @@ final class MarketingGuide
                 'title' => 'Přehled klienta podle typu spolupráce',
                 'asked' => 'Přizpůsobit dashboard podle typu spolupráce: e-shop, B2B leady, boosting obsahu, kombinace.',
                 'question' => 25,
-                'where' => ['Reklamy', 'Přehled klientů', 'klient'],
+                'where' => ['Reklamy', 'Přehled', 'klient'],
                 'how' => [
                     'V Cíle a paušál vyber hlavní cíl: Nákupy (e-shop), Poptávky a kontakty, nebo nově Dosah a interakce pro boosting a awareness.',
                     'Podle cíle se mění dlaždice i pravidla. U boostingu uvidíš dosah, frekvenci, CPM a interakce a cenu za konverzi nehlídáme.',
@@ -342,7 +362,7 @@ final class MarketingGuide
                 'title' => 'Onboarding a kontrola před kampaní',
                 'asked' => 'Jednotný onboardingový checklist a kontrolní seznam před spuštěním kampaně.',
                 'question' => 9,
-                'where' => ['Checklisty', 'Checklisty', 'Šablony'],
+                'where' => ['Klienti', 'Checklisty', 'Šablony'],
                 'how' => [
                     'Dvě šablony: Onboarding marketingového klienta (22 bodů) a Kontrola před spuštěním kampaně (12 bodů: cíl, rozpočet, termíny, lokalita, odkazy, UTM, texty, platnost nabídky, landing page).',
                     'U šablony klikni Vytvořit z šablony a vyber klienta.',
@@ -356,7 +376,7 @@ final class MarketingGuide
                 'title' => 'Vyúčtování hodin podle klienta',
                 'asked' => 'Fakturace mi zabere až 4 hodiny. Každý klient chce vyúčtování jinak, na jiné maily, jiným způsobem.',
                 'question' => 28,
-                'where' => ['Fakturace', 'klient', 'Podklad k vyúčtování'],
+                'where' => ['Klienti', 'Fakturace', 'klient', 'Podklad k vyúčtování'],
                 'how' => [
                     'Jednou u klienta nastav v Kartě klienta › Vyúčtování hodin: kam (do faktury, e-mailem, nechce), jak podrobně, komu a poznámku.',
                     'Na konci měsíce ve Fakturaci klikni u klienta na Podklad k vyúčtování. Text se složí z odpracovaných hodin podle toho nastavení.',

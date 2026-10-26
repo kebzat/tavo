@@ -20,13 +20,13 @@ class Outlook extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTrendingUp;
 
-    protected static ?string $navigationLabel = 'Výhled';
+    protected static ?string $navigationLabel = 'Výhled paušálů';
 
     protected static ?string $title = 'Výhled paušálů';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Klienti';
 
-    protected static ?int $navigationSort = 46;
+    protected static ?int $navigationSort = 40;
 
     protected static ?string $slug = 'vyhled';
 

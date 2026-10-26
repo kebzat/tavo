@@ -40,9 +40,9 @@ class ManageAds extends SettingsPage
 
     protected static ?string $title = 'Nastavení reklam';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reklamy';
+    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 30;
 
     protected static ?string $slug = 'reklamy/nastaveni';
 

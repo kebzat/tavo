@@ -43,9 +43,9 @@ class Invoicing extends Page
 
     protected static ?string $title = 'Fakturace';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Klienti';
 
-    protected static ?int $navigationSort = 45;
+    protected static ?int $navigationSort = 30;
 
     protected static ?string $slug = 'fakturace';
 

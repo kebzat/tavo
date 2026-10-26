@@ -39,9 +39,9 @@ class TimeEntryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Hodiny';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reklamy';
+    protected static string|\UnitEnum|null $navigationGroup = 'Klienti';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $slug = 'reklamy/hodiny';
 

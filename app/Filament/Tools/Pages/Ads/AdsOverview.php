@@ -43,7 +43,7 @@ class AdsOverview extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPresentationChartLine;
 
-    protected static ?string $navigationLabel = 'Přehled klientů';
+    protected static ?string $navigationLabel = 'Přehled';
 
     protected static ?string $title = 'Reklamy klientů';
 

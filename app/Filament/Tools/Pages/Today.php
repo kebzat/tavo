@@ -27,7 +27,7 @@ class Today extends Page
 
     protected static ?string $title = 'Co mám dnes udělat';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
     protected static ?int $navigationSort = 10;
 

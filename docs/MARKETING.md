@@ -15,7 +15,7 @@ Pavel ručně, nic neodchází klientovi bez člověka.
 | Kreativní testy | Klient → Kreativní testy | co jsme testovali, proč, výsledek, „málo dat“ ≠ neúspěch |
 | Upozornění pro klienta | Reklamy → klient → Cíle a paušál → Upozornění | vlastní prahy, ztlumená pravidla, naléhavost |
 | Podklad k vyúčtování | Fakturace → klient → Podklad k vyúčtování | text podle přání klienta, zkopírovat nebo odeslat tlačítkem |
-| Checklisty | Checklisty → šablony | Onboarding marketingového klienta, Kontrola před spuštěním kampaně |
+| Checklisty | Klienti → Checklisty → šablony | Onboarding marketingového klienta, Kontrola před spuštěním kampaně |
 | Fakta / příčiny / doporučení | Reporty → koncept | agent předvyplní, Pavel upraví, klient je vidí pod komentářem |
 | Boosting / awareness | Cíl klienta nebo skupiny „Dosah a interakce“ | dosah, frekvence, CPM, interakce; bez pravidel ceny za konverzi |
 | Skupiny kampaní | Reklamy → klient → Nová skupina kampaní | prodej, boosting, nábor v jednom účtu zvlášť: vlastní cíl, rozpočet, čísla, upozornění, report |

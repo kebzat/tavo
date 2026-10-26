@@ -102,7 +102,7 @@ class AuditForm
 
                     TextEntry::make('view_log')
                         ->label('Jednotlivá otevření')
-                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v CRM → Nastavení CRM.')
+                        ->helperText('Otevření z našich adres se nepočítají. Které to jsou, se nastavuje v Nastavení → Nastavení CRM.')
                         ->listWithLineBreaks()
                         ->placeholder('Zatím žádné.')
                         ->visible(fn ($operation): bool => $operation === 'edit')

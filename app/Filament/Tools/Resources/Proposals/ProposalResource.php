@@ -28,9 +28,9 @@ class ProposalResource extends Resource
 
     protected static ?string $slug = 'potencialni-spoluprace';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Checklisty';
+    protected static string|\UnitEnum|null $navigationGroup = 'Obchod';
 
-    protected static ?int $navigationSort = 25;
+    protected static ?int $navigationSort = 60;
 
     protected static ?string $recordTitleAttribute = 'company_name';
 

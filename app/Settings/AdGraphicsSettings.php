@@ -6,7 +6,7 @@ use Spatie\LaravelSettings\Settings;
 
 /**
  * Reklamní grafika od agenta: klíč ke Google Gemini (Nano Banana) pro
- * generování obrázků. Edituje se v nástrojích: Reklamy → Nastavení grafiky.
+ * generování obrázků. Edituje se v nástrojích: Reklamy → Reklamní grafika → Nastavení.
  * Klíč zůstává na webu, agent obrázky žádá přes /nastroje/api/grafika.
  */
 class AdGraphicsSettings extends Settings
