@@ -46,9 +46,21 @@
                          term: null,
                          started: false,
                          seen: false,
+                         problem: null,
                          copied: null,
                          init() {
+                             // Chyba skriptu se jinak nikde neukáže a terminál by navždy psal „Připojuji…“.
+                             const fail = (message) => {
+                                 this.state = 'error';
+                                 this.problem = String(message || 'neznámá chyba');
+                             };
+                             const errors = [];
+                             window.addEventListener('error', (event) => errors.push(event.message));
+                             window.addEventListener('unhandledrejection', (event) => errors.push(String(event.reason?.message ?? event.reason)));
+                             setTimeout(() => this.term === null && this.state === 'connecting' && fail(['Skript terminálu se nenačetl.', ...errors].join(' ')), 15000);
+
                              const start = () => {
+                               try {
                                  this.term = new window.TavoAgentTerminal(this.$refs.screen, {
                                      url: () => this.$wire.terminalUrl(),
                                  onCopy: (result) => {
@@ -56,8 +68,9 @@
                                      clearTimeout(this.copiedTimer);
                                      if (result === 'copied') this.copiedTimer = setTimeout(() => this.copied = null, 2500);
                                  },
-                                     onState: (state) => {
+                                     onState: (state, problem) => {
                                          this.state = state;
+                                         this.problem = problem ?? null;
                                          if (state === 'open') this.seen = true;
                                          // Žádná konverzace neběží: založit novou, ať se dá hned psát.
                                          if (state === 'none' && ! this.started) {
@@ -68,6 +81,9 @@
                                      },
                                  });
                                  this.term.connect();
+                               } catch (error) {
+                                 fail(error?.stack ?? error);
+                               }
                              };
                              window.TavoAgentTerminal ? start() : window.addEventListener('tavo-agent-terminal-ready', start, { once: true });
                          },
@@ -90,6 +106,7 @@
                             reconnecting: 'Spojení spadlo, připojuji znovu…',
                             closed: 'Odpojeno',
                             none: 'Žádná konverzace',
+                            error: 'Chyba',
                         }[state] ?? ''"></span>
                         <button type="button" x-show="state === 'closed'" x-on:click="term?.connect()" class="font-semibold text-primary-400 hover:text-primary-300">Připojit znovu</button>
                         <button type="button" x-on:click="toggleFull()" class="hover:text-white" x-text="full ? 'Zmenšit' : 'Celá obrazovka'"></button>
@@ -107,6 +124,15 @@
                          class="absolute inset-x-0 top-7 bottom-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-sm text-gray-400">
                         <p class="font-semibold text-white">Terminál se nepřipojil.</p>
                         <p class="max-w-md">Zkuste Připojit znovu. Když to nepomůže a v anonymním okně to funguje, spojení blokuje antivirus nebo doplněk prohlížeče (i ten, který nainstaloval antivirus).</p>
+                        <p x-show="problem" x-text="problem" class="max-w-md font-mono text-xs text-gray-500"></p>
+                    </div>
+
+                    {{-- Terminál se v tomhle prohlížeči vůbec nespustil: technická chyba pro toho, kdo to opraví. --}}
+                    <div x-show="state === 'error'" x-cloak
+                         class="absolute inset-x-0 top-7 bottom-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-sm text-gray-400">
+                        <p class="font-semibold text-white">Terminál se v tomhle prohlížeči nespustil.</p>
+                        <p class="max-w-md">Pošlete prosím snímek obrazovky s chybou níž, podle ní se to opraví.</p>
+                        <p x-text="problem" class="max-w-2xl break-all font-mono text-xs text-gray-300"></p>
                     </div>
                 </div>
             </div>
