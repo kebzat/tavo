@@ -343,6 +343,37 @@ class AgentPublishTest extends TestCase
             ->assertMountedActionModalSee(['Otevřít jako stránku', '/agent/svet-cejlonu/stranka/paticka/paticka.html']);
     }
 
+    public function test_html_z_podkladu_jde_sdilet_podepsanym_odkazem_bez_prihlaseni(): void
+    {
+        $url = Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'svet-cejlonu', 'type' => 'prazdny'])
+            ->instance()->shareUrl('paticka', 'paticka.html');
+
+        auth()->logout();
+
+        $this->assertStringContainsString('/sdilene/svet-cejlonu/paticka/paticka.html?expires=', $url);
+        $response = $this->get($url)
+            ->assertOk()
+            ->assertSee('<div class="paticka">Čaj z Cejlonu</div>', false);
+
+        $this->assertStringStartsWith('sandbox allow-scripts', $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('noindex', $response->headers->get('X-Robots-Tag'));
+
+        // Bez podpisu, s jiným souborem v adrese a po 30 dnech neotevře nic.
+        $this->get('/sdilene/svet-cejlonu/paticka/paticka.html')->assertForbidden();
+        $this->get(str_replace('paticka.html', 'jina.html', $url))->assertForbidden();
+        $this->travel(31)->days();
+        $this->get($url)->assertForbidden();
+    }
+
+    public function test_u_html_podkladu_je_odkaz_ke_sdileni(): void
+    {
+        Livewire::actingAs($this->spravce())
+            ->test(AgentHandovers::class, ['project' => 'svet-cejlonu', 'type' => 'prazdny'])
+            ->mountAction(TestAction::make('review')->arguments(['name' => 'paticka', 'sha' => null]))
+            ->assertMountedActionModalSee(['Odkaz bez přihlášení', '/sdilene/svet-cejlonu/paticka/paticka.html']);
+    }
+
     public function test_bez_automatickeho_nasazeni_je_uprava_jen_sloucena(): void
     {
         $this->gh['main_runs'] = [['name' => 'CI', 'status' => 'completed', 'conclusion' => 'success']];
