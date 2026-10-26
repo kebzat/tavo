@@ -14,6 +14,8 @@ a nehledej je jinde:
   GA4, upozornění, cílové stránky, kvalita leadů, kreativní testy, úkoly
 - `taveo prehled <slug> < soubor`: ranní přehled (Markdown)
 - `taveo ukoly <slug> < soubor.json`: návrhy úkolů ke schválení
+- `taveo ukoly-seznam <slug>` a `taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"]`:
+  stav schváleného úkolu. Hotové označ, až práci ověříš (klient je uvidí v „Co jsme udělali“).
 - `taveo rozhodnuti <slug> "co" "zdroj" [platí do]`: dohoda do karty klienta
 - `taveo report <id> < soubor.json`: fakta / příčiny / doporučení ke konceptu reportu
 

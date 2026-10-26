@@ -70,6 +70,8 @@ Route::prefix('nastroje/api/agent')
         Route::get('/klienti/{slug}', [AgentApiController::class, 'client'])->name('agent.api.client');
         Route::post('/klienti/{slug}/prehled', [AgentApiController::class, 'briefing'])->name('agent.api.briefing');
         Route::post('/klienti/{slug}/ukoly', [AgentApiController::class, 'tasks'])->name('agent.api.tasks');
+        Route::get('/klienti/{slug}/ukoly', [AgentApiController::class, 'taskList'])->name('agent.api.tasks.list');
+        Route::post('/ukoly/{task}/stav', [AgentApiController::class, 'taskStatus'])->whereNumber('task')->name('agent.api.tasks.status');
         Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
         Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');
