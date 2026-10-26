@@ -1,19 +1,25 @@
-{{-- Mozek a archiv klienta v liště nad terminálem: tlačítka a panel z boku. Terminál zůstává otevřený. --}}
+{{-- Mozek a archiv klienta (bez klienta: Mozek TAVEO) v liště nad terminálem: tlačítka a panel z boku. Terminál zůstává otevřený. --}}
 <div class="flex flex-wrap items-center gap-2">
     <x-filament::modal id="mozek-klienta" slide-over width="2xl">
         <x-slot name="trigger">
             <x-filament::button size="sm" color="gray" icon="heroicon-m-light-bulb" :badge="$proposed->count() ?: null" badge-color="warning">
-                Mozek klienta
+                {{ $client ? 'Mozek klienta' : 'Mozek TAVEO' }}
             </x-filament::button>
         </x-slot>
 
-        <x-slot name="heading">Mozek klienta {{ $client->name }}</x-slot>
-        <x-slot name="description">Tohle agent dostane na začátku každé konverzace v projektu. Návrhy začnou platit, až je schválíte.</x-slot>
+        <x-slot name="heading">{{ $heading }}</x-slot>
+        <x-slot name="description">
+            {{ $client
+                ? 'Tohle agent dostane na začátku každé konverzace v projektu. Návrhy začnou platit, až je schválíte.'
+                : 'Projekt není klient. Agent tu dostane firemní poznatky, postupy a archiv firmy (nejnovější, zbytek si dohledá). Návrhy začnou platit, až je schválíte.' }}
+        </x-slot>
 
         <div class="space-y-8">
             <div class="flex flex-wrap items-center gap-2">
                 {{ $this->uploadAction }}
-                <x-filament::button size="sm" color="gray" outlined tag="a" :href="$clientUrl" icon="heroicon-m-building-office-2">Karta klienta</x-filament::button>
+                @if ($clientUrl)
+                    <x-filament::button size="sm" color="gray" outlined tag="a" :href="$clientUrl" icon="heroicon-m-building-office-2">Karta klienta</x-filament::button>
+                @endif
             </div>
 
             @if ($proposed->isNotEmpty())
@@ -36,21 +42,29 @@
 
             <section class="space-y-3">
                 <div class="flex items-baseline justify-between gap-3">
-                    <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Co agent o klientovi ví ({{ $approved->count() }})</h3>
+                    <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $client ? 'Co agent o klientovi ví' : 'Firemní poznatky a postupy' }} ({{ $approvedCount }})</h3>
                     <a href="{{ $entriesUrl }}" class="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-400">Všechny poznatky</a>
                 </div>
                 @forelse ($approved as $entry)
                     <div wire:key="poznatek-{{ $entry->getKey() }}" class="border-t border-gray-100 pt-3 first-of-type:border-t-0 first-of-type:pt-0 dark:border-white/5">
-                        <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ $entry->title }}</p>
+                        <p class="text-sm font-semibold text-gray-950 dark:text-white">
+                            {{ $entry->title }}
+                            @unless ($client)
+                                <x-filament::badge color="gray" size="sm" class="ml-1 inline-flex align-middle">{{ $entry->always ? 'Vždy v hlavě' : $entry->layerLabel() }}</x-filament::badge>
+                            @endunless
+                        </p>
                         <p class="mt-0.5 line-clamp-3 text-sm text-gray-600 dark:text-gray-400">{{ $entry->body }}</p>
                     </div>
                 @empty
                     <p class="text-sm text-gray-500 dark:text-gray-400">Zatím nic schváleného. Poznatky přibudou z archivu, z ClickUpu a z konverzací s agentem.</p>
                 @endforelse
+                @if ($approvedCount > $approved->count())
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Dalších {{ $approvedCount - $approved->count() }} je ve Všech poznatcích.</p>
+                @endif
             </section>
 
             <section class="space-y-3">
-                <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Archiv ({{ $sources->count() }})</h3>
+                <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $client ? 'Archiv' : 'Archiv firmy' }} ({{ $sources->count() }})</h3>
                 @forelse ($sources as $source)
                     <div wire:key="dokument-{{ $source->getKey() }}" class="rounded-xl p-4 ring-1 ring-gray-950/5 dark:ring-white/10">
                         <div class="flex flex-wrap items-start justify-between gap-2">
@@ -72,7 +86,7 @@
                         @endif
                     </div>
                 @empty
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Archiv je prázdný. Nahrajte vizi, strategii, data, výsledky nebo marže, nebo dokument pošlete agentovi do konverzace a on ho uloží sám.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Archiv je prázdný. Nahrajte {{ $client ? 'vizi, strategii, data, výsledky nebo marže' : 'firemní strategii, ceník, čísla nebo zápisy' }}, nebo dokument pošlete agentovi do konverzace a on ho uloží sám.</p>
                 @endforelse
             </section>
         </div>

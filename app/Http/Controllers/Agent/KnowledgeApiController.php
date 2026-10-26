@@ -75,15 +75,16 @@ class KnowledgeApiController extends Controller
         return response($knowledge->opening($project, $client), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
-    /** Archiv klienta, nejnovější první: `?druh=obchod` jen jeden druh. */
+    /** Archiv klienta (`firma` = archiv firmy), nejnovější první: `?druh=obchod` jen jeden druh. */
     public function archive(Request $request, string $slug): JsonResponse
     {
-        $client = Client::query()->where('slug', $slug)->firstOrFail();
+        $client = $this->archiveOwner($slug);
 
         return response()->json([
-            'klient' => $client->slug,
+            'klient' => $client?->slug ?? KnowledgeBase::FIRM_ARCHIVE,
             'druhy' => KnowledgeSource::categories(),
-            'dokumenty' => $client->knowledgeSources()
+            'dokumenty' => KnowledgeSource::query()
+                ->where('client_id', $client?->getKey())
                 ->when($request->filled('druh'), fn ($query) => $query->where('category', $request->string('druh')))
                 ->latest('id')
                 ->limit(200)
@@ -100,7 +101,7 @@ class KnowledgeApiController extends Controller
      */
     public function upload(Request $request, string $slug, BrainAgent $brain): JsonResponse
     {
-        $client = Client::query()->where('slug', $slug)->firstOrFail();
+        $client = $this->archiveOwner($slug);
         $data = $request->validate([
             'nazev' => ['required', 'string', 'max:200'],
             'druh' => ['nullable', 'string', 'in:'.implode(',', array_keys(KnowledgeSource::categories()))],
@@ -116,7 +117,7 @@ class KnowledgeApiController extends Controller
         $learn = (bool) ($data['uceni'] ?? false);
         $source = KnowledgeSource::create([
             'title' => $data['nazev'],
-            'client_id' => $client->getKey(),
+            'client_id' => $client?->getKey(),
             'category' => $data['druh'] ?? null,
             'document_date' => $data['k_datu'] ?? null,
             'summary' => $data['popis'] ?? null,
@@ -212,5 +213,11 @@ class KnowledgeApiController extends Controller
             'zbyva' => $source ? max(0, $room - $created) : null,
             'popis' => filled($data['popis'] ?? null) ? 'uložen' : null,
         ], options: self::JSON);
+    }
+
+    /** Klient archivu, null = archiv firmy (podklady bez klienta, projekt taveo a jiné bez klienta). */
+    private function archiveOwner(string $slug): ?Client
+    {
+        return $slug === KnowledgeBase::FIRM_ARCHIVE ? null : Client::query()->where('slug', $slug)->firstOrFail();
     }
 }
