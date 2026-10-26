@@ -30,7 +30,19 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Panely vyžadují dvoufázové ověření. Testy, které nejdou přes
+            // přihlašovací formulář, by bez klíče skončily na jeho nastavení.
+            'app_authentication_secret' => 'JBSWY3DPEHPK3PXP',
         ];
+    }
+
+    /** Účet, který si dvoufázové ověření ještě nenastavil. */
+    public function withoutTwoFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'app_authentication_secret' => null,
+            'app_authentication_recovery_codes' => null,
+        ]);
     }
 
     /**

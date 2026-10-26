@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\RememberStaffIp;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -30,6 +31,13 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // Stejně jako v nástrojích: správce odsud spouští údržbu a spravuje
+            // účty, heslo samo nestačí. Viz ToolsPanelProvider.
+            ->multiFactorAuthentication(
+                [AppAuthentication::make()->recoverable()->brandName('Taveo')],
+                isRequired: fn (): bool => ! app()->isLocal(),
+            )
+            ->profile()
             ->brandName('Taveo')
             ->favicon(asset('favicon.svg'))
             ->colors([

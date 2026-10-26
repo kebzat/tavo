@@ -1,0 +1,6 @@
+{
+  "name": "co-agent-dela",
+  "version": "0.1.0",
+  "description": "Panel s tím, co agent právě dělá, a s posledním snímkem z prohlížeče",
+  "types": "./types/index.d.ts"
+}

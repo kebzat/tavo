@@ -376,6 +376,51 @@ Web jinde (FTP, WordPress, Shoptet, Upgates na cizím hostingu): projekt `prazdn
 a přístupy do Nástrojů → **Trezor** ([TREZOR.md](TREZOR.md)). Agent hesla nedostane,
 používá je přes `taveo ftp…`, `taveo wp`, `taveo prihlasit`.
 
+## Prohlížeč (oči agenta)
+
+Každá konverzace v kontejneru má headless Chromium přes MCP server
+**`prohlizec`** (Playwright MCP). Agent si otevře stránku, udělá snímek, přečte
+chyby z konzole a zkusí šířku telefonu, tabletu i počítače. Jak ho má používat,
+říká společná paměť agentů `~/.claude/CLAUDE.md` (zdroj
+[`infra/agent/CLAUDE.agent.md`](../infra/agent/CLAUDE.agent.md)).
+
+| Kus | Kde |
+|---|---|
+| Chromium + knihovny + fonty | v obrazu, `/opt/ms-playwright` (Dockerfile) |
+| Spouštění prohlížeče | `agent-chromium` ([`agent-chromium.sh`](../infra/agent/agent-chromium.sh)) |
+| Registrace pro konverzace | `prohlizec-mcp` z `entrypoint.sh`, uživatelská úroveň v `~/.claude.json` |
+| Snímky | `/tmp/agent-prohlizec` v kontejneru |
+| Povolení bez ptaní | `mcp__prohlizec` v `managed-settings.json` |
+
+Profil prohlížeče je izolovaný (nic si nepamatuje mezi konverzacemi). Verze
+jsou připnuté (`playwright@1.64.1`, `@playwright/mcp@0.0.83`), zvedají se
+v Dockerfile a v `prohlizec-bez-roota.sh` zároveň.
+
+**Bez přestavění obrazu:** `bash infra/agent/prohlizec-bez-roota.sh` v kontejneru
+stáhne knihovny jako balíčky Ubuntu do `~/.local/share/browser-deps` (bez roota)
+a prohlížeč zaregistruje. Tak běží od 23. 10. 2026, než se obraz přestaví.
+`.mcp.json` v repu (server `playwright` přes `npx`) je pro lokální vývoj na Macu,
+v kontejneru je vypnutý.
+
+## Panel „Co agent dělá“
+
+Mod Claude Code ([`infra/agent/mody/co-agent-dela`](../infra/agent/mody/co-agent-dela/)),
+načtený ve všech konverzacích v kontejneru:
+
+- **Panel** vedle chatu: každý krok agenta česky (čte soubor, spouští příkaz,
+  prohlížeč otevírá stránku…) s časem a stavem (▶ běží, ✓ hotovo, ✗ chyba),
+  nahoře „Teď: …“. Pod tím poslední adresa z prohlížeče a poslední snímek.
+  Obrázek vykreslí jen terminál, který to umí (kitty, Ghostty, iTerm2), jinde
+  je tam cesta k souboru.
+- **Pruh nad vstupním polem** se na dvě minuty objeví, jakmile agent sáhne po
+  prohlížeči: „Agent kontroluje web v prohlížeči“ a tlačítko **Kouknout**.
+- **`/co-agent-dela`** otevře panel kdykoli.
+
+Načítá ho proměnná `CLAUDE_CODE_PLUGIN_DIRS`: v obrazu z Dockerfile
+(`/opt/taveo-agent/mody/co-agent-dela`), do přestavění z `env`
+v `~/.claude/settings.json` (kopie v `~/.claude/mody/`). Testy:
+`claude plugin test infra/agent/mody/co-agent-dela`.
+
 ## Pojistky
 
 | Riziko | Pojistka |

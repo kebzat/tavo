@@ -55,7 +55,8 @@ Argument je doména, třeba `melichar.cz`.
    sedět s měřením, žádné sliby tržeb.
 
 5. **Nahraj do ostrého CRM.** Token je v lokálním `.env` jako
-   `TAVEO_PROD_CRM_TOKEN` (hodnota `CRM_IMPORT_TOKEN` ze serveru). Připrav
+   `TAVEO_PROD_CRM_TOKEN`. Je to token agenta z Nástroje → CRM → Přístupy
+   agentů a smí jen „Zjistit, jestli firma už je v CRM“ a „Nahrávat audity“. Připrav
    `/tmp/audit-<doména>-payload.json`:
 
    ```json
@@ -82,7 +83,8 @@ Argument je doména, třeba `melichar.cz`.
    Odpověď obsahuje `edit_url`. Audit vznikne neveřejný a v omezeném režimu,
    firma se v CRM založí, když tam ještě není.
 
-   Když token v `.env` chybí, nic nenahrávej. Řekni Tomášovi, ať ho doplní,
+   Když token v `.env` chybí nebo server vrátí 401/403, nic dalšího nezkoušej.
+   Řekni Tomášovi, ať token založí nebo doplní oprávnění,
    a nech mu Markdown v `/tmp/audit-<doména>.md`.
 
 6. **Předej odkaz** `edit_url` a tři nejsilnější nálezy v pár větách.
