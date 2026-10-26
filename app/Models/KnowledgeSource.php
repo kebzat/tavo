@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Podklady pro mozek: vložený text nebo soubory (poznámky, e-maily, přepisy
@@ -98,6 +99,34 @@ class KnowledgeSource extends Model
         return $this->category ? (self::categories()[$this->category] ?? $this->category) : null;
     }
 
+    /**
+     * HTML stránka v dokumentu (rozbor, plán od agenta): první soubor .html.
+     *
+     * @return array{path: string, name?: string}|null
+     */
+    public function pageFile(): ?array
+    {
+        return collect($this->files ?? [])->first(fn (array $file): bool => (bool) preg_match('/\.html?$/i', $file['name'] ?? $file['path'] ?? ''));
+    }
+
+    /**
+     * Stálá adresa stránky ke čtení, i bez přihlášení. Čitelný název a náhodná
+     * část jako u přehledu klienta (/stranka/snowbear-google-ads-k7f2q9xm).
+     */
+    public function pageUrl(): ?string
+    {
+        if ($this->pageFile() === null) {
+            return null;
+        }
+
+        if (! $this->page_key) {
+            $name = rtrim(Str::limit(Str::slug(trim($this->client?->name.' '.$this->title)), 60, ''), '-') ?: 'stranka';
+            $this->forceFill(['page_key' => $name.'-'.Str::lower(Str::random(8))])->saveQuietly();
+        }
+
+        return route('archiv.stranka', $this->page_key);
+    }
+
     /** Tvar pro agenta: co v archivu je a jak to stáhnout. */
     public function toAgent(): array
     {
@@ -113,6 +142,7 @@ class KnowledgeSource extends Model
                 'jmeno' => $file['name'] ?? basename($file['path'] ?? ''),
                 'adresa' => route('agent.api.mozek.soubor', [$this, $index]),
             ])->all() ?: null,
+            'stranka' => $this->pageUrl(),
             'nahral' => $this->author ? $this->author.' '.$this->created_at?->toDateString() : $this->created_at?->toDateString(),
         ], fn ($value): bool => $value !== null);
     }

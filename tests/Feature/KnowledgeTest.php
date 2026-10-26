@@ -532,6 +532,47 @@ class KnowledgeTest extends TestCase
         $this->assertSame(2, KnowledgeSource::query()->count());
     }
 
+    public function test_html_z_archivu_je_stala_stranka_i_bez_prihlaseni(): void
+    {
+        Storage::fake('local');
+        $client = $this->klient();
+
+        $url = $this->withToken(self::TOKEN)->post(route('agent.api.archiv.nahrat', 'svet-cejlonu'), [
+            'nazev' => 'Google Ads: rozbor a plán',
+            'druh' => 'vysledky',
+            'soubory' => [UploadedFile::fake()->createWithContent('plan.html', '<title>Plán</title><h1>Rozbor kampaní</h1>')],
+        ], ['Accept' => 'application/json'])->assertCreated()->json('stranka');
+
+        $source = KnowledgeSource::query()->sole();
+        $this->assertSame(route('archiv.stranka', $source->page_key), $url);
+        $this->assertStringContainsString('/stranka/svet-cejlonu-google-ads-rozbor-a-plan-', $url);
+        $this->assertSame($url, $source->pageUrl(), 'adresa se nemění');
+
+        $response = $this->get($url)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/html; charset=utf-8')
+            ->assertSee('<!doctype html>', false)
+            ->assertSee('<h1>Rozbor kampaní</h1>', false);
+        $this->assertStringStartsWith('sandbox allow-scripts', $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('noindex', $response->headers->get('X-Robots-Tag'));
+
+        $this->prihlasit();
+        Livewire::test(ArchiveRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
+            ->assertTableActionVisible('page', $source);
+        Livewire::test(ViewKnowledgeSource::class, ['record' => $source->getKey()])
+            ->assertActionVisible('page')
+            ->assertActionVisible('copyPage');
+
+        // Dokument bez HTML stránku nemá, smazaný dokument ji ztratí.
+        $text = KnowledgeSource::create(['title' => 'Zápis', 'client_id' => $client->getKey(), 'body' => 'x', 'status' => KnowledgeSource::STATUS_STORED]);
+        $this->assertNull($text->pageUrl());
+        Livewire::test(ViewKnowledgeSource::class, ['record' => $text->getKey()])->assertActionHidden('page');
+
+        $source->delete();
+        $this->get($url)->assertNotFound();
+        $this->get('/stranka/svet-cejlonu-neexistuje')->assertNotFound();
+    }
+
     public function test_uvod_konverzace_se_vejde_i_s_plnym_mozkem_a_archivem(): void
     {
         $client = $this->klient();

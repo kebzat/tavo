@@ -27,6 +27,7 @@ use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Tools\AgentHandoverPageController;
+use App\Http\Controllers\Tools\ArchivePageController;
 use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\VerifyAgentToken;
 use App\Http\Middleware\VerifyCrmToken;
@@ -192,6 +193,13 @@ Route::get('/report/{key}', AdReportController::class)->name('ad-report.show');
 Route::get('/sdilene/{project}/{name}/{file}', AgentHandoverPageController::class)
     ->middleware(['signed:relative', NoIndex::class, 'throttle:60,1'])
     ->name('agent.sdilene');
+
+// Stálá stránka z archivu klienta (rozbor, plán od agenta). Otevře ji každý
+// s odkazem, adresu chrání náhodná část jako u přehledu klienta.
+Route::get('/stranka/{key}', ArchivePageController::class)
+    ->where('key', '[a-z0-9-]{9,100}')
+    ->middleware([NoIndex::class, 'throttle:60,1'])
+    ->name('archiv.stranka');
 
 // Přehled spolupráce pro klienta na paušál: hodiny, hotová práce, plán.
 // Ukazuje peníze, proto má adresa za názvem klienta náhodnou část
