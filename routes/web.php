@@ -80,6 +80,7 @@ Route::prefix('nastroje/api/agent')
         Route::get('/mozek/uvod', [KnowledgeApiController::class, 'opening'])->name('agent.api.mozek.uvod');
         Route::get('/mozek/zdroje/{source}/popis', [KnowledgeApiController::class, 'sourceInfo'])->name('agent.api.mozek.zdroj.popis');
         Route::get('/archiv/{slug}', [KnowledgeApiController::class, 'archive'])->name('agent.api.archiv');
+        Route::post('/archiv/{slug}', [KnowledgeApiController::class, 'upload'])->name('agent.api.archiv.nahrat');
 
         // Trezor přístupů (docs/TREZOR.md): agent hesla nedostane, práci s nimi dělá web.
         Route::get('/trezor', [VaultApiController::class, 'index'])->name('agent.api.trezor');

@@ -487,4 +487,65 @@ class KnowledgeTest extends TestCase
             ->call('download', 0)
             ->assertFileDownloaded('vize.pdf');
     }
+
+    public function test_agent_ulozi_dokument_z_konverzace_do_archivu(): void
+    {
+        Storage::fake('local');
+        $client = $this->klient();
+        $this->postJson(route('agent.api.archiv.nahrat', 'svet-cejlonu'), ['nazev' => 'x', 'text' => 'x'])->assertUnauthorized();
+
+        $this->withToken(self::TOKEN)->post(route('agent.api.archiv.nahrat', 'svet-cejlonu'), [
+            'nazev' => 'Marže od klienta, říjen 2026',
+            'druh' => 'obchod',
+            'k_datu' => '2026-10-31',
+            'popis' => 'Marže 48 produktů podle kategorií.',
+            'soubory' => [UploadedFile::fake()->create('C:\\Users\\jana\\marze.xlsx', 10)],
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('stav', 'Uloženo');
+
+        $source = KnowledgeSource::query()->sole();
+        $this->assertSame($client->getKey(), $source->client_id);
+        $this->assertSame('obchod', $source->category);
+        $this->assertSame('2026-10-31', $source->document_date->toDateString());
+        $this->assertSame('Marže 48 produktů podle kategorií.', $source->summary);
+        $this->assertSame('marze.xlsx', $source->files[0]['name']);
+        $this->assertSame('agent', $source->author);
+        Storage::disk('local')->assertExists($source->files[0]['path']);
+        $this->assertSame([], $this->tasks);
+
+        // Zápis ze schůzky jako text, s knihovníkem.
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'svet-cejlonu'), [
+            'nazev' => 'Zápis ze schůzky 26. 10.',
+            'druh' => 'schuzky',
+            'text' => 'Klient chce v roce 2027 víc B2B.',
+            'uceni' => true,
+        ])->assertCreated()->assertJsonPath('stav', 'Agent čte');
+        $this->assertSame('mozek', $this->tasks[0]['projekt']);
+        $this->assertStringContainsString('Zápis ze schůzky 26. 10.', $this->tasks[0]['zadani']);
+
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'svet-cejlonu'), ['nazev' => 'Prázdné'])->assertJsonValidationErrors(['text']);
+        $this->withToken(self::TOKEN)->post(route('agent.api.archiv.nahrat', 'svet-cejlonu'), ['nazev' => 'Skript', 'soubory' => [UploadedFile::fake()->create('x.php', 1)]], ['Accept' => 'application/json'])->assertJsonValidationErrors(['soubory.0']);
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'svet-cejlonu'), ['nazev' => 'Druh', 'text' => 'x', 'druh' => 'hesla'])->assertJsonValidationErrors(['druh']);
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'neexistuje'), ['nazev' => 'x', 'text' => 'x'])->assertNotFound();
+        $this->assertSame(2, KnowledgeSource::query()->count());
+    }
+
+    public function test_uvod_konverzace_se_vejde_i_s_plnym_mozkem_a_archivem(): void
+    {
+        $client = $this->klient();
+
+        foreach (range(1, 30) as $i) {
+            $this->poznatek(['title' => "Obecný poznatek {$i} ".str_repeat('x', 80), 'body' => str_repeat('Dlouhé vysvětlení. ', 40), 'always' => true]);
+            $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => "Poznatek klienta {$i} ".str_repeat('y', 80), 'body' => str_repeat('Dlouhé vysvětlení. ', 40)]);
+            KnowledgeSource::create(['title' => "Dokument {$i} ".str_repeat('z', 150), 'client_id' => $client->getKey(), 'category' => 'data', 'summary' => str_repeat('Popis obsahu. ', 100), 'body' => 'x']);
+        }
+
+        $text = app(KnowledgeBase::class)->opening('svet-cejlonu', $client);
+
+        $this->assertLessThan(10000, mb_strlen($text));
+        $this->assertStringContainsString('… a 22 starších', $text);
+        $this->assertStringContainsString('taveo archiv-nahrat svet-cejlonu', $text);
+        $this->assertStringContainsString('obchod (Obchodní data a marže)', $text);
+    }
 }

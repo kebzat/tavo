@@ -44,6 +44,9 @@ taveo mozek-navrh firma|klient|postup "nadpis" [slug] < text.md
 taveo mozek-uvod                        mozek klienta pro začátek konverzace (háček SessionStart, projekt podle složky)
 taveo archiv <slug> [druh]              archiv klienta: data, strategie, výsledky, marže (seznam s popisem)
 taveo archiv-stahnout <id> <složka>     stáhne dokument z archivu (text a soubory) do místní složky
+taveo archiv-nahrat <slug> "název" [--druh D] [--k-datu RRRR-MM-DD] [--popis "co v něm je"] [--poznatky] <soubor>… | -
+                                        uloží soubory (nebo text ze vstupu: -) do archivu klienta; --poznatky = přečte ho i knihovník
+                                        druhy: strategie, data, vysledky, obchod, schuzky, jine
 taveo trezor [slug]                     přístupy, které agent smí použít (hesla nedostane nikdy)
 taveo ftp <id> [cesta]                  výpis složky na FTP (cesta od složky webu)
 taveo ftp-soubor <id> <cesta>           obsah jednoho souboru z FTP
@@ -104,7 +107,7 @@ case "${1:-}" in
     archiv-stahnout)
         cil=${3:?složka, kam stáhnout}
         mkdir -p "$cil"
-        dokument=$(volat GET "/mozek/zdroje/${2:?id dokumentu z taveo archiv}/popis")
+        dokument=$(surove GET "/mozek/zdroje/${2:?id dokumentu z taveo archiv}/popis") || { echo "$dokument" >&2; exit 1; }
         adresa=$(jq -r '.text // empty' <<<"$dokument")
         [ -z "$adresa" ] || curl -sS --fail-with-body --max-time 300 -H "Authorization: Bearer $TOKEN" -o "$cil/text.md" "$adresa"
         jq -r '.soubory // [] | .[] | [.jmeno, .adresa] | @tsv' <<<"$dokument" | while IFS=$'\t' read -r jmeno adresa; do
@@ -112,6 +115,26 @@ case "${1:-}" in
             curl -sS --fail-with-body --max-time 300 -H "Authorization: Bearer $TOKEN" -o "$cil/${jmeno:-soubor}" "$adresa"
         done
         echo "Staženo do $cil: $(ls -1 "$cil" | tr '\n' ' ')"
+        ;;
+    archiv-nahrat)
+        slug=${2:?slug klienta}
+        nazev=${3:?název dokumentu}
+        shift 3
+        pole=(-F "nazev=$nazev")
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --druh) pole+=(-F "druh=${2:?druh}"); shift 2 ;;
+                --k-datu) pole+=(-F "k_datu=${2:?RRRR-MM-DD}"); shift 2 ;;
+                --popis) pole+=(-F "popis=${2:?popis}"); shift 2 ;;
+                --poznamka) pole+=(-F "poznamka=${2:?poznámka}"); shift 2 ;;
+                --poznatky) pole+=(-F "uceni=1"); shift ;;
+                -) pole+=(-F "text=<-"); shift ;;
+                *) [ -f "$1" ] || { echo "Soubor $1 neexistuje." >&2; exit 1; }
+                   pole+=(-F "soubory[]=@$1"); shift ;;
+            esac
+        done
+        surove POST "/archiv/$slug" "${pole[@]}"
+        echo
         ;;
     trezor)
         volat GET /trezor ${2:+-G --data-urlencode "klient=$2"}

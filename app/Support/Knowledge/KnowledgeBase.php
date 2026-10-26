@@ -35,9 +35,11 @@ class KnowledgeBase
      * Úvod konverzace v projektu (háček SessionStart) je menší: Claude Code
      * víc než 10 000 znaků z háčku do konverzace nevloží.
      */
-    private const OPENING_ALWAYS = 3500;
+    private const OPENING_ALWAYS = 2500;
 
-    private const OPENING_CLIENT = 3500;
+    private const OPENING_CLIENT = 2500;
+
+    private const OPENING_ARCHIVE = 8;
 
     /** Kolik dokumentů archivu vypsat jménem, zbytek dohledá `taveo archiv`. */
     private const ARCHIVE_LISTED = 12;
@@ -162,7 +164,7 @@ class KnowledgeBase
         $forClient = $client
             ? $this->fit(KnowledgeEntry::query()->approved()->where('client_id', $client->getKey())->where('always', false)->latest('updated_at')->get(), self::OPENING_CLIENT)
             : collect();
-        $archive = $client ? $this->archiveLines($client) : [];
+        $archive = $client ? $this->archiveLines($client, self::OPENING_ARCHIVE, 180) : [];
 
         $lines = ['# Mozek TAVEO pro tuhle konverzaci', ''];
         $lines[] = $client
@@ -180,7 +182,12 @@ class KnowledgeBase
 
             array_push($lines, '', '## Archiv klienta', ...($archive !== []
                 ? [...$archive, '', "Celé dokumenty: `taveo archiv {$client->slug}` (seznam), `taveo archiv-stahnout <id> <složka>` (stáhne text a soubory). Čti je, když se otázka týká dat, strategie, výsledků nebo marží, a cituj, odkud číslo je."]
-                : ['Zatím prázdný. Dokumenty klienta (data, strategie, výsledky, marže) se nahrávají v Nástrojích → Klienti → '.$client->name.' → Archiv.']));
+                : ['Zatím prázdný. Dokumenty klienta (data, strategie, výsledky, marže) nahrávají lidé v Nástrojích → Klienti → '.$client->name.' → Archiv, nebo je uložíš ty (níž).']));
+
+            array_push($lines, '',
+                '**Ukládání do archivu:** když ti člověk dá dokument klienta (soubor, vložená tabulka, zápis ze schůzky, strategie, čísla) nebo ho spolu sepíšete, ulož ho do archivu, ať ho najdou i další konverzace. Řekni mu to jednou větou. Vložený text nejdřív ulož do souboru .md. Jednorázové pracovní soubory a nic s hesly nebo osobními údaji zákazníků tam nepatří.',
+                "  `taveo archiv-nahrat {$client->slug} \"Název\" --druh obchod --k-datu 2026-09-30 --popis \"co v něm je, 1–3 věty\" soubor.xlsx`",
+                '  Druhy: '.collect(KnowledgeSource::categories())->map(fn (string $label, string $key): string => "{$key} ({$label})")->implode(', ').'. `--poznatky` pošle dokument i knihovníkovi (strategie, zápisy, zkušenosti; u tabulek a exportů ne, stačí popis).');
         }
 
         $slug = $client ? " {$client->slug}" : '';
@@ -198,15 +205,15 @@ class KnowledgeBase
     }
 
     /** @return list<string> dokumenty archivu klienta, nejnovější první, s popisem obsahu */
-    private function archiveLines(Client $client): array
+    private function archiveLines(Client $client, int $listed = self::ARCHIVE_LISTED, int $summary = 300): array
     {
-        $sources = $client->knowledgeSources()->latest('id')->limit(self::ARCHIVE_LISTED + 1)->get();
-        $more = $sources->count() > self::ARCHIVE_LISTED ? $client->knowledgeSources()->count() - self::ARCHIVE_LISTED : 0;
+        $sources = $client->knowledgeSources()->latest('id')->limit($listed + 1)->get();
+        $more = $sources->count() > $listed ? $client->knowledgeSources()->count() - $listed : 0;
 
-        return $sources->take(self::ARCHIVE_LISTED)
+        return $sources->take($listed)
             ->map(fn (KnowledgeSource $source): string => '- #'.$source->getKey().' '.$source->title
                 .' ('.collect([$source->categoryLabel(), $source->document_date ? 'k '.$source->document_date->format('j. n. Y') : null, $source->sizeLabel()])->filter()->implode(', ').')'
-                .($source->summary ? ': '.Str::limit(preg_replace('/\s*\R\s*/u', ' ', $source->summary), 300) : ''))
+                .($source->summary ? ': '.Str::limit(preg_replace('/\s*\R\s*/u', ' ', $source->summary), $summary) : ''))
             ->push(...($more > 0 ? ["- … a {$more} starších"] : []))
             ->values()
             ->all();

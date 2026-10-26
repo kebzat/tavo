@@ -55,6 +55,11 @@ obsahu (`summary`, píše ho knihovník přes `POST /mozek/navrhy` s `popis`). S
   služba jim nastaví `TAVEO_ULOHA=1` a háček je přeskočí.
 - **Učení na projektu**: agent v konverzaci navrhuje poznatky klienta (`taveo mozek-navrh klient … <slug>`),
   objeví se v Mozku → Poznatky i na kartě klienta ke schválení. Platí až po schválení jako vše ostatní.
+- **Agent ukládá do archivu sám**: dokument, který mu člověk dá v konverzaci (soubor, vložená tabulka, zápis
+  ze schůzky), uloží `taveo archiv-nahrat` (`POST /archiv/{slug}`, multipart: `nazev`, `druh`, `k_datu`, `popis`,
+  `poznamka`, `text` nebo `soubory[]`, `uceni`). Bez `uceni` jen uložení s popisem od agenta, s ním i knihovník.
+  Autor je „agent“, stejné typy a velikosti souborů jako formulář. Pokyn dostává v úvodu konverzace.
+  Ověřeno naostro (26. 10.): po vloženém zápisu ze schůzky ho agent sám uložil s druhem, datem a popisem.
 - Háček nikdy nezdrží začátek konverzace: bez spojení nebo s chybou nevypíše nic (limit 8 s).
 - Do přestavění obrazu (`managed-settings.json` nahrává Tom) běží stejný háček z `~/.claude/settings.json`
   agenta a příkazy z `~/.local/bin/taveo`. Po nahrání `managed-settings.json` háček z `~/.claude/settings.json`
@@ -72,9 +77,10 @@ Token agenta (`AGENT_API_TOKEN`, v kontejneru `~/.config/taveo/token`), prefix `
 | `POST /mozek/navrhy` | `{"zdroj": id?, "popis": "co v podkladech je"?, "poznatky": [{vrstva, klient?, nadpis, text, stitky?, puvod?, nahrazuje?}]}` |
 | `GET /mozek/uvod?projekt=slug` | úvod konverzace v projektu (text), pro háček SessionStart |
 | `GET /archiv/{slug}?druh=obchod` | archiv klienta s popisy a adresami souborů, `GET /mozek/zdroje/{id}/popis` jeden dokument |
+| `POST /archiv/{slug}` | agent uloží dokument do archivu (multipart, viz Archiv klienta) |
 
 Příkaz `taveo mozek "co hledám" [slug]`, `taveo mozek-navrh firma|klient|postup "nadpis" [slug] < text.md`,
-`taveo archiv <slug> [druh]`, `taveo archiv-stahnout <id> <složka>` a `taveo mozek-uvod`
+`taveo archiv <slug> [druh]`, `taveo archiv-stahnout <id> <složka>`, `taveo archiv-nahrat <slug> "název" [--druh …] soubor…` a `taveo mozek-uvod`
 (`infra/agent/taveo.sh`, do kontejneru ho nahrává Tom). Zadání z nástrojů volají `curl` přímo, na nový `taveo` nečekají.
 
 ## Kde běží
