@@ -6,8 +6,10 @@ use App\Filament\Tools\Resources\Clients\Pages\CreateClient;
 use App\Filament\Tools\Resources\Clients\Pages\EditClient;
 use App\Filament\Tools\Resources\Clients\Pages\ListClients;
 use App\Filament\Tools\Resources\Clients\RelationManagers\AdAccountsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\ArchiveRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\BriefingsRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\CreativeTestsRelationManager;
+use App\Filament\Tools\Resources\Clients\RelationManagers\KnowledgeRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\LeadFeedbackRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\MonthsRelationManager;
 use App\Filament\Tools\Resources\Clients\RelationManagers\TaskProposalsRelationManager;
@@ -59,6 +61,8 @@ class ClientResource extends Resource
             AdAccountsRelationManager::class,
             LeadFeedbackRelationManager::class,
             CreativeTestsRelationManager::class,
+            ArchiveRelationManager::class,
+            KnowledgeRelationManager::class,
         ];
     }
 

@@ -5,11 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Podklady pro mozek: vložený text nebo soubory (poznámky, e-maily, přepisy
  * schůzek), ze kterých agent na pozadí udělá návrhy poznatků. Průběh:
- * queued → running → done / failed. Viz docs/MOZEK.md.
+ * queued → running → done / failed, bez učení rovnou stored.
+ *
+ * Podklady s klientem jsou zároveň jeho archiv (data, strategie, výsledky,
+ * marže): zůstávají uložené a agent v projektu klienta je najde a přečte
+ * celé, i když se z nich do mozku dostalo jen pár poznatků. Viz docs/MOZEK.md.
  */
 class KnowledgeSource extends Model
 {
@@ -22,6 +27,30 @@ class KnowledgeSource extends Model
     public const STATUS_DONE = 'done';
 
     public const STATUS_FAILED = 'failed';
+
+    /** Jen uložené do archivu, agent z nich poznatky nedělal. */
+    public const STATUS_STORED = 'stored';
+
+    /** @return array<string, string> druh dokumentu v archivu klienta */
+    public static function categories(): array
+    {
+        return [
+            'strategie' => 'Vize a strategie',
+            'data' => 'Data a analýzy',
+            'vysledky' => 'Výsledky a reporty',
+            'obchod' => 'Obchodní data a marže',
+            'schuzky' => 'Schůzky a domluvy',
+            'jine' => 'Jiné',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        // Archiv může obsahovat marže a obchodní čísla: se záznamem zmizí i soubory.
+        static::deleted(function (self $source): void {
+            Storage::disk('local')->delete(collect($source->files ?? [])->pluck('path')->filter()->all());
+        });
+    }
 
     public function client(): BelongsTo
     {
@@ -43,6 +72,11 @@ class KnowledgeSource extends Model
         return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_RUNNING], true);
     }
 
+    public function isStored(): bool
+    {
+        return $this->status === self::STATUS_STORED;
+    }
+
     public function isFailed(): bool
     {
         return $this->status === self::STATUS_FAILED;
@@ -59,9 +93,34 @@ class KnowledgeSource extends Model
         ])->filter()->implode(' + ') ?: 'prázdné';
     }
 
+    public function categoryLabel(): ?string
+    {
+        return $this->category ? (self::categories()[$this->category] ?? $this->category) : null;
+    }
+
+    /** Tvar pro agenta: co v archivu je a jak to stáhnout. */
+    public function toAgent(): array
+    {
+        return array_filter([
+            'id' => $this->getKey(),
+            'nazev' => $this->title,
+            'druh' => $this->categoryLabel(),
+            'k_datu' => $this->document_date?->toDateString(),
+            'popis' => $this->summary,
+            'poznamka' => $this->note,
+            'text' => filled($this->body) ? route('agent.api.mozek.zdroj', $this) : null,
+            'soubory' => collect($this->files ?? [])->values()->map(fn (array $file, int $index): array => [
+                'jmeno' => $file['name'] ?? basename($file['path'] ?? ''),
+                'adresa' => route('agent.api.mozek.soubor', [$this, $index]),
+            ])->all() ?: null,
+            'nahral' => $this->author ? $this->author.' '.$this->created_at?->toDateString() : $this->created_at?->toDateString(),
+        ], fn ($value): bool => $value !== null);
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
+            self::STATUS_STORED => 'Uloženo',
             self::STATUS_QUEUED => 'Čeká',
             self::STATUS_RUNNING => 'Agent čte',
             self::STATUS_DONE => 'Hotovo',
@@ -75,6 +134,7 @@ class KnowledgeSource extends Model
         return match ($this->status) {
             self::STATUS_DONE => 'success',
             self::STATUS_FAILED => 'danger',
+            self::STATUS_STORED => 'gray',
             default => 'warning',
         };
     }
@@ -83,6 +143,8 @@ class KnowledgeSource extends Model
     {
         return [
             'files' => 'array',
+            'document_date' => 'date',
+            'learn' => 'boolean',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];

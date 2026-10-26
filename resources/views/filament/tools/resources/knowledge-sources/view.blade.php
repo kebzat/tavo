@@ -1,8 +1,31 @@
-{{-- Podklady pro mozek: průběh práce agenta, jeho shrnutí a návrhy poznatků ke schválení. Během práce se obnovuje sama. --}}
+{{-- Podklady pro mozek a archiv klienta: co v nich je, průběh práce agenta, jeho shrnutí a návrhy poznatků ke schválení. Během práce se obnovuje sama. --}}
 <x-filament-panels::page>
     @vite('resources/js/agent-terminal.js')
 
     <div @if ($this->record->isRunning()) wire:poll.15s @endif class="space-y-6">
+        @if ($this->record->summary || $this->record->files)
+            <x-filament::section icon="heroicon-o-archive-box">
+                <x-slot name="heading">Co v nich je</x-slot>
+                @if ($this->record->client)
+                    <x-slot name="description">V archivu klienta {{ $this->record->client->name }}. Agent v jeho projektu je najde a přečte celé.</x-slot>
+                @endif
+
+                @if ($this->record->summary)
+                    <p class="text-sm whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $this->record->summary }}</p>
+                @endif
+
+                @if ($this->record->files)
+                    <ul @class(['flex flex-wrap gap-2', 'mt-4' => $this->record->summary])>
+                        @foreach ($this->record->files as $index => $file)
+                            <li>
+                                <x-filament::button size="sm" color="gray" icon="heroicon-m-arrow-down-tray" wire:click="download({{ $index }})">{{ $file['name'] ?? basename($file['path']) }}</x-filament::button>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </x-filament::section>
+        @endif
+
         <x-filament::section icon="heroicon-o-cpu-chip">
             <x-slot name="heading">
                 Agent
@@ -28,6 +51,10 @@
                 <div class="rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:bg-danger-500/10 dark:text-danger-300">
                     Nepovedlo se: {{ $this->record->error }}
                 </div>
+            @endif
+
+            @if ($this->record->isStored())
+                <p class="text-sm text-gray-500 dark:text-gray-400">Jen uložené do archivu, agent z nich poznatky nedělal. Když je přece jen chcete, klikněte nahoře Udělat z nich poznatky.</p>
             @endif
 
             @if ($this->record->result)

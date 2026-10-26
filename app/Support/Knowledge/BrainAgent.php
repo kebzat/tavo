@@ -69,7 +69,7 @@ class BrainAgent
                 'session' => (string) Str::uuid(),
             ]);
 
-            $source->setRelation('agentJob', $job)->update(['agent_job_id' => $job->getKey(), 'status' => KnowledgeSource::STATUS_RUNNING, 'started_at' => now(), 'error' => null]);
+            $source->setRelation('agentJob', $job)->update(['agent_job_id' => $job->getKey(), 'status' => KnowledgeSource::STATUS_RUNNING, 'learn' => true, 'started_at' => now(), 'error' => null]);
 
             $this->agent->runTask(self::project(), [
                 'id' => $job->getKey(),
@@ -211,7 +211,8 @@ class BrainAgent
             'Jsi knihovník mozku TAVEO. Mozek je společná paměť firmy: krátké samostatné poznatky (jak pracujeme, co chtějí klienti, co fungovalo a co ne, ověřené postupy), které čtou ostatní agenti při práci a lidé v nástrojích. Ze surových podkladů (poznámky, e-maily, přepisy schůzek, zkušenosti Pavla a Toma) uděláš návrhy poznatků. Platit začnou, až je člověk schválí.',
             '',
             '## Podklady',
-            'Nahrál '.($source->author ?: 'člověk z týmu').' '.$source->created_at?->format('j. n. Y').'. '.($source->client ? "Týkají se klienta {$source->client->name} (`{$source->client->slug}`)." : 'Bez klienta: týkají se firmy, nebo víc klientů najednou.'),
+            'Nahrál '.($source->author ?: 'člověk z týmu').' '.$source->created_at?->format('j. n. Y').'. '.($source->client ? "Týkají se klienta {$source->client->name} (`{$source->client->slug}`) a zůstanou v jeho archivu." : 'Bez klienta: týkají se firmy, nebo víc klientů najednou.'),
+            $source->categoryLabel() || $source->document_date ? 'Druh: '.($source->categoryLabel() ?? 'neurčeno').($source->document_date ? ', platí k '.$source->document_date->format('j. n. Y') : '').'.' : null,
             $source->note ? "Poznámka k podkladům: {$source->note}" : null,
             'Velikost: '.$source->sizeLabel().'. Stáhni je:',
             implode("\n", $download),
@@ -231,12 +232,18 @@ class BrainAgent
             '- Vynech osobní údaje zákazníků (jména, e-maily, telefony, objednávky), hesla a přístupy, drby a jednorázové věci, ze kterých si příště nikdo nic nevezme.',
             '- Když už mozek totéž ví, nezakládej nový. Když stávající poznatek doplňuje nebo opravuje, pošli ho celý v novém znění s `nahrazuje`: id starého.',
             '- Radši 15 dobrých než 60 drobných. Z jedněch podkladů nejvýš '.self::MAX_PER_SOURCE.'.',
+            $source->client ? '- Čísla klienta (tržby, marže, výsledky) dávej do poznatku jen ta, ze kterých se rozhoduje, vždy s datem nebo obdobím („marže čaje k 9/2026 asi 45 %“). Celé tabulky ne, ty zůstanou v archivu a agent si je přečte.' : null,
             '',
             '## Odeslání',
             'Po dávkách nejvýš 20 (soubor JSON, hned jak je dávka hotová, ať se práce neztratí):',
             $this->auth()." -X POST -H 'Content-Type: application/json' --data-binary @{$folder}/davka-01.json ".route('agent.api.mozek.navrhy'),
             '{"zdroj": '.$source->getKey().', "poznatky": [{"vrstva": "klient", "klient": "svet-cejlonu", "nadpis": "…", "text": "…", "stitky": ["reklamy"], "puvod": "…", "nahrazuje": null}]}',
             'Odpověď řekne, kolik se založilo a co se přeskočilo (stejný nadpis už v mozku je).',
+            '',
+            '## Popis pro archiv',
+            'Ostatní agenti uvidí podklady v seznamu jen s názvem a tvým popisem a podle něj se rozhodnou, jestli je otevřít. Nakonec pošli 2–4 věty: co v podkladech je (jaká data, za jaké období, o čem), ne co z nich plyne:',
+            $this->auth()." -X POST -H 'Content-Type: application/json' --data-binary @{$folder}/popis.json ".route('agent.api.mozek.navrhy'),
+            '{"zdroj": '.$source->getKey().', "popis": "Tabulka marží 48 produktů podle kategorií (čaje, doplňky), nákupní a prodejní ceny k září 2026."}',
             '',
             '## Pravidla',
             '- Pracuješ sám na pozadí, nikdo ti neodpoví. Nedoptávej se, co je nejasné, rozhodni rozumně a napiš to do závěru.',

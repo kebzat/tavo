@@ -60,6 +60,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "taveo mozek-uvod",
+            "timeout": 15
+          }
+        ]
+      }
     ]
   },
   "autoMode": {

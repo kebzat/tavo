@@ -9,11 +9,14 @@ use App\Models\Client;
 use App\Models\KnowledgeEntry;
 use App\Models\KnowledgeSource;
 use BackedEnum;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -25,7 +28,8 @@ use Filament\Tables\Table;
 /**
  * Podklady pro mozek: Pavlovy a Tomovy texty, poznámky ze schůzek, e-maily.
  * Agent (knihovník) je na pozadí přečte a navrhne z nich poznatky ke
- * schválení. Viz docs/MOZEK.md.
+ * schválení. Podklady s klientem jsou zároveň jeho archiv (data, strategie,
+ * výsledky, marže), který agent v projektu klienta čte celý. Viz docs/MOZEK.md.
  */
 class KnowledgeSourceResource extends Resource
 {
@@ -33,11 +37,11 @@ class KnowledgeSourceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUpTray;
 
-    protected static ?string $navigationLabel = 'Podklady';
+    protected static ?string $navigationLabel = 'Archiv a podklady';
 
     protected static ?string $modelLabel = 'podklady';
 
-    protected static ?string $pluralModelLabel = 'Podklady';
+    protected static ?string $pluralModelLabel = 'Archiv a podklady';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Mozek';
 
@@ -81,7 +85,16 @@ class KnowledgeSourceResource extends Resource
                         ->options(fn (): array => Client::query()->active()->orderBy('name')->pluck('name', 'id')->all())
                         ->searchable()
                         ->placeholder('Bez klienta (firma, víc klientů)')
-                        ->helperText('Když se celé podklady týkají jednoho klienta.'),
+                        ->helperText('S klientem zůstanou v jeho archivu a agent je najde v každé konverzaci o něm.'),
+                    Select::make('category')
+                        ->label('Druh')
+                        ->options(KnowledgeSource::categories())
+                        ->placeholder('Neurčeno'),
+                    DatePicker::make('document_date')
+                        ->label('Platí k datu')
+                        ->native(false)
+                        ->displayFormat('j. n. Y')
+                        ->helperText('Hlavně u čísel: ke kdy jsou marže, za jaké období výsledky.'),
                     Textarea::make('body')
                         ->label('Text')
                         ->placeholder("Sem vložte cokoli: poznámky, zkušenosti, přepis schůzky, e-maily, postup, jak něco děláte.\nNemusí to být učesané, agent si to roztřídí.")
@@ -113,6 +126,11 @@ class KnowledgeSourceResource extends Resource
                         ->rows(2)
                         ->maxLength(2000)
                         ->columnSpanFull(),
+                    Toggle::make('learn')
+                        ->label('Agent z nich udělá poznatky do mozku')
+                        ->default(true)
+                        ->helperText('Vypněte u dokumentů, které chcete jen uložit (měsíční export, tabulka). Agent v projektu klienta je i tak najde a přečte celé.')
+                        ->columnSpanFull(),
                 ]),
         ]);
     }
@@ -130,7 +148,7 @@ class KnowledgeSourceResource extends Resource
                 TextColumn::make('title')
                     ->label('Podklady')
                     ->weight('bold')
-                    ->description(fn (KnowledgeSource $record): string => collect([$record->client?->name, $record->sizeLabel()])->filter()->implode(' · '))
+                    ->description(fn (KnowledgeSource $record): string => collect([$record->client?->name, $record->categoryLabel(), $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null, $record->sizeLabel()])->filter()->implode(' · '))
                     ->wrap()
                     ->searchable(),
                 TextColumn::make('entries_count')
@@ -146,11 +164,24 @@ class KnowledgeSourceResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('client')->label('Klient')->relationship('client', 'name')->searchable()->preload(),
+                SelectFilter::make('category')->label('Druh')->options(KnowledgeSource::categories()),
             ])
-            ->recordActions([ViewAction::make()->label('Otevřít')])
+            ->recordActions([
+                ViewAction::make()->label('Otevřít'),
+                self::deleteAction(DeleteAction::make())->iconButton(),
+            ])
             ->recordUrl(fn (KnowledgeSource $record): string => self::getUrl('view', ['record' => $record]))
             ->emptyStateHeading('Zatím žádné podklady')
-            ->emptyStateDescription('Vložte texty nebo soubory se zkušenostmi. Agent z nich udělá krátké poznatky a vy je jen schválíte.');
+            ->emptyStateDescription('Vložte texty nebo soubory se zkušenostmi nebo dokumenty klienta. Agent z nich udělá krátké poznatky a vy je jen schválíte.');
+    }
+
+    /** Smazat i se soubory. Poznatky, které z podkladů vzešly, zůstanou. */
+    public static function deleteAction(DeleteAction $action): DeleteAction
+    {
+        return $action
+            ->tooltip('Smazat')
+            ->visible(fn (KnowledgeSource $record): bool => ! $record->isRunning())
+            ->modalDescription('Smažou se i nahrané soubory a agenti je už nenajdou. Poznatky, které z nich vzešly, v mozku zůstanou.');
     }
 
     public static function getPages(): array

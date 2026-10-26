@@ -9,15 +9,18 @@ use App\Models\KnowledgeEntry;
 use App\Support\Agent\AgentServer;
 use App\Support\Knowledge\BrainAgent;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Detail podkladů: co agent dělá (terminál), jeho shrnutí a návrhy
- * poznatků z těchto podkladů ke schválení.
+ * Detail podkladů: co v nich je (popis pro archiv, soubory ke stažení),
+ * co agent dělá (terminál), jeho shrnutí a návrhy poznatků ke schválení.
  */
 class ViewKnowledgeSource extends ViewRecord
 {
@@ -34,7 +37,7 @@ class ViewKnowledgeSource extends ViewRecord
     {
         $record = $this->getRecord();
 
-        return collect([$record->client?->name, $record->sizeLabel(), 'nahrál '.($record->author ?: '?').' '.$record->created_at->format('j. n. H:i')])->filter()->implode(' · ');
+        return collect([$record->client?->name, $record->categoryLabel(), $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null, $record->sizeLabel(), 'nahrál '.($record->author ?: '?').' '.$record->created_at->format('j. n. H:i')])->filter()->implode(' · ');
     }
 
     /** @return Collection<int, KnowledgeEntry> */
@@ -42,6 +45,16 @@ class ViewKnowledgeSource extends ViewRecord
     public function entries(): Collection
     {
         return $this->getRecord()->entries()->with(['client', 'replaces'])->orderByRaw('status = ? desc', [KnowledgeEntry::STATUS_PROPOSED])->orderBy('id')->get();
+    }
+
+    /** Nahraný soubor zpátky k člověku (archiv klienta). */
+    public function download(int $index): ?StreamedResponse
+    {
+        $file = ($this->getRecord()->files ?? [])[$index] ?? null;
+
+        return is_array($file) && Storage::disk('local')->exists($file['path'] ?? '')
+            ? Storage::disk('local')->download($file['path'], $file['name'] ?? basename($file['path']))
+            : null;
     }
 
     public function approve(int $id): void
@@ -94,7 +107,11 @@ class ViewKnowledgeSource extends ViewRecord
                 ->color('gray')
                 ->url(fn (): string => AgentProject::getUrl(['project' => BrainAgent::project()])),
             Action::make('retry')
-                ->label(fn (): string => $this->getRecord()->isFailed() ? 'Zkusit znovu' : 'Projít znovu')
+                ->label(fn (): string => match (true) {
+                    $this->getRecord()->isFailed() => 'Zkusit znovu',
+                    $this->getRecord()->isStored() => 'Udělat z nich poznatky',
+                    default => 'Projít znovu',
+                })
                 ->icon(Heroicon::OutlinedArrowPath)
                 ->color('gray')
                 ->visible(fn (): bool => ! $this->getRecord()->isRunning())
@@ -106,6 +123,7 @@ class ViewKnowledgeSource extends ViewRecord
                         ? Notification::make()->title('Agenta se nepodařilo spustit')->body($this->getRecord()->error)->danger()->send()
                         : Notification::make()->title('Agent podklady čte')->success()->send();
                 }),
+            KnowledgeSourceResource::deleteAction(DeleteAction::make())->label('Smazat'),
         ];
     }
 }
