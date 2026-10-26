@@ -47,6 +47,7 @@
                          full: false,
                          term: null,
                          started: false,
+                         seen: false,
                          copied: null,
                          init() {
                              const start = () => {
@@ -59,6 +60,7 @@
                                  },
                                      onState: (state) => {
                                          this.state = state;
+                                         if (state === 'open') this.seen = true;
                                          // Žádná konverzace neběží: založit novou, ať se dá hned psát.
                                          if (state === 'none' && ! this.started) {
                                              this.started = true;
@@ -100,6 +102,13 @@
                     <div x-show="state === 'none'" x-cloak
                          class="absolute inset-x-0 top-7 bottom-0 flex items-center justify-center p-6 text-center text-sm text-gray-400">
                         Žádná konverzace neběží. Založte novou, nebo probuďte některou ze seznamu níž.
+                    </div>
+
+                    {{-- Prohlížeč se nepřipojil ani jednou: nejčastěji spojení drží antivirus nebo doplněk. --}}
+                    <div x-show="state === 'closed' && ! seen" x-cloak
+                         class="absolute inset-x-0 top-7 bottom-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-sm text-gray-400">
+                        <p class="font-semibold text-white">Terminál se nepřipojil.</p>
+                        <p class="max-w-md">Zkuste Připojit znovu. Když to nepomůže a v anonymním okně to funguje, spojení blokuje antivirus nebo doplněk prohlížeče (i ten, který nainstaloval antivirus).</p>
                     </div>
                 </div>
             </div>
