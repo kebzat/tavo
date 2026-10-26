@@ -14,8 +14,27 @@
                     <p class="text-sm whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $this->record->summary }}</p>
                 @endif
 
+                {{-- Rozbor nebo plán od agenta: stálá stránka, otevře ji každý s odkazem i bez přihlášení. --}}
+                @if ($pageUrl = $this->record->pageUrl())
+                    <div x-data="{ copied: false }" @class(['flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary-50/60 px-4 py-3 ring-1 ring-primary-600/10 dark:bg-primary-500/10 dark:ring-primary-400/20', 'mt-4' => $this->record->summary])>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-950 dark:text-white">Stránka ke čtení</p>
+                            <p class="truncate text-xs text-gray-500 dark:text-gray-400">Otevře ji každý s odkazem, i bez přihlášení. Smazáním dokumentu zmizí.</p>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <x-filament::button size="sm" color="gray" icon="heroicon-m-link" data-url="{{ $pageUrl }}"
+                                x-on:click="navigator.clipboard.writeText($el.dataset.url).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                                <span x-text="copied ? 'Zkopírováno' : 'Zkopírovat odkaz'">Zkopírovat odkaz</span>
+                            </x-filament::button>
+                            <x-filament::button size="sm" icon="heroicon-m-arrow-top-right-on-square" tag="a" :href="$pageUrl" target="_blank" rel="noopener">
+                                Otevřít stránku
+                            </x-filament::button>
+                        </div>
+                    </div>
+                @endif
+
                 @if ($this->record->files)
-                    <ul @class(['flex flex-wrap gap-2', 'mt-4' => $this->record->summary])>
+                    <ul @class(['flex flex-wrap gap-2', 'mt-4' => $this->record->summary || $this->record->pageFile()])>
                         @foreach ($this->record->files as $index => $file)
                             <li>
                                 <x-filament::button size="sm" color="gray" icon="heroicon-m-arrow-down-tray" wire:click="download({{ $index }})">{{ $file['name'] ?? basename($file['path']) }}</x-filament::button>
@@ -54,7 +73,7 @@
             @endif
 
             @if ($this->record->isStored())
-                <p class="text-sm text-gray-500 dark:text-gray-400">Jen uložené do archivu, agent z nich poznatky nedělal. Když je přece jen chcete, klikněte nahoře Udělat z nich poznatky.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Jen uložené do archivu, agent z nich poznatky nedělal. Když je přece jen chcete, najdete to nahoře v nabídce Další → Udělat z nich poznatky.</p>
             @endif
 
             @if ($this->record->result)

@@ -5,17 +5,27 @@ namespace App\Filament\Tools\Resources\Clients\RelationManagers;
 use App\Filament\Tools\Resources\KnowledgeSources\KnowledgeSourceResource;
 use App\Models\KnowledgeSource;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Layout\Split;
+use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Js;
+use Illuminate\Support\Str;
 
 /**
  * Archiv klienta: data, strategie, výsledky, marže. Jsou to podklady mozku
  * s tímhle klientem, agent v projektu klienta je vidí v každé konverzaci
  * a přečte celé. Nahrává se stejným formulářem jako do mozku. Viz docs/MOZEK.md.
+ *
+ * Řádek je seznam dokumentů, ne tabulka čísel: název s popisem přes celou šířku,
+ * vpravo druh. Kliknutím se otevře detail, stránku (HTML od agenta) jedním tlačítkem.
  */
 class ArchiveRelationManager extends RelationManager
 {
@@ -32,28 +42,33 @@ class ArchiveRelationManager extends RelationManager
         return $table
             ->defaultSort('id', 'desc')
             ->columns([
-                TextColumn::make('title')
-                    ->label('Dokument')
-                    ->weight('bold')
-                    ->description(fn (KnowledgeSource $record): ?string => $record->summary ? str($record->summary)->limit(160)->toString() : $record->sizeLabel())
-                    ->wrap()
-                    ->searchable(),
-                TextColumn::make('category')
-                    ->label('Druh')
-                    ->visibleFrom('sm')
-                    ->badge()
-                    ->color('gray')
-                    ->formatStateUsing(fn (KnowledgeSource $record): ?string => $record->categoryLabel())
-                    ->placeholder('–'),
-                TextColumn::make('document_date')->label('K datu')->date('j. n. Y')->placeholder('–')->visibleFrom('md'),
-                TextColumn::make('status')
-                    ->label('Mozek')
-                    ->visibleFrom('md')
-                    ->badge()
-                    ->formatStateUsing(fn (KnowledgeSource $record): string => $record->statusLabel())
-                    ->color(fn (KnowledgeSource $record): string => $record->statusColor()),
-                TextColumn::make('created_at')->label('Nahráno')->since()->sortable()->color('gray')->visibleFrom('lg')
-                    ->description(fn (KnowledgeSource $record): ?string => $record->author),
+                Split::make([
+                    Stack::make([
+                        TextColumn::make('title')
+                            ->weight(FontWeight::SemiBold)
+                            ->searchable(),
+                        // Popis od knihovníka, u vloženého textu jeho začátek.
+                        TextColumn::make('summary')
+                            ->state(fn (KnowledgeSource $record): string => $record->summary ?: (Str::limit(Str::squish((string) $record->body), 200) ?: $record->sizeLabel()))
+                            ->color('gray')
+                            ->size(TextSize::Small)
+                            ->lineClamp(2),
+                        TextColumn::make('created_at')
+                            ->color('gray')
+                            ->size(TextSize::ExtraSmall)
+                            ->formatStateUsing(fn (KnowledgeSource $record): string => collect([
+                                $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null,
+                                'nahrál '.($record->author ?: '?').' '.$record->created_at->format('j. n. Y'),
+                                $record->isStored() ? null : 'mozek: '.mb_strtolower($record->statusLabel()),
+                            ])->filter()->implode(' · ')),
+                    ])->space(1),
+                    TextColumn::make('category')
+                        ->badge()
+                        ->color('gray')
+                        ->formatStateUsing(fn (KnowledgeSource $record): ?string => $record->categoryLabel())
+                        ->grow(false)
+                        ->visibleFrom('md'),
+                ])->from('sm'),
             ])
             ->filters([
                 SelectFilter::make('category')->label('Druh')->options(KnowledgeSource::categories()),
@@ -69,12 +84,23 @@ class ArchiveRelationManager extends RelationManager
                 Action::make('page')
                     ->label('Stránka')
                     ->icon(Heroicon::OutlinedGlobeAlt)
+                    ->button()
+                    ->size('sm')
+                    ->color('gray')
                     ->visible(fn (KnowledgeSource $record): bool => $record->pageFile() !== null)
                     ->url(fn (KnowledgeSource $record): ?string => $record->pageUrl(), shouldOpenInNewTab: true),
-                Action::make('open')
-                    ->label('Otevřít')
-                    ->url(fn (KnowledgeSource $record): string => KnowledgeSourceResource::getUrl('view', ['record' => $record])),
-                KnowledgeSourceResource::deleteAction(DeleteAction::make())->iconButton(),
+                ActionGroup::make([
+                    Action::make('copyPage')
+                        ->label('Zkopírovat odkaz')
+                        ->icon(Heroicon::OutlinedLink)
+                        ->visible(fn (KnowledgeSource $record): bool => $record->pageFile() !== null)
+                        ->alpineClickHandler(fn (KnowledgeSource $record): string => 'navigator.clipboard.writeText('.Js::from($record->pageUrl()).').then(() => new FilamentNotification().title('.Js::from('Odkaz zkopírován').').success().send())'),
+                    Action::make('open')
+                        ->label('Detail dokumentu')
+                        ->icon(Heroicon::OutlinedDocumentText)
+                        ->url(fn (KnowledgeSource $record): string => KnowledgeSourceResource::getUrl('view', ['record' => $record])),
+                    KnowledgeSourceResource::deleteAction(DeleteAction::make())->label('Smazat'),
+                ])->color('gray'),
             ])
             ->recordUrl(fn (KnowledgeSource $record): string => KnowledgeSourceResource::getUrl('view', ['record' => $record]))
             ->emptyStateHeading('Archiv je prázdný')
