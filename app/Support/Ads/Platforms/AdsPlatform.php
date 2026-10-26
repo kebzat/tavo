@@ -23,12 +23,14 @@ interface AdsPlatform extends ConnectedSource
 
     /**
      * Přesný dosah účtu za každé ze zadaných období (jeden dotaz na všechna).
+     * S `$campaignIds` jen za vybrané kampaně (skupina kampaní), pořád jeden dotaz.
      * Platforma bez dosahu (AdPlatform::hasPeriodReach() = false) vrací prázdnou kolekci.
      *
      * @param  list<Period>  $periods
+     * @param  list<string>|null  $campaignIds  external_id kampaní
      * @return Collection<int, ReachStat>
      *
      * @throws AdsApiException
      */
-    public function periodReach(AdAccount $account, array $periods): Collection;
+    public function periodReach(AdAccount $account, array $periods, ?array $campaignIds = null): Collection;
 }

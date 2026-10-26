@@ -16,10 +16,12 @@
         "filament/spatie-laravel-settings-plugin": "^4.0",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
+        "phpseclib/phpseclib": "^3.0",
         "spatie/laravel-medialibrary": "^11.23",
         "spatie/laravel-settings": "^3.9"
     },
     "require-dev": {
+        "brianium/paratest": "^7.20",
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",

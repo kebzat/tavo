@@ -66,9 +66,11 @@ class AgentTest extends TestCase
                 return $zapis ?? Http::response(['ok' => true]);
             }
 
-            return str_ends_with($request->url(), '/konverzace')
-                ? Http::response($konverzace)
-                : Http::response($this->projekty());
+            return match (true) {
+                str_ends_with($request->url(), '/konverzace') => Http::response($konverzace),
+                str_ends_with($request->url(), '/predani') => Http::response([]),
+                default => Http::response($this->projekty()),
+            };
         });
     }
 

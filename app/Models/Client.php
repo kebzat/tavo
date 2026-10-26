@@ -5,7 +5,11 @@ namespace App\Models;
 use App\Enums\Ads\PrimaryGoal;
 use App\Models\Ads\AdAccount;
 use App\Models\Ads\AdAlert;
+use App\Models\Ads\AdBusinessResult;
+use App\Models\Ads\AdCampaignGroup;
+use App\Models\Ads\AdChange;
 use App\Models\Ads\AdClientSettings;
+use App\Models\Ads\AdEvent;
 use App\Models\Ads\AdReport;
 use App\Models\Crm\Company;
 use App\Models\Marketing\ClientBriefing;
@@ -85,6 +89,30 @@ class Client extends Model
     public function adReports(): HasMany
     {
         return $this->hasMany(AdReport::class);
+    }
+
+    /** Skupiny kampaní („Prodej“, „Brand“, „Nábor“), viz docs/ADS.md. */
+    public function adCampaignGroups(): HasMany
+    {
+        return $this->hasMany(AdCampaignGroup::class)->orderBy('sort')->orderBy('name');
+    }
+
+    /** Kalendář termínů: konce licencí, akce, čekání na podklady. */
+    public function adEvents(): HasMany
+    {
+        return $this->hasMany(AdEvent::class);
+    }
+
+    /** Skutečné objednávky a tržby e-shopu, zapsané ručně. */
+    public function adBusinessResults(): HasMany
+    {
+        return $this->hasMany(AdBusinessResult::class)->latest('period_to');
+    }
+
+    /** Historie zásahů: změny rozpočtu, kreativ, nabídky, webu. */
+    public function adChanges(): HasMany
+    {
+        return $this->hasMany(AdChange::class);
     }
 
     public function timeEntries(): HasMany

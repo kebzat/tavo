@@ -3,6 +3,7 @@
 namespace App\Support\Ads;
 
 use App\Enums\Ads\PrimaryGoal;
+use App\Settings\AdsSettings;
 use Closure;
 
 /**
@@ -19,6 +20,15 @@ final class MetricCatalog
     public const OVERVIEW_SLOTS = 6;
 
     public const OVERVIEW_DEFAULT = ['spend', 'conversions', 'cost_per_conversion', 'roas', 'ctr', 'cpm'];
+
+    /** Karta v přehledu podle cíle, když šablona v nastavení chybí. */
+    public const CARD_DEFAULTS = [
+        'purchases' => ['spend', 'conversions', 'cost_per_conversion', 'roas', 'ctr', 'cpm'],
+        'leads' => ['spend', 'conversions', 'cost_per_conversion', 'form_leads', 'web_leads', 'ctr'],
+        'traffic' => ['spend', 'conversions', 'cost_per_conversion', 'landing_page_views', 'ctr', 'cpm'],
+        'awareness' => ['spend', 'reach', 'frequency', 'cpm', 'conversions', 'ctr_all'],
+        'recruitment' => ['spend', 'conversions', 'cost_per_conversion', 'reach', 'ctr', 'cpm'],
+    ];
 
     /** Staré klíče dlaždic, uložené u klientů a ve zmrazených reportech. */
     public const ALIASES = [
@@ -39,14 +49,50 @@ final class MetricCatalog
         'leads' => ['spend', 'conversions', 'cost_per_conversion', 'conversion_rate', 'link_clicks', 'cpc', 'ctr', 'cpm'],
         'traffic' => ['spend', 'conversions', 'cost_per_conversion', 'impressions', 'ctr', 'cpm'],
         'awareness' => ['spend', 'reach', 'frequency', 'cpm', 'conversions', 'cost_per_conversion', 'impressions', 'ctr_all'],
+        'recruitment' => ['spend', 'conversions', 'cost_per_conversion', 'reach', 'link_clicks', 'cpc', 'ctr', 'cpm'],
     ];
 
     private const SHOP = ['purchases'];
 
-    private const CONVERSIONS = ['purchases', 'leads'];
+    private const CONVERSIONS = ['purchases', 'leads', 'recruitment'];
+
+    private const LEADS = ['leads', 'recruitment'];
 
     /** @var array<string, array{label: string, goal_label: ?Closure, format: string, direction: int, goals: ?list<string>, value: Closure}>|null */
     private static ?array $definitions = null;
+
+    /**
+     * Co přesně číslo znamená a z čeho se počítá. Pavel chce u CTR a konverzí
+     * vědět, o jaký typ jde; ukazuje se v nápovědě u dlaždice a v „Co ukazovat“.
+     */
+    private const DESCRIPTIONS = [
+        'spend' => 'Útrata v reklamním systému za období.',
+        'conversions' => 'Konverze podle cíle, jak si je připsal reklamní systém (atribuce nastavená v účtu).',
+        'cost_per_conversion' => 'Útrata děleno konverzemi, ze součtů za celé období.',
+        'roas' => 'Hodnota nákupů připsaných reklamám děleno útratou. Ze součtů, ne průměr dní.',
+        'purchase_value' => 'Hodnota nákupů připsaných reklamám (Meta: omni_purchase, sloupec Nákupy ve Správci reklam).',
+        'average_order_value' => 'Hodnota nákupů děleno počtem nákupů.',
+        'conversion_rate' => 'Konverze děleno prokliky na web (odkaz v reklamě).',
+        'add_to_cart' => 'Události „přidání do košíku“ z pixelu. Počítá události, ne lidi.',
+        'cost_per_add_to_cart' => 'Útrata děleno přidáními do košíku.',
+        'checkouts' => 'Události „zahájení objednávky“ z pixelu. Počítá události, ne lidi.',
+        'cost_per_checkout' => 'Útrata děleno zahájenými objednávkami.',
+        'link_clicks' => 'Kliknutí na odkaz v reklamě, který vede na web (inline link clicks). Bez kliknutí na profil, „více“ a obrázek.',
+        'cpc' => 'Útrata děleno prokliky na web.',
+        'landing_page_views' => 'Proklik, po kterém se cílová stránka opravdu načetla a pixel se ozval.',
+        'cost_per_landing_page_view' => 'Útrata děleno zobrazeními cílové stránky.',
+        'landing_page_view_rate' => 'Kolik prokliků skončilo načtenou stránkou. Nízké číslo = pomalý web nebo nefunkční pixel.',
+        'landing_page_conversion_rate' => 'Konverze děleno zobrazeními cílové stránky.',
+        'reach' => 'Počet lidí, kteří reklamu viděli, za celé období bez opakování. Přes dny ani kampaně se nesčítá, bereme ho z Mety zvlášť.',
+        'impressions' => 'Kolikrát se reklama zobrazila (jeden člověk víckrát).',
+        'frequency' => 'Zobrazení děleno dosahem za celé období: kolikrát reklamu viděl průměrný člověk.',
+        'ctr' => 'CTR odkazu: prokliky na web děleno zobrazeními. Nepočítá kliknutí na profil ani reakce.',
+        'ctr_all' => 'CTR všech kliknutí: i na profil, „více“, obrázek a reakce. Vychází vyšší než CTR odkazu.',
+        'unique_ctr' => 'Unikátní CTR odkazu: kolik zasažených lidí kliklo na web, za celé období.',
+        'cpm' => 'Cena za 1 000 zobrazení.',
+        'form_leads' => 'Leady z formuláře přímo na Facebooku a Instagramu (instant form, onsite_conversion.lead_grouped).',
+        'web_leads' => 'Leady, které na webu zaznamenal Meta pixel (offsite_conversion.fb_pixel_lead).',
+    ];
 
     /** @return list<string> */
     public static function keys(): array
@@ -92,6 +138,18 @@ final class MetricCatalog
         }
 
         return (self::definitions()[$key]['value'])($metrics, $goal);
+    }
+
+    /** Co číslo znamená. U konverzí doplní, co se u cíle počítá. */
+    public static function description(string $key, ?PrimaryGoal $goal = null): string
+    {
+        $text = self::DESCRIPTIONS[$key] ?? '';
+
+        if ($goal !== null && in_array($key, ['conversions', 'cost_per_conversion', 'conversion_rate', 'landing_page_conversion_rate'], true)) {
+            $text .= ' '.$goal->conversionDefinition();
+        }
+
+        return trim($text);
     }
 
     public static function format(string $key, ?float $value, string $currency = 'CZK'): string
@@ -146,10 +204,30 @@ final class MetricCatalog
         return collect(self::keys())->mapWithKeys(fn (string $key): array => [$key => self::label($key)])->all();
     }
 
-    /** @return list<string> */
+    /**
+     * Výchozí dlaždice podle cíle: šablona z Nastavení reklam (e-shop, leady,
+     * boosting, nábor), jinak vestavěná sada.
+     *
+     * @return list<string>
+     */
     public static function defaults(PrimaryGoal $goal): array
     {
-        return self::DEFAULTS[$goal->value];
+        $stored = rescue(fn () => app(AdsSettings::class)->tile_templates[$goal->value] ?? null, null, report: false);
+        $keys = is_array($stored) ? array_values(array_filter($stored, fn ($key): bool => is_string($key) && self::exists($key) && self::appliesTo($key, $goal))) : [];
+
+        return $keys ?: self::DEFAULTS[$goal->value];
+    }
+
+    /**
+     * Šest čísel karty v přehledu pro cíl (šablona z Nastavení reklam).
+     *
+     * @return list<string>
+     */
+    public static function cardSlots(PrimaryGoal $goal): array
+    {
+        $templates = rescue(fn () => app(AdsSettings::class)->card_templates, [], report: false);
+
+        return self::overviewSlots($templates[$goal->value] ?? self::CARD_DEFAULTS[$goal->value]);
     }
 
     /**
@@ -223,6 +301,8 @@ final class MetricCatalog
             'cost_per_add_to_cart' => self::metric('Cena za přidání do košíku', 'unit_price', -1, fn (Metrics $m): ?float => $m->costPerAddToCart(), self::SHOP),
             'checkouts' => self::metric('Zahájené objednávky', 'count', 1, fn (Metrics $m): float => $m->get('checkouts'), self::SHOP),
             'cost_per_checkout' => self::metric('Cena za zahájenou objednávku', 'unit_price', -1, fn (Metrics $m): ?float => $m->costPerCheckout(), self::SHOP),
+            'form_leads' => self::metric('Poptávky z formuláře na Metě', 'count', 1, fn (Metrics $m): float => $m->get('form_leads'), self::LEADS),
+            'web_leads' => self::metric('Poptávky z webu (pixel)', 'count', 1, fn (Metrics $m): float => $m->get('web_leads'), self::LEADS),
             'link_clicks' => self::metric('Prokliky na web', 'number', 1, fn (Metrics $m): float => $m->get('link_clicks'), self::CONVERSIONS),
             'cpc' => self::metric('Cena za proklik', 'unit_price', -1, fn (Metrics $m): ?float => $m->cpc(), self::CONVERSIONS),
             'landing_page_views' => self::metric('Zobrazení cílové stránky', 'number', 1, fn (Metrics $m): float => $m->get('landing_page_views')),
@@ -233,7 +313,7 @@ final class MetricCatalog
             'reach' => self::metric('Dosah', 'number', 1, fn (Metrics $m): ?float => $m->reach()),
             'impressions' => self::metric('Zobrazení', 'number', 1, fn (Metrics $m): float => $m->get('impressions')),
             'frequency' => self::metric('Frekvence', 'decimal', 0, fn (Metrics $m): ?float => $m->periodFrequency()),
-            'ctr' => self::metric('CTR', 'percent', 1, fn (Metrics $m): ?float => $m->ctr()),
+            'ctr' => self::metric('CTR odkazu', 'percent', 1, fn (Metrics $m): ?float => $m->ctr()),
             'ctr_all' => self::metric('CTR všech kliknutí', 'percent', 1, fn (Metrics $m): ?float => $m->ctrAll()),
             'unique_ctr' => self::metric('Unikátní CTR odkazu', 'percent', 1, fn (Metrics $m): ?float => $m->uniqueCtr()),
             'cpm' => self::metric('CPM', 'unit_price', -1, fn (Metrics $m): ?float => $m->cpm()),

@@ -231,9 +231,20 @@ Server ke GitHubu přístup mít nemusí — soubory tam posílá GitHub, ne nao
 
 ## 4. Jak deploy probíhá
 
-`.github/workflows/ci.yml` na každý push a PR spustí Pint a testy.
-`.github/workflows/deploy.yml` se pustí **až po zeleném CI na `main`**. Projekt se
-sestaví na GitHubu a na server se pošle hotový:
+`.github/workflows/ci.yml` spustí Pint a testy (souběžně, `--parallel`) na každý
+pull request a na push do větví agenta `agent/…` (hned po odeslání, ať jsou hotové
+dřív, než člověk klikne na Zveřejnit). Po sloučení do `main` se znovu netestuje.
+**Tlačítko Zveřejnit v nástrojích nahrává web rovnou ze serveru** (bez GitHubu,
+viz [AGENT.md](AGENT.md), Taveo: Zveřejnit rovnou ze serveru). Deploy pak
+porovná strom commitu se `storage/app/nasazeny-strom` na serveru a stejnou
+verzi znovu nenasadí.
+
+`.github/workflows/deploy.yml` se pustí **hned po pushi do `main`** a podruhé
+netestuje: krok „Prošly testy v pull requestu?“ ověří, že commit patří ke
+sloučenému pull requestu se zelenými testy (ty na pull requestu testují výsledek
+sloučení s `main`). Když ne (přímý push, sloučení před doběhnutím testů), testy
+proběhnou v deployi a bez nich se nenasadí. Projekt se sestaví na GitHubu a na
+server se pošle hotový:
 
 ```
 composer install --no-dev + npm run build (na GitHubu)

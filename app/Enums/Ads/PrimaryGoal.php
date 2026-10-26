@@ -5,8 +5,9 @@ namespace App\Enums\Ads;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * Co u klienta počítáme jako konverzi. Podle toho se počítá cena za
- * konverzi a jestli dává smysl ROAS.
+ * Co u klienta nebo skupiny kampaní počítáme jako konverzi. Podle toho se
+ * počítá cena za konverzi, jestli dává smysl ROAS a jaká šablona čísel se
+ * ukáže (e-shop, leady, návštěvnost, boosting, nábor).
  */
 enum PrimaryGoal: string implements HasLabel
 {
@@ -17,6 +18,9 @@ enum PrimaryGoal: string implements HasLabel
     /** Boosting obsahu a awareness: dosah, frekvence, CPM a interakce. */
     case Awareness = 'awareness';
 
+    /** Nábor zaměstnanců: konverze jsou odpovědi a přihlášky (leady z formuláře nebo z webu). */
+    case Recruitment = 'recruitment';
+
     public function getLabel(): string
     {
         return match ($this) {
@@ -24,6 +28,7 @@ enum PrimaryGoal: string implements HasLabel
             self::Leads => 'Poptávky a kontakty',
             self::Traffic => 'Návštěvnost webu',
             self::Awareness => 'Dosah a interakce (boosting, awareness)',
+            self::Recruitment => 'Nábor (uchazeči)',
         };
     }
 
@@ -35,6 +40,7 @@ enum PrimaryGoal: string implements HasLabel
             self::Leads => 'Poptávky',
             self::Traffic => 'Prokliky na web',
             self::Awareness => 'Interakce',
+            self::Recruitment => 'Uchazeči',
         };
     }
 
@@ -46,6 +52,19 @@ enum PrimaryGoal: string implements HasLabel
             self::Leads => 'Cena za poptávku',
             self::Traffic => 'Cena za proklik',
             self::Awareness => 'Cena za interakci',
+            self::Recruitment => 'Cena za uchazeče',
+        };
+    }
+
+    /** Co přesně se jako konverze počítá, ať je jasné, o jaký typ jde. */
+    public function conversionDefinition(): string
+    {
+        return match ($this) {
+            self::Purchases => 'Nákupy = všechny nákupy připsané reklamě (Meta: omni_purchase, web i aplikace; Google Ads: konverze).',
+            self::Leads => 'Poptávky = leady z formuláře na Metě i z webu (pixel). Rozpad je v číslech „Poptávky z formuláře“ a „Poptávky z webu“.',
+            self::Recruitment => 'Uchazeči = leady z náborového formuláře na Metě i z webu (pixel).',
+            self::Traffic => 'Prokliky na web = kliknutí na odkaz v reklamě.',
+            self::Awareness => 'Interakce = reakce, komentáře, sdílení a kliknutí u příspěvku (post engagement).',
         };
     }
 
@@ -61,6 +80,24 @@ enum PrimaryGoal: string implements HasLabel
      */
     public function isPerformance(): bool
     {
-        return in_array($this, [self::Purchases, self::Leads], true);
+        return in_array($this, [self::Purchases, self::Leads, self::Recruitment], true);
+    }
+
+    /** Název šablony čísel, jak ji Pavel zná: e-shop, leady, boosting, nábor. */
+    public function templateLabel(): string
+    {
+        return match ($this) {
+            self::Purchases => 'E-shop',
+            self::Leads => 'Leady',
+            self::Traffic => 'Návštěvnost',
+            self::Awareness => 'Boosting',
+            self::Recruitment => 'Nábor',
+        };
+    }
+
+    /** Konverze se počítají z leadů (poptávky, nábor). */
+    public function countsLeads(): bool
+    {
+        return in_array($this, [self::Leads, self::Recruitment], true);
     }
 }

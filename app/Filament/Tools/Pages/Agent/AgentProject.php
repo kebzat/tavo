@@ -78,8 +78,8 @@ class AgentProject extends Page
     public function getSubheading(): ?string
     {
         return match ($this->details()['typ'] ?? null) {
-            'server' => 'Živý web na serveru. Před každou novou konverzací se uloží snímek souborů a záloha databáze.',
-            'git' => 'Repozitář na GitHubu. Agent posílá jen větve agent/…, na web je dostane člověk.',
+            'server' => 'Živý web na serveru. Agent pracuje na jeho kopii, na web ji pošlete tlačítkem Zveřejnit. Úlohy z ClickUpu jdou rovnou na živý web.',
+            'git' => 'Repozitář na GitHubu. Hotovou práci agenta zkontrolujete a zveřejníte na web v kartě Hotová práce.',
             'prazdny' => 'Projekt bez kódu: texty, podklady a kódy k ručnímu vložení.',
             default => null,
         };
@@ -141,6 +141,7 @@ class AgentProject extends Page
                 'status' => match (true) {
                     $item['okno'] === null => ['label' => 'Uspaná', 'color' => 'gray'],
                     ! $item['claude'] => ['label' => 'Claude ukončen', 'color' => 'warning'],
+                    $item['uloha'] ?? false => ['label' => 'Úloha běží', 'color' => 'warning'],
                     $item['trvala'] ?? false => ['label' => 'Trvalá', 'color' => 'primary'],
                     default => ['label' => 'Běží', 'color' => 'success'],
                 },
@@ -308,6 +309,7 @@ class AgentProject extends Page
 
     private function latestRunning(): ?string
     {
-        return collect($this->conversations())->whereNotNull('okno')->sortByDesc('aktualizace')->first()['okno'] ?? null;
+        // Úlohu na pozadí (grafika) neotevírat samo, psaním by se do ní zasáhlo.
+        return collect($this->conversations())->whereNotNull('okno')->reject(fn (array $item): bool => $item['uloha'] ?? false)->sortByDesc('aktualizace')->first()['okno'] ?? null;
     }
 }

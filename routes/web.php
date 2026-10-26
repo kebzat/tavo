@@ -2,11 +2,15 @@
 
 use App\Enums\ApiAbility;
 use App\Http\Controllers\AdReportController;
+use App\Http\Controllers\Agent\AdGraphicApiController;
 use App\Http\Controllers\Agent\AgentApiController;
+use App\Http\Controllers\Agent\KnowledgeApiController;
+use App\Http\Controllers\Agent\VaultApiController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
+use App\Http\Controllers\ClickUpWebhookController;
 use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\Crm\AuditImportController;
 use App\Http\Controllers\Crm\CandidateImportController;
@@ -65,7 +69,56 @@ Route::prefix('nastroje/api/agent')
         Route::post('/klienti/{slug}/ukoly', [AgentApiController::class, 'tasks'])->name('agent.api.tasks');
         Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
+        Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');
+
+        // Mozek TAVEO (docs/MOZEK.md): hledání, podklady ke zpracování, návrhy poznatků.
+        Route::get('/mozek', [KnowledgeApiController::class, 'search'])->name('agent.api.mozek');
+        Route::get('/mozek/seznam', [KnowledgeApiController::class, 'index'])->name('agent.api.mozek.seznam');
+        Route::get('/mozek/zdroje/{source}', [KnowledgeApiController::class, 'source'])->name('agent.api.mozek.zdroj');
+        Route::get('/mozek/zdroje/{source}/soubory/{index}', [KnowledgeApiController::class, 'file'])->whereNumber('index')->name('agent.api.mozek.soubor');
+        Route::post('/mozek/navrhy', [KnowledgeApiController::class, 'propose'])->name('agent.api.mozek.navrhy');
+
+        // Trezor přístupů (docs/TREZOR.md): agent hesla nedostane, práci s nimi dělá web.
+        Route::get('/trezor', [VaultApiController::class, 'index'])->name('agent.api.trezor');
+        Route::prefix('/trezor/{entry}')->whereNumber('entry')->group(function () {
+            Route::get('/ftp', [VaultApiController::class, 'ftpList'])->name('agent.api.trezor.ftp');
+            Route::get('/ftp/soubor', [VaultApiController::class, 'ftpFile'])->name('agent.api.trezor.ftp.soubor');
+            Route::get('/ftp/zip', [VaultApiController::class, 'ftpZip'])->name('agent.api.trezor.ftp.zip');
+            Route::post('/ftp/nahrat', [VaultApiController::class, 'ftpUpload'])->name('agent.api.trezor.ftp.nahrat');
+            Route::get('/nahrani/{upload}', [VaultApiController::class, 'upload'])->name('agent.api.trezor.nahrani');
+            Route::post('/wp', [VaultApiController::class, 'wordpress'])->name('agent.api.trezor.wp');
+            Route::post('/prihlasit', [VaultApiController::class, 'login'])->name('agent.api.trezor.prihlasit');
+        });
     });
+
+// Agent při práci na reklamní grafice: podklady a obrázky z Gemini. Ověřuje
+// jednorázový token zadání (X-Grafika-Token), bez session a CSRF.
+Route::prefix('nastroje/api/grafika/{graphic}')
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->group(function () {
+        Route::get('/podklady/{index}', [AdGraphicApiController::class, 'asset'])->whereNumber('index')->name('agent.grafika.podklad');
+        Route::post('/obrazek', [AdGraphicApiController::class, 'image'])->name('agent.grafika.obrazek');
+    });
+
+// Webhook ClickUpu: komentář „@agent …“ spustí agenta (docs/AGENT.md, ClickUp).
+// Ověřuje se podpisem ClickUpu, bez session a CSRF.
+Route::post('/nastroje/api/clickup/webhook', ClickUpWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->name('clickup.webhook');
 
 // Strojové rozhraní interního CRM. Bez session a CSRF — volá ho automatizace,
 // ne prohlížeč — a ověřené tokenem agenta s oprávněním pro danou routu

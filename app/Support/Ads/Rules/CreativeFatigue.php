@@ -9,6 +9,9 @@ use App\Support\Ads\Format;
  * Reklamy se okoukaly: CTR padá proti předchozímu týdnu nebo je vysoká
  * frekvence. Frekvence je ze součtu denních dosahů, tedy spíš nižší než
  * skutečná, viz Metrics::frequency().
+ *
+ * Samotný pokles CTR není problém, když skupina plní obchodní cíl (cena
+ * za konverzi, ROAS). Pak se nehlásí, vysoká frekvence ano.
  */
 class CreativeFatigue implements Rule
 {
@@ -34,7 +37,8 @@ class CreativeFatigue implements Rule
         $frequency = $week->frequency();
 
         $ctrDropped = $ctr !== null && $previousCtr !== null && $previousCtr > 0
-            && ($previousCtr - $ctr) / $previousCtr * 100 >= $context->threshold('ctr_drop_pct');
+            && ($previousCtr - $ctr) / $previousCtr * 100 >= $context->threshold('ctr_drop_pct')
+            && $context->meetsTarget($week) !== true;
         $tooFrequent = $frequency !== null && $frequency >= $context->threshold('frequency_max');
 
         if (! $ctrDropped && ! $tooFrequent) {
@@ -42,15 +46,17 @@ class CreativeFatigue implements Rule
         }
 
         $facts = array_filter([
-            $ctrDropped ? 'CTR kleslo z '.Format::percent($previousCtr).' na '.Format::percent($ctr).'.' : null,
+            $ctrDropped ? 'CTR odkazu kleslo z '.Format::percent($previousCtr).' na '.Format::percent($ctr).' (7 dní proti předchozím 7).' : null,
+            $ctrDropped && $context->meetsTarget($week) === false ? 'Cena za konverzi nebo ROAS přitom neplní cíl.' : null,
             $tooFrequent ? 'Frekvence je aspoň '.Format::number($frequency, 1).', lidé vidí stejné reklamy opakovaně.' : null,
         ]);
 
         return [new Finding(
             AlertSeverity::Info,
             'Reklamy se okoukávají',
-            implode(' ', $facts)."\n\nPřipravte nové kreativy (jiný úvodní záběr, jiný úhel sdělení) a vypněte ty s nejnižším CTR. U malého publika zvažte rozšíření cílení.",
+            'Připravte nové kreativy (jiný úvodní záběr, jiný úhel sdělení) a vypněte ty s nejnižším CTR. U malého publika zvažte rozšíření cílení.',
             ['ctr' => $ctr, 'previous_ctr' => $previousCtr, 'frequency' => $frequency],
+            facts: implode(' ', $facts),
         )];
     }
 }

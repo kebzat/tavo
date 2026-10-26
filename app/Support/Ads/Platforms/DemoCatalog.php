@@ -76,6 +76,38 @@ final class DemoCatalog
             ],
             'ga4' => [],
         ],
+        // Jeden účet míchá prodej (CZ a SK), boosting příspěvků a nábor: ukázka skupin kampaní.
+        'Ukázka: Hokejový obchod Puk' => [
+            'website' => 'https://hokej-puk.example',
+            'goal' => PrimaryGoal::Purchases,
+            'settings' => ['monthly_budget' => 30000, 'target_cpa' => 450, 'target_roas' => 4, 'fee_czk' => 5000, 'included_hours' => 3, 'hourly_rate' => 1200],
+            'groups' => [
+                ['name' => 'Prodej', 'goal' => PrimaryGoal::Purchases, 'name_rule' => 'sales', 'monthly_budget' => 24000, 'target_cpa' => 450, 'target_roas' => 4],
+                ['name' => 'Nábor', 'goal' => PrimaryGoal::Recruitment, 'name_rule' => 'nabor, hr', 'monthly_budget' => 3000, 'target_cpa' => 150],
+            ],
+            'accounts' => [
+                'demo_puk_meta' => ['name' => 'Hokejový obchod Puk (Meta)', 'campaigns' => [
+                    ['name' => '[Sales] ASC+ · hokejky a brusle', 'spend' => 520, 'cpm' => 110, 'ctr' => 1.4, 'cr' => 1.6, 'aov' => 2900],
+                    ['name' => '[Sales] Remarketing · košík', 'spend' => 140, 'cpm' => 160, 'ctr' => 2.2, 'cr' => 4.5, 'aov' => 2400],
+                    ['name' => '[Sales] SK · hokejky', 'spend' => 90, 'cpm' => 95, 'ctr' => 1.1, 'cr' => 0.8, 'aov' => 2700],
+                    ['name' => 'Boost · zápas víkendu', 'spend' => 60, 'cpm' => 35, 'ctr' => 0.4, 'cr' => 0, 'aov' => 0, 'kind' => 'awareness'],
+                    ['name' => '[HR] Nábor prodavač Hradec', 'spend' => 70, 'cpm' => 55, 'ctr' => 1.0, 'cr' => 7.0, 'aov' => 0, 'kind' => 'leads'],
+                    ['name' => '[Sales] Výprodej léto', 'spend' => 80, 'cpm' => 100, 'ctr' => 1.0, 'cr' => 1.0, 'aov' => 1500, 'paused' => true],
+                ]],
+            ],
+            'ga4' => [],
+            'events' => [
+                ['type' => 'license_end', 'days' => 4, 'title' => 'Končí licence na UGC video s brankářem', 'ads' => 'UGC_brankar_v1, UGC_brankar_v2', 'remind_days' => 7],
+                ['type' => 'preparation', 'days' => 21, 'title' => 'Black Friday: kreativy a rozpočet', 'remind_days' => 14],
+                ['type' => 'waiting_for_client', 'days' => -2, 'title' => 'Fotky nové kolekce dresů od klienta', 'remind_days' => 0],
+            ],
+            // Objednávky a tržby z e-shopu za minulý měsíc, zapsané ručně.
+            'business' => ['orders' => 212, 'revenue' => 486000, 'source' => 'Shoptet → Přehledy'],
+            'changes' => [
+                ['type' => 'budget', 'days' => 12, 'description' => 'Rozpočet ASC+ z 400 na 520 Kč denně', 'expected' => 'Víc nákupů při ceně do 450 Kč'],
+                ['type' => 'creative', 'days' => 6, 'description' => 'Nové UGC video s brankářem do ASC+'],
+            ],
+        ],
         'Ukázka: Fitness Hradec' => [
             'website' => 'https://fitness-hradec.example',
             'goal' => PrimaryGoal::Leads,

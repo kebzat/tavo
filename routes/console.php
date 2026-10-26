@@ -39,6 +39,13 @@ Schedule::command('ads:sync')
     ->withoutOverlapping(60)
     ->onOneServer();
 
+// Ruční obnova čísel z detailu klienta (tlačítko Obnovit čísla). Bez žádosti nic nevolá,
+// účet jde obnovit nejvýš jednou za 2 hodiny (config ads.refresh_cooldown_minutes).
+Schedule::command('ads:sync --requested')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(30)
+    ->onOneServer();
+
 // Cílové stránky klientů: odpovídají a mají Meta pixel? Jeden dotaz na adresu za den.
 Schedule::command('marketing:landing-check')
     ->dailyAt('06:20')
@@ -79,4 +86,16 @@ Schedule::command('clients:dashboard-demo --refresh')
 Schedule::command('model:prune', ['--model' => [ApiTokenCall::class]])
     ->dailyAt('04:00')
     ->timezone('Europe/Prague')
+    ->onOneServer();
+
+// Úlohy agenta z ClickUpu, které nedoběhly (docs/AGENT.md, ClickUp). Nic nevolá, když žádné nejsou.
+Schedule::command('clickup:hlidat')
+    ->everyFifteenMinutes()
+    ->onOneServer();
+
+// Zveřejnění práce agenta z nástrojů: testy, sloučení a nasazení na GitHubu
+// běží minuty, tohle je posouvá dál. Bez rozběhnutých nic nevolá. Viz docs/AGENT.md.
+Schedule::command('agent:zverejneni')
+    ->everyMinute()
+    ->withoutOverlapping(10)
     ->onOneServer();

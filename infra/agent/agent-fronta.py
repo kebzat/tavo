@@ -9,6 +9,12 @@ potřeba udělat na serveru, proto jen popíše, a tady se to pečlivě ověří
 
   zaloha   snímek souborů a záloha databáze projektu (před novým vláknem)
   pridat   nový projekt typu git nebo prazdny
+  aktualizovat  služba agenta z main na GitHubu (po Zveřejnit v nástrojích)
+  obnovit  živý web do stavu před časem (ručně, agent obnovit)
+  nasadit  vydání ze služby agenta rovnou na web (tlačítko Zveřejnit, jen taveo)
+  nasadit-zpet  web na verzi před posledním nasazením (tlačítko Vrátit)
+  kopie-db  databáze kopie živého webu znovu z živé
+  nasadit-kopii  kopie živého webu na živý web (tlačítko Zveřejnit)
 
 Web na serveru (`server`) se z administrace přidat nedá. Dává agentovi
 přístup k živému webu klienta, takže zůstává jen pro roota přes SSH.
@@ -49,6 +55,35 @@ def zpracovat(pozadavek):
         if nazev not in projekty():
             return False, f'Projekt {nazev} neexistuje.'
         return agent('zaloha', nazev)
+
+    if akce == 'aktualizovat':
+        # Bez parametrů: agent.sh vezme server.js jen z main na GitHubu.
+        return agent('aktualizovat')
+
+    if akce == 'nasadit':
+        strom = str(pozadavek.get('strom') or '')
+        if not re.match(r'^[0-9a-f]{40}$', strom):
+            return False, 'Neplatné vydání.'
+        return agent('nasadit', nazev, strom)
+
+    if akce == 'nasadit-zpet':
+        return agent('nasadit-zpet', nazev)
+
+    if akce in ('kopie-db', 'nasadit-kopii'):
+        if nazev not in projekty():
+            return False, f'Projekt {nazev} neexistuje.'
+        return agent(akce, nazev)
+
+    if akce == 'obnovit':
+        cas = pozadavek.get('cas')
+        if not isinstance(cas, int) or cas <= 0:
+            return False, 'Neplatný čas, do kterého se vrací.'
+        if nazev not in projekty():
+            return False, f'Projekt {nazev} neexistuje.'
+        args = ['obnovit', nazev, str(cas)]
+        if pozadavek.get('databaze') is True:
+            args.append('databaze')
+        return agent(*args)
 
     if akce == 'pridat':
         typ = pozadavek.get('typ')

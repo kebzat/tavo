@@ -77,6 +77,46 @@ return [
         // Token, kterým agent v kontejneru volá /nastroje/api/agent (čtení dat
         // klientů, zápis konceptů). Jiný než AGENT_SECRET i CRM_IMPORT_TOKEN.
         'api_token' => env('AGENT_API_TOKEN'),
+        // Projekt, v jehož repozitáři je sama služba agenta (infra/agent/).
+        // Po zveřejnění se na serveru aktualizuje z main.
+        'infra_project' => env('AGENT_INFRA_PROJECT', 'taveo'),
+        // Projekt agenta, ve kterém běží mozek TAVEO (docs/MOZEK.md): zpracování
+        // podkladů a otázky na mozek. Projekt bez kódu, založí ho stránka Mozek.
+        'brain_project' => env('AGENT_BRAIN_PROJECT', 'mozek'),
+        // Weby na tomhle serveru, které tlačítko Zveřejnit nahraje rovnou ze
+        // serveru, bez GitHubu a testů (InstantPublisher, agent nasadit).
+        'deploy_projects' => array_filter(explode(',', (string) env('AGENT_DEPLOY_PROJECTS', 'taveo'))),
+    ],
+
+    // Tlačítko Zveřejnit v nástrojích (agent → pull request → main → web).
+    // Fine-grained token jen na repozitáře projektů, viz docs/AGENT.md.
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+        // Jen pro lokální náhled s falešným GitHubem.
+        'url' => env('GITHUB_API_URL', 'https://api.github.com/'),
+    ],
+
+    // ClickUp: komentář „@agent …“ u úkolu spustí agenta v projektu klienta
+    // (docs/AGENT.md, ClickUp). Bez tokenu a tajemství webhooku je vypnuté.
+    'clickup' => [
+        // Osobní API token (pk_…). Agent jím čte úkol a odpovídá do komentářů.
+        'token' => env('CLICKUP_API_TOKEN'),
+        // Tajemství webhooku, ClickUp ho vrátí při založení (php artisan clickup:napojit).
+        'webhook_secret' => env('CLICKUP_WEBHOOK_SECRET'),
+        'team_id' => env('CLICKUP_TEAM_ID'),
+        // Uživatel „Agent“ v ClickUpu (host). Označení v komentáři ho spustí jako štítek.
+        'agent_user_id' => env('CLICKUP_AGENT_USER_ID'),
+        // Kdo smí agenta spustit: ID uživatelů ClickUpu oddělená čárkou (Tom, Pavel).
+        'users' => array_filter(explode(',', (string) env('CLICKUP_AGENT_USERS', ''))),
+        // Prostory bez přiřazeného klienta: ID prostoru:projekt agenta, oddělené čárkou.
+        // Pavlovi klienti jsou v ClickUpu, v nástrojích zatím ne, jdou do projektu marketing.
+        'space_projects' => collect(explode(',', (string) env('CLICKUP_SPACE_PROJECTS', '')))
+            ->filter(fn (string $pair): bool => str_contains($pair, ':'))
+            ->mapWithKeys(fn (string $pair): array => [trim(strstr($pair, ':', true)) => trim(substr(strstr($pair, ':'), 1))])
+            ->all(),
+        // Pojistka předplatného Claude: úlohu z ClickUpu nespustí, když je 5h relace
+        // nebo týden vyčerpaný aspoň z tolika procent. 100 = vypnuto.
+        'max_usage_percent' => (int) env('CLICKUP_AGENT_MAX_USAGE', 90),
     ],
 
 ];

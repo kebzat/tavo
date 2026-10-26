@@ -6,8 +6,12 @@ use App\Enums\TaskStatus;
 use App\Enums\WorkArea;
 use App\Http\Controllers\Controller;
 use App\Models\Ads\AdReport;
+use App\Models\AgentJob;
 use App\Models\Client;
 use App\Models\Marketing\ClientBriefing;
+use App\Support\AdGraphics\GraphicsAgent;
+use App\Support\ClickUp\ClickUpAgent;
+use App\Support\Knowledge\BrainAgent;
 use App\Support\Marketing\ClientContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -143,9 +147,38 @@ class AgentApiController extends Controller
             'facts' => ['nullable', 'string', 'max:10000'],
             'causes' => ['nullable', 'string', 'max:10000'],
             'recommendations' => ['nullable', 'string', 'max:10000'],
+            'worked' => ['nullable', 'string', 'max:10000'],
+            'not_worked' => ['nullable', 'string', 'max:10000'],
         ]);
 
         $report->forceFill(collect($data)->filter(fn ($value, string $key): bool => filled($value) && blank($report->{$key}))->all())->save();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Výsledek úlohy od služby agenta. Úloha z ClickUpu odpoví do ClickUpu
+     * ({@see ClickUpAgent::finish()}), reklamní grafika uloží návrhy
+     * ({@see GraphicsAgent::finish()}), mozek návrhy poznatků nebo odpověď
+     * ({@see BrainAgent::finish()}). Jen jednou, doběhlá úloha se nemění.
+     */
+    public function jobResult(Request $request, AgentJob $job, ClickUpAgent $agent, GraphicsAgent $graphics, BrainAgent $brain): JsonResponse
+    {
+        // Grafika: konverzace po úloze zůstává otevřená a může poslat další výsledek.
+        abort_unless($job->status === AgentJob::STATUS_RUNNING || $job->source === GraphicsAgent::SOURCE, 409, 'Úloha už je uzavřená.');
+
+        $data = $request->validate([
+            'ok' => ['required', 'boolean'],
+            'vysledek' => ['nullable', 'string', 'max:50000'],
+            'session' => ['nullable', 'uuid'],
+            'chyba' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        match ($job->source) {
+            GraphicsAgent::SOURCE => $graphics->finish($job, $data),
+            BrainAgent::SOURCE, BrainAgent::SOURCE_QUESTION => $brain->finish($job, $data),
+            default => $agent->finish($job, $data),
+        };
 
         return response()->json(['ok' => true]);
     }

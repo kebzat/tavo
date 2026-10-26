@@ -24,6 +24,8 @@ final class DailyStat
         public readonly float $landingPageViews = 0,
         public readonly array $raw = [],
         public readonly float $engagements = 0,
+        public readonly float $formLeads = 0,
+        public readonly float $webLeads = 0,
     ) {}
 
     /** @return array<string, mixed> Sloupce tabulky ad_daily_stats. */
@@ -43,6 +45,8 @@ final class DailyStat
             'checkouts' => $this->checkouts,
             'landing_page_views' => $this->landingPageViews,
             'engagements' => $this->engagements,
+            'form_leads' => $this->formLeads,
+            'web_leads' => $this->webLeads,
         ];
     }
 }

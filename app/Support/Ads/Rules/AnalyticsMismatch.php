@@ -48,8 +48,9 @@ class AnalyticsMismatch implements Rule
             return [new Finding(
                 AlertSeverity::Critical,
                 'Měření: web nehlásí žádné nákupy',
-                $numbers."\n\nWeb má návštěvy, ale žádný nákup. Nejspíš nefunguje měření nákupu v GA4 (událost purchase), ne obchod. Ověřte v GA4 → Přehledy → Zpeněžení a v e-shopu počet objednávek za stejné dny.",
+                'Nejspíš nefunguje měření nákupu v GA4 (událost purchase), ne obchod. Ověřte v GA4 → Přehledy → Zpeněžení a v e-shopu počet objednávek za stejné dny.',
                 ['ad_purchases' => $adPurchases, 'web_purchases' => 0, 'sessions' => $web['sessions']],
+                facts: $numbers.' Web má návštěvy ('.Format::number($web['sessions']).'), ale žádný nákup.',
             )];
         }
 
@@ -60,8 +61,9 @@ class AnalyticsMismatch implements Rule
         return [new Finding(
             AlertSeverity::Info,
             'Reklamy si připisují víc nákupů, než web naměřil',
-            $numbers."\n\nČást rozdílu je normální (atribuce po zhlédnutí, různá okna). Takový rozdíl ale ukazuje na zdvojené měření nebo příliš štědrou atribuci. Při hodnocení výkonu se opřete o objednávky z e-shopu, ne o součet z reklam.",
+            'Část rozdílu je normální (atribuce po zhlédnutí, různá okna). Takový rozdíl ale ukazuje na zdvojené měření nebo příliš štědrou atribuci. Při hodnocení výkonu se opřete o objednávky z e-shopu, ne o součet z reklam.',
             ['ad_purchases' => $adPurchases, 'web_purchases' => $web['purchases']],
+            facts: $numbers,
         )];
     }
 }

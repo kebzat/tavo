@@ -3,13 +3,18 @@
 namespace App\Filament\Tools\Pages\Ads;
 
 use App\Enums\Ads\AdPlatform;
+use App\Enums\Ads\PrimaryGoal;
+use App\Models\Ads\AdAccount;
 use App\Models\Ads\AdSyncRun;
 use App\Settings\AdsSettings;
 use App\Support\Ads\AccountDirectory;
+use App\Support\Ads\MetricCatalog;
 use App\Support\Ads\Platforms\ApiGuard;
 use App\Support\Ads\Platforms\Ga4;
 use App\Support\Ads\Platforms\Platforms;
 use BackedEnum;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -21,8 +26,9 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
 
 /**
- * Nastavení reklam: stav napojení na Metu, příjemci ranního souhrnu,
- * prahy upozornění a poslední synchronizace.
+ * Nastavení reklam: stav napojení na Metu, stav dat po účtech (do kdy
+ * kompletní, chyba), příjemci ranního souhrnu, prahy upozornění, šablony
+ * čísel podle typu kampaní a poslední synchronizace.
  */
 class ManageAds extends SettingsPage
 {
@@ -52,8 +58,16 @@ class ManageAds extends SettingsPage
                     ->color(fn (): string => app(Platforms::class)->for($platform)->isConfigured() ? 'success' : ($platform->isDemo() ? 'gray' : 'danger')))
                     ->all()),
 
+            Section::make('Stav dat po účtech')
+                ->description('Do kterého dne máme čísla kompletní. Den po něm není nula, ale „nemáme data“: odhady a srovnání se z něj nepočítají.')
+                ->schema([
+                    TextEntry::make('data_state')
+                        ->hiddenLabel()
+                        ->state(fn (): HtmlString => $this->dataState()),
+                ]),
+
             Section::make('Ochrana před přetížením')
-                ->description('Na Metu, Google Ads a GA4 sahá jen ranní stažení v 6:00, jednou denně. Všechno ostatní (přehledy, reporty, upozornění, agent) čte z databáze. U Mety je to jeden dotaz na seznam účtů a čtyři na účet (stav, čísla, dosah, zamítnuté reklamy). Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
+                ->description('Na Metu, Google Ads a GA4 sahá jen ranní stažení v 6:00, jednou denně. Všechno ostatní (přehledy, reporty, upozornění, agent) čte z databáze. U Mety je to jeden dotaz na seznam účtů, šest na účet (stav, čísla, dosah, zamítnuté reklamy, stav kampaní, čísla reklam) a jeden na skupinu kampaní (její dosah). Ruční obnova z detailu klienta stáhne jeden účet, nejvýš jednou za 2 hodiny. Když platforma hlásí vytížení nebo omezí dotazy, stahování se samo pozastaví do zítřejšího rána.')
                 ->columns(3)
                 ->schema(collect(['meta' => 'Meta', 'google_ads' => 'Google Ads', 'ga4' => 'GA4'])->map(fn (string $label, string $key): TextEntry => TextEntry::make('guard_'.$key)
                     ->label($label)
@@ -91,8 +105,27 @@ class ManageAds extends SettingsPage
                         TextInput::make('ctr_drop_pct')->label('Pokles CTR proti minulému týdnu')->numeric()->required()->suffix('%'),
                         TextInput::make('frequency_max')->label('Frekvence za týden od')->numeric()->step(0.1)->required(),
                         TextInput::make('no_conversion_days')->label('Dny útraty bez konverze')->numeric()->minValue(1)->required()->suffix('dní'),
+                        TextInput::make('min_spend')->label('Výkon hodnotit od útraty')->numeric()->minValue(0)->required()->suffix('Kč za 7 dní')
+                            ->helperText('Pod tím cena, ROAS, CTR ani skok útraty nesvítí, jsou to náhodné výkyvy.'),
                     ]),
                 ]),
+
+            Section::make('Šablony čísel')
+                ->description('Která čísla se ukážou podle typu kampaní. Karta v přehledu má šest čísel, detail a report víc. Klient i skupina si můžou vybrat vlastní.')
+                ->collapsed()
+                ->schema(collect(PrimaryGoal::cases())->map(fn (PrimaryGoal $goal): Section => Section::make($goal->templateLabel())
+                    ->description($goal->getLabel())
+                    ->collapsed()
+                    ->schema([
+                        Grid::make(6)->schema(collect(range(0, MetricCatalog::OVERVIEW_SLOTS - 1))->map(fn (int $slot): Select => Select::make("card_templates.{$goal->value}.{$slot}")
+                            ->label('Karta '.($slot + 1))
+                            ->options(MetricCatalog::options($goal))
+                            ->required())->all()),
+                        CheckboxList::make("tile_templates.{$goal->value}")
+                            ->label('Detail a report')
+                            ->options(MetricCatalog::options($goal))
+                            ->columns(3),
+                    ]))->all()),
 
             Section::make('Poslední synchronizace')
                 ->collapsible()
@@ -104,13 +137,43 @@ class ManageAds extends SettingsPage
         ]);
     }
 
+    /** Účty s posledním úspěšným stažením, daty do a chybou. */
+    private function dataState(): HtmlString
+    {
+        $accounts = AdAccount::query()->active()->with('client')->orderBy('client_id')->get()
+            ->reject(fn (AdAccount $account): bool => $account->isAnalytics());
+
+        if ($accounts->isEmpty()) {
+            return new HtmlString('<p class="text-sm text-gray-500">Zatím žádný propojený účet.</p>');
+        }
+
+        $yesterday = today()->subDay();
+        $rows = $accounts->map(function (AdAccount $account) use ($yesterday): string {
+            $state = match (true) {
+                filled($account->last_sync_error) => ['text-danger-600', 'Chyba: '.$account->last_sync_error],
+                $account->data_through === null => ['text-warning-600', 'Čeká na první stažení'],
+                $account->data_through->lt($yesterday) => ['text-warning-600', 'Data jen do '.$account->data_through->format('j. n. Y')],
+                default => ['text-success-600', 'Data do '.$account->data_through->format('j. n. Y')],
+            };
+
+            return '<li class="flex flex-wrap justify-between gap-2 py-1.5">'
+                .'<span>'.e($account->client?->name.' · '.$account->name).($account->platform->isDemo() ? ' <span class="text-gray-400">(ukázka)</span>' : '').'</span>'
+                .'<span class="'.$state[0].'">'.e($state[1]).'<span class="text-gray-400">'.e($account->last_synced_at ? ' · staženo '.$account->last_synced_at->timezone('Europe/Prague')->format('j. n. G:i') : '').'</span></span>'
+                .'</li>';
+        })->implode('');
+
+        return new HtmlString('<ul class="divide-y divide-gray-100 text-sm dark:divide-white/5">'.$rows.'</ul>');
+    }
+
     private function platformState(AdPlatform $platform): string
     {
         $configured = app(Platforms::class)->for($platform)->isConfigured();
 
         return match ($platform) {
             AdPlatform::Meta, AdPlatform::GoogleAds, AdPlatform::Ga4 => $this->accessState($platform, $configured),
-            AdPlatform::Demo, AdPlatform::DemoGa4 => $configured ? 'Zapnuté. Po napojení skutečných účtů vypněte (ADS_DEMO=false) a smažte: php artisan ads:demo --remove' : 'Vypnuté.',
+            AdPlatform::Demo, AdPlatform::DemoGa4 => $configured
+                ? 'Zapnuté ('.AdAccount::query()->where('platform', $platform)->distinct()->count('client_id').' ukázkových klientů, karty mají štítek „Ukázková data“). Ostrá data na nich nezávisí. Vypnout: ADS_DEMO=false a php artisan ads:demo --remove'
+                : 'Vypnuté.',
         };
     }
 

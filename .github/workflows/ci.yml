@@ -1,9 +1,17 @@
 name: CI
 
+# Testy na pull requestu (výsledek sloučení s main). Na nic se nečeká: taveo
+# zveřejňuje tlačítko rovnou ze serveru bez testů a GitHub je historie, pull
+# request tlačítka se slučuje hned. Testy tu jsou pro přehled a pro ruční
+# změny. Nasazení z GitHubu si ověří zelený pull request, jinak testuje samo
+# (deploy.yml). Název jobu níž čte deploy.yml, nepřejmenovávat.
 on:
-  push:
-    branches: [main]
   pull_request:
+
+# Agent pošle větev znovu: rozběhnuté testy starší verze nemají cenu.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
@@ -27,6 +35,13 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
+      # Hotová složka vendor podle composer.lock: instalace pak jen ověří, že sedí.
+      - name: Cache vendor
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-dev-${{ hashFiles('composer.lock') }}
+
       - name: Composer install
         run: composer install --prefer-dist --no-interaction --no-progress
 
@@ -36,9 +51,16 @@ jobs:
           node-version: '20'
           cache: npm
 
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
       - name: NPM install a build
         run: |
-          npm ci
+          [ "${{ steps.node-modules.outputs.cache-hit }}" = true ] || npm ci
           npm run build
 
       - name: Příprava prostředí
@@ -49,5 +71,6 @@ jobs:
       - name: Kontrola formátu (Pint)
         run: vendor/bin/pint --test
 
+      # Souběžně na všech jádrech stroje (paratest), testy jsou tak zhruba o polovinu kratší.
       - name: Testy
-        run: php artisan test
+        run: php artisan test --parallel

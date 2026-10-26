@@ -7,6 +7,7 @@ use App\Enums\Ads\ReportType;
 use App\Models\Client;
 use App\Models\Concerns\HasReviews;
 use App\Models\Concerns\TracksClientViews;
+use App\Models\User;
 use App\Support\UniqueSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,17 @@ class AdReport extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /** Skupina kampaní, za kterou report je. Null = celý účet. */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(AdCampaignGroup::class, 'ad_campaign_group_id');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function scopePublic(Builder $query): Builder
@@ -96,6 +108,7 @@ class AdReport extends Model
             'sent_to' => 'array',
             'is_public' => 'boolean',
             'sent_at' => 'datetime',
+            'approved_at' => 'datetime',
             'first_viewed_at' => 'datetime',
             'last_viewed_at' => 'datetime',
             'first_viewed_before_log_at' => 'datetime',

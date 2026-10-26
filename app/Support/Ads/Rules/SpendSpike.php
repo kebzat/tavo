@@ -6,7 +6,7 @@ use App\Enums\Ads\AlertSeverity;
 use App\Support\Ads\Format;
 use App\Support\Ads\Period;
 
-/** Včera se utratilo výrazně víc než obvykle. */
+/** Včera výrazně vyšší útrata než průměr předchozího týdne. */
 class SpendSpike implements Rule
 {
     /** Pod tímhle průměrem denní útraty skok nehlásíme, jde o drobné. */
@@ -37,9 +37,9 @@ class SpendSpike implements Rule
         return [new Finding(
             AlertSeverity::Info,
             'Včera o '.Format::number($increase).' % vyšší útrata než obvykle',
-            'Včera '.Format::money($yesterday, $currency).', průměr předchozího týdne '.Format::money($average, $currency).' denně.'
-                ."\n\nZkontrolujte, jestli někdo nezvedl rozpočet, nespustil novou kampaň nebo jestli kampaň s rozpočtem na dobu trvání nedohání útratu.",
+            'Zkontrolujte, jestli někdo nezvedl rozpočet, nespustil novou kampaň nebo jestli kampaň s rozpočtem na dobu trvání nedohání útratu. Když šlo o záměr, zapište ho do historie zásahů.',
             ['yesterday' => $yesterday, 'average' => $average],
+            facts: 'Včera '.Format::money($yesterday, $currency).' proti průměru předchozích 7 dní '.Format::money($average, $currency).' denně.',
         )];
     }
 }

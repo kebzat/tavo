@@ -13,21 +13,44 @@ se rozhodlo a co by měl vědět ten, kdo přijde po tobě.
 **git:** pracuj ve větvi pojmenované `agent/<krátký-popis>`. Hotovou práci
 pošli `git push origin agent/<krátký-popis>`. Push jde do schránky na serveru
 a odtud se do minuty sám dostane na GitHub. Jiné větve než `agent/…` (hlavně
-`main`) na GitHub neprojdou. Na konci napiš, co je potřeba zkontrolovat.
-Na web změnu dostane člověk sloučením do `main`.
+`main`) na GitHub neprojdou. Na web ji pošle člověk tlačítkem **Zveřejnit**
+v nástrojích (karta Hotová práce), často marketér, který kód nečte. Proto ke
+každé hotové větvi připrav **předání** do `../predani/<krátký-popis>/`:
 
-**server:** složka je **živý web**. Každá úprava je hned vidět.
-Před sezením se uložil snímek souborů a záloha databáze. Dělej malé kroky,
-po každé úpravě ověř, že web odpovídá (`curl -sI https://…`).
-K databázi webu se dostaneš jeho vlastními údaji z `.env`:
-`php artisan` (Laravel) nebo `wp` (WordPress) fungují jako na serveru,
-web je dostupný i pod svou serverovou cestou. Měň data jen tam, kde to
-úkol opravdu potřebuje. Zápis do databáze, migrace i mazání souborů smíš
-bez ptaní: těsně před nimi se sama uloží záloha databáze a snímek souborů.
-Po změně ověř na webu, že funguje, a stručně napiš, co se změnilo.
+- `popis.md`: první řádek `# Nadpis` (co se změnilo, lidsky, bez kódu), pak
+  pár vět, co je jinak, a „Co zkontrolovat“. Bez technických detailů.
+- snímky z prohlížeče (`prohlizec`) jako `01-pocitac.png`, `02-telefon.png`…
+  Celé stránky, kde je změna vidět, i stav před kliknutím a po něm. Název
+  souboru se ukáže jako popisek.
+
+Když na větvi pokračuješ, předání uprav, ať odpovídá poslednímu pushi.
+Zveřejnit jde jen se zelenými testy, takže je před pushem pusť.
+
+**server:** živý web je ve složce `kod/`, ale **nepracuj v ní**. Pracuješ
+v **kopii** `/projekty/{{PROJEKT}}/kopie` (konverzace se v ní otevírá sama) s vlastní
+databází. Na živý web ji pošle člověk tlačítkem Zveřejnit v nástrojích.
+
+- Náhled kopie: v kopii `php artisan serve --host=127.0.0.1 --port=8090`,
+  prohlížeč (`prohlizec`) na http://127.0.0.1:8090.
+- Změny obsahu v databázi (texty, nastavení) piš jako **migraci**
+  (`database/migrations`, nastavení `database/settings`), ne přes tinker:
+  Zveřejnit spustí migrace na živé databázi, nic jiného z databáze kopie
+  se nepřenese. Objednávky a zprávy na živém webu tak zůstanou.
+- K hotové práci připrav předání do `/projekty/{{PROJEKT}}/predani/<krátký-popis>/`:
+  `popis.md` (první řádek `# Nadpis`, lidsky co se změnilo, „Co zkontrolovat“)
+  a snímky z náhledu kopie (`01-pocitac.png`, `02-telefon.png`…).
+- Výjimka: úlohy z ClickUpu jdou rovnou na živý web, řekne ti to zadání.
+- Dokud složka `kopie` neexistuje, pracuj postaru přímo v `kod/` (živý web,
+  před sezením se uložil snímek a záloha databáze).
 
 **prazdny:** projekt bez kódu (Shoptet, Upgates, marketing).
 Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.
+
+**Předání (karta „Hotové podklady“ v nástrojích):** hotové texty a kódy dej
+do `/projekty/{{PROJEKT}}/predani/<krátký-popis>/`: `popis.md` (první řádek `# Nadpis`, pak
+**přesně kam to v administraci vložit**) a každý kód nebo text jako vlastní
+soubor (`paticka.html`, `styl.css`, `popis-produktu.txt`), náhled jako `*.png`.
+V nástrojích u nich bude tlačítko Zkopírovat.
 
 ## Pravidla
 

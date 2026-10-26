@@ -39,10 +39,9 @@ class PurchasesAboveCheckouts implements Rule
         return [new Finding(
             AlertSeverity::Warning,
             'Měření: víc nákupů než zahájených objednávek',
-            'Za posledních 7 dní: '.Format::count($purchases).' nákupů, ale jen '.Format::count($checkouts).' zahájených objednávek. '
-                .'Nákup bez pokladny je výjimka, tolik jich ukazuje spíš na zdvojené měření.'
-                ."\n\nJe to podezření, ne jistota. Ověřte deduplikaci pixelu a Conversions API (event_id) a jestli se nákup neodesílá při každém načtení děkovací stránky. Než se to vyjasní, neberte ROAS ani cenu za nákup jako spolehlivé.",
+            'Je to podezření, ne jistota. Ověřte deduplikaci pixelu a Conversions API (event_id) a jestli se nákup neodesílá při každém načtení děkovací stránky. Než se to vyjasní, neberte ROAS ani cenu za nákup jako spolehlivé.',
             ['purchases' => $purchases, 'checkouts' => $checkouts],
+            facts: 'Za posledních 7 dní: '.Format::count($purchases).' nákupů, ale jen '.Format::count($checkouts).' zahájených objednávek. Nákup bez pokladny je výjimka, tolik jich ukazuje spíš na zdvojené měření.',
         )];
     }
 }

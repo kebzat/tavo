@@ -4,13 +4,16 @@ namespace App\Filament\Tools\Pages\Agent;
 
 use App\Filament\Tools\Pages\Ads\AdsClient;
 use App\Filament\Tools\Resources\Clients\ClientResource;
+use App\Models\Ads\AdEvent;
 use App\Models\Client;
 use App\Models\ClientTask;
 use App\Models\Marketing\ClientBriefing;
+use App\Support\Ads\MorningSummary;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
 
 /**
@@ -100,6 +103,18 @@ class Briefings extends Page
                 'url' => ClientResource::getUrl('edit', ['record' => $task->client_id]),
             ])
             ->all();
+    }
+
+    /** @return list<array{key: string, count: int, label: string, url: string, color: string}> */
+    public function adsSummary(): array
+    {
+        return MorningSummary::for()->items();
+    }
+
+    /** @return Collection<int, AdEvent> */
+    public function adEvents(): Collection
+    {
+        return AdEvent::query()->due()->with('client')->orderBy('due_on')->get();
     }
 
     /** @return list<array{client: Client, count: int, url: string}> */

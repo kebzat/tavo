@@ -9,13 +9,17 @@ Panel nástrojů → skupina **Reklamy**:
 
 | Obrazovka | Adresa | Co tam je |
 |---|---|---|
-| Přehled klientů | `/nastroje/reklamy` | karta na klienta: šest čísel (vybírají se třemi tečkami), sparklines, čerpání rozpočtu, upozornění |
-| Detail klienta | `/nastroje/reklamy/klient/{id}` | dlaždice se srovnáním, graf po dnech, cesta k nákupu, kampaně, domluva s klientem, účty, reporty |
-| Upozornění | `/nastroje/reklamy/upozorneni` | všechna živá upozornění, akce Řeším / Vyřešeno / Zamítnout |
+| Přehled klientů | `/nastroje/reklamy` | nahoře ranní souhrn („2 problémy s daty, 3 výkonové odchylky, 1 končící licence…“), karta na klienta: stav dat, výsledek proti cíli, nejdůležitější upozornění, šest čísel podle šablony cíle, skupiny kampaní, čerpání rozpočtu, nejbližší termín |
+| Detail klienta | `/nastroje/reklamy/klient/{id}` | stav dat, přepínač celý účet / skupina / mimo skupiny, výsledek proti cíli, dlaždice se srovnáním, graf po dnech se zásahy a termíny, události po cestě k nákupu, termíny, historie zásahů, reklamy a kreativy, tržby e-shopu, kvalita leadů, kampaně se skupinami, domluva, účty, reporty |
+| Upozornění | `/nastroje/reklamy/upozorneni` | záložky Problémy s daty / Výkon proti cíli, stavy Nové / Řeším / Čekám na klienta / Vyřešeno, odložení, zamítnutí |
+| Termíny | `/nastroje/reklamy/terminy` | kalendář: konce licencí UGC, akce, příprava Black Friday, konce kampaní, čekání na podklady |
 | Reporty | `/nastroje/reklamy/reporty` | koncepty a odeslané reporty |
 | Hodiny | `/nastroje/reklamy/hodiny` | zapsaný čas u klientů, filtr podle měsíce, hromadně „vyfakturováno“ |
 | Fakturace (v CRM) | `/nastroje/fakturace` | paušál + hodiny nad paušál po klientech za měsíc, vyhrané jednorázové zakázky, co je vyfakturované, kdo kolik odpracoval |
-| Nastavení reklam | `/nastroje/reklamy/nastaveni` | stav napojení, příjemci souhrnu, prahy upozornění, log synchronizace |
+| Nastavení reklam | `/nastroje/reklamy/nastaveni` | stav napojení, stav dat po účtech, příjemci souhrnu, prahy upozornění, šablony čísel, log synchronizace |
+
+Postavené podle zpětné vazby Pavla z 23. 10. 2026 (pilot na Světě Cejlonu a MIRNIX Hockey).
+Hlavní cíl: ráno vědět, čemu věřit, kde zasáhnout a na co nezapomenout.
 
 ## Jak se napojí klient
 
@@ -38,9 +42,59 @@ zatížení API. Zapíná se v `.env`:
 - `ADS_HISTORY_BACKFILL=true`: tlačítko **Další → Doplnit starší historii** na detailu
   klienta. Stáhne jen chybějící úsek, jde použít jednou za hodinu.
 
-Období se volí nahoře na přehledu i detailu: přednastavená (7 dní, 30 dní, tento
-a minulý měsíc) nebo **Vlastní období** od–do. Volba čte jen z naší databáze, na Metu
-nejde žádný dotaz. Když období začíná dřív, než máme čísla, stránka na to upozorní.
+Období se volí nahoře na přehledu i detailu: přednastavená (včera, předevčírem,
+poslední 2 dny, 7 dní, 30 dní, tento a minulý měsíc) nebo **Vlastní období** od–do.
+Pod tím **Porovnat**: s předchozím obdobím (u měsíce stejně dlouhá část minulého
+měsíce), nebo se stejnými dny před týdnem (včerejší úterý s úterým minulého týdne).
+Volba čte jen z naší databáze, na Metu nejde žádný dotaz. Když období začíná dřív,
+než máme čísla, stránka na to upozorní a srovnání neukáže.
+
+## Čemu věřit: stav dat
+
+U každého účtu je `data_through`: poslední den, za který máme čísla kompletně stažená.
+Posune ho jen stažení, které navazuje na to, co už máme (ranní běh, ruční obnova).
+Stav klienta počítá `App\Support\Ads\DataStatus` (u víc účtů platí nejslabší):
+
+| Stav | Kdy | Co se děje |
+|---|---|---|
+| Data do 22. 10. | stažení prošlo, data až do včerejška | vše běží, poslední 3 dny jsou v grafu světlejší („ještě se dopočítává“, Meta dohání konverze) |
+| Data jen do … | chybí aspoň den | chybějící dny jsou v grafu šrafované („chybí data, není nula“), srovnání se neukazuje, čerpání rozpočtu a odhad se počítají jen do posledního kompletního dne, výkonová pravidla neběží a jejich upozornění se nezavírají, svítí „Nestahují se čísla“ |
+| Chyba stahování | poslední stažení selhalo | jako výš, a s textem chyby |
+| Čeká na první stažení | účet propojený, ještě nestažený | žádná čísla, ne nuly |
+| Ukázková data | jen ukázkové účty | štítek na kartě i v detailu, ať se nepletou s ostrými |
+
+Nula se ukáže jako nula jen tam, kde je den stažený. Jinak „čísla chybí, není to nula“.
+Ranní běh sám doplní díru od posledního kompletního dne (nejvýš `ADS_CATCH_UP_DAYS`, 92 dní = 1 dotaz).
+
+**Ruční obnova:** detail klienta → Další → **Obnovit čísla**. Odsud se na Metu nesahá:
+zapíše se `refresh_requested_at` a žádost do 5 minut vyřídí `ads:sync --requested`
+(stejné období jako ráno i s dosahem, stavem kampaní a reklamami, pak přepočítá upozornění).
+Jeden účet nejvýš jednou za `ADS_REFRESH_COOLDOWN` minut (výchozí 120).
+
+**Export:** Další → **Stáhnout CSV**: každý den a kampaň, součty po kampaních, nebo po dnech.
+Středník a desetinná čárka (otevře se rovnou v Excelu), poměry ze součtů řádku, platí zvolené
+období a skupina.
+
+## Skupiny kampaní
+
+Jeden účet často míchá prodej, boosting, testy a nábor. **Skupina** (`ad_campaign_groups`)
+má vlastní typ (e-shop, leady, návštěvnost, boosting, nábor), cíl, rozpočet, cílovou cenu
+a ROAS, výběr čísel, prahy upozornění a report. Kampaň je nejvýš v jedné skupině, ať se
+útrata nepočítá dvakrát.
+
+- Založení: detail klienta → **Nová skupina kampaní**, kampaně se zaškrtnou.
+- **Pravidlo z názvu** („sales, prodej“): nová kampaň, jejíž název slovo obsahuje, se při
+  ranním stažení zařadí sama. Ostatní nové kampaně **čekají na zařazení** (detail, ranní souhrn).
+  Ruční „Nechat mimo skupiny“ má přednost, pravidlo ji zpátky nepřidá.
+- Nahoře na detailu přepínač **Celý účet / skupiny / Mimo skupiny** s útratou každé části.
+  Celý účet sčítá všechno, ať se neztratí náklady mimo výkonnostní kampaně.
+- Výběr platí pro čísla, graf, kampaně, čerpání, report, export i návrh od Clauda.
+- Upozornění běží za každou skupinu s jejím cílem a prahy (titulek „Prodej: …“). Za celý účet
+  jen problémy s daty, rozpočet účtu a nulová útrata účtu.
+- **Dosah skupiny** se přes kampaně sčítat nedá: ranní stažení pošle za skupinu jeden dotaz
+  s filtrem kampaní (`ad_group_reach`). Řádek nese otisk složení skupiny; po změně skupiny
+  dosah do rána nemá (pomlčka). „Mimo skupiny“ dosah nemá.
+- Kód: `AdsScope` (na co se díváme), `CampaignGroups` (zařazování), `GroupReach`.
 
 Další účet téhož klienta: detail klienta → Další → Propojit účet. Vypnout nebo
 odpojit účet jde v Checklisty → Klienti → klient → Reklamní účty.
@@ -133,8 +187,8 @@ jen v `.env` webu, agent v kontejneru ho nemá.
 | Nabídka účtů při propojování | Ranní stažení uloží seznam nasdílených účtů do `ad_shared_accounts` (1 dotaz na platformu). Nově nasdílený účet se v nabídce objeví druhý den ráno. |
 | Nový účet | Propojení jen zapíše `backfill_from`. Čísla i historii stáhne další ranní běh, do té doby je přehled prázdný. |
 | Doplnit starší historii | Jen zapíše `backfill_from`, chybějící úsek stáhne ranní běh. |
-| Ověření spojení | Výsledek ranního stažení v Nastavení reklam → Napojení. |
-| Aktuálnější čísla přes den | Nejsou. Čísla jsou vždy k ránu, přehled u účtu ukazuje, kdy se stahovalo. |
+| Ověření spojení | Výsledek ranního stažení v Nastavení reklam → Napojení a Stav dat po účtech. |
+| Aktuálnější čísla přes den | Tlačítko Obnovit čísla jen zapíše žádost, vyřídí ji `ads:sync --requested` (tentýž příkaz, do 5 minut, jednou za 2 h na účet). |
 
 Ruční `./bin/art ads:sync` na serveru jde (je to tentýž příkaz), účty stažené ten den
 ale přeskočí. Znovu je stáhne jen `--force`, používat výjimečně.
@@ -150,10 +204,11 @@ nadměrný:
 |---|---|
 | Jen ranní stažení | Viz výše. Z webu ani od agenta na platformu nic neodejde. |
 | Historie | Nový účet jednou 3 měsíce (1 dotaz navíc v ranním běhu), pak už nikdy. Delší historie je vypnutá. |
-| Jednou denně | `ads:sync` běží jen v 6:00. Seznam nasdílených účtů 1 dotaz, na účet Mety čtyři: stav účtu, čísla za 7 dní, dosah za přednastavená období a zamítnuté reklamy (jedna stránka, nejvýš 50). U 20 klientů zhruba 80 dotazů denně. Účet stažený ten den se podruhé nestahuje. |
+| Jednou denně | `ads:sync` běží v 6:00. Seznam nasdílených účtů 1 dotaz, na účet Mety šest: stav účtu, čísla za 7 dní (a chybějící dny), dosah za přednastavená období, zamítnuté reklamy (jedna stránka, nejvýš 50), stav kampaní (jedna stránka) a čísla reklam za 30 dní (jedna stránka, 50 reklam). Na skupinu kampaní jeden dotaz (dosah). U 20 klientů se dvěma skupinami zhruba 160 dotazů denně. Účet stažený ten den se podruhé nestahuje. |
+| Ruční obnova | `ads:sync --requested` každých 5 minut, ale jen se žádostí z tlačítka. Jeden účet nejvýš jednou za 2 hodiny. |
 | Žádné opakování po omezení | Po odpovědi „moc dotazů“ se nic neopakuje. Znovu se zkouší jen výpadek spojení nebo chyba serveru, nejvýš 2×. |
 | Samo se zastaví | Když Meta omezí dotazy nebo v hlavičkách hlásí vytížení nad 75 %, stahování z ní se pozastaví do zítřejšího rána. |
-| Denní strop | Nejvýš 200 dotazů na platformu za den (`META_DAILY_CALL_LIMIT`). Běžný provoz je necelá třetina. Strop chytí chybu v kódu dřív než Meta. |
+| Denní strop | Nejvýš 300 dotazů na Metu za den (`META_DAILY_CALL_LIMIT`, Google a GA4 200). Strop chytí chybu v kódu dřív než Meta. |
 | Bez souběhu | Jeden účet se nikdy nestahuje dvakrát současně (zámek). |
 | Strop stránek | Nejvýš 20 stránek výsledku na dotaz, víc znamená chybu. |
 
@@ -168,10 +223,11 @@ facebookový profil Pavla ani Toma.
 
 | Čas | Příkaz | Co dělá |
 |---|---|---|
-| denně 6:00 | `ads:sync` | jediný přístup na platformy: seznam nasdílených účtů, přepíše posledních 7 dní všech zapnutých účtů (Meta konverze zpětně dopočítává), doplní požadovanou historii |
-| denně 6:40 | `ads:alerts` | vyhodnotí pravidla, otevře nová upozornění, zavře ta, která přestala platit |
-| všední dny 7:15 | `ads:digest` | e-mail „Reklamy: N upozornění“ se včerejší útratou. Když není co hlásit, neodejde |
-| pondělí 6:45 | `ads:reports weekly` | koncepty týdenních reportů za minulý týden |
+| denně 6:00 | `ads:sync` | jediný přístup na platformy: seznam nasdílených účtů, přepíše posledních 7 dní všech zapnutých účtů (Meta konverze zpětně dopočítává) a chybějící dny, doplní požadovanou historii, stav kampaní, čísla reklam, dosah skupin, nové kampaně zařadí podle pravidel skupin |
+| každých 5 min | `ads:sync --requested` | jen ruční obnovy z tlačítka Obnovit čísla, bez žádosti nic |
+| denně 6:40 | `ads:alerts` | vyhodnotí pravidla za klienty i skupiny, otevře nová upozornění, zavře ta, která se vrátila do normálu |
+| všední dny 7:15 | `ads:digest` | e-mail „Reklamy: N upozornění“ s ranním souhrnem, termíny, co se vrátilo do normálu a včerejší útratou. Když není co hlásit, neodejde |
+| pondělí 6:45 | `ads:reports weekly` | koncepty týdenních reportů za minulý týden (i za skupiny se zapnutým reportem) |
 | 1. v měsíci 6:45 | `ads:reports monthly` | koncepty měsíčních reportů |
 | denně 6:20 | `marketing:landing-check` | kontrola cílových stránek (jeden dotaz na adresu) |
 
@@ -191,13 +247,19 @@ Ruční příkazy:
 
 | Tabulka | Obsah |
 |---|---|
-| `ad_accounts` | účet klienta (platforma, číslo účtu, měna, stav, poslední synchronizace a chyba) |
-| `ad_campaigns` | kampaně |
-| `ad_daily_stats` | součty na kampaň a den: útrata, zobrazení, dosah, kliknutí, prokliky, nákupy, hodnota, poptávky, košík, pokladna, zobrazení cílové stránky + celé `actions` z API v `raw` |
+| `ad_accounts` | účet klienta (platforma, číslo účtu, měna, stav, poslední synchronizace a chyba, `data_through` = do kdy jsou data kompletní, žádost o ruční obnovu) |
+| `ad_campaigns` | kampaně, jejich stav (běží, vypnutá) a skupina (`grouped_by`: manual / rule) |
+| `ad_campaign_groups` | skupiny kampaní: typ, cíl, rozpočet, cílová cena a ROAS, pravidlo z názvu, čísla, prahy, reporty |
+| `ad_group_reach` | přesný dosah skupiny za přednastavená období, s otiskem složení skupiny |
+| `ad_daily_stats` | součty na kampaň a den: útrata, zobrazení, dosah, kliknutí, prokliky, nákupy, hodnota, poptávky (z toho formulář na Metě a web), košík, pokladna, zobrazení cílové stránky, interakce + celé `actions` z API v `raw` |
+| `ad_top_ads` | součty reklam za posledních 30 dní (50 s největší útratou), přepisuje se každé ráno |
+| `ad_events` | kalendář termínů |
+| `ad_changes` | historie zásahů |
+| `ad_business_results` | objednávky a tržby z e-shopu, zapsané ručně |
 | `ad_period_reach` | přesný dosah, zobrazení, frekvence a unikátní prokliky účtu za přednastavená období, přepisuje se každé ráno |
 | `ad_client_settings` | cíl, rozpočet, cílové CPA a ROAS, paušál, hodiny, sazba, příjemci reportů, poslední návrh od Clauda |
-| `ad_alerts` | upozornění (pravidlo, závažnost, doporučení, stav) |
-| `ad_reports` | reporty se zmrazenými čísly (`snapshot`) |
+| `ad_alerts` | upozornění (pravidlo, kategorie data/výkon, skupina, co se změnilo, z jakých dat, doporučení, stav, odloženo do, na co se čeká, výskyty, návrat do normálu, deník) |
+| `ad_reports` | reporty se zmrazenými čísly (`snapshot`), skupina, osnova, schválení |
 | `ad_sync_runs` | log stahování |
 
 Pravidla, na kterých to stojí:
@@ -228,7 +290,26 @@ Pravidla, na kterých to stojí:
 ## Upozornění
 
 Pravidla jsou v `app/Support/Ads/Rules/`, pořadí v `AlertEngine::RULES`. Každé
-vrací titulek a konkrétní doporučení, co udělat.
+upozornění říká **co se změnilo a proti čemu** (`facts`), **z jakého množství dat**
+(`basis`, u výkonu týden, útrata, konverze, zobrazení) a **co prověřit** (`recommendation`).
+
+- **Dvě kategorie**: problémy s daty (`AlertEngine::DATA_RULES`: stahování, stav účtu,
+  měření, cílové stránky, zamítnuté reklamy, zpětná vazba k leadům) a výkon proti cíli
+  (`PERFORMANCE_RULES`). Ranní souhrn i seznam upozornění je počítají zvlášť.
+- **Skupiny kampaní**: výkonová pravidla běží za každou skupinu s jejím cílem, rozpočtem
+  a prahy. Prahy skupiny přebíjí klienta, klient globální nastavení.
+- **Neúplná data**: výkonová pravidla neběží a jejich upozornění se nezavírají.
+- **Minimum dat**: cena, ROAS, únava kreativ a skok útraty mlčí pod minimální útratou
+  za týden (`min_spend`, výchozí 500 Kč) a cena s ROAS pod `min_conversions`.
+- **Pokles CTR** se nehlásí, když skupina plní cíl ceny nebo ROAS. Vysoká frekvence ano.
+- **Chybějící pixel** se nehlásí, když Meta za týden dostává z webu události (pixel přes GTM).
+- **Stavy**: Nové / Řeším / Čekám na klienta (s poznámkou, na co) / Vyřešeno / Zamítnuto
+  (týden se neozve). **Odložit** na 1, 3, 7 nebo 14 dní: do té doby nesvítí v přehledu
+  ani e-mailu, pak se ozve, když problém trvá.
+- **Jedno upozornění na problém**: trvající se denně jen obnoví (stav zůstane). Když
+  pravidlo přestane platit, zavře se jako **„vrátilo se do normálu“** (`recovered_on`,
+  vidět na detailu a v ranním e-mailu). Vrátí-li se problém do 14 dní, otevře se totéž
+  upozornění znovu a počítá výskyty. Každá změna se zapíše do krátkého deníku (`history`).
 
 | Pravidlo | Kdy | Závažnost |
 |---|---|---|
@@ -251,7 +332,8 @@ vrací titulek a konkrétní doporučení, co udělat.
 
 Prahy, ztlumení a naléhavost jde nastavit u každého klienta zvlášť (Cíle a paušál
 → Upozornění pro tohoto klienta). Výpadek stahování a stav účtu ztlumit nejde.
-Ranní e-mail odděluje nová upozornění od trvajících. Viz docs/MARKETING.md.
+Ranní e-mail odděluje nová upozornění od trvajících, přidá ranní souhrn, termíny
+a co se vrátilo do normálu. Viz docs/MARKETING.md.
 
 Prahy se mění v Nastavení reklam. Cena za konverzi a ROAS se hodnotí až od
 10 konverzí za týden, u malého účtu dělá jedna objednávka desítky procent.
@@ -261,13 +343,24 @@ Když pravidlo přestane platit, zavře se samo jako vyřešené. Zamítnuté se
 
 ## Reporty
 
-1. Koncept vznikne v pondělí ráno (u klientů se zapnutým týdenním reportem), nebo
-   tlačítkem **Připravit report** na detailu klienta.
-2. Pavel doplní komentář: co jsme za období udělali, co z čísel plyne, co chystáme.
+1. Koncept („Ke kontrole“) vznikne v pondělí ráno (u klientů a skupin se zapnutým
+   týdenním reportem), nebo tlačítkem **Připravit report** na detailu klienta, kde jde
+   vybrat i skupinu kampaní („Za co“).
+2. Osnova: **Cíl** (sám z cílů klienta nebo skupiny), čísla, náš komentář, **Výsledky**,
+   **Co fungovalo**, **Co nefungovalo**, **Co jsme změnili** (sám z historie zásahů),
+   **Možné příčiny** (hypotézy, kde je nevíme jistě) a **Co uděláme dál**. Ranní agent
+   předvyplní výsledky, příčiny a další kroky, Pavel upraví.
 3. **Náhled** ukáže report přesně tak, jak ho uvidí klient.
-4. **Odeslat klientovi** zapne sdílení a pošle e-mail se třemi hlavními čísly
-   a odkazem. Adresy jsou v Cíle a paušál, jinak kontaktní e-mail klienta.
-   Odpověď klienta jde na kontaktní e-mail webu.
+4. **Schválit** zamkne čísla: když Meta později dopočítá konverze, schválený report se
+   nezmění (Obnovit čísla jde jen u konceptu). Nad formulářem je vidět, o kolik se čísla
+   v datech od zmrazení změnila. Vrátit ke kontrole jde, dokud report neodešel.
+5. **Odeslat klientovi** zapne sdílení a pošle e-mail se třemi hlavními čísly
+   a odkazem. Odeslaný report je zároveň schválený. Adresy jsou v Cíle a paušál,
+   jinak kontaktní e-mail klienta. Odpověď klienta jde na kontaktní e-mail webu.
+
+„Cesta k nákupu“ se jmenuje **Události po cestě k nákupu** a místo „X % z předchozího
+kroku“ ukazuje „poměr k předchozímu kroku“: Meta počítá události, ne lidi, a poměr
+neříká, že titíž lidé prošli celým funnelem.
 
 Report se nikdy neodešle sám. Otevření klientem se počítá a u klienta propojeného
 s CRM se zapíše jako aktivita (stejně jako u auditu).
@@ -306,7 +399,8 @@ klienta), výpočet, formát, jestli je růst dobře a pro které cíle dávají
 | Klíč | Číslo | Cíle |
 |---|---|---|
 | `spend` | Útrata | všechny |
-| `conversions` | Nákupy / Poptávky / Prokliky na web | všechny |
+| `conversions` | Nákupy / Poptávky / Uchazeči / Prokliky na web / Interakce | všechny |
+| `form_leads`, `web_leads` | Poptávky z formuláře na Metě (instant form) a z webu (pixel) | leady, nábor |
 | `cost_per_conversion` | Cena za nákup / poptávku / proklik | všechny |
 | `roas` | ROAS (hodnota nákupů / útrata) | nákupy |
 | `purchase_value` | Hodnota nákupů | nákupy |
@@ -320,7 +414,11 @@ klienta), výpočet, formát, jestli je růst dobře a pro které cíle dávají
 | `landing_page_conversion_rate` | Nákupy / poptávky ze zobrazení stránky (%) | nákupy, poptávky |
 | `reach`, `frequency`, `unique_ctr` | Dosah, frekvence, unikátní CTR odkazu (jen přednastavená období) | všechny |
 | `impressions` | Zobrazení | všechny |
-| `ctr`, `ctr_all` | CTR odkazu a CTR všech kliknutí | všechny |
+| `ctr`, `ctr_all` | CTR odkazu (prokliky na web / zobrazení) a CTR všech kliknutí | všechny |
+
+U každého čísla je popis, co přesně znamená (`MetricCatalog::DESCRIPTIONS`, u konverzí
+`PrimaryGoal::conversionDefinition()`): ikona „i“ u dlaždice a nápověda na kartě.
+Cíl **Nábor** (`recruitment`) počítá konverze jako leady a jmenuje je Uchazeči.
 | `cpm` | CPM | všechny |
 
 ## Co ukazovat
@@ -329,18 +427,63 @@ Detail klienta → Cíle a paušál → Co ukazovat: které dlaždice s čísly 
 (graf, cesta ke konverzi, kampaně, rozpad podle účtů, GA4) se ukážou. Platí pro detail
 i pro reporty, které klient dostane.
 
-Bez výběru se ukáže výchozí sada podle cíle: u e-shopu útrata, nákupy, cena za nákup,
-ROAS, hodnota nákupů, prokliky, CTR a CPM. Ostatní čísla (dosah, frekvence, košík,
+Bez výběru se ukáže **šablona podle cíle** (e-shop, leady, návštěvnost, boosting, nábor),
+upravuje se v Nastavení reklam → Šablony čísel (`AdsSettings::$tile_templates`).
+U e-shopu útrata, nákupy, cena za nákup, ROAS, hodnota nákupů, prokliky, CTR a CPM.
+Skupina kampaní jede podle šablony svého typu, nebo vlastního výběru. Ostatní čísla (dosah, frekvence, košík,
 zobrazení cílové stránky…) se zapínají zaškrtnutím. Výběr shodný s výchozí sadou se
 neukládá, uložený výběr ze starších klíčů (`cost`, `value`, `clicks`) platí dál.
 Zmrazené reporty se starším tvarem čísel se zobrazují beze změny.
 
 ## Přehled klientů: šest čísel
 
-Každá karta v přehledu má šest čísel. Tři tečky u čísla nabídnou celý katalog;
-výběr platí pro tu pozici u všech klientů a pro všechny uživatele nástrojů
-(`AdsSettings::$overview_tiles`, výchozí útrata, konverze, cena za konverzi, ROAS,
-CTR, CPM). Číslo, které u cíle klienta nedává smysl (ROAS u poptávek), ukáže pomlčku.
+Každá karta v přehledu má šest čísel podle **šablony cíle klienta** (`AdsSettings::$card_templates`,
+e-shop: útrata, nákupy, cena za nákup, ROAS, CTR odkazu, CPM; leady: útrata, poptávky, cena,
+z formuláře, z webu, CTR). Tři tečky u čísla nabídnou celý katalog; výběr mění šablonu
+(platí pro všechny klienty s tímhle cílem a pro všechny uživatele). Číslo, které u cíle
+nedává smysl (ROAS u poptávek), ukáže pomlčku. `overview_tiles` už se nečte.
+
+Karta dál ukazuje stav dat, výsledek proti cíli (cena, ROAS), nejdůležitější upozornění,
+skupiny kampaní s útratou a výsledkem, čerpání rozpočtu a nejbližší termín. Když data
+za období nejsou kompletní, změny v procentech se neukazují.
+
+## Kalendář termínů
+
+Reklamy → **Termíny** (`ad_events`) a sekce Termíny na detailu klienta: klient, případně
+skupina, kampaň a konkrétní reklamy nebo videa, datum, druh (konec licence UGC, začátek
+a konec akce, příprava Black Friday nebo sezony, konec kampaně, čekání na podklady), poznámka,
+u licence odkaz na podmínky a odkazy na videa, a kolik dní předem upozornit
+(`remind_on` = datum − dny). Od té doby je termín v ranním souhrnu, v ranním e-mailu,
+v Ranním přehledu i u agenta a visí tam i po datu, dokud ho někdo neoznačí **Vyřešeno**.
+Reklamu vypíná Pavel ručně, nástroj do účtů nesahá.
+
+## Historie zásahů
+
+Detail klienta → **Zapsat zásah** (`ad_changes`): kdy, co (rozpočet, kreativa, cílení,
+nabídka, web, měření, spuštění a vypnutí kampaně), popis, co od toho čekáme, skupina
+nebo kampaň. Zásahy jsou v grafu jako značky (písmeno nad dnem, termíny jako ◆),
+v reportu v části „Co jsme změnili“ a u agenta (`zasahy`, `zasahy_v_obdobi`). Agent má
+v pravidlech výkladu, že souvislost změny čísel se zásahem je hypotéza.
+
+## Obchodní výsledky
+
+- **Tržby e-shopu** (detail, cíl nebo skupina e-shop): objednávky a tržby z administrace
+  e-shopu za období, zapsané ručně (`ad_business_results`), dokud nemáme napojení na
+  Shoptet a Upgates. Vedle nich útrata, **PNO** (útrata / tržby), tržby na korunu reklamy
+  a kolik si připsaly reklamy (a jaký je to podíl tržeb). Konverze z Mety a Googlu se
+  nesčítají jako tržby.
+- **Kvalita leadů a obchody** (cíl nebo skupina leady či nábor): z `lead_feedback` (leady
+  u klienta, relevantní, obchody, hodnota) a útraty za stejné období: cena za relevantní
+  lead a cena za obchod.
+- U klienta se skupinami se útrata bere ze skupiny s odpovídajícím cílem (`BusinessResults::scopeFor`).
+
+## Reklamy a kreativy
+
+Ranní stažení jedním dotazem na účet uloží součty 50 reklam s největší útratou za
+posledních 30 dní (`ad_top_ads`, `HasAdInsights`). Detail klienta je ukazuje seřazené
+podle konverzí, se štítkem „nejlevnější konverze“ (aspoň 2 konverze) a „utrácí bez
+konverze“. U skupiny jen reklamy jejích kampaní. Kreativní testy (hypotéza, výsledek,
+poučení) se dál zapisují u klienta.
 
 ## Návrh úprav od Clauda
 
@@ -354,3 +497,8 @@ Poslední návrh zůstane na detailu klienta.
 - Klientský portál s přihlášením (zatím stačí sdílený odkaz na report).
 - Sklik (Seznam) pro české e-shopy: nová třída implementující
   `App\Support\Ads\Platforms\AdsPlatform`, případ v `AdPlatform` a řádek v `Platforms::for()`.
+  Bez API tokenu a společného vyzkoušení zatím ne.
+- Objednávky a tržby přímo z API Shoptetu a Upgates místo ručního zápisu (`ad_business_results`):
+  každý e-shop potřebuje vlastní přístup.
+- Google Ads je napsaný a čeká na přístup (výš). Konverze z Mety a Googlu se v součtu
+  účtu sčítají jako „připsané reklamám“, ne jako objednávky; skutečné tržby jsou zvlášť.

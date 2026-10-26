@@ -70,15 +70,35 @@ class AgentServer
      * Otevře konverzaci a vrátí ID okna (@3). Bez `$session` založí novou,
      * se `$session` naváže na uloženou (běží-li už, vrátí její okno).
      * `$replace` je prázdná nová konverzace, ze které se navazuje: zavře se.
+     * `$task` (konverzace úlohy grafiky: id úlohy a závěrečná značka): další
+     * výsledek z probuzené konverzace jde na web jako u úlohy.
      * U webu na serveru před novým oknem proběhne záloha.
+     *
+     * @param  array{id: int, konec: string}|null  $task
      */
-    public function openConversation(string $slug, string $author, ?string $session = null, ?string $replace = null): string
+    public function openConversation(string $slug, string $author, ?string $session = null, ?string $replace = null, ?array $task = null): string
     {
         return $this->call(fn (PendingRequest $http) => $http->timeout(150)->post($this->projectPath($slug).'/konverzace', [
             'autor' => $author,
             'session' => $session,
             'nahradit' => $replace,
+            'uloha' => $task,
         ]))['okno'];
+    }
+
+    /**
+     * Úloha na pozadí (z ClickUpu): agent ji odpracuje bez terminálu a výsledek
+     * pošle zpět na /nastroje/api/agent/ulohy/{id}. Služba je řadí, v jednom
+     * projektu běží nejvýš jedna. Se `session` naváže na předchozí konverzaci.
+     *
+     * S `terminal` běží úloha v okně tmuxu jako konverzace a jde sledovat v terminálu,
+     * `konec` je značka v závěrečné odpovědi (hotovo, i když něco běží na pozadí).
+     *
+     * @param  array{id: int, zadani: string, session: ?string, autor: string, terminal?: bool, konec?: string}  $task
+     */
+    public function runTask(string $slug, array $task): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/ulohy', $task));
     }
 
     /** Uspí běžící konverzaci: proces skončí, konverzace zůstane uložená a jde probudit. */
@@ -117,14 +137,141 @@ class AgentServer
         ];
     }
 
-    /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. */
-    public function terminalUrl(string $slug, string $window, string $user, ?string $host = null): string
+    /**
+     * Využití předplatného, na kterém Claude v kontejneru běží (jako /usage).
+     * Čtené z účtu Anthropicu, přepočet dělá {@see ClaudeUsage}.
+     *
+     * @return array{plan: ?string, limity: ?list<array<string, mixed>>, five_hour: ?array<string, mixed>, seven_day: ?array<string, mixed>}
+     */
+    public function usage(): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get('/api/predplatne'));
+    }
+
+    /**
+     * Hotová práce ke kontrole, nejnovější první. U git projektu větve agent/…
+     * ve schránce, u projektu bez kódu složky s předáním.
+     * Popis a snímky (a kódy) přikládá agent.
+     *
+     * @return list<array{jmeno: string, cas: int, nadpis: string, popis: ?string, snimky: list<string>, vetev?: string, sha?: string, kody?: list<array{soubor: string, obsah: ?string}>}>
+     */
+    public function handovers(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get($this->projectPath($slug).'/predani'));
+    }
+
+    /** Snímek k hotové práci (PNG, JPEG, WebP). Null, když neexistuje. */
+    public function handoverImage(string $slug, string $name, string $file): ?Response
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/predani/'.rawurlencode($name).'/'.rawurlencode($file));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->successful() ? $response : null;
+    }
+
+    /**
+     * Předání zmizí i se snímky. U git projektu i větev ze schránky, ale jen
+     * když je pořád na `$sha`: když agent mezitím pokračoval, nová práce zůstane.
+     */
+    public function discardHandover(string $slug, string $name, ?string $sha = null): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->delete($this->projectPath($slug).'/predani/'.rawurlencode($name), array_filter(['sha' => $sha])));
+    }
+
+    /**
+     * Vydání pro okamžité zveřejnění: commit `$sha` větve agenta spojený s main
+     * a sestavený. S `$deploy` ho root rovnou nahraje na web. Běží na pozadí,
+     * stav vrací {@see release()}.
+     *
+     * @return array{id: string, stav: string}
+     */
+    public function startRelease(string $slug, string $sha, bool $deploy): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->timeout(30)->post($this->projectPath($slug).'/vydani', ['sha' => $sha, 'nasadit' => $deploy]));
+    }
+
+    /**
+     * Web zpátky na verzi před posledním nasazením tlačítkem (na pozadí).
+     *
+     * @return array{id: string, stav: string}
+     */
+    public function rollbackRelease(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/vydani', ['zpet' => true]));
+    }
+
+    /**
+     * Stav úlohy vydání: sestavuje / nahrava / hotovo / chyba (s výstupem).
+     *
+     * @return array{id: string, stav: string, vystup: string, konflikt: bool, strom?: string}|null
+     */
+    public function release(string $slug, string $id): ?array
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/vydani/'.rawurlencode($id));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->status() === 404 ? null : $response->throw()->json();
+    }
+
+    /**
+     * Kopie živého webu (projekt typu server): jestli je, co se v ní proti
+     * živému webu změnilo a kolik z toho je v database/ (migrace).
+     *
+     * @return array{existuje: bool, zmeny: list<array{stav: string, soubor: string}>, migrace: int, nahled: string}
+     */
+    public function copyStatus(string $slug): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->get($this->projectPath($slug).'/kopie'));
+    }
+
+    /**
+     * Úloha kopie na pozadí: zverejnit (na živý web), zahodit (zpátky na živý),
+     * vratit (živý web ze snímku z `$time`), obnovit (založit z živého).
+     *
+     * @return array{id: string, stav: string}
+     */
+    public function startCopyJob(string $slug, string $action, ?int $time = null): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->timeout(30)->post($this->projectPath($slug).'/kopie/'.$action, array_filter(['cas' => $time])));
+    }
+
+    /**
+     * Stav úlohy na pozadí (vydání, kopie): sestavuje / pripravuje / nahrava / hotovo / chyba.
+     *
+     * @return array{id: string, stav: string, vystup: string, konflikt: bool}|null
+     */
+    public function job(string $slug, string $id): ?array
+    {
+        try {
+            $response = $this->request()->get($this->projectPath($slug).'/uloha/'.rawurlencode($id));
+        } catch (ConnectionException $e) {
+            throw AgentUnavailable::from($e);
+        }
+
+        return $response->status() === 404 ? null : $response->throw()->json();
+    }
+
+    /** Po zveřejnění: server si stáhne novou verzi služby z main. Nečeká se. */
+    public function updateService(): void
+    {
+        $this->call(fn (PendingRequest $http) => $http->post('/api/aktualizovat'));
+    }
+
+    /** Adresa WebSocketu s podepsanou vstupenkou na jedno okno. `$readOnly`: jen sledovat, psát nejde. */
+    public function terminalUrl(string $slug, string $window, string $user, ?string $host = null, bool $readOnly = false): string
     {
         $payload = rtrim(strtr(base64_encode((string) json_encode([
             'p' => $slug,
             'v' => $window,
             'u' => $user,
             'exp' => time() + self::TICKET_TTL,
+            ...($readOnly ? ['r' => 1] : []),
         ])), '+/', '-_'), '=');
 
         $signature = rtrim(strtr(base64_encode(hash_hmac('sha256', $payload, (string) $this->secret, true)), '+/', '-_'), '=');

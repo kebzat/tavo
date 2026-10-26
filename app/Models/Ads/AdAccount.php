@@ -96,6 +96,24 @@ class AdAccount extends Model
         return now()->subMonthsNoOverflow($months)->addDay()->toDateString();
     }
 
+    /**
+     * Zapíše, do kterého dne máme čísla kompletní. Posune se jen stažením,
+     * které navazuje na to, co už máme (ranní běh, ruční obnova). Doplňování
+     * starší historie nebo jednorázové stažení kusu uprostřed konec nemění.
+     */
+    public function markDataThrough(Period $period): void
+    {
+        $through = $this->data_through;
+
+        if ($through !== null && $period->from->gt($through->copy()->addDay())) {
+            return;
+        }
+
+        if ($through === null || $period->to->gt($through)) {
+            $this->data_through = $period->to->toDateString();
+        }
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
@@ -120,6 +138,9 @@ class AdAccount extends Model
             'issues' => 'array',
             'issues_checked_at' => 'datetime',
             'backfill_from' => 'date',
+            'data_through' => 'date',
+            'refresh_requested_at' => 'datetime',
+            'refreshed_at' => 'datetime',
         ];
     }
 }

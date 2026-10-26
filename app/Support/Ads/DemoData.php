@@ -61,6 +61,7 @@ class DemoData
             }
 
             $this->time($client, $userId);
+            $this->extras($client, $spec, $userId);
         }
 
         $this->alerts->run();
@@ -80,6 +81,55 @@ class DemoData
         $clients->each->delete();
 
         return $clients->count();
+    }
+
+    /**
+     * Skupiny kampaní, termíny a zásahy u klientů, kteří je v katalogu mají.
+     * Skupiny se zakládají až po stažení, ať pravidlo z názvu najde kampaně.
+     *
+     * @param  array<string, mixed>  $spec
+     */
+    private function extras(Client $client, array $spec, ?int $userId): void
+    {
+        foreach ($spec['groups'] ?? [] as $i => $group) {
+            $client->adCampaignGroups()->firstOrCreate(['name' => $group['name']], $group + ['sort' => $i]);
+        }
+
+        CampaignGroups::applyRules($client);
+
+        if (! $client->adEvents()->exists()) {
+            foreach ($spec['events'] ?? [] as $event) {
+                $client->adEvents()->create([
+                    'type' => $event['type'],
+                    'title' => $event['title'],
+                    'due_on' => Carbon::today()->addDays($event['days']),
+                    'remind_days' => $event['remind_days'],
+                    'ads' => $event['ads'] ?? null,
+                    'user_id' => $userId,
+                ]);
+            }
+        }
+
+        if (isset($spec['business']) && ! $client->adBusinessResults()->exists()) {
+            $month = Carbon::today()->subMonthNoOverflow();
+            $client->adBusinessResults()->create($spec['business'] + [
+                'period_from' => $month->copy()->startOfMonth(),
+                'period_to' => $month->copy()->endOfMonth(),
+                'user_id' => $userId,
+            ]);
+        }
+
+        if (! $client->adChanges()->exists()) {
+            foreach ($spec['changes'] ?? [] as $change) {
+                $client->adChanges()->create([
+                    'type' => $change['type'],
+                    'changed_on' => Carbon::today()->subDays($change['days']),
+                    'description' => $change['description'],
+                    'expected' => $change['expected'] ?? null,
+                    'user_id' => $userId,
+                ]);
+            }
+        }
     }
 
     /** Pár zápisů času v tomto měsíci, ať je co vidět ve Fakturaci. */

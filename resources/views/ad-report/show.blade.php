@@ -22,6 +22,10 @@
 
                         <h1 class="text-h2-sm font-extrabold tracking-[-.02em]">{{ $report->type->title() }}</h1>
 
+                        @if ($view->scopeLabel())
+                            <p class="mt-3 text-lg font-bold text-cream print:text-ink">{{ text('ads_report.group', 'Kampaně') }}: {{ $view->scopeLabel() }}</p>
+                        @endif
+
                         @if ($view->accounts())
                             <p class="mt-5 text-perex text-cream/70 print:text-muted">
                                 {{ text('ads_report.source', 'Čísla z reklamních účtů') }}: {{ implode(', ', $view->accounts()) }}
@@ -38,6 +42,25 @@
             </div>
         </div>
     </section>
+
+    @if ($view->dataNote())
+        <section class="section-x pt-5">
+            <p class="container-tavo rounded-card bg-sand-100 px-5 py-3 text-sm text-body">{{ $view->dataNote() }}</p>
+        </section>
+    @endif
+
+    @if ($targets)
+        <section class="section-x pt-5">
+            <div class="container-tavo flex flex-wrap items-center gap-3">
+                <h2 class="mr-2 text-sm font-bold tracking-[.14em] text-brick uppercase">{{ text('ads_report.goal', 'Cíl') }}</h2>
+                @foreach ($targets as $target)
+                    <p @class(['rounded-pill border px-4 py-1.5 text-sm', 'border-moss/40 text-moss' => $target['ok'] === true, 'border-brick/40 text-brick' => $target['ok'] === false, 'border-ink/14 text-body' => $target['ok'] === null])>
+                        {{ $target['label'] }} <span class="font-bold tabular-nums">{{ $target['value'] }}</span>, {{ text('ads_report.target', 'cíl') }} {{ $target['target'] }}
+                    </p>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     @if ($view->hasData())
         <section class="section-x pt-5">
@@ -76,14 +99,46 @@
     @endif
 
     @foreach ([
-        'facts' => [$facts, text('ads_report.facts', 'Co se stalo')],
-        'causes' => [$causes, text('ads_report.causes', 'Možné příčiny')],
-        'recommendations' => [$recommendations, text('ads_report.recommendations', 'Co doporučujeme')],
+        'facts' => [$facts, text('ads_report.facts', 'Výsledky')],
+        'worked' => [$worked, text('ads_report.worked', 'Co fungovalo')],
+        'not_worked' => [$notWorked, text('ads_report.not_worked', 'Co nefungovalo')],
     ] as $key => [$content, $heading])
         @if ($content)
             <section class="section-x pt-10" data-report-section="{{ $key }}">
                 <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
                     <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ $heading }}</h2>
+                    <div class="prose-tavo max-w-[70ch] [&_ol]:list-decimal [&_ul]:list-disc">{{ $content }}</div>
+                </div>
+            </section>
+        @endif
+    @endforeach
+
+    @if ($changes)
+        <section class="section-x pt-10" data-report-section="changes">
+            <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
+                <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ text('ads_report.changes', 'Co jsme změnili') }}</h2>
+                <ul class="max-w-[70ch] space-y-2 text-body">
+                    @foreach ($changes as $change)
+                        <li><span class="font-bold tabular-nums">{{ $change['date'] }}</span> · {{ $change['label'] }}: {{ $change['description'] }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </section>
+    @endif
+
+    @foreach ([
+        'causes' => [$causes, text('ads_report.causes', 'Možné příčiny'), text('ads_report.causes_note', 'Naše vysvětlení, ne jistota. Kde příčinu neznáme, píšeme to jako hypotézu.')],
+        'recommendations' => [$recommendations, text('ads_report.recommendations', 'Co uděláme dál'), null],
+    ] as $key => [$content, $heading, $note])
+        @if ($content)
+            <section class="section-x pt-10" data-report-section="{{ $key }}">
+                <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
+                    <div>
+                        <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ $heading }}</h2>
+                        @if ($note)
+                            <p class="mt-2 text-xs text-muted">{{ $note }}</p>
+                        @endif
+                    </div>
                     <div class="prose-tavo max-w-[70ch] [&_ol]:list-decimal [&_ul]:list-disc">{{ $content }}</div>
                 </div>
             </section>
@@ -97,13 +152,13 @@
                 @if ($view->shows('chart'))
                 <div @class(['rounded-card border border-ink/14 p-5 menu:p-7 print:break-inside-avoid', 'loop:col-span-2' => $funnel && $view->shows('funnel'), 'loop:col-span-3' => ! ($funnel && $view->shows('funnel'))])>
                     <h2 class="mb-4 text-lg font-extrabold tracking-[-.01em]">{{ text('ads_report.daily', 'Po dnech') }}</h2>
-                    <x-ads.chart :labels="$chart['labels']" :bars="$chart['bars']" :line="$chart['line']" line-class="text-ink" class="text-body" />
+                    <x-ads.chart :labels="$chart['labels']" :bars="$chart['bars']" :line="$chart['line']" :states="$chart['states']" :markers="$chart['markers']" line-class="text-ink" class="text-body" />
                 </div>
                 @endif
 
                 @if ($funnel && $view->shows('funnel'))
                     <div @class(['rounded-card border border-ink/14 p-5 menu:p-7 print:break-inside-avoid', 'loop:col-span-3' => ! $view->shows('chart')])>
-                        <h2 class="mb-4 text-lg font-extrabold tracking-[-.01em]">{{ text('ads_report.funnel', 'Od zobrazení ke konverzi') }}</h2>
+                        <h2 class="mb-4 text-lg font-extrabold tracking-[-.01em]">{{ text('ads_report.funnel_events', 'Události od zobrazení ke konverzi') }}</h2>
                         <ol class="flex flex-col gap-4">
                             @foreach ($funnel as $step)
                                 <li>
@@ -116,11 +171,12 @@
                                         <div class="h-2 rounded-pill bg-brick" style="width: {{ $step['width'] }}%"></div>
                                     </div>
                                     @if ($step['rate'])
-                                        <p class="mt-1 text-xs text-muted">{{ $step['rate'] }} {{ text('ads_report.from_previous', 'z předchozího kroku') }}</p>
+                                        <p class="mt-1 text-xs text-muted">{{ text('ads_report.ratio_previous', 'poměr k předchozímu kroku') }} {{ $step['rate'] }}</p>
                                     @endif
                                 </li>
                             @endforeach
                         </ol>
+                        <p class="mt-4 text-xs text-muted">{{ text('ads_report.funnel_note', 'Reklamní systém počítá události, ne lidi. Poměr neříká, že titíž lidé prošli všemi kroky.') }}</p>
                     </div>
                 @endif
             </div>
@@ -225,7 +281,7 @@
                                     @if ($view->goal->hasValue())
                                         <th class="px-3 py-2 text-right font-semibold">ROAS</th>
                                     @endif
-                                    <th class="py-2 pl-3 text-right font-semibold">CTR</th>
+                                    <th class="py-2 pl-3 text-right font-semibold">{{ text('ads_report.ctr', 'CTR odkazu') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-ink/8">

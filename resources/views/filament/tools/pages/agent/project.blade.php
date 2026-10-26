@@ -12,6 +12,10 @@
             <p class="text-sm text-gray-600 dark:text-gray-300">{{ $this->error() }}</p>
         </x-filament::section>
     @else
+        @if ($this->details())
+            @livewire('tools.agent-handovers', ['project' => $project, 'type' => $this->details()['typ']], key('hotova-prace'))
+        @endif
+
         <div wire:poll.15s class="flex flex-col gap-6">
             @php($current = $this->current())
 
@@ -66,11 +70,11 @@
                          },
                      }"
                      x-on:agent-window-selected.window="term?.connect()"
-                     x-bind:class="full ? 'fixed inset-0 z-50 bg-terminal p-3' : 'relative p-2'">
+                     x-bind:class="full ? 'fixed inset-0 z-50 bg-terminal px-3 pb-3 pt-1' : 'relative px-2 pb-2 pt-1'">
 
-                    <div x-ref="screen" x-bind:class="full ? 'h-[calc(100vh-1.5rem)]' : 'h-[calc(100vh-22rem)] min-h-[26rem]'"></div>
-
-                    <div class="absolute top-3 right-4 flex items-center gap-3 rounded-md bg-terminal/90 px-2 py-1 text-xs text-gray-400">
+                    {{-- Stav a Celá obrazovka v pruhu nad terminálem, ne přes něj: v pravém
+                         horním rohu terminálu má Claude vlastní ovládání (panel „Co agent dělá“). --}}
+                    <div class="flex h-6 items-center justify-end gap-3 px-2 text-xs text-gray-400">
                         <span x-show="copied === 'copied'" x-cloak class="font-semibold text-success-400">Zkopírováno</span>
                         <span x-show="copied === 'pending'" x-cloak class="font-semibold text-primary-400">Zkopírujete stiskem ⌘C</span>
                         <span x-show="state !== 'open'" x-text="{
@@ -84,8 +88,10 @@
                         <button type="button" x-on:click="toggleFull()" class="hover:text-white" x-text="full ? 'Zmenšit' : 'Celá obrazovka'"></button>
                     </div>
 
+                    <div x-ref="screen" x-bind:class="full ? 'h-[calc(100vh-3rem)]' : 'h-[calc(100vh-23.5rem)] min-h-[26rem]'"></div>
+
                     <div x-show="state === 'none'" x-cloak
-                         class="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-gray-400">
+                         class="absolute inset-x-0 top-7 bottom-0 flex items-center justify-center p-6 text-center text-sm text-gray-400">
                         Žádná konverzace neběží. Založte novou, nebo probuďte některou ze seznamu níž.
                     </div>
                 </div>

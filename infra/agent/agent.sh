@@ -33,9 +33,15 @@ Použití:
   agent pridat <projekt> prazdny      (Shoptet, Upgates, marketing: bez kódu)
   agent zaloha <projekt>        snímek souborů a záloha databáze hned teď
   agent vratit <projekt>        ukáže snímky a jak se vrátit
+  agent obnovit <projekt> <čas> [databaze]   živý web do stavu před časem (unix)
+  agent nasadit <projekt> <strom>   vydání ze služby agenta na web (tlačítko Zveřejnit)
+  agent nasadit-zpet <projekt>      web zpátky na verzi před posledním nasazením (Vrátit)
+  agent kopie-db <projekt>          databáze kopie živého webu znovu z živé
+  agent nasadit-kopii <projekt>     kopii živého webu na živý web (tlačítko Zveřejnit)
   agent odebrat <projekt>       agent ztratí přístup, snímky a zálohy zůstanou
   agent prihlasit               přihlášení Claude Code (jednou)
   agent sluzba                  nahraje novou verzi služby, běžící konverzace zůstanou
+  agent aktualizovat            službu z main na GitHubu (po zveřejnění z nástrojů sám)
 TXT
 }
 
@@ -207,6 +213,181 @@ Zálohy databáze:           ls $ZALOHY/$slug
 TXT
 }
 
+# Weby, které jde zveřejnit tlačítkem rovnou ze serveru (bez GitHubu).
+# Nastaví CIL (složka webu), UZIVATEL (pod ním běží PHP), PHP a ADRESA.
+# Nastavuje proměnné přímo, ne přes výstup: chyba tu musí ukončit celý příkaz.
+nasazeni_cile() {
+    case "$1" in
+        taveo) CIL=/home/taveo.cz/public_html UZIVATEL=taveo1015 PHP=/usr/local/lsws/lsphp84/bin/php ADRESA=https://taveo.cz ;;
+        *) chyba "projekt $1 nejde zveřejnit ze serveru" ;;
+    esac
+    [ -f "$CIL/artisan" ] || chyba "ve složce $CIL není web"
+}
+
+# Co se na web neposílá a co se na něm nikdy nesmaže (rsync --delete).
+# Pevně tady, ne z repozitáře: seznam v repozitáři může změnit agent.
+nasazeni_vynechat() {
+    printf '%s\n' /.env /storage/ /public/storage /public/.well-known/ /node_modules/ \
+        /.git/ /.github/ /.claude/ /.playwright-mcp/ /tests/ /docs/ /design-source/ /bin/ /infra/ \
+        /.editorconfig /.gitattributes /.gitignore /.mcp.json /.npmrc /.phpunit.result.cache \
+        /phpunit.xml /vite.config.js /package-lock.json /CLAUDE.md '/*.png' /.vydani.json
+}
+
+nahrat_na_web() {
+    # Společné pro nasadit a nasadit-zpet: $1 projekt, $2 složka s verzí webu,
+    # $3 „migrovat“, nebo prázdné (vrácení: databáze zůstává, jak je).
+    local slug=$1 zdroj=$2 migrovat=${3:-}
+    nasazeni_cile "$slug"
+    local cil=$CIL uzivatel=$UZIVATEL
+    local zaloha=$ROOT/vydani-zaloha/$slug
+    install -d -m 700 "$zaloha"
+    web() { (cd "$CIL" && runuser -u "$UZIVATEL" -- "$PHP" artisan "$@"); }
+
+    web down --render=errors::503 --retry=5 >/dev/null || true
+    trap 'web up >/dev/null 2>&1 || true' EXIT
+    web db:zaloha
+    # Současná verze stranou pro Vrátit (jen kód, data zůstávají na místě).
+    [ "$migrovat" = migrovat ] && rsync -a --delete --exclude-from=<(nasazeni_vynechat) "$cil/" "$zaloha/predchozi/"
+    # Odkazy (symlinky) se nepřenesou vůbec: z vydání se nesmí odkázat mimo web.
+    rsync -rt --delete --no-links --chmod=D755,F644 --chown="$uzivatel:$uzivatel" \
+        --exclude-from=<(nasazeni_vynechat) "$zdroj/" "$cil/"
+    [ "$migrovat" = migrovat ] && web migrate --force
+    web storage:link >/dev/null 2>&1 || true
+    web obrazky:zmensit >/dev/null 2>&1 || true
+    web optimize >/dev/null
+    web queue:restart >/dev/null 2>&1 || true
+    web up >/dev/null
+    trap - EXIT
+
+    local kod; kod=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$ADRESA" || true)
+    [ "$kod" = 200 ] || chyba "web po nahrání vrací $kod, mrkněte na něj (agent nasadit-zpet $slug vrátí předchozí verzi)"
+}
+
+nasadit() {
+    # Tlačítko Zveřejnit (přes frontu): vydání, které sestavila služba agenta
+    # (/srv/agent/projekty/<projekt>/vydani/<strom>), rovnou na web.
+    local slug=$1 strom=$2
+    [[ "$strom" =~ ^[0-9a-f]{40}$ ]] || chyba "neplatné vydání"
+    local zdroj=$PROJEKTY/$slug/vydani/$strom
+    [ -f "$zdroj/.vydani.json" ] || chyba "vydání ${strom:0:7} není sestavené"
+    # Složku vydání zakládá agent: nesmí to být odkaz jinam na serveru.
+    [ "$(realpath -e "$zdroj")" = "$zdroj" ] || chyba "vydání ${strom:0:7} odkazuje mimo svou složku"
+    local zacatek=$SECONDS
+    nahrat_na_web "$slug" "$zdroj" migrovat
+    # Podle stromu nasazení z GitHubu (deploy.yml) pozná, že tahle verze už na webu je.
+    echo "$strom" > "$CIL/storage/app/nasazeny-strom"
+    chown "$UZIVATEL:$UZIVATEL" "$CIL/storage/app/nasazeny-strom"
+    echo "Na webu za $((SECONDS - zacatek)) s (vydání ${strom:0:7})."
+}
+
+nasadit_zpet() {
+    # Tlačítko Vrátit: verze webu před posledním nasazením tlačítkem.
+    local slug=$1 zaloha=$ROOT/vydani-zaloha/$1/predchozi
+    [ -f "$zaloha/artisan" ] || chyba "předchozí verze webu není uložená"
+    nahrat_na_web "$slug" "$zaloha"
+    echo vraceno > "$CIL/storage/app/nasazeny-strom"
+    echo "Web je zpátky na předchozí verzi. Databáze zůstala, jak byla."
+}
+
+kopie_db() {
+    # Databáze pro kopii živého webu (agent v ní pracuje, živá zůstává):
+    # <databáze>_kopie, tabulky znovu z živé. Přístup dostane uživatel webu z .env.
+    local slug=$1
+    [ "$(typ_projektu "$slug")" = server ] || chyba "kopii má jen web na serveru"
+    local db zdroj uzivatel; db=$(zaznam "$slug" | cut -f4); zdroj=$(zaznam "$slug" | cut -f3)
+    [ -n "$db" ] || chyba "web nemá databázi"
+    uzivatel=$(grep -E '^DB_USERNAME=' "$zdroj/.env" | tail -1 | cut -d= -f2- | tr -d "\"'")
+    [[ "$db" =~ ^[A-Za-z0-9_]{1,50}$ && "$uzivatel" =~ ^[A-Za-z0-9_]{1,64}$ ]] || chyba "neplatné jméno databáze nebo uživatele"
+    local kopie="${db}_kopie" mysql=(mysql --defaults-extra-file=/root/.my.cnf)
+    "${mysql[@]}" -e "CREATE DATABASE IF NOT EXISTS \`$kopie\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON \`$kopie\`.* TO '$uzivatel'@'localhost';"
+    # mysqldump tabulky živé přepíše (DROP TABLE IF EXISTS jen v kopii).
+    ( set -o pipefail; mysqldump --defaults-extra-file=/root/.my.cnf --single-transaction --quick "$db" | "${mysql[@]}" "$kopie" ) || chyba "kopii databáze se nepodařilo nahrát"
+    echo "Kopie databáze: $kopie"
+}
+
+nasadit_kopii() {
+    # Tlačítko Zveřejnit u živého webu (přes frontu): kopie, ve které pracoval
+    # agent (/srv/agent/projekty/<projekt>/kopie), na živý web. Předtím snímek
+    # a záloha databáze (Vrátit = agent obnovit). Databáze se nepřepisuje,
+    # jen se spustí migrace, které agent v kopii připravil.
+    local slug=$1
+    [ "$(typ_projektu "$slug")" = server ] || chyba "kopii má jen web na serveru"
+    local zdroj=$PROJEKTY/$slug/kopie cil db
+    cil=$(zaznam "$slug" | cut -f3); db=$(zaznam "$slug" | cut -f4)
+    [ -d "$zdroj/.git" ] && [ "$(realpath -e "$zdroj")" = "$zdroj" ] || chyba "kopie webu není připravená"
+    [ -d "$cil" ] && [ "$(realpath -e "$cil")" = "$cil" ] || chyba "složka webu $cil neexistuje"
+    local laravel=""; [ -f "$cil/artisan" ] && [ -f "$zdroj/artisan" ] && laravel=1
+    local uzivatel skupina adresa php=/usr/local/lsws/lsphp84/bin/php zacatek=$SECONDS
+    uzivatel=$(stat -c %U "$cil"); skupina=$(stat -c %G "$cil")
+    [ "$uzivatel" != root ] || chyba "web patří rootovi, nevím, pod kým běží"
+    adresa=$(grep -E '^APP_URL=' "$cil/.env" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d "\"'")
+    web() { (cd "$cil" && runuser -u "$uzivatel" -- "$php" artisan "$@"); }
+
+    snimek "$slug" "Před zveřejněním z nástrojů"
+    [ -z "$db" ] || zalohovat_db "$slug" "$db"
+
+    if [ -n "$laravel" ]; then
+        web down --render=errors::503 --retry=5 >/dev/null 2>&1 || true
+        trap 'web up >/dev/null 2>&1 || true' EXIT
+    fi
+    # Data webu a soubory kopie (její .env, git) se nepřenesou ani nesmažou.
+    # Odkazy (symlinky) z kopie se nepřenesou, kopii zakládá agent.
+    rsync -rt --delete --no-links --chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r --chown="$uzivatel:$skupina" \
+        --exclude=/.env --exclude='/.env.*' --exclude=/.git/ --exclude=/storage/ --exclude=/bootstrap/cache/ \
+        --exclude=/public/storage --exclude=/public/.well-known/ --exclude=/node_modules/ \
+        --exclude=/wp-config.php --exclude=/wp-content/uploads/ --exclude=/wp-content/cache/ \
+        "$zdroj/" "$cil/"
+    if [ -n "$laravel" ]; then
+        web migrate --force
+        web optimize >/dev/null
+        web queue:restart >/dev/null 2>&1 || true
+        web up >/dev/null
+        trap - EXIT
+    fi
+
+    if [ -n "$adresa" ]; then
+        local kod; kod=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$adresa" || true)
+        [ "$kod" = 200 ] || chyba "web po nahrání vrací $kod. Vrátit: agent vratit $slug"
+    fi
+    echo "Na webu za $((SECONDS - zacatek)) s."
+}
+
+obnovit() {
+    # Tlačítko Vrátit v nástrojích (přes frontu): živý web do stavu před
+    # časem $2 (unix). Soubory z posledního snímku před ním, databáze ze
+    # zálohy jen na výslovné přání (smaže i objednávky a zprávy od té doby).
+    # Nejdřív se uloží současný stav, takže jde vrátit i tohle vrácení.
+    local slug=$1 cas=$2 s_db=${3:-} g=$SNIMKY/$1.git
+    [ "$(typ_projektu "$slug")" = server ] || chyba "vracet jde jen web na serveru"
+    [[ "$cas" =~ ^[0-9]+$ ]] || chyba "neplatný čas"
+    [ -d "$g" ] || chyba "projekt $slug nemá snímky"
+    local git=(git -c safe.directory='*' --git-dir="$g" --work-tree="$PROJEKTY/$slug/kod")
+    local cil; cil=$("${git[@]}" log --format='%H %ct' main | awk -v t="$cas" '$2 <= t { print $1; exit }')
+    [ -n "$cil" ] || chyba "před tímhle časem žádný snímek webu není"
+
+    local db zaloha=""; db=$(zaznam "$slug" | cut -f4)
+    if [ "$s_db" = databaze ]; then
+        [ -n "$db" ] || chyba "web nemá databázi"
+        zaloha=$(find "$ZALOHY/$slug" -name '*.sql.gz' ! -newermt "@$cas" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2)
+        [ -n "$zaloha" ] || chyba "před tímhle časem žádná záloha databáze není"
+    fi
+
+    snimek "$slug" "Před vrácením z nástrojů"
+    [ -z "$db" ] || zalohovat_db "$slug" "$db"
+
+    # Soubory přidané po snímku zmizí, změněné se vrátí. Co snímky neukládají
+    # (snimky-exclude: nahraná média, cache, vendor), zůstává, jak je.
+    # Obnovené soubory zapisuje root: vrátit je uživateli webu, jen ty změněné.
+    local zdroj vlastnik zmeny; zdroj=$(zaznam "$slug" | cut -f3); vlastnik=$(stat -c %U:%G "$zdroj")
+    zmeny=$("${git[@]}" diff --name-only "$cil" main)
+    "${git[@]}" restore --source="$cil" --staged --worktree -- ':/'
+    (cd "$zdroj" && printf '%s\n' "$zmeny" | while IFS= read -r f; do [ -e "$f" ] && chown "$vlastnik" "$f"; done) || true
+    [ -z "$zaloha" ] || gunzip -c "$zaloha" | mysql --defaults-extra-file=/root/.my.cnf "$db"
+    snimek "$slug" "Vráceno na stav před $(date -d "@$cas" '+%-d. %-m. %Y %H:%M')"
+
+    echo "Soubory vráceny na snímek $("${git[@]}" log -1 --format='%h z %cd' --date=format:'%-d. %-m. %H:%M' "$cil").${zaloha:+ Databáze ze zálohy $(basename "$zaloha").}"
+}
+
 odebrat() {
     local slug=$1; [ -n "$(zaznam "$slug")" ] || chyba "projekt $slug neexistuje"
     local typ zdroj; typ=$(typ_projektu "$slug"); zdroj=$(zaznam "$slug" | cut -f3)
@@ -225,6 +406,36 @@ odebrat() {
     echo "Projekt $slug odebrán. Snímky: $SNIMKY/$slug.git, zálohy: $ZALOHY/$slug, paměť a kód: $ROOT/archiv/"
 }
 
+sluzba() {
+    # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
+    # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
+    docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
+    docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
+    sleep 3
+    docker logs --tail 2 "$KONTEJNER"
+}
+
+aktualizovat() {
+    # Po tlačítku Zveřejnit v nástrojích (přes frontu): nová verze služby ze
+    # schváleného main na GitHubu, ne ze schránky, kam píše agent. Bere se jen
+    # terminal/server.js, který běží v kontejneru bez práv. Co běží jako root
+    # (tenhle skript, agent-fronta.py), se z GitHubu samo nenahrazuje.
+    local slug=taveo g=$ROOT/zdroj-taveo.git cil=$ROOT/docker/terminal/server.js zdroj
+    zdroj=$(zaznam "$slug" | cut -f3); [ -n "$zdroj" ] || chyba "projekt $slug neexistuje"
+    [ -d "$g" ] || git init -q --bare "$g"
+    GIT_SSH_COMMAND="ssh -i /root/.ssh/agent-$slug -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
+        git --git-dir="$g" fetch -q "$zdroj" +refs/heads/main:refs/heads/main
+    git --git-dir="$g" show main:infra/agent/terminal/server.js > "$cil.novy"
+    if cmp -s "$cil.novy" "$cil"; then
+        rm "$cil.novy"
+        echo "Služba je aktuální."
+        return
+    fi
+    mv "$cil.novy" "$cil"
+    echo "$(date '+%F %T') služba aktualizována z main ($(git --git-dir="$g" rev-parse --short main))"
+    sluzba
+}
+
 [ "$(id -u)" = 0 ] || chyba "spouštějte jako root"
 
 case "${1:-}" in
@@ -233,16 +444,15 @@ case "${1:-}" in
     pridat) shift; pridat "$@" ;;
     zaloha) zaloha "${2:?název projektu}" ;;
     vratit) vratit "${2:?název projektu}" ;;
+    obnovit) obnovit "${2:?název projektu}" "${3:?čas (unix)}" "${4:-}" ;;
+    nasadit) nasadit "${2:?název projektu}" "${3:?strom vydání}" ;;
+    nasadit-zpet) nasadit_zpet "${2:?název projektu}" ;;
+    kopie-db) kopie_db "${2:?název projektu}" ;;
+    nasadit-kopii) nasadit_kopii "${2:?název projektu}" ;;
     odebrat) odebrat "${2:?název projektu}" ;;
     preposlat) preposlat ;;
-    sluzba)
-        # Služba v kontejneru běží ve smyčce (entrypoint.sh), po ukončení se
-        # spustí znovu už s novým kódem. tmux s konverzacemi běží mimo ni.
-        docker cp "$ROOT/docker/terminal/server.js" "$KONTEJNER:/opt/terminal/server.js"
-        docker exec "$KONTEJNER" pkill -f 'node /opt/terminal/server.js' || true
-        sleep 3
-        docker logs --tail 2 "$KONTEJNER"
-        ;;
+    sluzba) sluzba ;;
+    aktualizovat) aktualizovat ;;
     prihlasit) exec docker exec -it -u agent "$KONTEJNER" bash -lc claude ;;
     *) otevrit "$1" ;;
 esac

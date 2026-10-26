@@ -63,6 +63,7 @@ class MarketingTest extends TestCase
             'name' => $name.' (Meta)',
             'status' => 'active',
             'last_synced_at' => now(),
+            'data_through' => now()->subDay()->toDateString(),
         ]);
         $account->campaigns()->create(['external_id' => '1', 'name' => 'Prospecting']);
 
@@ -138,7 +139,7 @@ class MarketingTest extends TestCase
 
         $alert = $client->adAlerts()->where('rule', 'ad_issues')->sole();
         $this->assertSame('Zamítnuté reklamy (1)', $alert->title);
-        $this->assertStringContainsString('Black Friday video', $alert->recommendation);
+        $this->assertStringContainsString('Black Friday video', $alert->facts);
     }
 
     public function test_nefunkcni_cilova_stranka_a_chybejici_pixel(): void
@@ -203,7 +204,7 @@ class MarketingTest extends TestCase
 
         // Ztlumení: výpadek stahování se ztlumit nedá.
         $client->adSettings->update(['alert_overrides' => ['muted' => ['budget_pacing', 'sync_failed']]]);
-        $client->adAccounts->first()->update(['last_synced_at' => now()->subDays(5)]);
+        $client->adAccounts->first()->update(['last_synced_at' => now()->subDays(5), 'data_through' => now()->subDays(6)->toDateString()]);
         app(AlertEngine::class)->run();
         $this->assertTrue($client->adAlerts()->live()->where('rule', 'sync_failed')->exists());
         $this->assertSame(80, $settings->budget_under_pct);
@@ -406,11 +407,19 @@ class MarketingTest extends TestCase
             ->assertOk()
             ->assertSee('noindex', false)
             ->assertSee($guide['agent']['title'])
+            ->assertSee($guide['agent']['news'][0]['title'])
             ->assertSee($guide['features'][0]['title']);
 
         foreach ($guide['features'] as $feature) {
             $this->assertFileExists(public_path(ltrim($feature['src'], '/')));
             $this->assertGreaterThan(0, $feature['width']);
+        }
+
+        foreach ($guide['agent']['news'] as $news) {
+            foreach ($news['images'] ?? [] as $image) {
+                $this->assertFileExists(public_path(ltrim($image['src'], '/')));
+                $this->assertGreaterThan(0, $image['width']);
+            }
         }
 
         $this->get('/pruvodce/marketing')->assertNotFound();

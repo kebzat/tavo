@@ -84,6 +84,8 @@ class AdsTest extends TestCase
             'name' => $name.' (Meta)',
             'status' => 'active',
             'last_synced_at' => now()->subDay(),
+            // Jako po ranním stažení: data jsou kompletní do včerejška.
+            'data_through' => now()->subDay()->toDateString(),
         ]);
         $account->campaigns()->create(['external_id' => '1', 'name' => 'Prospecting']);
 
@@ -330,9 +332,13 @@ class AdsTest extends TestCase
     {
         $events = collect(app(Schedule::class)->events())
             ->filter(fn ($event): bool => str_contains($event->command ?? '', 'ads:sync'));
+        [$requested, $daily] = $events->partition(fn ($event): bool => str_contains($event->command, '--requested'));
 
-        $this->assertCount(1, $events);
-        $this->assertSame('0 6 * * *', $events->first()->expression);
+        $this->assertCount(1, $daily);
+        $this->assertSame('0 6 * * *', $daily->first()->expression);
+        // Ruční obnovy se vyřizují každých 5 minut, bez žádosti nic nestahují.
+        $this->assertCount(1, $requested);
+        $this->assertSame('*/5 * * * *', $requested->first()->expression);
     }
 
     /*
@@ -396,8 +402,8 @@ class AdsTest extends TestCase
         $this->fakeMeta([]);
         $this->artisan('ads:sync', ['--account' => $account->id])->assertSuccessful();
 
-        // Posledních 7 dní (stav + čísla + dosah + zamítnuté) a historie (stav + 1 čtvrtletí).
-        Http::assertSentCount(6);
+        // Posledních 7 dní (stav + čísla + dosah + zamítnuté + stav kampaní + reklamy) a historie (stav + 1 čtvrtletí).
+        Http::assertSentCount(8);
         $this->assertSame('2026-07-01', AdSyncRun::query()->latest('id')->first()->date_from->toDateString());
         $this->assertNull($account->refresh()->backfill_from);
         Livewire::test(AdsClient::class, ['client' => $account->client])->assertActionHidden('history');
@@ -429,8 +435,8 @@ class AdsTest extends TestCase
 
         $run = AdSyncRun::query()->latest('id')->first();
         $this->assertSame('2023-08-31', $run->date_from->toDateString());
-        // Běžný den 4 dotazy, historie 37 měsíců po 92 dnech = 13 dotazů na čísla + 1 na stav účtu.
-        Http::assertSentCount(18);
+        // Běžný den 6 dotazů, historie 37 měsíců po 92 dnech = 13 dotazů na čísla + 1 na stav účtu.
+        Http::assertSentCount(20);
     }
 
     public function test_doplneni_historie_jen_pozada_ranni_stazeni(): void

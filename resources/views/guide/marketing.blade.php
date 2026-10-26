@@ -130,6 +130,96 @@
                         </ul>
                     </div>
                 </div>
+
+                <div class="mt-14 border-t border-ink/14 pt-12 menu:mt-16 menu:pt-14">
+                    <p class="text-sm font-bold tracking-[.14em] text-brick uppercase">Nově u agenta</p>
+                    <h3 class="mt-2 text-h3-sm font-extrabold tracking-[-.02em] text-ink">Práce z ClickUpu, zveřejnění jedním klikem a hlídání předplatného</h3>
+
+                    <div class="mt-10 flex flex-col gap-16 menu:gap-20">
+                        @foreach ($guide['agent']['news'] as $news)
+                            <section id="{{ $news['id'] }}" class="scroll-mt-6" aria-labelledby="{{ $news['id'] }}-nadpis">
+                                <div class="grid gap-8 menu:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] menu:gap-14">
+                                    <div>
+                                        <p class="text-sm font-bold tracking-[.14em] text-muted uppercase tabular-nums">Novinka {{ $loop->iteration }}</p>
+                                        <h4 id="{{ $news['id'] }}-nadpis" class="mt-2 text-h3-sm font-extrabold tracking-[-.02em] text-ink">{{ $news['title'] }}</h4>
+                                        <p class="mt-4 text-[15px] leading-[1.6] text-body">{{ $news['intro'] }}</p>
+
+                                        <p class="mt-7 text-sm font-bold tracking-[.14em] text-muted uppercase">Kde to najdeš</p>
+                                        <ol class="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-2" aria-label="Kde to najdeš">
+                                            @foreach ($news['where'] as $place)
+                                                <li class="flex items-center gap-1.5">
+                                                    <span class="rounded-pill bg-ink px-3.5 py-1.5 text-sm font-semibold text-cream">{{ $place }}</span>
+                                                    @unless ($loop->last)
+                                                        <span class="text-muted" aria-hidden="true">›</span>
+                                                    @endunless
+                                                </li>
+                                            @endforeach
+                                        </ol>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-sm font-bold tracking-[.14em] text-muted uppercase">Jak s tím pracovat</p>
+                                        <ul class="mt-3 flex flex-col gap-3">
+                                            @foreach ($news['how'] as $line)
+                                                <li class="flex gap-3 text-[15px] leading-[1.6] text-body">
+                                                    <span class="mt-[9px] size-1.5 shrink-0 rounded-full bg-brick" aria-hidden="true"></span>
+                                                    <span>{{ $line }}</span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                @isset($news['thread'])
+                                    <figure class="mt-8 max-w-[680px] rounded-media border border-ink/14 bg-white p-5 shadow-[0_24px_50px_-30px_rgb(19_17_16/.45)] menu:mt-10 menu:p-7">
+                                        <figcaption class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-ink/10 pb-4">
+                                            <span class="font-bold text-ink">{{ $news['thread']['task'] }}</span>
+                                            <span class="text-xs font-semibold text-muted">Ukázka komentářů v ClickUpu</span>
+                                        </figcaption>
+
+                                        <ol class="mt-5 flex flex-col gap-4">
+                                            @foreach ($news['thread']['messages'] as $message)
+                                                <li @class(['flex gap-3', 'ml-5 border-l-2 border-ink/10 pl-4 menu:ml-11' => ! $loop->first])>
+                                                    <span @class([
+                                                        'grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold text-cream',
+                                                        'bg-brick' => $message['agent'],
+                                                        'bg-ink' => ! $message['agent'],
+                                                    ]) aria-hidden="true">{{ mb_substr($message['author'], 0, 1) }}</span>
+                                                    <div class="min-w-0 text-[14px] leading-[1.55] text-body">
+                                                        <p class="font-bold text-ink">{{ $message['author'] }}</p>
+                                                        @foreach ($message['lines'] as $line)
+                                                            <p @class(['mt-1.5' => ! $loop->first])>{{ $line }}</p>
+                                                        @endforeach
+                                                    </div>
+                                                </li>
+                                            @endforeach
+                                        </ol>
+                                    </figure>
+                                @endisset
+
+                                @isset($news['images'])
+                                    <div @class([
+                                        'mt-8 grid items-start gap-6 menu:mt-10',
+                                        'menu:grid-cols-2' => count($news['images']) > 1,
+                                    ])>
+                                        @foreach ($news['images'] as $image)
+                                            <figure @class(['menu:col-span-2' => count($news['images']) > 1 && $loop->first])>
+                                                <a href="{{ $image['src'] }}" target="_blank" rel="noopener"
+                                                   style="max-width: {{ $image['width'] }}px"
+                                                   class="block overflow-hidden rounded-media border border-ink/14 bg-white shadow-[0_24px_50px_-30px_rgb(19_17_16/.45)] transition duration-300 ease-tavo hover:-translate-y-0.5">
+                                                    <img src="{{ $image['src'] }}" alt="{{ $image['alt'] }}"
+                                                         width="{{ $image['width'] }}" height="{{ $image['height'] }}"
+                                                         loading="lazy" decoding="async" class="block h-auto w-full">
+                                                </a>
+                                                <figcaption class="mt-3 text-sm text-muted">{{ $image['caption'] }}</figcaption>
+                                            </figure>
+                                        @endforeach
+                                    </div>
+                                @endisset
+                            </section>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -152,6 +242,12 @@
                    class="rounded-pill border-[1.5px] border-brick bg-brick px-4 py-2 text-sm font-semibold text-cream transition duration-300 ease-tavo hover:bg-brick-dark">
                     Agent
                 </a>
+                @foreach ($guide['agent']['news'] as $news)
+                    <a href="#{{ $news['id'] }}"
+                       class="rounded-pill border-[1.5px] border-brick px-4 py-2 text-sm font-semibold text-brick transition duration-300 ease-tavo hover:bg-brick hover:text-cream">
+                        {{ $news['label'] }}
+                    </a>
+                @endforeach
                 @foreach ($guide['features'] as $feature)
                     <a href="#{{ $feature['id'] }}"
                        class="rounded-pill border-[1.5px] border-ink/20 px-4 py-2 text-sm font-semibold text-ink transition duration-300 ease-tavo hover:border-ink hover:bg-ink hover:text-cream">

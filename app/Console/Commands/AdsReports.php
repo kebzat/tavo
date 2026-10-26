@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Enums\Ads\ReportType;
+use App\Models\Ads\AdCampaignGroup;
 use App\Models\Client;
+use App\Support\Ads\AdsScope;
 use App\Support\Ads\Period;
 use App\Support\Ads\ReportBuilder;
 use Illuminate\Console\Command;
@@ -51,6 +53,17 @@ class AdsReports extends Command
             $builder->create($client, $type, $period);
             $created++;
             $this->info("{$client->name}: koncept {$period->label()}.");
+        }
+
+        // Skupiny kampaní se zapnutým reportem dostanou vlastní koncept.
+        $groups = AdCampaignGroup::query()->where($column, true)->with(['client.adAccounts', 'client.adSettings'])->get();
+
+        foreach ($groups as $group) {
+            if (! $group->client->is_archived && ! $builder->exists($group->client, $type, $period, $group)) {
+                $builder->create($group->client, $type, $period, new AdsScope($group->client, $group));
+                $created++;
+                $this->info("{$group->client->name} · {$group->name}: koncept {$period->label()}.");
+            }
         }
 
         $this->info("Založeno konceptů: {$created}.");

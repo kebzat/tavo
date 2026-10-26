@@ -2,7 +2,28 @@
     @php
         $cards = $this->cards();
         $tileOptions = $this->tileOptions();
+        $summary = $this->summary();
+        $through = $this->dataThrough();
     @endphp
+
+    {{-- Ranní souhrn: čemu věřit, kde zasáhnout, na co nezapomenout. --}}
+    <div class="flex flex-wrap items-center gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+        <span class="mr-1 text-sm font-semibold text-gray-950 dark:text-white">Dnes ráno:</span>
+        @forelse ($summary as $item)
+            @if ($item['url'])
+                <a href="{{ $item['url'] }}" class="contents">
+                    <x-filament::badge :color="$item['color']" size="lg">{{ $item['count'] }} {{ $item['label'] }}</x-filament::badge>
+                </a>
+            @else
+                <x-filament::badge :color="$item['color']" size="lg">{{ $item['count'] }} {{ $item['label'] }}</x-filament::badge>
+            @endif
+        @empty
+            <span class="text-sm text-gray-600 dark:text-gray-400">Nic nehoří: data jsou celá, výkon v mezích, žádný termín ani report nečeká.</span>
+        @endforelse
+        @if ($through)
+            <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">Data u všech klientů kompletní nejméně do {{ $through }}</span>
+        @endif
+    </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
         @include('filament.tools.pages.ads.partials.period', ['note' => $this->periodNote()])
@@ -47,13 +68,11 @@
                             <h2 class="truncate text-base font-semibold text-gray-950 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
                                 <a href="{{ $card['url'] }}" class="after:absolute after:inset-0 after:rounded-xl">{{ $card['name'] }}</a>
                             </h2>
-                            <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $card['accounts'] }}</p>
+                            <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $card['template'] }} · {{ $card['accounts'] }}</p>
                         </div>
 
                         <div class="flex shrink-0 items-center gap-1.5">
-                            @if ($card['sync_error'])
-                                <x-filament::badge color="danger" icon="heroicon-m-arrow-path">Nestahuje se</x-filament::badge>
-                            @endif
+                            <x-filament::badge :color="$card['status']->color()" icon="heroicon-m-circle-stack" :tooltip="$card['status']->sentence()">{{ $card['status']->badge() }}</x-filament::badge>
                             @if ($card['alerts'] > 0)
                                 <x-filament::badge :color="$card['worst_color']" icon="heroicon-m-bell-alert">
                                     {{ $card['alerts'] }}
@@ -62,10 +81,34 @@
                         </div>
                     </div>
 
+                    @if ($card['top_alert'])
+                        <p @class([
+                            'mt-3 flex items-start gap-1.5 text-sm',
+                            'text-danger-700 dark:text-danger-400' => $card['worst']?->value === 'critical',
+                            'text-warning-700 dark:text-warning-400' => $card['worst']?->value !== 'critical',
+                        ])>
+                            <x-filament::icon icon="heroicon-m-bell-alert" class="mt-0.5 size-4 shrink-0" />
+                            <span class="min-w-0">{{ $card['top_alert'] }}</span>
+                        </p>
+                    @endif
+
+                    @if ($card['targets'])
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            @foreach ($card['targets'] as $target)
+                                <span @class([
+                                    'rounded-md px-2 py-1 text-xs',
+                                    'bg-success-50 text-success-800 dark:bg-success-500/10 dark:text-success-300' => $target['ok'] === true,
+                                    'bg-danger-50 text-danger-800 dark:bg-danger-500/10 dark:text-danger-300' => $target['ok'] === false,
+                                    'bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300' => $target['ok'] === null,
+                                ])>{{ $target['label'] }} <span class="font-semibold tabular-nums">{{ $target['value'] }}</span> · cíl {{ $target['target'] }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+
                     @if ($card['has_data'])
                         <dl class="mt-4 grid grid-cols-3 gap-x-3 gap-y-3">
                             @foreach ($card['metrics'] as $slot => $metric)
-                                <div class="min-w-0" @if ($metric['hint']) title="{{ $metric['hint'] }}" @endif>
+                                <div class="min-w-0" title="{{ collect([$metric['description'], $metric['hint']])->filter()->implode(' ') }}">
                                     <dt class="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
                                         <span class="min-w-0 truncate">{{ $metric['label'] }}</span>
                                         <x-filament::dropdown placement="bottom-start" max-height="20rem" width="xs" shift class="-my-1 shrink-0">
@@ -76,11 +119,11 @@
                                                 </button>
                                             </x-slot>
 
-                                            <x-filament::dropdown.header>Pozice {{ $slot + 1 }}, platí pro všechny klienty</x-filament::dropdown.header>
+                                            <x-filament::dropdown.header>Pozice {{ $slot + 1 }}, šablona {{ $card['template'] }} (všichni klienti a skupiny s tímhle cílem)</x-filament::dropdown.header>
                                             <x-filament::dropdown.list>
                                                 @foreach ($tileOptions as $key => $label)
                                                     <x-filament::dropdown.list.item
-                                                        wire:click="setOverviewTile({{ $slot }}, '{{ $key }}')"
+                                                        wire:click="setOverviewTile({{ $slot }}, '{{ $key }}', '{{ $card['goal_key'] }}')"
                                                         x-on:click="close()"
                                                         :color="$metric['key'] === $key ? 'primary' : 'gray'"
                                                         :icon="$metric['key'] === $key ? 'heroicon-m-check' : null"
@@ -112,8 +155,29 @@
                                 <x-ads.sparkline :values="$card['spark_conversions']" class="text-gray-700 dark:text-gray-300" />
                             </div>
                         </div>
+                    @elseif ($card['covered'])
+                        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Data jsou stažená, za tohle období žádná útrata. Kampaně neběžely.</p>
                     @else
-                        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Za tohle období žádná útrata.</p>
+                        <p class="mt-4 text-sm text-warning-700 dark:text-warning-400">Za tohle období čísla chybí, není to nula. {{ $card['status']->badge() }}.</p>
+                    @endif
+
+                    @if ($card['groups'])
+                        <div class="relative z-10 mt-4 border-t border-gray-100 pt-3 dark:border-white/5">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Skupiny kampaní</p>
+                            <ul class="mt-1 space-y-1 text-xs">
+                                @foreach ($card['groups'] as $group)
+                                    <li class="flex flex-wrap items-baseline justify-between gap-x-2">
+                                        <a href="{{ $group['url'] }}" class="font-medium text-gray-950 hover:text-primary-600 dark:text-white">{{ $group['name'] }} <span class="font-normal text-gray-500">· {{ $group['template'] }}</span></a>
+                                        <span class="tabular-nums text-gray-600 dark:text-gray-400">
+                                            {{ $group['spend'] }}
+                                            @foreach ($group['targets'] as $target)
+                                                · <span @class(['text-success-600 dark:text-success-400' => $target['ok'] === true, 'text-danger-600 dark:text-danger-400' => $target['ok'] === false])>{{ $target['label'] }} {{ $target['value'] }}</span>
+                                            @endforeach
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
                     @endif
 
                     @if ($card['budget'])
@@ -129,7 +193,21 @@
                                 <div class="absolute inset-y-0 left-0 rounded-full bg-primary-500" style="width: {{ $card['budget']['percent'] }}%"></div>
                                 <div class="absolute -inset-y-0.5 w-0.5 rounded-full bg-gray-950 dark:bg-white" style="left: {{ $card['budget']['expected'] }}%" title="Plán k dnešku"></div>
                             </div>
+                            @if ($card['budget']['note'])
+                                <p class="mt-1 text-[11px] text-warning-600 dark:text-warning-400">{{ $card['budget']['note'] }}</p>
+                            @endif
                         </div>
+                    @endif
+
+                    @if ($card['next_event'])
+                        <p @class([
+                            'mt-3 flex items-start gap-1.5 text-xs',
+                            'text-danger-600 dark:text-danger-400' => $card['next_event']['overdue'],
+                            'text-gray-600 dark:text-gray-400' => ! $card['next_event']['overdue'],
+                        ])>
+                            <x-filament::icon icon="heroicon-m-calendar-days" class="size-4 shrink-0" />
+                            <span class="min-w-0">{{ $card['next_event']['when'] }}: {{ $card['next_event']['title'] }}</span>
+                        </p>
                     @endif
                 </div>
             @endforeach
