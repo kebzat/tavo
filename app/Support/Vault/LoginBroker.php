@@ -47,7 +47,8 @@ class LoginBroker
             throw new VaultException('Na '.$url.' se nenašel přihlašovací formulář. Zkontroluj v trezoru adresu přihlášení.');
         }
 
-        if (preg_match(self::CAPTCHA, $form['html'].$page->body())) {
+        // Jen ve formuláři: plugin s výjimkou pro IP serveru pole vynechá, ale skript ochrany na stránku vloží dál.
+        if (preg_match(self::CAPTCHA, $form['html'])) {
             throw new VaultException(
                 'Přihlášení chrání ověření „nejsem robot“ (Turnstile, reCAPTCHA), přes formulář se agent nepřihlásí. '
                 .'U WordPressu ulož aplikační heslo (agent pak jde přes API), případně v nastavení ochrany povol IP serveru TAVEO.'
@@ -77,7 +78,11 @@ class LoginBroker
         }
 
         if ($response->status() >= 400 || $this->findForm($response, 'password') !== null) {
-            throw new VaultException('Přihlášení se nepovedlo, web vrátil znovu přihlašovací formulář. Zkontroluj uživatele a heslo v trezoru.');
+            // Neviditelné ověření (reCAPTCHA v3) ve formuláři pole nemá, poznat jde jen podle skriptu na stránce.
+            throw new VaultException(preg_match(self::CAPTCHA, $page->body())
+                ? 'Přihlášení se nepovedlo. Na stránce je ochrana „nejsem robot“, nejspíš přihlášení odmítla ona, jinak zkontroluj uživatele a heslo v trezoru. '
+                    .'U WordPressu ulož aplikační heslo (agent pak jde přes API), případně v nastavení ochrany povol IP serveru TAVEO.'
+                : 'Přihlášení se nepovedlo, web vrátil znovu přihlašovací formulář. Zkontroluj uživatele a heslo v trezoru.');
         }
 
         return $this->cookies($jar);

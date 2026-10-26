@@ -295,6 +295,57 @@ class VaultTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_skript_ochrany_mimo_formular_prihlaseni_nezastavi(): void
+    {
+        // Výjimka pro IP serveru: pole Turnstile ve formuláři chybí, skript pluginu na stránce zůstal.
+        $login = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>'
+            .'<form method="post" action="https://pizzadigomma.eu/wp-login.php"><input name="log"><input type="password" name="pwd"></form>';
+
+        Http::fake([
+            'pizzadigomma.eu/*' => Http::sequence()
+                ->push($login)
+                ->push('<h1>Nástěnka</h1>', 200, ['Set-Cookie' => 'wordpress_logged_in=ano; path=/; domain=pizzadigomma.eu']),
+        ]);
+
+        $entry = VaultEntry::query()->create([
+            'type' => VaultType::WordPress,
+            'name' => 'WordPress',
+            'url' => 'https://pizzadigomma.eu',
+            'username' => 'taveo-agent',
+            'secret' => 'wp-heslo',
+            'agent_access' => 'read',
+        ]);
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/prihlasit", [], $this->agent())
+            ->assertOk()
+            ->assertJsonPath('cookies.0.value', 'ano');
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST' && $request['log'] === 'taveo-agent');
+    }
+
+    public function test_neuspesne_prihlaseni_se_skriptem_ochrany_ji_zmini(): void
+    {
+        $login = '<script src="https://www.google.com/recaptcha/api.js?render=klic"></script><script>grecaptcha.ready(() => {});</script>'
+            .'<form method="post" action="https://pizzadigomma.eu/wp-login.php"><input name="log"><input type="password" name="pwd"></form>';
+
+        Http::fake(['pizzadigomma.eu/*' => Http::response($login)]);
+
+        $entry = VaultEntry::query()->create([
+            'type' => VaultType::WordPress,
+            'name' => 'WordPress',
+            'url' => 'https://pizzadigomma.eu',
+            'username' => 'taveo-agent',
+            'secret' => 'wp-heslo',
+            'agent_access' => 'read',
+        ]);
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/prihlasit", [], $this->agent())
+            ->assertStatus(422);
+
+        $this->assertStringContainsString('nejsem robot', $entry->logs()->value('detail'));
+        Http::assertSentCount(2);
+    }
+
     public function test_cesty_nevedou_ven_ze_slozky_webu(): void
     {
         $this->assertSame('/www/wp-content/a.php', VaultPath::join('/www', '/wp-content//./a.php'));
