@@ -464,7 +464,7 @@ class KnowledgeTest extends TestCase
         $this->prihlasit();
         Storage::disk('local')->put('mozek/vize.pdf', 'pdf');
         $client = $this->klient();
-        $source = KnowledgeSource::create(['title' => 'Vize 2027', 'client_id' => $client->getKey(), 'category' => 'strategie', 'summary' => 'Cíle a směr na rok 2027.', 'files' => [['path' => 'mozek/vize.pdf', 'name' => 'vize.pdf']], 'status' => KnowledgeSource::STATUS_STORED]);
+        $source = KnowledgeSource::create(['title' => 'Vize 2027', 'client_id' => $client->getKey(), 'category' => 'strategie', 'document_date' => '2027-01-01', 'summary' => 'Cíle a směr na rok 2027.', 'files' => [['path' => 'mozek/vize.pdf', 'name' => 'vize.pdf']], 'status' => KnowledgeSource::STATUS_STORED]);
         $proposed = $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Klient chce víc B2B', 'status' => KnowledgeEntry::STATUS_PROPOSED]);
         $rejected = $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Zamítnutý', 'status' => KnowledgeEntry::STATUS_REJECTED]);
 
@@ -473,7 +473,9 @@ class KnowledgeTest extends TestCase
         Livewire::test(ArchiveRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
             ->assertSee('Vize 2027')
             ->assertSee('Vize a strategie')
-            ->assertSee('Uloženo');
+            ->assertSee('Cíle a směr na rok 2027.')
+            ->assertSee('k 1. 1. 2027')
+            ->assertTableActionHidden('page', $source);
 
         Livewire::test(KnowledgeRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
             ->assertCanSeeTableRecords([$proposed])
@@ -560,13 +562,13 @@ class KnowledgeTest extends TestCase
         Livewire::test(ArchiveRelationManager::class, ['ownerRecord' => $client, 'pageClass' => EditClient::class])
             ->assertTableActionVisible('page', $source);
         Livewire::test(ViewKnowledgeSource::class, ['record' => $source->getKey()])
-            ->assertActionVisible('page')
-            ->assertActionVisible('copyPage');
+            ->assertSee('Stránka ke čtení')
+            ->assertSee($url);
 
         // Dokument bez HTML stránku nemá, smazaný dokument ji ztratí.
         $text = KnowledgeSource::create(['title' => 'Zápis', 'client_id' => $client->getKey(), 'body' => 'x', 'status' => KnowledgeSource::STATUS_STORED]);
         $this->assertNull($text->pageUrl());
-        Livewire::test(ViewKnowledgeSource::class, ['record' => $text->getKey()])->assertActionHidden('page');
+        Livewire::test(ViewKnowledgeSource::class, ['record' => $text->getKey()])->assertDontSee('Stránka ke čtení');
 
         $source->delete();
         $this->get($url)->assertNotFound();

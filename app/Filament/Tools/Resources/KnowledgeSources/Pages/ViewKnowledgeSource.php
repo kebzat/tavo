@@ -9,13 +9,13 @@ use App\Models\KnowledgeEntry;
 use App\Support\Agent\AgentServer;
 use App\Support\Knowledge\BrainAgent;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Js;
 use Livewire\Attributes\Computed;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -38,7 +38,7 @@ class ViewKnowledgeSource extends ViewRecord
     {
         $record = $this->getRecord();
 
-        return collect([$record->client?->name, $record->categoryLabel(), $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null, $record->sizeLabel(), 'nahrál '.($record->author ?: '?').' '.$record->created_at->format('j. n. H:i')])->filter()->implode(' · ');
+        return collect([$record->client?->name, $record->categoryLabel(), $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null, 'nahrál '.($record->author ?: '?').' '.$record->created_at->format('j. n. Y')])->filter()->implode(' · ');
     }
 
     /** @return Collection<int, KnowledgeEntry> */
@@ -91,19 +91,6 @@ class ViewKnowledgeSource extends ViewRecord
         $proposed = fn (): int => $this->getRecord()->entries()->proposed()->count();
 
         return [
-            // HTML dokument (rozbor, plán) jako stálá stránka. Odkaz otevře každý, i bez přihlášení.
-            Action::make('page')
-                ->label('Otevřít stránku')
-                ->icon(Heroicon::OutlinedGlobeAlt)
-                ->visible(fn (): bool => $this->getRecord()->pageFile() !== null)
-                ->url(fn (): ?string => $this->getRecord()->pageUrl(), shouldOpenInNewTab: true),
-            Action::make('copyPage')
-                ->label('Zkopírovat odkaz')
-                ->tooltip('Otevře ho kdokoli s odkazem, i bez přihlášení. Smazáním dokumentu odkaz přestane fungovat.')
-                ->icon(Heroicon::OutlinedLink)
-                ->color('gray')
-                ->visible(fn (): bool => $this->getRecord()->pageFile() !== null)
-                ->alpineClickHandler(fn (): string => 'navigator.clipboard.writeText('.Js::from($this->getRecord()->pageUrl()).').then(() => new FilamentNotification().title('.Js::from('Odkaz zkopírován').').success().send())'),
             Action::make('approveAll')
                 ->label(fn (): string => 'Schválit všechny ('.$proposed().')')
                 ->icon(Heroicon::OutlinedCheck)
@@ -115,29 +102,36 @@ class ViewKnowledgeSource extends ViewRecord
                     $this->getRecord()->entries()->proposed()->get()->each(fn (KnowledgeEntry $entry) => $entry->approve(KnowledgeEntryResource::reviewer()));
                     unset($this->entries);
                 }),
-            Action::make('conversation')
-                ->label('Konverzace s agentem')
-                ->icon(Heroicon::OutlinedCommandLine)
-                ->color('gray')
-                ->url(fn (): string => AgentProject::getUrl(['project' => BrainAgent::project()])),
-            Action::make('retry')
-                ->label(fn (): string => match (true) {
-                    $this->getRecord()->isFailed() => 'Zkusit znovu',
-                    $this->getRecord()->isStored() => 'Udělat z nich poznatky',
-                    default => 'Projít znovu',
-                })
-                ->icon(Heroicon::OutlinedArrowPath)
-                ->color('gray')
-                ->visible(fn (): bool => ! $this->getRecord()->isRunning())
-                ->requiresConfirmation()
-                ->modalDescription('Agent podklady přečte znovu od začátku. Co už v mozku je (i ke schválení), znovu nezaloží.')
-                ->action(function (): void {
-                    app(BrainAgent::class)->process($this->getRecord());
-                    $this->getRecord()->refresh()->isFailed()
-                        ? Notification::make()->title('Agenta se nepodařilo spustit')->body($this->getRecord()->error)->danger()->send()
-                        : Notification::make()->title('Agent podklady čte')->success()->send();
-                }),
-            KnowledgeSourceResource::deleteAction(DeleteAction::make())->label('Smazat'),
+            // Méně časté věci v nabídce, ať se vedle nadpisu nemačká pět tlačítek.
+            ActionGroup::make([
+                Action::make('conversation')
+                    ->label('Konverzace s agentem')
+                    ->icon(Heroicon::OutlinedCommandLine)
+                    ->color('gray')
+                    ->url(fn (): string => AgentProject::getUrl(['project' => BrainAgent::project()])),
+                Action::make('retry')
+                    ->label(fn (): string => match (true) {
+                        $this->getRecord()->isFailed() => 'Zkusit znovu',
+                        $this->getRecord()->isStored() => 'Udělat z nich poznatky',
+                        default => 'Projít znovu',
+                    })
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->color('gray')
+                    ->visible(fn (): bool => ! $this->getRecord()->isRunning())
+                    ->requiresConfirmation()
+                    ->modalDescription('Agent podklady přečte znovu od začátku. Co už v mozku je (i ke schválení), znovu nezaloží.')
+                    ->action(function (): void {
+                        app(BrainAgent::class)->process($this->getRecord());
+                        $this->getRecord()->refresh()->isFailed()
+                            ? Notification::make()->title('Agenta se nepodařilo spustit')->body($this->getRecord()->error)->danger()->send()
+                            : Notification::make()->title('Agent podklady čte')->success()->send();
+                    }),
+                KnowledgeSourceResource::deleteAction(DeleteAction::make())->label('Smazat'),
+            ])
+                ->label('Další')
+                ->icon(Heroicon::OutlinedEllipsisHorizontal)
+                ->button()
+                ->color('gray'),
         ];
     }
 }

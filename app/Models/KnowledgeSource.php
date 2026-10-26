@@ -120,7 +120,7 @@ class KnowledgeSource extends Model
         }
 
         if (! $this->page_key) {
-            $name = rtrim(Str::limit(Str::slug(trim($this->client?->name.' '.$this->title)), 60, ''), '-') ?: 'stranka';
+            $name = rtrim(Str::limit(Str::slug(str_replace('/', ' ', trim($this->client?->name.' '.$this->title))), 60, ''), '-') ?: 'stranka';
             $this->forceFill(['page_key' => $name.'-'.Str::lower(Str::random(8))])->saveQuietly();
         }
 
