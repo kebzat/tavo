@@ -41,6 +41,9 @@ class KnowledgeBase
 
     private const OPENING_ARCHIVE = 8;
 
+    /** Archiv firmy (podklady bez klienta) má v API a v `taveo archiv` místo slugu klienta tohle slovo. */
+    public const FIRM_ARCHIVE = 'firma';
+
     /** Kolik dokumentů archivu vypsat jménem, zbytek dohledá `taveo archiv`. */
     private const ARCHIVE_LISTED = 12;
 
@@ -161,54 +164,58 @@ class KnowledgeBase
     public function opening(string $project, ?Client $client): string
     {
         $always = $this->fit(KnowledgeEntry::query()->approved()->where('always', true)->orderBy('layer')->orderBy('id')->get(), self::OPENING_ALWAYS);
-        $forClient = $client
-            ? $this->fit(KnowledgeEntry::query()->approved()->where('client_id', $client->getKey())->where('always', false)->latest('updated_at')->get(), self::OPENING_CLIENT)
-            : collect();
-        $archive = $client ? $this->archiveLines($client, self::OPENING_ARCHIVE, 180) : [];
+        // Projekt bez klienta (web TAVEO, marketing): místo klienta firemní poznatky a archiv firmy.
+        $own = KnowledgeEntry::query()->approved()->where('always', false)
+            ->when($client, fn (Builder $q) => $q->where('client_id', $client->getKey()), fn (Builder $q) => $q->whereNull('client_id'))
+            ->latest('updated_at')->get();
+        $forClient = $this->fit($own, self::OPENING_CLIENT);
+        $archive = $this->archiveLines($client, self::OPENING_ARCHIVE, 180);
+        $slug = $client?->slug ?? self::FIRM_ARCHIVE;
 
         $lines = ['# Mozek TAVEO pro tuhle konverzaci', ''];
         $lines[] = $client
             ? "Projekt `{$project}` je klient **{$client->name}** (slug `{$client->slug}`). Níž je, co o něm mozek ví (schválené poznatky) a co je v jeho archivu. Drž se toho, pokud člověk neřekne jinak, a když si odporuje s tím, co vidíš, řekni to."
-            : "Projekt `{$project}` nepatří žádnému klientovi v nástrojích, platí jen obecné poznatky.";
+            : "Projekt `{$project}` není klient, je to práce pro TAVEO samo (web, nástroje, marketing). Níž jsou firemní poznatky a postupy a archiv firmy. Drž se jich, pokud člověk neřekne jinak.";
 
         if ($always->isNotEmpty()) {
             array_push($lines, '', '## Platí vždy', $always->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n"));
         }
 
-        if ($client) {
-            array_push($lines, '', "## Mozek klienta {$client->name}", $forClient->isNotEmpty()
-                ? $forClient->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n")
-                : 'Zatím nic schváleného. Tím spíš navrhuj, co se o klientovi dozvíš.');
+        array_push($lines, '', $client ? "## Mozek klienta {$client->name}" : '## Firemní poznatky a postupy (nejnovější)', $forClient->isNotEmpty()
+            ? $forClient->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n")
+            : ($client ? 'Zatím nic schváleného. Tím spíš navrhuj, co se o klientovi dozvíš.' : 'Zatím nic dalšího.'));
 
-            array_push($lines, '', '## Archiv klienta', ...($archive !== []
-                ? [...$archive, '', "Celé dokumenty: `taveo archiv {$client->slug}` (seznam), `taveo archiv-stahnout <id> <složka>` (stáhne text a soubory). Čti je, když se otázka týká dat, strategie, výsledků nebo marží, a cituj, odkud číslo je."]
-                : ['Zatím prázdný. Dokumenty klienta (data, strategie, výsledky, marže) nahrávají lidé v Nástrojích → Klienti → '.$client->name.' → Archiv, nebo je uložíš ty (níž).']));
+        array_push($lines, '', $client ? '## Archiv klienta' : '## Archiv firmy', ...($archive !== []
+            ? [...$archive, '', "Celé dokumenty: `taveo archiv {$slug}` (seznam), `taveo archiv-stahnout <id> <složka>` (stáhne text a soubory). Čti je, když se otázka týká dat, strategie, výsledků nebo marží, a cituj, odkud číslo je."]
+            : [$client
+                ? 'Zatím prázdný. Dokumenty klienta (data, strategie, výsledky, marže) nahrávají lidé v Nástrojích → Klienti → '.$client->name.' → Archiv, nebo je uložíš ty (níž).'
+                : 'Zatím prázdný. Firemní dokumenty (strategie, ceník, čísla, zápisy) nahrávají lidé v Nástrojích → Mozek → Archiv a podklady, nebo je uložíš ty (níž).']));
 
-            array_push($lines, '',
-                '**Ukládání do archivu:** když ti člověk dá dokument klienta (soubor, vložená tabulka, zápis ze schůzky, strategie, čísla) nebo ho spolu sepíšete, ulož ho do archivu, ať ho najdou i další konverzace. Řekni mu to jednou větou. Vložený text nejdřív ulož do souboru .md. Jednorázové pracovní soubory a nic s hesly nebo osobními údaji zákazníků tam nepatří.',
-                "  `taveo archiv-nahrat {$client->slug} \"Název\" --druh obchod --k-datu 2026-09-30 --popis \"co v něm je, 1–3 věty\" soubor.xlsx`",
-                '  Druhy: '.collect(KnowledgeSource::categories())->map(fn (string $label, string $key): string => "{$key} ({$label})")->implode(', ').'. `--poznatky` pošle dokument i knihovníkovi (strategie, zápisy, zkušenosti; u tabulek a exportů ne, stačí popis).');
-        }
+        array_push($lines, '',
+            '**Ukládání do archivu:** když ti člověk dá dokument '.($client ? 'klienta' : 'firmy').' (soubor, vložená tabulka, zápis ze schůzky, strategie, čísla) nebo ho spolu sepíšete, ulož ho do archivu, ať ho najdou i další konverzace. Řekni mu to jednou větou. Vložený text nejdřív ulož do souboru .md. Jednorázové pracovní soubory a nic s hesly nebo osobními údaji zákazníků tam nepatří.',
+            "  `taveo archiv-nahrat {$slug} \"Název\" --druh obchod --k-datu 2026-09-30 --popis \"co v něm je, 1–3 věty\" soubor.xlsx`",
+            '  Druhy: '.collect(KnowledgeSource::categories())->map(fn (string $label, string $key): string => "{$key} ({$label})")->implode(', ').'. `--poznatky` pošle dokument i knihovníkovi (strategie, zápisy, zkušenosti; u tabulek a exportů ne, stačí popis).');
 
-        $slug = $client ? " {$client->slug}" : '';
+        $scope = $client ? " {$client->slug}" : '';
 
         return implode("\n", [
             ...$lines,
             '',
             '## Hledání a učení',
-            "- Víc v mozku: `taveo mozek \"slova\"{$slug}` (postupy, starší zkušenosti, jiní klienti).",
+            "- Víc v mozku: `taveo mozek \"slova\"{$scope}` (postupy, starší zkušenosti, jiní klienti).",
             '- Když se v konverzaci dozvíš něco, co se bude hodit příště (jak to klient chce, co fungovalo a co ne, domluva, číslo s datem), navrhni poznatek. Platit začne, až ho člověk schválí v Nástrojích → Mozek:',
-            '  `taveo mozek-navrh '.($client ? 'klient' : 'firma')." \"Nadpis jednou větou\"{$slug} <<'EOF'` … pár vět: co, proč, příklad, datum u čísel … `EOF`",
+            '  `taveo mozek-navrh '.($client ? 'klient' : 'firma')." \"Nadpis jednou větou\"{$scope} <<'EOF'` … pár vět: co, proč, příklad, datum u čísel … `EOF`".($client ? '' : ' (návod na opakovanou práci: `postup` místo `firma`)'),
             '  Před návrhem `taveo mozek-seznam` (ať nevznikne podruhé). Obyčejný průběh práce poznatek není. Žádná hesla ani osobní údaje zákazníků.',
             '- Když tě člověk opraví („tohle klient nechce“), je to přesně ten poznatek, který stojí za návrh.',
         ]);
     }
 
-    /** @return list<string> dokumenty archivu klienta, nejnovější první, s popisem obsahu */
-    private function archiveLines(Client $client, int $listed = self::ARCHIVE_LISTED, int $summary = 300): array
+    /** @return list<string> dokumenty archivu klienta (bez klienta: archiv firmy), nejnovější první, s popisem obsahu */
+    private function archiveLines(?Client $client, int $listed = self::ARCHIVE_LISTED, int $summary = 300): array
     {
-        $sources = $client->knowledgeSources()->latest('id')->limit($listed + 1)->get();
-        $more = $sources->count() > $listed ? $client->knowledgeSources()->count() - $listed : 0;
+        $query = fn (): Builder => KnowledgeSource::query()->where('client_id', $client?->getKey());
+        $sources = $query()->latest('id')->limit($listed + 1)->get();
+        $more = $sources->count() > $listed ? $query()->count() - $listed : 0;
 
         return $sources->take($listed)
             ->map(fn (KnowledgeSource $source): string => '- #'.$source->getKey().' '.$source->title

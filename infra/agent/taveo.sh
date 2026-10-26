@@ -42,7 +42,7 @@ taveo mozek-seznam                      nadpisy všeho v mozku (kontrola duplici
 taveo mozek-navrh firma|klient|postup "nadpis" [slug] < text.md
                                         návrh poznatku do mozku, schválí ho člověk v nástrojích
 taveo mozek-uvod                        mozek klienta pro začátek konverzace (háček SessionStart, projekt podle složky)
-taveo archiv <slug> [druh]              archiv klienta: data, strategie, výsledky, marže (seznam s popisem)
+taveo archiv <slug|firma> [druh]        archiv klienta (firma = archiv TAVEO): data, strategie, výsledky, marže
 taveo archiv-stahnout <id> <složka>     stáhne dokument z archivu (text a soubory) do místní složky
 taveo archiv-nahrat <slug> "název" [--druh D] [--k-datu RRRR-MM-DD] [--popis "co v něm je"] [--poznatky] <soubor>… | -
                                         uloží soubory (nebo text ze vstupu: -) do archivu klienta; --poznatky = přečte ho i knihovník

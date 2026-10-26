@@ -431,7 +431,7 @@ class KnowledgeTest extends TestCase
         $this->assertLessThan(10000, mb_strlen($text));
 
         $other = $this->withToken(self::TOKEN)->get(route('agent.api.mozek.uvod', ['projekt' => 'taveo']))->assertOk()->content();
-        $this->assertStringContainsString('nepatří žádnému klientovi', $other);
+        $this->assertStringContainsString('není klient, je to práce pro TAVEO samo', $other);
         $this->assertStringNotContainsString('Svět Cejlonu nechce slevy', $other);
 
         // Úlohy z ClickUpu a grafiky dostanou archiv v zadání.
@@ -585,5 +585,50 @@ class KnowledgeTest extends TestCase
         $this->assertSame($client->getKey(), $new->client_id);
         $this->assertSame('Pavel', $new->author);
         $this->assertSame([], $this->tasks);
+    }
+
+    public function test_projekt_bez_klienta_ma_mozek_taveo_a_archiv_firmy(): void
+    {
+        Storage::fake('local');
+        $this->prihlasit();
+        $client = $this->klient();
+        $this->poznatek(['title' => 'Web TAVEO: texty jen přes text() helper']);
+        $this->poznatek(['layer' => 'postup', 'title' => 'Jak zveřejnit úpravu webu']);
+        $this->poznatek(['layer' => 'klient', 'client_id' => $client->getKey(), 'title' => 'Svět Cejlonu nechce slevy']);
+        $firmProposal = $this->poznatek(['title' => 'Ceník služeb platí od 1. 11.', 'status' => KnowledgeEntry::STATUS_PROPOSED]);
+        KnowledgeSource::create(['title' => 'Ceník TAVEO 2027', 'category' => 'obchod', 'summary' => 'Ceny balíčků.', 'body' => 'x', 'status' => KnowledgeSource::STATUS_STORED]);
+        KnowledgeSource::create(['title' => 'Marže Světa Cejlonu', 'client_id' => $client->getKey(), 'body' => 'x', 'status' => KnowledgeSource::STATUS_STORED]);
+
+        // Úvod konverzace v projektu taveo: firemní poznatky, postupy a archiv firmy, nic o klientech.
+        $text = app(KnowledgeBase::class)->opening('taveo', null);
+        $this->assertStringContainsString('## Firemní poznatky a postupy', $text);
+        $this->assertStringContainsString('Web TAVEO: texty jen přes text() helper', $text);
+        $this->assertStringContainsString('Jak zveřejnit úpravu webu', $text);
+        $this->assertStringContainsString('## Archiv firmy', $text);
+        $this->assertStringContainsString('Ceník TAVEO 2027', $text);
+        $this->assertStringContainsString('taveo archiv-nahrat firma', $text);
+        $this->assertStringNotContainsString('Svět Cejlonu', $text);
+
+        // API: archiv firmy pod slovem „firma“.
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.archiv', 'firma'))
+            ->assertOk()->assertJsonPath('klient', 'firma')->assertJsonCount(1, 'dokumenty')->assertJsonPath('dokumenty.0.nazev', 'Ceník TAVEO 2027');
+        $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'firma'), ['nazev' => 'Zápis z porady TAVEO', 'text' => 'Od listopadu nový ceník.'])->assertCreated();
+        $this->assertNull(KnowledgeSource::query()->where('title', 'Zápis z porady TAVEO')->value('client_id'));
+
+        // Panel u konverzace bez klienta.
+        Livewire::test(ClientBrain::class, ['clientId' => null])
+            ->assertSee('Mozek TAVEO')
+            ->assertSee('Firemní poznatky a postupy')
+            ->assertSee('Jak zveřejnit úpravu webu')
+            ->assertSee('Ceník TAVEO 2027')
+            ->assertDontSee('Svět Cejlonu nechce slevy')
+            ->assertDontSee('Marže Světa Cejlonu')
+            ->assertDontSee('Karta klienta')
+            ->call('approve', $firmProposal->getKey())
+            ->callAction('upload', ['title' => 'Strategie TAVEO 2027', 'body' => 'Víc e-shopů.', 'learn' => false])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(KnowledgeEntry::STATUS_APPROVED, $firmProposal->refresh()->status);
+        $this->assertNull(KnowledgeSource::query()->where('title', 'Strategie TAVEO 2027')->value('client_id'));
     }
 }

@@ -13,7 +13,7 @@ Platí jen poznatky, které schválil člověk.
 | **Zeptat se** (`/nastroje/mozek`) | Otázka na mozek. Agent hledá ve schválených poznatcích a odpoví s čísly poznatků (#id). Na „zapamatuj si…“ navrhne nový poznatek. Otázky jdou do jedné dlouhé konverzace, „Začít nový rozhovor“ ji založí znovu. Poznatky zůstávají. |
 | **Poznatky** (`/nastroje/mozek/poznatky`) | Návrhy ke schválení (hromadně i po jednom), platné, „vždy v hlavě“, archiv. Ručně napsaný poznatek platí hned. |
 | **Archiv a podklady** (`/nastroje/mozek/podklady`) | Vložený text nebo soubory (poznámky, e-maily, přepisy schůzek, PDF, Word, Excel). Knihovník je na pozadí přečte, napíše popis obsahu a pošle návrhy poznatků. Víc podkladů najednou bere jedny po druhých (fronta projektu). Podklady s klientem jsou jeho archiv, viz níž. |
-| **Agent → projekt klienta → Mozek klienta** | Tlačítka nad terminálem (`ClientBrain`): panel z boku s návrhy ke schválení, poznatky a archivem, Nahrát do archivu. Konverzace zůstává otevřená. |
+| **Agent → projekt → Mozek klienta / Mozek TAVEO** | Tlačítka nad terminálem (`ClientBrain`): panel z boku s návrhy ke schválení, poznatky a archivem, Nahrát do archivu. Konverzace zůstává otevřená. Projekt bez klienta (taveo, marketing) ukáže Mozek TAVEO: firemní poznatky a postupy a archiv firmy. |
 | **Klienti → klient → Archiv / Mozek klienta** | Archiv klienta (nahrát, stáhnout, smazat) a jeho poznatky (platné a ke schválení, schválit jde i tady). |
 
 ## Poznatek
@@ -61,6 +61,9 @@ obsahu (`summary`, píše ho knihovník přes `POST /mozek/navrhy` s `popis`). S
   `poznamka`, `text` nebo `soubory[]`, `uceni`). Bez `uceni` jen uložení s popisem od agenta, s ním i knihovník.
   Autor je „agent“, stejné typy a velikosti souborů jako formulář. Pokyn dostává v úvodu konverzace.
   Ověřeno naostro (26. 10.): po vloženém zápisu ze schůzky ho agent sám uložil s druhem, datem a popisem.
+- **Projekt bez klienta** (web TAVEO, marketing, kalkulace): úvod místo klienta obsahuje nejnovější firemní poznatky
+  a postupy a **archiv firmy** (podklady bez klienta). V API a v `taveo archiv` / `taveo archiv-nahrat` je to slovo `firma`
+  místo slugu klienta (`KnowledgeBase::FIRM_ARCHIVE`).
 - Háček nikdy nezdrží začátek konverzace: bez spojení nebo s chybou nevypíše nic (limit 8 s).
 - Do přestavění obrazu (`managed-settings.json` nahrává Tom) běží stejný háček z `~/.claude/settings.json`
   agenta a příkazy z `~/.local/bin/taveo`. Po nahrání `managed-settings.json` háček z `~/.claude/settings.json`
