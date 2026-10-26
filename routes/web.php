@@ -26,6 +26,8 @@ use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\Tools\AgentHandoverPageController;
+use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\VerifyAgentToken;
 use App\Http\Middleware\VerifyCrmToken;
 use App\Support\Marketing\MarketingGuide;
@@ -183,6 +185,13 @@ Route::get('/audit/{key}', AuditController::class)->name('audit.show');
 
 // Report reklam pro klienta. Sdílí se jako audit: čitelná adresa, noindex.
 Route::get('/report/{key}', AdReportController::class)->name('ad-report.show');
+
+// Stránka z hotových podkladů agenta (rozbor, plán) pro kolegu nebo klienta
+// bez přihlášení do nástrojů. Odkaz je podepsaný a platí 30 dní, vydá ho jen
+// přihlášený v kontrole podkladů (AgentHandovers::shareUrl).
+Route::get('/sdilene/{project}/{name}/{file}', AgentHandoverPageController::class)
+    ->middleware(['signed:relative', NoIndex::class, 'throttle:60,1'])
+    ->name('agent.sdilene');
 
 // Přehled spolupráce pro klienta na paušál: hodiny, hotová práce, plán.
 // Ukazuje peníze, proto má adresa za názvem klienta náhodnou část

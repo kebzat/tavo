@@ -25,6 +25,13 @@
                             Otevřít jako stránku
                         </x-filament::button>
                     @endif
+                    @if (isset($shares[$code['soubor']]))
+                        <x-filament::button size="xs" color="gray" icon="heroicon-m-link" title="Otevře ho kdokoli s odkazem, bez přihlášení. Platí 30 dní."
+                            x-data="{ shared: false }" data-url="{{ $shares[$code['soubor']] }}"
+                            x-on:click="navigator.clipboard.writeText($el.dataset.url).then(() => { shared = true; setTimeout(() => shared = false, 2000) })">
+                            <span x-text="shared ? 'Odkaz zkopírován' : 'Odkaz bez přihlášení'">Odkaz bez přihlášení</span>
+                        </x-filament::button>
+                    @endif
                     <x-filament::button size="xs" color="gray" icon="heroicon-m-clipboard-document"
                         x-on:click="navigator.clipboard.writeText($refs.code.innerText).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
                         <span x-text="copied ? 'Zkopírováno' : 'Zkopírovat'">Zkopírovat</span>

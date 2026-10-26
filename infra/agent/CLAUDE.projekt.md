@@ -53,6 +53,8 @@ soubor (`paticka.html`, `styl.css`, `popis-produktu.txt`), náhled jako `*.png`.
 V nástrojích u nich bude tlačítko Zkopírovat. Rozbor nebo plán ke čtení pro kolegy
 dej jako `.html` (vzhled TAVEO, písma jen z Bunny Fonts, bez externích skriptů):
 má tlačítko **Otevřít jako stránku** a odkaz `/nastroje/agent/{{PROJEKT}}/stranka/<krátký-popis>/<soubor>.html`.
+Pro někoho bez přihlášení je u něj **Odkaz bez přihlášení** (podepsaný, 30 dní). Ten vydá jen člověk v nástrojích,
+ty ho nevyrobíš, proto do stránky nepiš nic, co nesmí vidět klient.
 
 ## Pravidla
 

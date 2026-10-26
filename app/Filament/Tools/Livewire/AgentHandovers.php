@@ -17,6 +17,7 @@ use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -180,6 +181,14 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
         return preg_match('/\.html?$/i', $file) ? route('filament.tools.agent.stranka', ['project' => $this->project, 'name' => $name, 'file' => $file]) : null;
     }
 
+    /** Odkaz na stejnou stránku bez přihlášení: podepsaný, platí 30 dní. */
+    public function shareUrl(string $name, string $file): ?string
+    {
+        return preg_match('/\.html?$/i', $file)
+            ? url(URL::temporarySignedRoute('agent.sdilene', now()->addDays(30), ['project' => $this->project, 'name' => $name, 'file' => $file], absolute: false))
+            : null;
+    }
+
     public function reviewAction(): Action
     {
         return Action::make('review')
@@ -201,6 +210,7 @@ class AgentHandovers extends Component implements HasActions, HasSchemas
                     'component' => $this,
                     'body' => self::markdown($item['description']),
                     'pages' => collect($item['codes'])->mapWithKeys(fn (array $code): array => [$code['soubor'] => $this->pageUrl($item['name'], $code['soubor'])])->filter()->all(),
+                    'shares' => collect($item['codes'])->mapWithKeys(fn (array $code): array => [$code['soubor'] => $this->shareUrl($item['name'], $code['soubor'])])->filter()->all(),
                 ])
                 : null)
             ->modalSubmitActionLabel(match ($this->type) {
