@@ -343,6 +343,7 @@ final class ClientContext
     private function tasks(): array
     {
         $row = fn (ClientTask $task): array => [
+            'id' => $task->getKey(),
             'ukol' => $task->title,
             'stav' => $task->status->getLabel(),
             'priorita' => $task->priority,

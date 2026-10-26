@@ -75,6 +75,10 @@ Co ban riskuje i tak, a není to technika:
   na serveru. Běží nejvýš jednou denně.
 - Pavel v nástrojích → Agent → `marketing`: „tady je zápis ze schůzky
   s MIRNIX…“ a agent uloží poznámku, dohody do karty a návrhy úkolů.
+- Stav schváleného úkolu agent mění sám (od 26. 10. 2026, chtěl uživatel): `taveo ukoly-seznam <slug>`
+  vypíše úkoly s id, `taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"]` stav změní.
+  Hotový úkol klient uvidí na přehledu v „Co jsme udělali“ (měsíc podle data dokončení), poznámka
+  s datem a „agent“ se připíše jen do interní poznámky. Návrhy úkolů dál schvaluje člověk (409).
 
 ## Co zatím chybí a proč
 

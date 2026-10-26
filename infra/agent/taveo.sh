@@ -1,7 +1,7 @@
 #!/bin/bash
 # Příkaz `taveo` v kontejneru agenta: čte data klientů z nástrojů TAVEO
 # a zapisuje koncepty (ranní přehled, návrhy úkolů, rozhodnutí, podklady
-# k reportu, návrhy poznatků do mozku), čte archiv klienta a používá trezor
+# k reportu, návrhy poznatků do mozku), mění stav schválených úkolů, čte archiv klienta a používá trezor
 # přístupů (hesla nevidí, práci s nimi dělá web). Nic neodesílá klientovi a nic nemění v reklamách.
 # Rozhraní: /nastroje/api/agent (App\Http\Controllers\Agent\AgentApiController).
 set -euo pipefail
@@ -34,6 +34,9 @@ taveo klienti                           seznam klientů (slug, cíl, upozorněn�
 taveo klient <slug>                     všechno o klientovi: karta, čísla, upozornění, úkoly
 taveo prehled <slug> < prehled.md       uloží dnešní ranní přehled (Markdown ze vstupu)
 taveo ukoly <slug> < ukoly.json         návrhy úkolů ke schválení: {"tasks":[{"title":…,"source":…}]}
+taveo ukoly-seznam <slug>               schválené úkoly s id: otevřené a hotové za tento měsíc
+taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"] ["na koho se čeká"]
+                                        změní stav úkolu; hotový klient uvidí v „Co jsme udělali“ (poznámka jen interně)
 taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
 taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF
                                         jedna část konceptu reportu v Markdownu (jen prázdná pole se doplní)
@@ -66,6 +69,19 @@ case "${1:-}" in
     klient) volat GET "/klienti/${2:?slug klienta}" ;;
     prehled) jq -Rs '{body: .}' | volat POST "/klienti/${2:?slug klienta}/prehled" --data-binary @- ;;
     ukoly) volat POST "/klienti/${2:?slug klienta}/ukoly" --data-binary @- ;;
+    ukoly-seznam) volat GET "/klienti/${2:?slug klienta}/ukoly" ;;
+    ukol-stav)
+        case "${3:-}" in
+            hotovo) stav=done ;;
+            rozpracovano) stav=in_progress ;;
+            ceka) stav=waiting ;;
+            v-planu) stav=planned ;;
+            *) echo "Použití: taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu [\"poznámka\"] [\"na koho se čeká\"]" >&2; exit 1 ;;
+        esac
+        jq -n --arg s "$stav" --arg p "${4:-}" --arg c "${5:-}" \
+            '{stav: $s} + (if $p == "" then {} else {poznamka: $p} end) + (if $c == "" then {} else {ceka_na: $c} end)' \
+            | volat POST "/ukoly/${2:?id úkolu z taveo ukoly-seznam}/stav" --data-binary @-
+        ;;
     rozhodnuti)
         jq -n --arg d "${3:?rozhodnutí}" --arg s "${4:?zdroj}" --arg v "${5:-}" '{decision: $d, source: $s} + (if $v == "" then {} else {valid_until: $v} end)' \
             | volat POST "/klienti/${2:?slug klienta}/rozhodnuti" --data-binary @-

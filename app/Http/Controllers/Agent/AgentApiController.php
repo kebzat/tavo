@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Ads\AdReport;
 use App\Models\AgentJob;
 use App\Models\Client;
+use App\Models\ClientTask;
 use App\Models\Marketing\ClientBriefing;
 use App\Support\AdGraphics\GraphicsAgent;
 use App\Support\ClickUp\ClickUpAgent;
@@ -23,8 +24,9 @@ use Illuminate\Validation\Rule;
  *
  * Agent čte data klientů spočítaná systémem a zapisuje jen koncepty, které
  * vidí a schvaluje člověk: ranní přehled, návrhy úkolů, rozhodnutí do karty,
- * fakta / příčiny / doporučení ke konceptu reportu. Nic neodesílá klientovi,
- * nic nemění v reklamách. Viz docs/MARKETING.md.
+ * fakta / příčiny / doporučení ke konceptu reportu. Navíc smí posunout stav
+ * schváleného úkolu (hotovou práci tak klient uvidí v „Co jsme udělali“).
+ * Nic neodesílá klientovi, nic nemění v reklamách. Viz docs/MARKETING.md.
  */
 class AgentApiController extends Controller
 {
@@ -108,6 +110,60 @@ class AgentApiController extends Controller
         }
 
         return response()->json(['ok' => true, 'zalozeno' => $created]);
+    }
+
+    /** Schválené úkoly klienta s id pro změnu stavu: otevřené a hotové za tento měsíc. */
+    public function taskList(string $slug): JsonResponse
+    {
+        $client = $this->find($slug);
+        $row = fn (ClientTask $task): array => [
+            'id' => $task->getKey(),
+            'ukol' => $task->title,
+            'stav' => $task->status->value,
+            'oblast' => $task->area?->getLabel(),
+            'v_planu_na' => $task->planned_for?->format('Y-m'),
+            'termin' => $task->due_on?->toDateString(),
+            'ceka_se_na' => $task->waiting_for,
+            'hotovo_dne' => $task->done_on?->toDateString(),
+        ];
+
+        return response()->json([
+            'otevrene' => $client->tasks()->open()->orderBy('planned_for')->orderBy('id')->get()->map($row)->values(),
+            'hotove_tento_mesic' => $client->tasks()->where('status', TaskStatus::Done->value)
+                ->where('done_on', '>=', today()->startOfMonth()->toDateString())->orderBy('done_on')->get()->map($row)->values(),
+        ]);
+    }
+
+    /**
+     * Stav schváleného úkolu. Hotový úkol klient uvidí na přehledu v „Co jsme
+     * udělali“ za měsíc dokončení. Poznámka jde jen do interní poznámky.
+     * Návrh od agenta musí nejdřív schválit člověk.
+     */
+    public function taskStatus(Request $request, ClientTask $task): JsonResponse
+    {
+        abort_if($task->is_proposal, 409, 'Návrh úkolu ještě neschválil člověk, stav se mu nemění.');
+
+        $data = $request->validate([
+            'stav' => ['required', Rule::enum(TaskStatus::class)],
+            'poznamka' => ['nullable', 'string', 'max:2000'],
+            'ceka_na' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $status = TaskStatus::from($data['stav']);
+        $line = today()->format('j. n. Y').', agent: '.$status->getLabel().(filled($data['poznamka'] ?? null) ? '. '.$data['poznamka'] : '');
+
+        $task->fill([
+            'status' => $status,
+            'internal_note' => trim(($task->internal_note ?? '')."\n".$line),
+        ]);
+
+        if ($status === TaskStatus::Waiting && filled($data['ceka_na'] ?? null)) {
+            $task->waiting_for = $data['ceka_na'];
+        }
+
+        $task->save();
+
+        return response()->json(['ok' => true, 'id' => $task->getKey(), 'stav' => $task->status->value, 'hotovo_dne' => $task->done_on?->toDateString()]);
     }
 
     /** Rozhodnutí do karty klienta, se zdrojem a datem. */

@@ -293,6 +293,34 @@ class MarketingTest extends TestCase
         $this->assertSame([], ClientDashboard::for($client->fresh())->waiting());
     }
 
+    public function test_agent_posune_schvaleny_ukol_do_hotove_prace(): void
+    {
+        $client = $this->klient(attributes: ['dashboard_enabled' => true]);
+        $task = $client->tasks()->create(['title' => 'Smazat ukázkový obsah', 'area' => WorkArea::Web, 'status' => TaskStatus::InProgress, 'internal_note' => 'Od Toma.']);
+        $proposal = $client->taskProposals()->create(['title' => 'Návrh od agenta', 'area' => WorkArea::Web, 'is_proposal' => true]);
+
+        $list = $this->getJson('/nastroje/api/agent/klienti/cajovna-zkouska/ukoly', $this->api())->assertOk()->json();
+        $this->assertSame([$task->id], array_column($list['otevrene'], 'id'));
+        $this->assertSame($task->id, $this->getJson('/nastroje/api/agent/klienti/cajovna-zkouska', $this->api())->json('ukoly.otevrene.0.id'));
+
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}/stav", ['stav' => 'done', 'poznamka' => 'Ověřeno na živém webu.'], $this->api())
+            ->assertOk()->assertJson(['stav' => 'done', 'hotovo_dne' => '2026-10-21']);
+
+        $task->refresh();
+        $this->assertSame(TaskStatus::Done, $task->status);
+        $this->assertSame("Od Toma.\n21. 10. 2026, agent: Hotovo. Ověřeno na živém webu.", $task->internal_note);
+        $this->assertSame(['Smazat ukázkový obsah'], array_column(ClientDashboard::for($client->fresh())->work(), 'title'));
+        $this->assertSame([$task->id], array_column($this->getJson('/nastroje/api/agent/klienti/cajovna-zkouska/ukoly', $this->api())->json('hotove_tento_mesic'), 'id'));
+
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}/stav", ['stav' => 'waiting', 'ceka_na' => 'fotky od klienta'], $this->api())->assertOk();
+        $this->assertNull($task->fresh()->done_on);
+        $this->assertSame('fotky od klienta', $task->fresh()->waiting_for);
+
+        $this->postJson("/nastroje/api/agent/ukoly/{$proposal->id}/stav", ['stav' => 'done'], $this->api())->assertStatus(409);
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}/stav", ['stav' => 'smazano'], $this->api())->assertUnprocessable();
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}/stav", ['stav' => 'done'])->assertUnauthorized();
+    }
+
     public function test_agent_prida_rozhodnuti_a_doplni_jen_prazdna_pole_konceptu_reportu(): void
     {
         $client = $this->klient();
