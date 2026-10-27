@@ -6,4 +6,6 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
+# Limity (FRONTA_LIMIT_MIN) jsou ve stejném souboru jako u služby v kontejneru.
+EnvironmentFile=-/srv/agent/terminal.env
 ExecStart=/usr/bin/python3 /srv/agent/docker/agent-fronta.py

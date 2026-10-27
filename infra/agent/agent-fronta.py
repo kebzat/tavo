@@ -18,18 +18,26 @@ potřeba udělat na serveru, proto jen popíše, a tady se to pečlivě ověří
 
 Web na serveru (`server`) se z administrace přidat nedá. Dává agentovi
 přístup k živému webu klienta, takže zůstává jen pro roota přes SSH.
+
+Claude tady nikdy neběží (sezení spouští jen služba v kontejneru). Každý
+příkaz `agent` má limit FRONTA_LIMIT_MIN (z /srv/agent/terminal.env, výchozí
+10 min) a běží ve vlastní skupině procesů: po limitu skončí i mysqldump, rsync
+a ostatní, co spustil, ne jen samotný skript.
 """
 
 import json
 import os
 import re
+import signal
 import subprocess
+import time
 from pathlib import Path
 
 POZADAVKY = Path('/srv/agent/fronta/pozadavky')
 VYSLEDKY = Path('/srv/agent/fronta/vysledky')
 SEZNAM = Path('/srv/agent/projekty.tsv')
 NAZEV = re.compile(r'^[a-z0-9][a-z0-9-]{1,40}$')
+LIMIT_S = float(os.environ.get('FRONTA_LIMIT_MIN') or 10) * 60
 GITHUB = re.compile(r'^(git@github\.com:|https://github\.com/)[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?(\.git)?$')
 
 
@@ -39,9 +47,39 @@ def projekty():
     return {radek.split('\t')[0] for radek in SEZNAM.read_text().splitlines() if radek}
 
 
+def ukoncit_skupinu(beh):
+    """SIGTERM celé skupině procesů příkazu, po 10 s SIGKILL tomu, co zbylo."""
+    for sig, cekat in ((signal.SIGTERM, 10), (signal.SIGKILL, 0)):
+        try:
+            os.killpg(beh.pid, sig)
+        except ProcessLookupError:
+            return
+        for _ in range(cekat * 4):
+            beh.poll()  # skončený příkaz jinak visí jako zombie a skupina „žije“
+            try:
+                os.killpg(beh.pid, 0)
+            except ProcessLookupError:
+                return
+            time.sleep(0.25)
+
+
 def agent(*args):
-    beh = subprocess.run(['/usr/local/bin/agent', *args], capture_output=True, text=True, timeout=600)
-    return beh.returncode == 0, (beh.stdout + beh.stderr).strip()
+    beh = subprocess.Popen(['/usr/local/bin/agent', *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           text=True, start_new_session=True)
+    try:
+        vystup, _ = beh.communicate(timeout=LIMIT_S)
+    except subprocess.TimeoutExpired:
+        # Skript mohl skončit a výstup drží jen to, co spustil na pozadí.
+        dobehl = beh.poll() is not None
+        ukoncit_skupinu(beh)
+        vystup, _ = beh.communicate()
+        if dobehl:
+            return beh.returncode == 0, (vystup or '').strip()
+        return False, f'{(vystup or "").strip()}\nNestihlo se do {LIMIT_S / 60:g} min, ukončeno i se vším, co spustilo.'.strip()
+
+    # I po řádném konci: co zůstalo na pozadí ve skupině, skončí.
+    ukoncit_skupinu(beh)
+    return beh.returncode == 0, (vystup or '').strip()
 
 
 def zpracovat(pozadavek):

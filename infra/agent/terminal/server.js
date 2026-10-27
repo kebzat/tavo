@@ -20,13 +20,17 @@
  *
  * Co potřebuje roota (záloha databáze, přidání projektu), řeší server: služba
  * zapíše požadavek do /fronta a počká na výsledek (viz agent-fronta.py).
+ *
+ * Každý proces s Claudem (okno, úloha, sezení z aplikace Claude) vede registr
+ * sezení: strop souběžných sezení, uspání nečinných, úklid starých verzí
+ * a hlídání paměti kontejneru (viz registr sezení níž, docs/AGENT.md).
  */
 
 const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFile } = require('node:child_process');
+const { execFile, spawn } = require('node:child_process');
 const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
 
@@ -36,14 +40,11 @@ const SECRET = process.env.AGENT_SECRET || '';
 delete process.env.AGENT_SECRET;
 const PORT = Number(process.env.PORT || 7681);
 const HOME = process.env.HOME || '/home/agent';
-const REGISTR = '/etc/taveo-agent/projekty.tsv';
+const REGISTR = process.env.PROJEKTY_TSV || '/etc/taveo-agent/projekty.tsv';
 const FRONTA = '/fronta';
 const AUTORI = path.join(HOME, '.taveo-autori.json');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const OKNO = /^@\d+$/;
-// Nepřipnutá konverzace bez pohybu se po téhle době uspí (proces skončí,
-// konverzace zůstane uložená a jde probudit).
-const USPAT_PO = Number(process.env.USPAT_PO_HODINACH || 12) * 3600;
 
 if (SECRET.length < 32) {
     console.error('AGENT_SECRET chybí nebo je kratší než 32 znaků.');
@@ -54,6 +55,8 @@ if (SECRET.length < 32) {
 
 const tmux = (args) => new Promise((resolve, reject) => {
     execFile('tmux', args, { timeout: 10000 }, (error, stdout, stderr) => {
+        // Příkaz, který okna mění, zahodí sdílený snímek oken (viz vsechnaOkna).
+        if (!TMUX_CTENI.has(args[0])) zahoditSnimekOken();
         error ? reject(new Error(stderr.trim() || error.message)) : resolve(stdout);
     });
 });
@@ -126,34 +129,604 @@ function bezi(pid, jmeno) {
     }
 }
 
+/**
+ * Okna všech projektů jedním `tmux list-windows -a`, sdílená pro všechny dotazy
+ * a nejvýš jednou za TMUX_INTERVAL_MS. Dřív šlo na každý projekt několik
+ * příkazů tmuxu a nástroje se ptají každých 5 s: desítky procesů tmuxu za
+ * sekundu. Příkaz, který okna mění, snímek zahodí, takže nové okno je vidět hned.
+ */
+const TMUX_INTERVAL = Number(process.env.TMUX_INTERVAL_MS || 1500);
+const TMUX_CTENI = new Set(['list-windows', 'capture-pane', 'display-message', 'has-session']);
+let snimekOken = { cas: 0, data: null };
+let nacitaniOken = null;
+let verzeOken = 0;
+
+function zahoditSnimekOken() {
+    verzeOken++;
+    snimekOken = { cas: 0, data: null };
+    nacitaniOken = null;
+}
+
+/** Map: jméno sezení tmuxu → okna. */
+async function vsechnaOkna() {
+    if (snimekOken.data && Date.now() - snimekOken.cas < TMUX_INTERVAL) return snimekOken.data;
+
+    if (nacitaniOken) return nacitaniOken;
+
+    const nacteni = (async () => {
+        const verze = verzeOken;
+        const format = ['#{session_name}', '#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}', '#{@trvala}', '#{@uloha}', '#{@rcnastaveni}'].join('\t');
+        let vystup = '';
+        try {
+            vystup = await tmux(['list-windows', '-a', '-F', format]);
+        } catch (e) {
+            // Bez jediného okna tmux server neběží, to není chyba.
+            if (!/no server running|error connecting|no sessions/i.test(e.message)) throw e;
+        }
+
+        const data = new Map();
+        for (const r of vystup.split('\n').filter(Boolean)) {
+            const [sezeni, id, session, autor, aktivita, pid, rc, trvala, uloha, rcnastaveni] = r.split('\t');
+            if (!data.has(sezeni)) data.set(sezeni, []);
+            data.get(sezeni).push({
+                id,
+                session: session || null,
+                autor: autor || null,
+                aktivita: Number(aktivita) || null,
+                pid: Number(pid) || null,
+                rc: rc === '1',
+                trvala: trvala === '1',
+                uloha: Boolean(uloha),
+                rcnastaveni: rcnastaveni || null,
+            });
+        }
+        if (verze === verzeOken) snimekOken = { cas: Date.now(), data };
+
+        return data;
+    })().finally(() => { if (nacitaniOken === nacteni) nacitaniOken = null; });
+
+    nacitaniOken = nacteni;
+    return nacteni;
+}
+
 /** Okna projektu v tmuxu. */
 async function okna(slug) {
-    try {
-        await tmux(['has-session', '-t', `=${slug}`]);
-    } catch {
-        return [];
-    }
-
-    const format = ['#{window_id}', '#{@session}', '#{@autor}', '#{window_activity}', '#{pane_pid}', '#{@rc}', '#{@trvala}', '#{@uloha}'].join('\t');
-    const vystup = await tmux(['list-windows', '-t', `=${slug}`, '-F', format]);
-
-    return vystup.trim().split('\n').filter(Boolean).map((r) => {
-        const [id, session, autor, aktivita, pid, rc, trvala, uloha] = r.split('\t');
-        return {
-            id,
-            session: session || null,
-            autor: autor || null,
-            aktivita: Number(aktivita) || null,
-            claude: bezi(pid, 'claude'),
-            rc: rc === '1',
-            trvala: trvala === '1',
-            uloha: Boolean(uloha),
-        };
-    });
+    return ((await vsechnaOkna()).get(slug) || []).map((o) => ({
+        id: o.id,
+        session: o.session,
+        autor: o.autor,
+        aktivita: o.aktivita,
+        claude: bezi(o.pid, 'claude'),
+        rc: o.rc,
+        trvala: o.trvala,
+        uloha: o.uloha,
+    }));
 }
+
+/** Žije okno (v kterémkoli sezení tmuxu)? */
+const oknoZije = async (id) => [...(await vsechnaOkna()).values()].some((seznam) => seznam.some((o) => o.id === id));
 
 /** Okna s konverzacemi, bez okna serverového režimu pro aplikaci Claude. */
 const konverzacniOkna = async (slug) => (await okna(slug)).filter((o) => !o.rc);
+
+/**
+ * Nové okno v sezení projektu, sezení se případně založí. Když ho mezitím
+ * založil někdo jiný (hlídka aplikace, druhá konverzace), přidá se do něj.
+ * `velikost` jen pro nové sezení. Vrací ID okna.
+ */
+async function noveOkno(slug, volby, prikaz, velikost = []) {
+    const vRozbehnutem = async () => (await tmux(['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${slug}:`, ...volby, prikaz])).trim();
+    if ((await okna(slug)).length > 0) return vRozbehnutem();
+
+    try {
+        return (await tmux(['new-session', '-d', '-P', '-F', '#{window_id}', '-s', slug, ...velikost, ...volby, prikaz])).trim();
+    } catch (e) {
+        if (/duplicate session/.test(e.message)) return vRozbehnutem();
+        throw e;
+    }
+}
+
+// ---------------------------------------------------------------- registr sezení
+
+/*
+ * Každý proces s Claudem v kontejneru, ať ho spustil kdokoli:
+ *
+ *   konverzace       okno tmuxu, ve kterém běží Claude (nástroje, úloha grafiky, `agent <projekt>`)
+ *   okno             okno, kde Claude skončil a zbyl jen shell
+ *   aplikace         serverový režim pro aplikaci Claude (`claude remote-control`, okno na projekt)
+ *   aplikace-sezeni  sezení, které si v serverovém režimu založila aplikace Claude
+ *                    (`claude --print --sdk-url …`, potomek procesu remote-control)
+ *   uloha, ranni     `claude -p` z ClickUpu a ranní přehled
+ *
+ * Strop SEZENI_MAX počítá všechno kromě oken bez Clauda a serverových režimů.
+ * Nad strop se ukončí nejdéle nečinné sezení, jinak se nové odmítne (úloha
+ * počká ve frontě). Sezení z aplikace předem odmítnout nejde: nad strop se
+ * ukončí, když právě vzniklo. Ukončuje se vždy celý strom procesů (MCP servery,
+ * Chrome), nejdřív SIGTERM, po SEZENI_SIGKILL_S sekundách SIGKILL.
+ *
+ * Aktivita: okno podle výstupu (tmux window_activity) a psaní z terminálu,
+ * sezení z aplikace podle spotřeby procesoru (výstup ani vstup nemá).
+ */
+const SEZENI_MAX = Number(process.env.SEZENI_MAX || 15);
+// Dřív USPAT_PO_HODINACH (12 h), nová proměnná má přednost.
+const NECINNE_PO = Number(process.env.SEZENI_NECINNE_HODIN || process.env.USPAT_PO_HODINACH || 2) * 3600;
+const NECINNE_PRO_STROP = Number(process.env.SEZENI_NECINNE_MIN || 15) * 60;
+const STARA_VERZE_NECINNE = Number(process.env.STARA_VERZE_NECINNE_MIN || 10) * 60;
+const SIGKILL_PO = Number(process.env.SEZENI_SIGKILL_S || 10);
+const HLIDKA_SEZENI = Number(process.env.HLIDKA_SEZENI_S || 60);
+const AKTIVITA_CPU = Number(process.env.AKTIVITA_CPU_S || 2) * 100; // v tikách (CLK_TCK = 100)
+const PAMET_LIMIT = Number(process.env.PAMET_VAROVANI_PROCENT || 85);
+const PAMET_INTERVAL = Number(process.env.PAMET_INTERVAL_S || 15);
+const UKLID_OSIRELYCH = process.env.UKLID_OSIRELYCH !== '0';
+const VERZE_SLOZKA = path.join(HOME, '.local', 'share', 'claude', 'versions');
+const CLAUDE_ODKAZ = path.join(HOME, '.local', 'bin', 'claude');
+const POCITANE = new Set(['konverzace', 'aplikace-sezeni', 'uloha', 'ranni']);
+
+let registr = [];
+let registrCas = 0;
+const vstupy = new Map(); // okno → kdy do něj naposledy někdo psal z terminálu
+const sledovane = new Map(); // pid → `claude -p` služby {druh, projekt, autor, start, znami}
+const cpuMinule = new Map(); // klíč sezení → {cpu, aktivita}
+const koncici = new Map(); // klíč sezení → kdy se začalo ukončovat
+
+const BOOT = (() => {
+    try { return Number(fs.readFileSync('/proc/stat', 'utf8').match(/^btime (\d+)$/m)[1]); } catch { return 0; }
+})();
+
+/** Jeden proces z /proc/<pid>/stat, nebo null. */
+function stat(pid) {
+    try {
+        const s = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+        const konec = s.lastIndexOf(')');
+        const f = s.slice(konec + 2).split(' ');
+        return {
+            pid: Number(pid),
+            comm: s.slice(s.indexOf('(') + 1, konec),
+            zombie: f[0] === 'Z',
+            ppid: Number(f[1]),
+            pgid: Number(f[2]),
+            cpu: Number(f[11]) + Number(f[12]) + Number(f[13]) + Number(f[14]),
+            start: Number(f[19]),
+        };
+    } catch {
+        return null;
+    }
+}
+
+/** Všechny procesy kontejneru (pid → stat + děti). */
+function procesy() {
+    const mapa = new Map();
+    for (const d of fs.readdirSync('/proc')) {
+        if (!/^\d+$/.test(d)) continue;
+        const p = stat(d);
+        if (p) mapa.set(p.pid, { ...p, deti: [] });
+    }
+    for (const p of mapa.values()) mapa.get(p.ppid)?.deti.push(p.pid);
+
+    return mapa;
+}
+
+/** Proces a všichni jeho potomci (pid). */
+function potomci(mapa, pid) {
+    if (!mapa.has(pid)) return [];
+    const vysledek = [];
+    const fronta = [pid];
+    while (fronta.length) {
+        const dalsi = fronta.shift();
+        vysledek.push(dalsi);
+        fronta.push(...(mapa.get(dalsi)?.deti || []));
+    }
+
+    return vysledek;
+}
+
+const zacatek = (p) => Math.floor(BOOT + p.start / 100);
+const cpuStromu = (mapa, pid) => potomci(mapa, pid).reduce((soucet, d) => soucet + (mapa.get(d)?.cpu || 0), 0);
+const argv = (pid) => { try { return fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0').filter(Boolean); } catch { return []; } };
+
+/** Verze Clauda, ze které proces běží (~/.local/share/claude/versions/<verze>), jinak null. */
+function verzeProcesu(pid) {
+    try {
+        const exe = fs.readlinkSync(`/proc/${pid}/exe`).replace(/ \(deleted\)$/, '');
+        return path.dirname(exe) === VERZE_SLOZKA ? path.basename(exe) : null;
+    } catch {
+        return null;
+    }
+}
+
+/** Verze, na kterou teď míří `claude` (po automatické aktualizaci nová). */
+function aktualniVerze() {
+    try { return path.basename(fs.realpathSync(CLAUDE_ODKAZ)); } catch { return null; }
+}
+
+const starsi = (a, b) => {
+    const x = a.split('.').map(Number);
+    const y = b.split('.').map(Number);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) {
+        if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+    }
+    return false;
+};
+
+/** Sezení bez výstupu má aktivitu podle procesoru: přibylo od minula aspoň AKTIVITA_CPU? */
+function aktivitaPodleCpu(klic, cpu, start, ted) {
+    const minule = cpuMinule.get(klic);
+    const aktivita = !minule ? start : cpu - minule.cpu >= AKTIVITA_CPU ? ted : minule.aktivita;
+    // Výchozí bod se posouvá jen s aktivitou, jinak by se pomalé přírůstky nesečetly.
+    cpuMinule.set(klic, { cpu: !minule || aktivita === ted ? cpu : minule.cpu, aktivita });
+
+    return aktivita;
+}
+
+const hodnota = (args, prepinac) => {
+    const i = args.indexOf(prepinac);
+    return i >= 0 ? args[i + 1] || null : null;
+};
+
+/** Projde okna tmuxu, serverové režimy a úlohy služby. Vrací seznam sezení. */
+async function obnovitRegistr() {
+    const mapa = procesy();
+    const ted = Math.floor(Date.now() / 1000);
+    const slugy = new Set(projekty().map((p) => p.slug));
+    const seznam = [];
+
+    for (const [slug, seznamOken] of await vsechnaOkna()) {
+        // Sezení připojených terminálů (<projekt>-w…) sdílí okna projektu, počítají se jednou.
+        if (!slugy.has(slug)) continue;
+
+        for (const o of seznamOken) {
+            const pane = mapa.get(o.pid);
+            const claude = (pane?.deti || []).map((d) => mapa.get(d)).find((d) => d?.comm === 'claude');
+            const zaklad = {
+                projekt: slug,
+                tmux: `${slug}:${o.id}`,
+                okno: o.id,
+                pane: o.pid,
+                pid: claude?.pid ?? o.pid,
+                pgid: pane?.pgid ?? null,
+                autor: o.autor,
+                session: o.session,
+                trvala: o.trvala,
+                uloha: o.uloha,
+                start: pane ? zacatek(pane) : null,
+                verze: claude ? verzeProcesu(claude.pid) : null,
+            };
+
+            if (!o.rc) {
+                const aktivita = Math.max(o.aktivita || 0, vstupy.get(o.id) || 0) || zaklad.start;
+                seznam.push({ ...zaklad, klic: `okno:${o.id}:${o.pid}`, druh: claude ? 'konverzace' : 'okno', aktivita });
+                continue;
+            }
+
+            seznam.push({ ...zaklad, klic: `okno:${o.id}:${o.pid}`, druh: 'aplikace', aktivita: o.aktivita, nastaveni: o.rcnastaveni });
+            for (const w of (claude?.deti || []).map((d) => mapa.get(d)).filter(Boolean)) {
+                const args = argv(w.pid);
+                if (!args.includes('--sdk-url')) continue;
+                const klic = `aplikace:${w.pid}:${w.start}`;
+                seznam.push({
+                    klic,
+                    druh: 'aplikace-sezeni',
+                    projekt: slug,
+                    tmux: zaklad.tmux,
+                    okno: null,
+                    pid: w.pid,
+                    pgid: w.pgid,
+                    autor: 'aplikace Claude',
+                    session: hodnota(args, '--session-id'),
+                    trvala: false,
+                    uloha: false,
+                    start: zacatek(w),
+                    aktivita: aktivitaPodleCpu(klic, cpuStromu(mapa, w.pid), zacatek(w), ted),
+                    verze: verzeProcesu(w.pid),
+                });
+            }
+        }
+    }
+
+    for (const [pid, s] of sledovane) {
+        const p = mapa.get(pid);
+        if (!p || p.start !== s.start) continue;
+        // Potomci se pamatují: po konci úlohy už k nim od ní nevede cesta (viz ukoncitStrom).
+        s.znami = potomci(mapa, pid).filter((d) => d !== pid).map((d) => ({ pid: d, start: mapa.get(d).start }));
+        const klic = `pid:${pid}`;
+        seznam.push({
+            klic,
+            druh: s.druh,
+            projekt: s.projekt,
+            tmux: null,
+            okno: null,
+            pid,
+            pgid: p.pgid,
+            autor: s.autor,
+            session: s.session,
+            trvala: false,
+            uloha: true,
+            start: zacatek(p),
+            aktivita: aktivitaPodleCpu(klic, cpuStromu(mapa, pid), zacatek(p), ted),
+            verze: verzeProcesu(pid),
+        });
+    }
+
+    const klice = new Set(seznam.map((s) => s.klic));
+    const oknaTed = new Set(seznam.map((s) => s.okno).filter(Boolean));
+    for (const k of cpuMinule.keys()) if (!klice.has(k)) cpuMinule.delete(k);
+    for (const k of vstupy.keys()) if (!oknaTed.has(k)) vstupy.delete(k);
+    for (const k of adresyAplikace.keys()) if (!klice.has(`okno:${k}`)) adresyAplikace.delete(k);
+
+    registr = seznam;
+    registrCas = Date.now();
+    return seznam;
+}
+
+const pocita = (s) => POCITANE.has(s.druh) && !koncici.has(s.klic);
+// Úlohy mají vlastní časový limit, běžící úloha v okně (grafika) taky.
+const lzeUkoncit = (s) => ['konverzace', 'okno', 'aplikace-sezeni'].includes(s.druh) && !s.uloha && !koncici.has(s.klic);
+const necinnost = (s, ted = Math.floor(Date.now() / 1000)) => ted - (s.aktivita || s.start || ted);
+// Nepřipnuté dřív, pak nejdéle nečinné.
+const poradiUkonceni = (a, b) => (a.trvala - b.trvala) || (necinnost(b) - necinnost(a));
+
+/**
+ * Ukončí proces se všemi potomky a se skupinami procesů, které v tom stromu
+ * začínají (okno: celá skupina shellu, Chrome z Playwrightu má vlastní).
+ * `znami` jsou dřív viděné potomci (úloha, která už skončila, k nim cestu nemá).
+ * U okna nejdřív `kill-window`. SIGTERM, a co do SIGKILL_PO sekund nezmizí, SIGKILL.
+ */
+async function ukoncitStrom(koren, { okno = null, znami = [], skupina = null } = {}) {
+    const mapa = procesy();
+    const pids = new Set(potomci(mapa, koren));
+    for (const z of znami) {
+        if (mapa.get(z.pid)?.start === z.start) potomci(mapa, z.pid).forEach((d) => pids.add(d));
+    }
+    const skupiny = new Set([...pids].map((pid) => mapa.get(pid)?.pgid).filter((g) => pids.has(g)));
+    if (skupina) skupiny.add(skupina);
+    for (const p of mapa.values()) if (skupiny.has(p.pgid)) potomci(mapa, p.pid).forEach((d) => pids.add(d));
+
+    // Nikdy ne tini, služba, entrypoint a server tmuxu.
+    for (const p of mapa.values()) {
+        if (p.pid === 1 || p.pid === process.pid || p.pid === process.ppid || p.comm.startsWith('tmux')) pids.delete(p.pid);
+    }
+
+    const starty = new Map([...pids].map((pid) => [pid, mapa.get(pid).start]));
+    const posli = (seznam, signal) => { for (const pid of seznam) { try { process.kill(pid, signal); } catch { /* už skončil */ } } };
+    const zbyva = () => {
+        const ted = procesy();
+        const ziji = new Set();
+        for (const [pid, start] of starty) {
+            if (ted.get(pid)?.start === start) potomci(ted, pid).forEach((d) => ziji.add(d));
+        }
+        // Zombie už neběží, jen ho ještě nesebral rodič.
+        for (const pid of ziji) if (ted.get(pid)?.zombie) ziji.delete(pid);
+        for (const p of ted.values()) {
+            if (p.pid === 1 || p.pid === process.pid || p.pid === process.ppid || p.comm.startsWith('tmux')) ziji.delete(p.pid);
+        }
+        return ziji;
+    };
+
+    if (okno) await tmux(['kill-window', '-t', okno]).catch(() => {});
+    posli(pids, 'SIGTERM');
+
+    for (let i = 0; i < SIGKILL_PO * 4; i++) {
+        await new Promise((r) => setTimeout(r, 250));
+        if (zbyva().size === 0) return pids.size;
+    }
+
+    const zbytek = zbyva();
+    if (zbytek.size) {
+        console.log(`${new Date().toISOString()} SIGKILL ${zbytek.size} procesům (${[...zbytek].slice(0, 10).join(' ')})`);
+        posli(zbytek, 'SIGKILL');
+    }
+    return pids.size;
+}
+
+/** Ukončí sezení z registru (okno, sezení z aplikace, úlohu) i se stromem procesů. */
+async function ukoncitSezeni(s, duvod) {
+    if (koncici.has(s.klic)) return;
+    koncici.set(s.klic, Date.now());
+    console.log(`${new Date().toISOString()} ukončuji ${s.druh} ${s.tmux || s.projekt} (pid ${s.pid}, ${s.session || 'bez konverzace'}, verze ${s.verze || '?'}, nečinné ${Math.round(necinnost(s) / 60)} min): ${duvod}`);
+
+    try {
+        const pocet = await ukoncitStrom(s.okno ? s.pane : s.pid, { okno: s.okno, znami: s.znami || [] });
+        console.log(`${new Date().toISOString()} ukončeno ${s.tmux || s.projekt}: ${pocet} procesů`);
+    } finally {
+        setTimeout(() => koncici.delete(s.klic), 60_000);
+    }
+}
+
+/** Okno podle ID (Uspat, výměna serverového režimu…) i s procesy, které v něm běží. */
+async function ukoncitOkno(id) {
+    const okno = [...(await vsechnaOkna()).values()].flat().find((o) => o.id === id);
+    if (!okno?.pid) return tmux(['kill-window', '-t', id]).catch(() => {});
+
+    return ukoncitStrom(okno.pid, { okno: id });
+}
+
+/**
+ * Místo pro nové sezení. Pod stropem hned, nad ním ukončí nejdéle nečinné
+ * (nečinné aspoň SEZENI_NECINNE_MIN, připnuté ne). Vrací {ok, pocet}.
+ * `vynechat` = okno, které se vzápětí zavře (prázdná konverzace při navázání).
+ */
+async function uvolnitMisto({ vynechat = null } = {}) {
+    const pocitane = (await obnovitRegistr()).filter((s) => pocita(s) && !(vynechat && s.okno === vynechat));
+    if (pocitane.length < SEZENI_MAX) return { ok: true, pocet: pocitane.length };
+
+    const kandidat = pocitane.filter((s) => lzeUkoncit(s) && !s.trvala && necinnost(s) >= NECINNE_PRO_STROP).sort(poradiUkonceni)[0];
+    if (!kandidat) return { ok: false, pocet: pocitane.length };
+
+    ukoncitSezeni(kandidat, `strop ${SEZENI_MAX} sezení, místo pro nové`).catch((e) => console.error(e.message));
+    return { ok: true, pocet: pocitane.length };
+}
+
+const plnoChyba = (pocet) => Object.assign(new Error(
+    `Na serveru teď běží ${pocet} sezení s Claudem (strop je ${SEZENI_MAX}) a žádné není nečinné. `
+    + 'Uspěte konverzaci, kterou už nepotřebujete, nebo to zkuste za pár minut.',
+), { status: 429 });
+
+/**
+ * Hlídka sezení (při startu a každých HLIDKA_SEZENI_S): nečinná, starší verze
+ * Clauda, strop, osiřelé procesy a úlohy, které čekají na místo.
+ */
+let hlidkaBezi = false;
+
+async function hlidatSezeni() {
+    if (hlidkaBezi) return;
+    hlidkaBezi = true;
+
+    try {
+        const reg = await obnovitRegistr();
+        const verze = aktualniVerze();
+        const ukoncit = (s, duvod) => ukoncitSezeni(s, duvod).catch((e) => console.error(e.message));
+
+        // Nečinná. Připnuté konverzace ne (běží pořád kvůli aplikaci Claude).
+        for (const s of reg.filter((x) => lzeUkoncit(x) && !x.trvala && necinnost(x) >= NECINNE_PO)) {
+            ukoncit(s, `nečinné ${Math.round(necinnost(s) / 60)} min`);
+        }
+
+        // Starší verze Clauda (běží dál i po automatické aktualizaci). Jen nečinná,
+        // rozdělanou práci to nepřeruší. Připnutá konverzace se hned probudí v nové verzi.
+        for (const s of reg.filter((x) => lzeUkoncit(x) && verze && x.verze && starsi(x.verze, verze) && necinnost(x) >= STARA_VERZE_NECINNE)) {
+            const znovu = s.trvala && s.session && s.druh === 'konverzace' ? projekt(s.projekt) : null;
+            ukoncitSezeni(s, `starší verze ${s.verze}, aktuální ${verze}`)
+                .then(() => znovu && probuditPripnutou(znovu, s))
+                .catch((e) => console.error(`${s.tmux} (${s.session}): ${e.message}`));
+        }
+
+        // Serverový režim ze starší verze, se starým nastavením nebo u projektu, který ho mít nemá:
+        // až jsou jeho sezení nečinná, skončí. Hlídka aplikace ho spustí znovu (nebo ne).
+        for (const s of reg.filter((x) => x.druh === 'aplikace' && !koncici.has(x.klic))) {
+            const duvod = (verze && s.verze && starsi(s.verze, verze) && `starší verze ${s.verze}, aktuální ${verze}`)
+                || (!aplikaceProProjekt(s.projekt) && 'projekt serverový režim mít nemá (APLIKACE_PROJEKTY)')
+                || (s.nastaveni !== RC_NASTAVENI && 'staré nastavení serverového režimu');
+            if (!duvod) continue;
+            const sezeniAplikace = reg.filter((w) => w.druh === 'aplikace-sezeni' && w.tmux === s.tmux);
+            if (sezeniAplikace.some((w) => necinnost(w) < STARA_VERZE_NECINNE)) continue;
+            ukoncitSezeni(s, duvod).then(() => hlidatAplikaci()).catch((e) => console.error(e.message));
+        }
+
+        await drzetStrop();
+        if (UKLID_OSIRELYCH) uklidOsirelych();
+        spustitDalsi();
+    } finally {
+        hlidkaBezi = false;
+    }
+}
+
+/** Nad stropem (sezení z aplikace vznikají bez ptaní): nejdéle nečinná, jinak právě vzniklá z aplikace. */
+async function drzetStrop() {
+    const ted = Math.floor(Date.now() / 1000);
+    const pocitane = (await obnovitRegistr()).filter(pocita);
+    let navic = pocitane.length - SEZENI_MAX;
+    if (navic <= 0) return;
+
+    const ukoncit = (s, duvod) => { navic--; ukoncitSezeni(s, duvod).catch((e) => console.error(e.message)); };
+    for (const s of pocitane.filter((x) => lzeUkoncit(x) && !x.trvala && necinnost(x) >= NECINNE_PRO_STROP).sort(poradiUkonceni)) {
+        if (navic <= 0) return;
+        ukoncit(s, `strop ${SEZENI_MAX} sezení, běží ${pocitane.length}`);
+    }
+    for (const s of pocitane.filter((x) => x.druh === 'aplikace-sezeni' && ted - x.start < 5 * 60).sort((a, b) => b.start - a.start)) {
+        if (navic <= 0) return;
+        ukoncit(s, `strop ${SEZENI_MAX} sezení, nové sezení z aplikace Claude odmítnuto`);
+    }
+    if (navic > 0) console.warn(`${new Date().toISOString()} strop: běží ${pocitane.length} sezení (strop ${SEZENI_MAX}), žádné nejde ukončit`);
+}
+
+/** Připnutá konverzace ukončená kvůli staré verzi: znovu otevřít (--resume) a připnout. */
+async function probuditPripnutou(p, s) {
+    const okno = await zalozit(p, { autor: s.autor, session: s.session });
+    await tmux(['set-option', '-w', '-t', okno, '@trvala', '1']);
+    console.log(`${new Date().toISOString()} připnutá konverzace ${s.session} znovu v nové verzi (${p.slug}:${okno})`);
+}
+
+/**
+ * Procesy, kterým umřel rodič (přešly pod tini, PID 1): Claude, Playwright MCP
+ * a Chrome. Nikdo je neukončí a nikdo je nepoužívá. Claude až po limitu úlohy
+ * (`claude -p` po restartu služby ještě dobíhá), ostatní po dvou minutách.
+ */
+function uklidOsirelych() {
+    const mapa = procesy();
+    const ted = Math.floor(Date.now() / 1000);
+
+    for (const p of mapa.values()) {
+        if (p.ppid !== 1 || p.pid === process.ppid || p.comm.startsWith('tmux')) continue;
+
+        const druh = p.comm === 'claude' || verzeProcesu(p.pid) ? 'claude'
+            : /^(chrome|chromium|headless_shell)/.test(p.comm) ? 'prohlížeč'
+                : p.comm === 'node' && argv(p.pid).some((a) => a.includes('playwright-mcp')) ? 'playwright-mcp' : null;
+        if (!druh || ted - zacatek(p) < (druh === 'claude' ? ULOHA_LIMIT_MIN * 60 : 120)) continue;
+
+        console.log(`${new Date().toISOString()} osiřelý proces ${druh} (pid ${p.pid}, ${Math.round((ted - zacatek(p)) / 60)} min): ukončuji`);
+        ukoncitStrom(p.pid).catch((e) => console.error(e.message));
+    }
+}
+
+/** Paměť cgroupy kontejneru. Procento z pracovní sady (bez page cache, tu jádro uvolní samo). */
+function pametKontejneru() {
+    const cist = (f) => { try { return fs.readFileSync(`/sys/fs/cgroup/${f}`, 'utf8').trim(); } catch { return null; } };
+    const current = Number(cist('memory.current')) || null;
+    const max = /^\d+$/.test(cist('memory.max') || '') ? Number(cist('memory.max')) : null;
+    const cache = Number((cist('memory.stat') || '').match(/^inactive_file (\d+)$/m)?.[1] || 0);
+    const pracovni = current === null ? null : Math.max(0, current - cache);
+
+    return {
+        current,
+        max,
+        pracovni_sada: pracovni,
+        procent: max && pracovni !== null ? Math.round((pracovni / max) * 1000) / 10 : null,
+        procent_current: max && current !== null ? Math.round((current / max) * 1000) / 10 : null,
+    };
+}
+
+/** Nad PAMET_VAROVANI_PROCENT: varování a ukončit nejdéle nečinné sezení (i připnuté, až když jiné není). */
+let pametUkonceno = 0;
+let pametVarovano = 0;
+
+async function hlidatPamet() {
+    const m = pametKontejneru();
+    if (m.procent === null || m.procent < PAMET_LIMIT) return;
+
+    if (Date.now() - pametVarovano > 60_000) {
+        console.warn(`${new Date().toISOString()} VAROVÁNÍ: paměť kontejneru ${m.procent} % (${Math.round(m.pracovni_sada / 2 ** 20)} MB z ${Math.round(m.max / 2 ** 20)} MB, s cache ${m.procent_current} %)`);
+        pametVarovano = Date.now();
+    }
+    // Ukončené sezení paměť uvolní až za chvíli, další až po půl minutě.
+    if (Date.now() - pametUkonceno < 30_000) return;
+
+    const s = (await obnovitRegistr()).filter(lzeUkoncit).sort(poradiUkonceni)[0];
+    if (!s) {
+        console.warn(`${new Date().toISOString()} paměť: žádné sezení nejde ukončit`);
+        return;
+    }
+    pametUkonceno = Date.now();
+    ukoncitSezeni(s, `paměť kontejneru ${m.procent} %`).catch((e) => console.error(e.message));
+}
+
+/** Počet procesů v kontejneru a strop PIDs cgroupy. */
+function pocetProcesu() {
+    const cist = (f) => { try { return fs.readFileSync(`/sys/fs/cgroup/${f}`, 'utf8').trim(); } catch { return null; } };
+    const max = cist('pids.max');
+
+    return {
+        procesy: fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d)).length,
+        pids: Number(cist('pids.current')) || null,
+        pids_max: /^\d+$/.test(max || '') ? Number(max) : null,
+    };
+}
+
+/** Souhrn pro GET /health (bez přihlášení, proto jen čísla, žádné projekty ani konverzace). */
+async function zdravi() {
+    const reg = Date.now() - registrCas < 5000 ? registr : await obnovitRegistr();
+    const podleDruhu = {};
+    for (const s of reg) podleDruhu[s.druh] = (podleDruhu[s.druh] || 0) + 1;
+
+    return {
+        ok: true,
+        sezeni: reg.filter(pocita).length,
+        strop: SEZENI_MAX,
+        podle_druhu: podleDruhu,
+        ...pocetProcesu(),
+        pamet: pametKontejneru(),
+        verze_claude: aktualniVerze(),
+    };
+}
 
 // ---------------------------------------------------------------- uložené konverzace
 
@@ -335,6 +908,9 @@ async function zalozit(p, { autor, session, nahradit, uloha }) {
         if (otevrene) return otevrene.id;
     }
 
+    const misto = await uvolnitMisto({ vynechat: OKNO.test(nahradit || '') ? nahradit : null });
+    if (!misto.ok) throw plnoChyba(misto.pocet);
+
     // Živý web: konverzace běží v kopii. Když ještě není, založí se (pár vteřin).
     // Když to nejde (server ještě nemá agent kopie-db) nebo je projekt bez kopie,
     // postaru na živém webu, a před tím snímek souborů a záloha databáze.
@@ -365,13 +941,7 @@ async function zalozit(p, { autor, session, nahradit, uloha }) {
         }));
     }
     const prikaz = `bash -lc 'claude ${session ? '--resume' : '--session-id'} ${id}${pokracuje ? ` --settings ${soubor('nastaveni.json')}` : ''}; exec bash'`;
-    const existuje = (await okna(p.slug)).length > 0;
-
-    const args = existuje
-        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'konverzace', prikaz]
-        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', cwd, ...prostredi(p, cwd), '-n', 'konverzace', prikaz];
-
-    const okno = (await tmux(args)).trim();
+    const okno = await noveOkno(p.slug, ['-c', cwd, ...prostredi(p, cwd), '-n', 'konverzace'], prikaz);
     await tmux(['set-option', '-w', '-t', okno, '@session', id]);
     await tmux(['set-option', '-w', '-t', okno, '@autor', radek(autor, 60)]);
     await tmux(['set-option', '-w', '-t', okno, 'automatic-rename', 'off']);
@@ -390,7 +960,7 @@ async function zalozit(p, { autor, session, nahradit, uloha }) {
     if (nahradit && OKNO.test(nahradit)) {
         const stare = bezici.find((o) => o.id === nahradit);
         if (stare && !ulozene(p).some((k) => k.session === stare.session)) {
-            await tmux(['kill-window', '-t', stare.id]).catch(() => {});
+            await ukoncitOkno(stare.id).catch(() => {});
         }
     }
 
@@ -790,7 +1360,7 @@ async function pripravitKopii(p, { prepsat = false } = {}) {
 /** Aplikace Claude (serverový režim) má běžet ve správné složce: služba ji do tří minut spustí znovu. */
 async function restartovatAplikaci(p) {
     const rc = (await okna(p.slug)).find((o) => o.rc);
-    if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
+    if (rc) await ukoncitOkno(rc.id).catch(() => {});
 }
 
 /**
@@ -871,6 +1441,11 @@ const telo = (req) => new Promise((resolve) => {
 });
 
 async function api(req, res) {
+    // Bez přihlášení (dohled, docker healthcheck): jen čísla, nic o projektech.
+    if (req.method === 'GET' && req.url.split('?')[0] === '/health') {
+        return odpoved(res, 200, await zdravi());
+    }
+
     const auth = req.headers.authorization || '';
     if (!stejne(auth, `Bearer ${SECRET}`)) {
         return odpoved(res, 401, { chyba: 'Neplatné tajemství.' });
@@ -895,6 +1470,13 @@ async function api(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/ranni-prehled') {
         await ranniPrehled({ vynutit: true });
         return odpoved(res, 202, { spusteno: ranniBezi });
+    }
+
+    // Registr sezení: co běží, od kdy, poslední aktivita, verze Clauda.
+    if (req.method === 'GET' && url.pathname === '/api/sezeni') {
+        const ted = Math.floor(Date.now() / 1000);
+        const seznam = (await obnovitRegistr()).map(({ znami, ...s }) => ({ ...s, necinne_s: necinnost(s, ted), konci: koncici.has(s.klic) }));
+        return odpoved(res, 200, { strop: SEZENI_MAX, pocet: seznam.filter(pocita).length, verze_claude: aktualniVerze(), sezeni: seznam });
     }
 
     if (req.method === 'GET' && url.pathname === '/api/predplatne') {
@@ -1066,7 +1648,7 @@ async function api(req, res) {
             return odpoved(res, 404, { chyba: 'Konverzace už neběží.' });
         }
 
-        await tmux(['kill-window', '-t', okno.id]);
+        await ukoncitOkno(okno.id);
         return odpoved(res, 200, { ok: true });
     }
 
@@ -1120,17 +1702,28 @@ async function predplatne() {
     return vyuziti.data;
 }
 
-/** Adresa projektu v aplikaci Claude, kterou vypsal serverový režim. */
+/**
+ * Adresa projektu v aplikaci Claude, kterou vypsal serverový režim. Pamatuje
+ * se k oknu (za jeho života se nemění), dokud není, zkouší se jednou za 30 s.
+ */
+const adresyAplikace = new Map(); // okno:pid shellu → {adresa, cas}
+
 async function adresaAplikace(p) {
-    const rc = (await okna(p.slug)).find((o) => o.rc);
+    const rc = ((await vsechnaOkna()).get(p.slug) || []).find((o) => o.rc);
     if (!rc) return null;
 
+    const klic = `${rc.id}:${rc.pid}`;
+    const znama = adresyAplikace.get(klic);
+    if (znama && (znama.adresa || Date.now() - znama.cas < 30_000)) return znama.adresa;
+
+    let adresa = null;
     try {
         const obsah = await tmux(['capture-pane', '-p', '-J', '-t', rc.id, '-S', '-200']);
-        return obsah.match(/https:\/\/claude\.ai\/code\?environment=[\w-]+/)?.[0] ?? null;
-    } catch {
-        return null;
-    }
+        adresa = obsah.match(/https:\/\/claude\.ai\/code\?environment=[\w-]+/)?.[0] ?? null;
+    } catch { /* okno mezitím skončilo */ }
+    adresyAplikace.set(klic, { adresa, cas: Date.now() });
+
+    return adresa;
 }
 
 /**
@@ -1158,27 +1751,47 @@ function zrcadlitCesty() {
  * Každý projekt má okno se serverovým režimem. Když neběží (restart
  * kontejneru, Claude to po výpadku sítě vzdal), založí se znovu.
  * Bez přihlášení nemá smysl, Remote Control potřebuje předplatné.
+ *
+ * Bez předem založeného sezení (--no-create-session-in-dir): jinak každý
+ * serverový režim hned po startu spustí jedno `claude --print --sdk-url`
+ * (~250 MB i s MCP), u 41 projektů ~14 GB, i když nikdo nic nepíše. Sezení
+ * vzniká, až ho někdo v aplikaci založí. Nejvýš APLIKACE_KAPACITA na projekt.
+ * APLIKACE_PROJEKTY: jen tyhle projekty (čárkami), „zadne“ žádný, prázdné všechny.
  */
+const APLIKACE_KAPACITA = Number(process.env.APLIKACE_KAPACITA || 4);
+const APLIKACE_PROJEKTY = (process.env.APLIKACE_PROJEKTY || '').split(',').map((s) => s.trim()).filter(Boolean);
+// Mění se s parametry spuštění: okno se starými parametry hlídka sezení vymění.
+const RC_NASTAVENI = `bez-predem-k${APLIKACE_KAPACITA}`;
+const aplikaceProProjekt = (slug) => !APLIKACE_PROJEKTY.length || APLIKACE_PROJEKTY.includes('*')
+    || (!APLIKACE_PROJEKTY.includes('zadne') && APLIKACE_PROJEKTY.includes(slug));
+let aplikaceBezi = false;
+
 async function hlidatAplikaci() {
     zrcadlitCesty();
-    if (!prihlasen()) return;
+    if (!prihlasen() || aplikaceBezi) return;
+    aplikaceBezi = true;
 
-    for (const p of projekty()) {
+    try {
+        await spustitAplikace();
+    } finally {
+        aplikaceBezi = false;
+    }
+}
+
+async function spustitAplikace() {
+    for (const p of projekty().filter((p) => aplikaceProProjekt(p.slug))) {
         const rc = (await okna(p.slug)).find((o) => o.rc);
         if (rc?.claude) continue;
-        if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
+        if (rc) await ukoncitOkno(rc.id).catch(() => {});
 
         const cwd = pracovni(p);
         pripravitClaude(cwd);
-        const prikaz = `bash -lc 'claude remote-control --name "TAVEO · ${p.slug}" --remote-control-session-name-prefix ${p.slug} --spawn same-dir; exec bash'`;
-        const existuje = (await okna(p.slug)).length > 0;
-        const args = existuje
-            ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostredi(p, cwd), '-n', 'aplikace-claude', prikaz]
-            : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-c', cwd, ...prostredi(p, cwd), '-n', 'aplikace-claude', prikaz];
+        const prikaz = `bash -lc 'claude remote-control --name "TAVEO · ${p.slug}" --remote-control-session-name-prefix ${p.slug} --spawn same-dir --no-create-session-in-dir --capacity ${APLIKACE_KAPACITA}; exec bash'`;
 
         try {
-            const okno = (await tmux(args)).trim();
+            const okno = await noveOkno(p.slug, ['-c', cwd, ...prostredi(p, cwd), '-n', 'aplikace-claude'], prikaz);
             await tmux(['set-option', '-w', '-t', okno, '@rc', '1']);
+            await tmux(['set-option', '-w', '-t', okno, '@rcnastaveni', RC_NASTAVENI]);
             await tmux(['set-option', '-w', '-t', okno, 'automatic-rename', 'off']);
             console.log(`${new Date().toISOString()} aplikace Claude: spuštěno pro ${p.slug}`);
         } catch (e) {
@@ -1190,6 +1803,7 @@ async function hlidatAplikaci() {
 // ---------------------------------------------------------------- ranní přehled
 
 const RANNI_CAS = process.env.RANNI_PREHLED_CAS || '06:50';
+const RANNI_LIMIT_MIN = Number(process.env.RANNI_LIMIT_MIN || 40);
 const RANNI_SLOZKA = path.join(HOME, '.taveo-ranni');
 const MARKETING = 'marketing';
 let ranniBezi = false;
@@ -1215,6 +1829,8 @@ async function ranniPrehled({ vynutit = false } = {}) {
     if (ranniBezi || fs.existsSync(znacka)) return;
     if (!vynutit && (cas < RANNI_CAS || tyden === 0 || tyden === 6)) return;
     if (!prihlasen() || !projekt(MARKETING)) return;
+    // Plno: zkusí se znovu za minutu.
+    if (!(await uvolnitMisto()).ok) return;
 
     ranniBezi = true;
     fs.mkdirSync(RANNI_SLOZKA, { recursive: true });
@@ -1227,21 +1843,79 @@ async function ranniPrehled({ vynutit = false } = {}) {
 
     console.log(`${new Date().toISOString()} ranní přehled: start`);
 
-    const proces = execFile('claude', [
+    claudeNaPozadi([
         '-p', zadani,
         '--permission-mode', 'dontAsk',
         '--allowedTools', 'Bash(taveo *)', 'Read', 'Glob', 'Grep',
         '--max-turns', '150',
-    ], { cwd, timeout: 40 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 }, (chyba, stdout, stderr) => {
+    ], { cwd, env: process.env, limitMin: RANNI_LIMIT_MIN, druh: 'ranni', projekt: MARKETING, autor: 'ranní přehled' }).then(({ stdout, stderr, chyba, vyprselo }) => {
         ranniBezi = false;
         const log = path.join(RANNI_SLOZKA, `${den}.log`);
-        fs.writeFileSync(log, [stdout, stderr, chyba ? `CHYBA: ${chyba.message}` : ''].join('\n'));
+        fs.writeFileSync(log, [stdout, stderr, chyba ? `CHYBA: ${vyprselo ? `nestihl to do ${RANNI_LIMIT_MIN} min` : chyba.message}` : ''].join('\n'));
 
         const limit = /usage limit|limit reached|rate limit/i.test(`${stdout}${stderr}`);
         console.log(`${new Date().toISOString()} ranní přehled: ${chyba ? 'skončil chybou' : 'hotovo'}${limit ? ' (limit předplatného, dnes se nic neopakuje)' : ''}`);
     });
-    // Zadání jde v argumentu, vstup nic nenese. Bez zavření by Claude čekal na data.
-    proces.stdin?.end();
+}
+
+/**
+ * `claude -p` od služby (úloha z ClickUpu, ranní přehled): ve vlastní skupině
+ * procesů, v registru sezení a s časovým limitem. Po konci i po limitu skončí
+ * celý strom (MCP servery, Chrome), ne jen Claude. Vrací {stdout, stderr, chyba, vyprselo}.
+ */
+function claudeNaPozadi(args, { cwd, env, limitMin, druh, projekt: slug, autor, session = null }) {
+    return new Promise((resolve) => {
+        let vyprselo = false;
+        let limit = null;
+        const uklid = (pid) => {
+            const s = sledovane.get(pid);
+            return ukoncitStrom(pid, { znami: s?.znami || [], skupina: pid }).catch((e) => console.error(e.message));
+        };
+
+        // spawn, ne execFile: jen ten umí `detached` (vlastní skupina procesů).
+        const proces = spawn('claude', args, { cwd, env, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
+        const vystup = { stdout: '', stderr: '' };
+        let hotovo = false;
+        const konec = (chyba) => {
+            if (hotovo) return;
+            hotovo = true;
+            clearTimeout(limit);
+            if (proces.pid) {
+                uklid(proces.pid);
+                sledovane.delete(proces.pid);
+            }
+            resolve({ ...vystup, chyba, vyprselo });
+        };
+        for (const proud of ['stdout', 'stderr']) {
+            proces[proud].setEncoding('utf8');
+            proces[proud].on('data', (data) => {
+                vystup[proud] += data;
+                if (vystup[proud].length > 20 * 1024 * 1024 && proces.pid) uklid(proces.pid);
+            });
+        }
+        const chybaKonce = (kod, signal) => (kod === 0 ? null : Object.assign(
+            new Error(signal ? `Claude ukončen signálem ${signal}` : `Claude skončil s kódem ${kod}`),
+            { code: kod, signal, killed: vyprselo },
+        ));
+        proces.on('error', (e) => konec(e));
+        // Výstup se zavře, až skončí všechno, co zdědilo rouru (MCP, Chrome). Proto
+        // úklid hned po konci Clauda a na zbytek výstupu se čeká nejvýš 15 s.
+        proces.on('exit', (kod, signal) => {
+            if (proces.pid) uklid(proces.pid);
+            setTimeout(() => konec(chybaKonce(kod, signal)), 15_000);
+        });
+        proces.on('close', (kod, signal) => konec(chybaKonce(kod, signal)));
+        // Zadání jde v argumentu, vstup nic nenese. Bez zavření by Claude čekal na data.
+        proces.stdin.end();
+
+        const p = proces.pid ? stat(proces.pid) : null;
+        if (p) sledovane.set(proces.pid, { druh, projekt: slug, autor, session, start: p.start, znami: [] });
+        limit = setTimeout(() => {
+            vyprselo = true;
+            console.log(`${new Date().toISOString()} ${druh} v ${slug}: limit ${limitMin} min, ukončuji celý strom`);
+            if (proces.pid) uklid(proces.pid);
+        }, limitMin * 60 * 1000);
+    });
 }
 
 setInterval(() => ranniPrehled().catch((e) => console.error(e.message)), 60 * 1000);
@@ -1277,10 +1951,45 @@ function zaraditUlohu(p, uloha) {
     spustitDalsi();
 }
 
-function spustitDalsi() {
+/**
+ * Další úlohy z front projektů. Platí i strop sezení: když je plno a nic není
+ * nečinné, úloha počká ve frontě a zkusí se znovu při hlídce sezení (minuta).
+ */
+let spoustim = false;
+let spustitZnovu = false;
+let cekaNaMisto = false;
+
+async function spustitDalsi() {
+    if (spoustim) {
+        spustitZnovu = true;
+        return;
+    }
+    spoustim = true;
+
+    try {
+        do {
+            spustitZnovu = false;
+            await spustitZFront();
+        } while (spustitZnovu);
+    } catch (e) {
+        console.error(`fronta úloh: ${e.message}`);
+    } finally {
+        spoustim = false;
+    }
+}
+
+async function spustitZFront() {
     for (const [slug, cekajici] of fronty) {
         if (bezici.size >= ULOHY_SOUBEZNE) return;
         if (bezici.has(slug) || !cekajici.length) continue;
+
+        const misto = await uvolnitMisto();
+        if (!misto.ok) {
+            if (!cekaNaMisto) console.log(`${new Date().toISOString()} úlohy čekají: běží ${misto.pocet} sezení (strop ${SEZENI_MAX})`);
+            cekaNaMisto = true;
+            return;
+        }
+        cekaNaMisto = false;
 
         const uloha = cekajici.shift();
         const p = projekt(slug);
@@ -1333,20 +2042,17 @@ async function odpracovat(p, uloha) {
         return;
     }
 
-    const { stdout, stderr, chyba } = await new Promise((resolve) => {
-        // Paměť projektu říká „pracuj v kopii“, úlohy z ClickUpu ale jdou rovnou na web.
-        const zadani = p.typ === 'server'
-            ? `Tahle úloha je z ClickUpu: pracuj přímo na živém webu v aktuální složce (${slozka(p)}), kopii webu ani předání do karty nepoužívej.\n\n${uloha.zadani}`
-            : uloha.zadani;
-        const proces = execFile('claude', [
-            '-p', zadani,
-            ...(navazat ? ['--resume', session] : ['--session-id', session]),
-            '--output-format', 'json',
-            '--permission-mode', 'auto',
-            '--max-turns', '200',
-        ], { cwd, env, timeout: ULOHA_LIMIT_MIN * 60 * 1000, maxBuffer: 20 * 1024 * 1024 }, (chyba, stdout, stderr) => resolve({ stdout, stderr, chyba }));
-        proces.stdin?.end();
-    });
+    // Paměť projektu říká „pracuj v kopii“, úlohy z ClickUpu ale jdou rovnou na web.
+    const zadani = p.typ === 'server'
+        ? `Tahle úloha je z ClickUpu: pracuj přímo na živém webu v aktuální složce (${slozka(p)}), kopii webu ani předání do karty nepoužívej.\n\n${uloha.zadani}`
+        : uloha.zadani;
+    const { stdout, stderr, chyba, vyprselo } = await claudeNaPozadi([
+        '-p', zadani,
+        ...(navazat ? ['--resume', session] : ['--session-id', session]),
+        '--output-format', 'json',
+        '--permission-mode', 'auto',
+        '--max-turns', '200',
+    ], { cwd, env, limitMin: ULOHA_LIMIT_MIN, druh: 'uloha', projekt: p.slug, autor: uloha.autor, session });
 
     fs.mkdirSync(ULOHY_LOG, { recursive: true });
     fs.writeFileSync(path.join(ULOHY_LOG, `${uloha.id}.log`), [stdout, stderr, chyba ? `CHYBA: ${chyba.message}` : ''].join('\n'));
@@ -1355,7 +2061,7 @@ async function odpracovat(p, uloha) {
     try { vystup = JSON.parse(stdout); } catch { /* spadl dřív, než něco vypsal */ }
 
     const limit = /usage limit|limit reached|rate limit/i.test(`${stdout}${stderr}`);
-    const casVyprsel = chyba?.killed || chyba?.signal === 'SIGTERM';
+    const casVyprsel = vyprselo || chyba?.killed || chyba?.signal === 'SIGTERM';
     const ok = Boolean(vystup && !vystup.is_error && !chyba);
 
     await vysledekUlohy(uloha, {
@@ -1395,7 +2101,7 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
 
     // Stejná konverzace otevřená v nástrojích by se s úlohou prala o soubor.
     for (const o of await konverzacniOkna(p.slug)) {
-        if (o.session === session) await tmux(['kill-window', '-t', o.id]).catch(() => {});
+        if (o.session === session) await ukoncitOkno(o.id).catch(() => {});
     }
 
     // Celé zadání jen v souboru, ne v příkazové řádce: `pkill -f` / `pgrep -f`
@@ -1404,11 +2110,7 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
     fs.writeFileSync(soubor('uvod'), uvod);
     const prikaz = `bash -lc 'claude ${navazat ? '--resume' : '--session-id'} ${session} --permission-mode auto --settings ${soubor('nastaveni.json')} "$(cat ${soubor('uvod')})"'`;
     const prostrediUlohy = [...prostredi(p, cwd), '-e', 'TAVEO_ULOHA=1'];
-    const args = (await okna(p.slug)).length > 0
-        ? ['new-window', '-d', '-P', '-F', '#{window_id}', '-t', `=${p.slug}:`, '-c', cwd, ...prostrediUlohy, '-n', 'uloha', prikaz]
-        : ['new-session', '-d', '-P', '-F', '#{window_id}', '-s', p.slug, '-x', '160', '-y', '45', '-c', cwd, ...prostrediUlohy, '-n', 'uloha', prikaz];
-
-    const okno = (await tmux(args)).trim();
+    const okno = await noveOkno(p.slug, ['-c', cwd, ...prostrediUlohy, '-n', 'uloha'], prikaz, ['-x', '160', '-y', '45']);
     await tmux(['set-option', '-w', '-t', okno, '@session', session]);
     await tmux(['set-option', '-w', '-t', okno, '@autor', uloha.autor]);
     await tmux(['set-option', '-w', '-t', okno, '@uloha', String(uloha.id)]);
@@ -1464,7 +2166,7 @@ async function vTerminalu(p, uloha, cwd, session, navazat) {
  */
 function pokracovani(uloha, okno, soubor, hotovo) {
     const hlidka = setInterval(async () => {
-        const zije = await tmux(['display-message', '-p', '-t', okno, '#{window_id}']).then((id) => id.trim() === okno, () => false);
+        const zije = await oknoZije(okno).catch(() => true);
         if (!zije) {
             clearInterval(hlidka);
             for (const s of ['stop', 'zadani', 'uvod', 'nastaveni.json']) fs.rmSync(soubor(s), { force: true });
@@ -1506,21 +2208,10 @@ async function vysledekUlohy(uloha, data) {
     }
 }
 
-/** Uspí nepřipnuté konverzace, ve kterých se dlouho nic nedělo. */
-async function uspatNecinne() {
-    const ted = Math.floor(Date.now() / 1000);
-
-    for (const p of projekty()) {
-        for (const o of await konverzacniOkna(p.slug)) {
-            if (o.trvala || !o.aktivita || ted - o.aktivita < USPAT_PO) continue;
-
-            await tmux(['kill-window', '-t', o.id]).catch(() => {});
-            console.log(`${new Date().toISOString()} uspáno ${p.slug}:${o.id} (${o.session}), bez pohybu ${Math.round((ted - o.aktivita) / 3600)} h`);
-        }
-    }
-}
-
-setInterval(() => uspatNecinne().catch((e) => console.error(e.message)), 10 * 60 * 1000);
+// Hlídka sezení hned po startu (staré verze, osiřelé procesy po pádu služby), pak pravidelně.
+setTimeout(() => hlidatSezeni().catch((e) => console.error(e.message)), 3000);
+setInterval(() => hlidatSezeni().catch((e) => console.error(e.message)), HLIDKA_SEZENI * 1000);
+setInterval(() => hlidatPamet().catch((e) => console.error(e.message)), PAMET_INTERVAL * 1000);
 
 const server = http.createServer((req, res) => {
     api(req, res).catch((e) => odpoved(res, e.status || 500, { chyba: e.message }));
@@ -1591,30 +2282,60 @@ function pripojit(ws, p, v, uloha = false) {
 
     console.log(`${new Date().toISOString()} ${v.u || '?'} otevřel ${p.slug}:${v.v}`);
 
-    term.onData((data) => ws.readyState === ws.OPEN && ws.send(data));
-    term.onExit(() => ws.close(1000, 'konec'));
+    // Po skončení pty (tmux klient skončil, okno zavřené) se do něj už nezapisuje:
+    // zápis do zavřeného deskriptoru byl „Unhandled pty write error EBADF“.
+    let konec = false;
+    // LiteSpeed ukončí tiché spojení, ping ho drží naživu.
+    const ping = setInterval(() => ws.readyState === ws.OPEN && ws.ping(), 25000);
+    const posluchaci = [];
+    const uklid = () => {
+        clearInterval(ping);
+        while (posluchaci.length) posluchaci.pop().dispose();
+    };
+    const doTerminalu = (prace) => {
+        if (konec) return;
+        try {
+            prace();
+        } catch (e) {
+            console.error(`terminál ${p.slug}:${v.v}: ${e.message}`);
+            konec = true;
+            uklid();
+            ws.close(1011, 'chyba terminálu');
+        }
+    };
+
+    posluchaci.push(term.onData((data) => ws.readyState === ws.OPEN && ws.send(data)));
+    posluchaci.push(term.onExit(() => {
+        konec = true;
+        uklid();
+        ws.close(1000, 'konec');
+    }));
 
     ws.on('message', (zprava) => {
+        if (konec) return;
         let data;
         try { data = JSON.parse(zprava.toString()); } catch { return; }
 
         // Jen ke sledování projde kolečko myši, psaní ne. Psaní do úlohy = zásah.
         const mys = typeof data.d === 'string' && /^(\x1b\[<\d+;\d+;\d+[Mm])+$/.test(data.d);
         if (data.t === 'i' && typeof data.d === 'string' && (!v.r || mys)) {
+            if (!mys) vstupy.set(v.v, Math.floor(Date.now() / 1000));
             if (uloha && !mys) zasahy.set(v.v, Date.now());
-            term.write(data.d);
+            doTerminalu(() => term.write(data.d));
         } else if (data.t === 'r') {
             const cols = Math.max(20, Math.min(400, Number(data.c) || 80));
             const rows = Math.max(5, Math.min(200, Number(data.r) || 24));
-            term.resize(cols, rows);
+            doTerminalu(() => term.resize(cols, rows));
         }
     });
 
-    // LiteSpeed ukončí tiché spojení, ping ho drží naživu.
-    const ping = setInterval(() => ws.readyState === ws.OPEN && ws.ping(), 25000);
+    // Bez posluchače by chyba spojení (reset od klienta) shodila celou službu.
+    ws.on('error', (e) => console.error(`terminál ${p.slug}:${v.v}: ${e.message}`));
 
     ws.on('close', () => {
-        clearInterval(ping);
+        uklid();
+        if (konec) return;
+        konec = true;
         try { term.kill(); } catch { /* už skončil */ }
     });
 }
