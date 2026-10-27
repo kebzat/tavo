@@ -79,7 +79,7 @@ class CrmDailyDigest extends Command
             ->filter();
 
         if ($configured->isEmpty()) {
-            return User::query()->orderBy('name')->get();
+            return User::query()->staff()->orderBy('name')->get();
         }
 
         return User::query()->whereIn('email', $configured)->orderBy('name')->get();

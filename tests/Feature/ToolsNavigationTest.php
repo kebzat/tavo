@@ -26,7 +26,7 @@ class ToolsNavigationTest extends TestCase
 
         $this->assertSame(['', 'Klienti', 'Reklamy', 'Mozek', 'Obchod', 'Nastavení'], array_keys($menu));
         $this->assertSame(['Ranní přehled', 'Agent'], $menu['']);
-        $this->assertSame(['Klienti', 'Hodiny', 'Fakturace', 'Výhled paušálů', 'Checklisty', 'Dotazníky', 'Trezor'], $menu['Klienti']);
+        $this->assertSame(['Klienti', 'Hodiny', 'Fakturace', 'Výhled paušálů', 'Checklisty', 'Dotazníky', 'Trezor', 'Automatizace'], $menu['Klienti']);
         $this->assertSame(['Přehled', 'Upozornění', 'Termíny', 'Reporty', 'Reklamní grafika'], $menu['Reklamy']);
         $this->assertContains('Nastavení CRM', $menu['Nastavení']);
         $this->assertContains('Přístupy agentů', $menu['Nastavení']);

@@ -7,6 +7,7 @@ use App\Http\Controllers\Agent\AgentApiController;
 use App\Http\Controllers\Agent\KnowledgeApiController;
 use App\Http\Controllers\Agent\VaultApiController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\AutomationCsvController;
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistToggleController;
@@ -211,6 +212,13 @@ Route::get('/stranka/{key}', ArchivePageController::class)
 Route::get('/klient/{token}', ClientDashboardController::class)
     ->middleware('throttle:60,1')
     ->name('client-dashboard.show');
+
+// CSV pro pravidelný import objednávek v Upgates (automatizace klienta, docs/AUTOMATIZACE.md).
+// Bez přihlášení, chrání ho náhodný token v adrese. Upgates stahuje 1× za hodinu.
+Route::get('/automatizace/{token}/upgates-import.csv', AutomationCsvController::class)
+    ->where('token', '[A-Za-z0-9]{40}')
+    ->middleware([NoIndex::class, 'throttle:60,1'])
+    ->name('automations.csv');
 
 // Potenciální spolupráce: dopadová stránka pro firmu, kterou chceme získat.
 Route::get('/potencialni-spoluprace/{slug}', ProposalController::class)->name('proposal.show');

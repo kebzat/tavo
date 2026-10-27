@@ -65,7 +65,7 @@ class DealsTable
                 SelectFilter::make('package')->label('Balíček')->options(DealPackage::class)->multiple(),
                 SelectFilter::make('owner_id')
                     ->label('Vede')
-                    ->options(fn (): array => User::orderBy('name')->pluck('name', 'id')->all()),
+                    ->options(fn (): array => User::query()->staff()->orderBy('name')->pluck('name', 'id')->all()),
                 Filter::make('open')
                     ->label('Jen rozjednané')
                     ->toggle()

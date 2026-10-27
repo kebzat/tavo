@@ -55,6 +55,12 @@ class Client extends Model
         return $this->belongsTo(Company::class, 'crm_company_id');
     }
 
+    /** Automatizace e-shopu klienta (připomínky zásilek…), viz docs/AUTOMATIZACE.md. */
+    public function automations(): HasMany
+    {
+        return $this->hasMany(Automation::class);
+    }
+
     public function checklists(): HasMany
     {
         return $this->hasMany(Checklist::class);

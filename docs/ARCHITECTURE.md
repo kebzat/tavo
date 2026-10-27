@@ -77,12 +77,13 @@ design-source/                 původní Claude design (needitovat, jen referenc
 
 Formulář má `throttle:5,1` — pět odeslání za minutu z jedné IP.
 
-## Dva Filament panely
+## Tři Filament panely
 
 | Panel | URL | Kdo se dostane dovnitř | Kde žijí třídy |
 |---|---|---|---|
 | `admin` (výchozí) | `/admin` | správce i redaktor | `app/Filament/Resources`, `app/Filament/Pages` |
 | `tools` | `/nastroje` | jen správce | `app/Filament/Tools/Resources`, `app/Filament/Tools/Pages` |
+| `client` | `/muj-ucet` | klient (role Klient) a správce kvůli náhledu | `app/Filament/Client/Pages`, viz [AUTOMATIZACE.md](AUTOMATIZACE.md) |
 
 Panel `tools` drží interní nástroje, které se správou obsahu webu nesouvisí. Zatím
 v něm žijí **technické checklisty klientských webů**: jedna univerzální šablona
@@ -164,6 +165,12 @@ Klient na paušál dostane odkaz `/klient/{nazev-klienta}-{6 znaků}`: paušál 
 sečtené po úkolech, co čeká na něj, plán po měsících a sdílené dokumenty.
 Úkoly a cíle měsíců se plní u klienta v nástrojích. Podrobnosti
 v [CLIENT-DASHBOARD.md](CLIENT-DASHBOARD.md).
+
+### Automatizace klientů
+
+E-shopy klientů na Upgates: připomínky vyzvednutí zásilek ze Zaslatu. Web každou hodinu
+připraví CSV se změnou stavu objednávky, Upgates ho importuje a pošle e-mail nebo SMS sám.
+Klient vidí přehled ve svém účtu `/muj-ucet`. Podrobnosti v [AUTOMATIZACE.md](AUTOMATIZACE.md).
 
 ### Audity
 

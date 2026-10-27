@@ -84,7 +84,7 @@ class TasksRelationManager extends RelationManager
                     ->helperText('Kdy na úkol dojde. Prázdné = „Později“.'),
                 Select::make('user_id')
                     ->label('Kdo vede')
-                    ->options(fn (): array => User::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->options(fn (): array => User::query()->staff()->orderBy('name')->pluck('name', 'id')->all())
                     ->default(auth()->id()),
                 Select::make('priority')
                     ->label('Priorita')

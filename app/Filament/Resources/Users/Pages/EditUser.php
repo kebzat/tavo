@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Pages;
 
+use App\Enums\UserRole;
 use App\Filament\Resources\Users\UserResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\Concerns\CanAuthorizeResourceAccess;
@@ -13,6 +14,18 @@ class EditUser extends EditRecord
     use CanAuthorizeResourceAccess;
 
     protected static string $resource = UserResource::class;
+
+    /** Účet týmu nevisí na klientovi: při změně role z Klienta se klient vymaže. */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $role = $data['role'] ?? $this->getRecord()->role;
+
+        if (($role instanceof UserRole ? $role : UserRole::tryFrom((string) $role)) !== UserRole::Client) {
+            $data['client_id'] = null;
+        }
+
+        return $data;
+    }
 
     protected function getHeaderActions(): array
     {
