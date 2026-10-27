@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Knowledge\ClientMentions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -106,9 +107,16 @@ class KnowledgeEntry extends Model
         return $this->status === self::STATUS_PROPOSED;
     }
 
-    /** Schválit. Nové znění staršího poznatku ho nahradí (starý do archivu). */
-    public function approve(string $by): void
+    /**
+     * Schválit. Nové znění staršího poznatku ho nahradí (starý do archivu).
+     * Poznatek, který míchá klienty (mixing()), se neschválí: vrátí false.
+     */
+    public function approve(string $by): bool
     {
+        if ($this->mixing() !== null) {
+            return false;
+        }
+
         DB::transaction(function () use ($by): void {
             $this->update(['status' => self::STATUS_APPROVED, 'reviewed_by' => $by, 'reviewed_at' => now()]);
 
@@ -118,6 +126,28 @@ class KnowledgeEntry extends Model
                 $this->replaces->update(['status' => self::STATUS_ARCHIVED, 'reviewed_by' => $by, 'reviewed_at' => now()]);
             }
         });
+
+        return true;
+    }
+
+    /**
+     * Proč poznatek míchá klienty, null = v pořádku: firemní poznatek nebo
+     * postup zmiňuje klienta, poznatek klienta jiného klienta. Takový
+     * agenti nedostanou a neschválí se. Viz docs/MOZEK.md, Oddělení klientů.
+     */
+    public function mixing(): ?string
+    {
+        return app(ClientMentions::class)->problem($this->layer, $this->client, $this->title, $this->body, implode(' ', $this->tags ?? []), (string) $this->origin);
+    }
+
+    /** Smí ho dostat agent, který pracuje pro `$client` (null = projekt bez klienta)? */
+    public function visibleFor(?Client $client): bool
+    {
+        if ($this->client_id !== null) {
+            return $client !== null && $this->client_id === $client->getKey() && $this->mixing() === null;
+        }
+
+        return app(ClientMentions::class)->in(implode("\n", [$this->title, $this->body, implode(' ', $this->tags ?? []), (string) $this->origin]), $client)->isEmpty();
     }
 
     public function reject(string $by): void

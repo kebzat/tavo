@@ -113,8 +113,8 @@ class Skill extends Model
 
                 taveo skill {$this->slug} <slug-klienta>
 
-            (V projektu bez klienta bez slugu.) Dostaneš postup skillu, schválené know-how,
-            zkušenosti z jiných klientů TAVEO, archiv skillu (case studies, výsledky, vzory)
+            (V projektu bez klienta bez slugu.) Dostaneš postup skillu, schválené know-how
+            z práce TAVEO pro všechny klienty, poznatky tohoto klienta ke skillu, archiv skillu (case studies, výsledky, vzory)
             a jak se skill učí. Drž se toho. Když si to odporuje s tím, co chce člověk, řekni to.
 
             Když příkaz selže (skill ještě není zveřejněný nebo nejde spojení), řekni to

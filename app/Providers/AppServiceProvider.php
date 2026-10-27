@@ -15,6 +15,7 @@ use App\Support\Crm\Ai\ClaudeProspectAi;
 use App\Support\Crm\Ai\NullProspectAi;
 use App\Support\Crm\Ai\ProspectAi;
 use App\Support\ImageDerivatives;
+use App\Support\Knowledge\ClientMentions;
 use App\Support\Tracking;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -27,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
         // Claude Code na serveru (docs/AGENT.md). Nahrazuje se v testech.
         $this->app->bind(AgentServer::class, fn (): AgentServer => AgentServer::fromConfig());
         $this->app->bind(GitHub::class, fn (): GitHub => GitHub::fromConfig());
+        // Vzory jmen klientů pro pojistku mozku, jednou za požadavek / úlohu.
+        $this->app->scoped(ClientMentions::class);
 
         // Claude jen s klíčem a zapnutým ANTHROPIC_ENABLED. Jinak proklepnutí
         // webu a audit jedou z měření, nic se nerozbije a nic se neplatí.

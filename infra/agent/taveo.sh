@@ -12,11 +12,15 @@ TOKEN=${AGENT_API_TOKEN:-$(cat "$HOME/.config/taveo/token" 2>/dev/null || true)}
 
 [ -n "$TOKEN" ] || { echo "Chybí AGENT_API_TOKEN, rozhraní TAVEO není nastavené." >&2; exit 1; }
 
+# Projekt podle složky konverzace (/projekty/<projekt>/…): web pak v projektu klienta
+# pustí jen data toho klienta (klienti se nemíchají, docs/MOZEK.md).
+PROJEKT=$(printf '%s\n' "${CLAUDE_PROJECT_DIR:-$PWD}" | sed -n 's#^/projekty/\([^/]*\).*#\1#p')
+
 volat() {
     local metoda=$1 cesta=$2
     shift 2
     curl -sS --fail-with-body --max-time 60 -X "$metoda" \
-        -H "Authorization: Bearer $TOKEN" -H 'Accept: application/json' -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer $TOKEN" -H "X-Taveo-Projekt: $PROJEKT" -H 'Accept: application/json' -H 'Content-Type: application/json' \
         "$API$cesta" "$@"
     echo
 }
@@ -25,7 +29,7 @@ volat() {
 surove() {
     local metoda=$1 cesta=$2
     shift 2
-    curl -sS --fail-with-body --max-time 300 -X "$metoda" -H "Authorization: Bearer $TOKEN" "$API$cesta" "$@"
+    curl -sS --fail-with-body --max-time 300 -X "$metoda" -H "Authorization: Bearer $TOKEN" -H "X-Taveo-Projekt: $PROJEKT" "$API$cesta" "$@"
 }
 
 napoveda() {
@@ -46,8 +50,8 @@ taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
 taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF
                                         jedna část konceptu reportu v Markdownu (jen prázdná pole se doplní)
 taveo mozek "co hledám" [slug] [--skill S]
-                                        hledání v mozku TAVEO (schválené poznatky, JSON); se skillem i u jiných klientů
-taveo mozek-seznam                      nadpisy všeho v mozku (kontrola duplicit)
+                                        hledání v mozku TAVEO (schválené poznatky, JSON); bez slugu jen firemní, se skillem jen jeho
+taveo mozek-seznam [slug]               nadpisy firemních poznatků a s klientem i jeho (kontrola duplicit)
 taveo mozek-navrh firma|klient|postup "nadpis" [slug] [--skill S] < text.md
                                         návrh poznatku do mozku, schválí ho člověk v nástrojích
 taveo mozek-uvod                        mozek klienta pro začátek konverzace (háček SessionStart, projekt podle složky)
@@ -138,7 +142,7 @@ case "${1:-}" in
         volat GET /mozek "${dotaz[@]}"
         ;;
     mozek-seznam)
-        volat GET /mozek/seznam
+        volat GET /mozek/seznam ${2:+-G --data-urlencode "klient=$2"}
         ;;
     mozek-navrh)
         vrstva=${2:?firma, klient nebo postup}

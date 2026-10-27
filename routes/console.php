@@ -115,3 +115,17 @@ Schedule::command('agent:zverejneni')
     ->everyMinute()
     ->withoutOverlapping(10)
     ->onOneServer();
+
+// Automatizace klientů (připomínky vyzvednutí zásilek v Upgates). V :40, ať Upgates
+// (import 1× za hodinu) stihne CSV stáhnout a příští běh změnu potvrdí. Viz docs/AUTOMATIZACE.md.
+Schedule::command('automations:run')
+    ->hourlyAt(40)
+    ->timezone('Europe/Prague')
+    ->withoutOverlapping(30)
+    ->onOneServer();
+
+// Ranní souhrn automatizací pro účty klientů (co se včera poslalo).
+Schedule::command('automations:summary')
+    ->dailyAt('07:00')
+    ->timezone('Europe/Prague')
+    ->onOneServer();

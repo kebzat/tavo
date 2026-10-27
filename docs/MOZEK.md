@@ -85,24 +85,43 @@ google-reklamy, sklik-ads), Web a konverze (web), Data (data-analytik), Agenturn
 | **Pokyny** | Mozek → Skilly (`skills.instructions`) | jak specialista pracuje: postup, pravidla, výstup. Upravuje člověk, ne migrace. |
 | **Kdy ho použít** | `skills.description` | podle toho ho agent vybere sám, jde do SKILL.md |
 | **Čerpá z** | `skills.builds_on` | třeba copywriting: agent si ho načte, když píše texty |
-| **Know-how** | poznatky se `skill_id` bez klienta | schválené jako vše ostatní |
-| **Zkušenosti z klientů** | poznatky se `skill_id` a klientem | co u klienta fungovalo. Skill je ukazuje agentům **ostatních** klientů. |
-| **Archiv skillu** | podklady se `skill_id` | case studies, výsledky, vzory. I dokument klienta označený skillem (zůstane i v archivu klienta). |
+| **Know-how** | poznatky se `skill_id` bez klienta | schválené jako vše ostatní. Tudy se skill učí ze všech klientů: zkušenost od klienta jde do skillu obecně, bez jména a dat klienta (Oddělení klientů). |
+| **U klienta** | poznatky se `skill_id` a klientem | co fungovalo u toho klienta. Dostane je jen agent téhož klienta, ostatním klientům se neukazují (rozhodl uživatel 27. 10. 2026). |
+| **Archiv skillu** | podklady se `skill_id` | case studies, výsledky, vzory. Agent klienta vidí podklady skillu bez klienta a dokumenty svého klienta označené skillem, cizí ne. |
 | **Agent skillu** | projekt bez kódu (`skills.agent_project`) | Projekty → Skilly. Tam se skill učí: Pavel a Tom nahrávají podklady, probírají strategie, opravují ho. |
 
 - **Jak ho agent klienta použije:** v `~/.claude/skills/<slug>/SKILL.md` je jen kdy skill použít a příkaz
   `taveo skill <slug> <klient>` (`GET /skilly/{slug}?klient=`, `KnowledgeBase::skill()`). Ten vrátí pokyny, know-how,
-  poznatky klienta ke skillu, zkušenosti jiných klientů a archiv skillu. Skill se tak zlepšuje bez přepisování souborů.
+  poznatky klienta ke skillu a archiv skillu (bez dat jiných klientů). Skill se tak zlepšuje bez přepisování souborů.
   Klient i člověk ho volají `/meta-ads`. Úvod konverzace u klienta skilly vyjmenuje.
 - **SKILL.md** zapisuje `taveo skilly-sync` (z `GET /skilly`, pole `soubor`), spouští ho na pozadí háček `mozek-uvod`.
   Nový skill z nástrojů je tak v další konverzaci. Soubor bez značky `<!-- taveo skilly-sync -->` (ručně psaný `google-reklamy`)
   nepřepíše.
-- **Úvod konverzace v projektu skillu** (`opening()` → `skill(home: true)`): kdo je, pokyny, know-how, zkušenosti, archiv
+- **Úvod konverzace v projektu skillu** (`opening()` → `skill(home: true)`): kdo je, pokyny, know-how, archiv skillu
   a jak se učí (`taveo skill-nahrat`, `taveo mozek-navrh … --skill`). Pod 10 000 znaků.
 - **Knihovník** u podkladů skillu ví, ke kterému skillu patří, a návrhy skill zdědí (`propose()`, `skill_id` z podkladů).
 - **Agent skillu** se zakládá na pozadí stejně jako u klientů (`ClientProjects`, `agent:projekty-klientu`, po jednom).
   Nový skill z nástrojů dostane agenta hned. `marketing` je obsazený Pavlovým reportovacím agentem, skill má `marketing-strategie`,
   Google Ads už měl `google-reklamy` (26. 10.).
+
+## Oddělení klientů
+
+Co mozek ví o jednom klientovi (objednávky, čísla, domluvy), nesmí dostat jiný klient ani firemní mozek,
+ať agent nemíchá data klientů dohromady (rozhodl uživatel 27. 10. 2026, po poznatcích o Snowbearu ve firemní vrstvě).
+
+- **Kdo co dostane:** agent klienta jen poznatky toho klienta a firemní (`KnowledgeBase::forClient()`), i u „vždy v hlavě“.
+  Hledání bez klienta (`GET /mozek` bez `klient`, `/mozek/seznam`) vrací jen firemní poznatky a postupy.
+- **Firemní poznatek a postup bez klienta:** nesmí zmínit klienta jménem (i v jiném pádě), slugem ani projektem agenta
+  (`ClientMentions`, vzory ze všech klientů v nástrojích). Poznatek klienta nesmí zmínit jiného klienta. Takový poznatek
+  agenti nedostanou ani když je schválený (`KnowledgeEntry::visibleFor()`, kromě klienta, kterého zmiňuje), neschválí se
+  (Schválit vrátí upozornění, `KnowledgeEntry::mixing()`) a formulář ho neuloží. V Poznatcích je u něj „Míchá klienty“.
+- **Návrhy od agentů** (`KnowledgeBase::propose()`): web odmítne firemní se jménem klienta, poznatek jiného klienta, než pro
+  kterého agent pracuje (úloha, podklady z archivu klienta, projekt), a poznatek klienta bez známého klienta (dřív se z něj
+  stal firemní). Důvod vrací v `proc`. Původ firemního návrhu ze závěru úlohy je obecný, název úlohy (se jménem klienta) ne.
+- **Projekt klienta** (`AgentProjectScope`): `taveo` posílá `X-Taveo-Projekt` podle složky konverzace. Z projektu klienta
+  jiný slug (`/klienti/…`, `/archiv/…`, `?klient=`), dokument z archivu, úkol nebo přístup v trezoru jiného klienta vrátí 403.
+  Projekt bez klienta (taveo, mozek, google-reklamy) omezený není. Je to pojistka proti omylu, ne zabezpečení: token je
+  jeden pro všechny projekty a hlavičku pošle jen `taveo` (curl bez ní omezený není).
 
 ## Rozhraní pro agenta
 
@@ -110,8 +129,8 @@ Token agenta (`AGENT_API_TOKEN`, v kontejneru `~/.config/taveo/token`), prefix `
 
 | | |
 |---|---|
-| `GET /mozek?q=slova&klient=slug&skill=meta-ads&navrhy=1` | hledání, nejlepší první (kmen slova: „reportu“ najde „Reporty“), `navrhy=1` přidá neschválené, `skill` jen poznatky skillu i od jiných klientů |
-| `GET /mozek/seznam` | všechno platné a navržené jen s nadpisem (kontrola duplicit) |
+| `GET /mozek?q=slova&klient=slug&skill=meta-ads&navrhy=1` | hledání, nejlepší první (kmen slova: „reportu“ najde „Reporty“), `navrhy=1` přidá neschválené. Bez `klient` jen firemní, s ním i poznatky toho klienta, `skill` jen poznatky skillu (bez jiných klientů) |
+| `GET /mozek/seznam?klient=slug` | platné a navržené jen s nadpisem (kontrola duplicit): firemní, s `klient` i toho klienta |
 | `GET /mozek/zdroje/{id}`, `…/soubory/{i}` | text a soubory podkladů |
 | `POST /mozek/navrhy` | `{"zdroj": id?, "popis": "co v podkladech je"?, "poznatky": [{vrstva, klient?, skill?, nadpis, text, stitky?, puvod?, nahrazuje?}]}` |
 | `GET /mozek/uvod?projekt=slug` | úvod konverzace v projektu (text), pro háček SessionStart |

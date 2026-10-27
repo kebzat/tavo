@@ -2,6 +2,9 @@
 
 @source '../../../../app/Filament/Tools/**/*';
 @source '../../../../resources/views/filament/tools/**/*';
+/* Účet klienta (/muj-ucet) má stejné téma. */
+@source '../../../../app/Filament/Client/**/*';
+@source '../../../../resources/views/filament/client/**/*';
 /* Grafy a sparklines reklam, sdílené se sdílenou stránkou reportu. */
 @source '../../../../resources/views/components/ads/**/*';
 

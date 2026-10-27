@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Agent;
 
 use App\Filament\Tools\Resources\KnowledgeSources\KnowledgeSourceResource;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\AgentProjectScope;
 use App\Models\Client;
 use App\Models\KnowledgeEntry;
 use App\Models\KnowledgeSource;
@@ -33,10 +34,14 @@ class KnowledgeApiController extends Controller
     /** Čeština bez \u escapů: agent to čte (a platí za každý znak). */
     private const JSON = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
-    /** Hledání: `?q=slova&klient=slug&skill=meta-ads&navrhy=1` (i neschválené návrhy). Se skillem i jiní klienti. */
+    /**
+     * Hledání: `?q=slova&klient=slug&skill=meta-ads&navrhy=1` (i neschválené návrhy). Bez
+     * klienta jen firemní poznatky, v projektu klienta vždy jeho klient. Se skillem
+     * jen poznatky skillu, i tady bez jiných klientů.
+     */
     public function search(Request $request, KnowledgeBase $knowledge): JsonResponse
     {
-        $client = $request->filled('klient') ? Client::query()->where('slug', $request->string('klient'))->firstOrFail() : null;
+        $client = $this->requestedClient($request);
         $skill = $request->filled('skill') ? Skill::query()->where('slug', $request->string('skill'))->firstOrFail() : null;
 
         return response()->json([
@@ -46,11 +51,17 @@ class KnowledgeApiController extends Controller
         ], options: self::JSON);
     }
 
-    /** Všechny platné poznatky a návrhy jen s nadpisem (kontrola, ať agent nezakládá totéž). */
-    public function index(): JsonResponse
+    /**
+     * Platné poznatky a návrhy jen s nadpisem (kontrola, ať agent nezakládá
+     * totéž): firemní a s `?klient=slug` (v projektu klienta vždy) i klienta.
+     */
+    public function index(Request $request): JsonResponse
     {
+        $client = $this->requestedClient($request);
+
         return response()->json(KnowledgeEntry::query()
             ->with(['client:id,slug', 'skill:id,slug'])
+            ->where(fn ($query) => $query->whereNull('client_id')->when($client, fn ($query) => $query->orWhere('client_id', $client->getKey())))
             ->whereIn('status', [KnowledgeEntry::STATUS_APPROVED, KnowledgeEntry::STATUS_PROPOSED])
             ->orderBy('layer')->orderBy('id')
             ->limit(3000)
@@ -97,21 +108,24 @@ class KnowledgeApiController extends Controller
         return response()->json(Skill::query()->orderBy('sort')->get()->map(fn (Skill $skill): array => $skill->toAgent())->values(), options: self::JSON);
     }
 
-    /** Skill pro agenta (`taveo skill <slug> [klient]`): pokyny, know-how, zkušenosti z klientů, archiv. Text. */
+    /** Skill pro agenta (`taveo skill <slug> [klient]`): pokyny, know-how, poznatky klienta ke skillu, archiv. Text. */
     public function skill(Request $request, Skill $skill, KnowledgeBase $knowledge): Response
     {
-        $client = $request->filled('klient') ? Client::query()->where('slug', $request->string('klient'))->firstOrFail() : null;
+        $client = $this->requestedClient($request);
 
         return response($knowledge->skill($skill, $client), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
-    /** Archiv skillu: case studies, výsledky, vzory, i dokumenty klientů označené skillem. */
+    /**
+     * Archiv skillu: case studies, výsledky, vzory bez klienta a s `?klient=slug`
+     * (v projektu klienta vždy) i dokumenty toho klienta označené skillem. Jiní klienti ne.
+     */
     public function skillArchive(Request $request, Skill $skill): JsonResponse
     {
         return response()->json([
             'skill' => $skill->slug,
             'druhy' => KnowledgeSource::categories(),
-            'dokumenty' => $this->documents(KnowledgeSource::query()->with('client')->where('skill_id', $skill->getKey()), $request, withClient: true),
+            'dokumenty' => $this->documents(KnowledgeBase::skillSources($skill, $this->requestedClient($request))->with('client'), $request, withClient: true),
         ], options: self::JSON);
     }
 
@@ -236,6 +250,10 @@ class KnowledgeApiController extends Controller
         ]);
 
         $source = isset($data['zdroj']) ? KnowledgeSource::find($data['zdroj']) : null;
+        $project = AgentProjectScope::client($request);
+        abort_if($project && $source?->client_id && $source->client_id !== $project->getKey(), 403, 'Podklady patří jinému klientovi.');
+        // Z podkladů klienta a z projektu klienta jen poznatky toho klienta (a obecné bez něj).
+        $scope = $project ?? $source?->client;
 
         if (filled($data['popis'] ?? null)) {
             abort_unless($source, 422, 'Popis patří k podkladům, chybí zdroj.');
@@ -245,6 +263,7 @@ class KnowledgeApiController extends Controller
         $room = $source ? max(0, BrainAgent::MAX_PER_SOURCE - $source->entries()->count()) : self::MAX_BATCH;
         $created = 0;
         $skipped = [];
+        $reasons = [];
 
         foreach ($data['poznatky'] ?? [] as $item) {
             $entry = $created < $room ? $knowledge->propose($item, [
@@ -253,18 +272,32 @@ class KnowledgeApiController extends Controller
                 'agent_job_id' => $source?->agent_job_id,
                 'skill_id' => $source?->skill_id,
                 'proposed_by' => 'agent'.($source?->author ? ' (podklady od '.$source->author.')' : ''),
-            ]) : null;
+            ], $scope) : 'Z jedněch podkladů už víc návrhů nejde.';
 
-            $entry ? $created++ : $skipped[] = $item['nadpis'];
+            if ($entry instanceof KnowledgeEntry) {
+                $created++;
+            } else {
+                $skipped[] = $item['nadpis'];
+                $reasons[] = ['nadpis' => $item['nadpis'], 'proc' => $entry];
+            }
         }
 
         return response()->json([
             'ok' => true,
             'zalozeno' => $created,
             'preskoceno' => $skipped,
+            'proc' => $reasons ?: null,
             'zbyva' => $source ? max(0, $room - $created) : null,
             'popis' => filled($data['popis'] ?? null) ? 'uložen' : null,
         ], options: self::JSON);
+    }
+
+    /** Klient z `?klient=slug`, jinak klient projektu, ze kterého agent volá (AgentProjectScope). */
+    private function requestedClient(Request $request): ?Client
+    {
+        return $request->filled('klient')
+            ? Client::query()->where('slug', $request->string('klient'))->firstOrFail()
+            : AgentProjectScope::client($request);
     }
 
     /** Klient archivu, null = archiv firmy (podklady bez klienta, projekt taveo a jiné bez klienta). */

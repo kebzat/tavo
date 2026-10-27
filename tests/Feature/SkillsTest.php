@@ -132,7 +132,7 @@ class SkillsTest extends TestCase
             ->assertRedirect(AgentProject::getUrl(['project' => 'meta-ads']));
     }
 
-    public function test_skill_pro_agenta_dava_pokyny_know_how_a_zkusenosti_jinych_klientu(): void
+    public function test_skill_pro_agenta_dava_pokyny_know_how_a_poznatky_klienta_bez_jinych_klientu(): void
     {
         $meta = $this->skill('meta-ads');
         $cejlon = Client::query()->create(['name' => 'Svět Cejlonu', 'slug' => 'svet-cejlonu']);
@@ -154,16 +154,20 @@ class SkillsTest extends TestCase
         $this->assertStringContainsString('`taveo skill copywriting svet-cejlonu`', $text);
         $this->assertStringContainsString('Testujeme 3 kreativy na sadu', $text);
         $this->assertStringContainsString("## U klienta Svět Cejlonu (ke skillu)\n- #", $text);
-        $this->assertStringContainsString('[MIRNIX Hockey] U MIRNIXu fungovala videa z tréninku', $text);
+        // Klienti se nemíchají: zkušenost jiného klienta skill agentovi Světa Cejlonu nedá.
+        $this->assertStringNotContainsString('U MIRNIXu fungovala videa z tréninku', $text);
         $this->assertStringContainsString('Výsledky 30 klientů v Meta Ads', $text);
         $this->assertStringNotContainsString('Copy bez pomlček', $text);
         $this->assertStringNotContainsString('Neschválený', $text);
         $this->assertStringNotContainsString('[Svět Cejlonu]', $text);
 
-        // Hledání se skillem najde i zkušenosti jiných klientů, bez skillu jen to, co platí pro klienta.
-        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'videa', 'klient' => 'svet-cejlonu', 'skill' => 'meta-ads']))
+        // Hledání se skillem najde jen poznatky skillu tohoto klienta a obecné, jiné klienty ne.
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'videa', 'klient' => 'svet-cejlonu', 'skill' => 'meta-ads']))->assertJsonCount(0, 'poznatky');
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'videa', 'klient' => 'mirnix-hockey', 'skill' => 'meta-ads']))
             ->assertJsonPath('poznatky.0.klient', 'mirnix-hockey')
             ->assertJsonPath('poznatky.0.skill', 'meta-ads');
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'kreativy', 'klient' => 'svet-cejlonu', 'skill' => 'meta-ads']))
+            ->assertJsonPath('poznatky.0.nadpis', 'Testujeme 3 kreativy na sadu');
         $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'videa', 'klient' => 'svet-cejlonu']))->assertJsonCount(0, 'poznatky');
 
         $this->withToken(self::TOKEN)->getJson(route('agent.api.skilly'))
@@ -202,14 +206,15 @@ class SkillsTest extends TestCase
         $this->assertSame('web', $source->skill->slug);
         $this->assertNull($source->client_id);
 
-        // Dokument klienta označený skillem zůstane v archivu klienta a skill ho najde taky.
+        // Dokument klienta označený skillem zůstane v archivu klienta. Skill ho ukáže jen u toho klienta.
         $this->withToken(self::TOKEN)->post(route('agent.api.archiv.nahrat', 'svet-cejlonu'), [
             'nazev' => 'Meta Ads říjen', 'skill' => 'meta-ads', 'text' => 'Čísla.',
         ], ['Accept' => 'application/json'])->assertCreated();
 
-        $this->withToken(self::TOKEN)->getJson(route('agent.api.skill.archiv', 'meta-ads'))
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.skill.archiv', ['skill' => 'meta-ads', 'klient' => 'svet-cejlonu']))
             ->assertJsonCount(1, 'dokumenty')
             ->assertJsonPath('dokumenty.0.klient', 'svet-cejlonu');
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.skill.archiv', 'meta-ads'))->assertJsonCount(0, 'dokumenty');
         $this->withToken(self::TOKEN)->getJson(route('agent.api.archiv', 'svet-cejlonu'))->assertJsonPath('dokumenty.0.skill', 'meta-ads');
 
         // Knihovník u podkladů skillu: návrhy zdědí skill.

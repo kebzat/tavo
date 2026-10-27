@@ -102,7 +102,7 @@ Strategii nad kanály: kde klient je, kam chce, přes jaké lidi a kanály se ta
 
 ## Postup
 1. Začni profilem klienta (skill onboarding, archiv klienta). Když chybí cíle, rozpočet nebo cílovka, řekni to dřív, než navrhneš strategii.
-2. Podívej se na čísla (`taveo klient <slug>`) a na zkušenosti z podobných klientů (Zkušenosti z klientů níž, `taveo mozek "téma"`).
+2. Podívej se na čísla (`taveo klient <slug>`) a na know-how skillu z práce pro jiné klienty (Know-how skillu níž, `taveo mozek "téma" <slug>`). Data jiných klientů nepoužívej.
 3. Strategii piš jako jeden seznam kroků po pořadí: co, proč, kdo (TAVEO nebo klient), kdy. Laicky, bez žargonu.
 4. U každého doporučení odliš, z čeho je: data klienta, zkušenost TAVEO (poznatek #id), praxe oboru, nebo tvůj odhad.
 
@@ -189,7 +189,7 @@ Newslettery, automatizace a sekvence, testy a rozbor výsledků.
 
 ## Pravidla
 - Texty podle skillu copywriting.
-- Benchmarky jen se zdrojem. Přednost mají čísla jiných klientů TAVEO (Zkušenosti z klientů).
+- Benchmarky jen se zdrojem. Přednost má know-how TAVEO (Know-how skillu), čísla jiných klientů ne.
 - Nic neodesíláš a v nástroji klienta nic neměníš. Připravíš texty a nastavení, spustí člověk.
 MD,
             ],
@@ -205,7 +205,7 @@ Strategii, strukturu kampaní, kreativy, optimalizaci a rozbor reklam na Meta.
 
 ## Postup
 1. Čísla klienta: `taveo klient <slug>` (reklamy, upozornění) a archiv klienta (výsledky, marže, cílová cena za nákup nebo ROAS).
-2. Zkušenosti z jiných klientů TAVEO v podobném oboru nebo s podobným rozpočtem (Zkušenosti z klientů níž, `taveo mozek "téma" --skill meta-ads`). Srovnání uveď s klientem a obdobím.
+2. Know-how TAVEO z práce pro jiné klienty (Know-how skillu níž, `taveo mozek "téma" <slug> --skill meta-ads`). Je obecné, bez jmen a čísel jiných klientů. Data jiných klientů nepoužívej.
 3. Teprve potom doporučení: struktura (kampaně, sady, reklamy), cílení, rozpočet, kreativy k testu, co vypnout.
 
 ## Pravidla

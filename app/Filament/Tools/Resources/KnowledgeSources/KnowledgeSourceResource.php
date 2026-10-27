@@ -104,7 +104,7 @@ class KnowledgeSourceResource extends Resource
                 ->label('Skill')
                 ->options(fn (): array => Skill::query()->orderBy('sort')->pluck('name', 'id')->all())
                 ->placeholder('Žádný')
-                ->helperText('Case study, výsledky kampaní, vzorový web: najde je skill i u ostatních klientů.'),
+                ->helperText('Case study, výsledky kampaní, vzorový web. Dokument klienta uvidí jen agenti toho klienta, obecné poznatky z něj skill dá všem.'),
             Select::make('category')
                 ->label('Druh')
                 ->options(KnowledgeSource::categories())

@@ -18,6 +18,10 @@ use Illuminate\Support\Str;
  * Do zadání jde jen malý základ (poznatky „vždy v hlavě“ a poznatky
  * klienta úlohy), zbytek si agent dohledá přes API. Celý mozek by se do
  * zadání nevešel a agent by v něm to důležité přehlédl.
+ *
+ * Klienti se nemíchají: agent klienta dostane jen poznatky toho klienta
+ * a firemní, firemní poznatek nesmí nést jméno ani data klienta
+ * (ClientMentions). Viz docs/MOZEK.md, Oddělení klientů.
  */
 class KnowledgeBase
 {
@@ -42,6 +46,9 @@ class KnowledgeBase
 
     private const OPENING_ARCHIVE = 8;
 
+    /** Pravidlo vrstev pro agenty (zadání úloh, úvod konverzace, knihovník). Hlídá ho i ClientMentions. */
+    public const LAYER_RULE = 'Firemní poznatek a postup dostanou agenti všech klientů, proto v nich nesmí být jméno klienta ani jeho čísla, objednávky, produkty a výsledky: napiš to obecně („u e-shopu na Shoptetu…“), nebo to dej do vrstvy klient. Poznatek klienta nesmí obsahovat data jiného klienta.';
+
     /** Archiv firmy (podklady bez klienta) má v API a v `taveo archiv` místo slugu klienta tohle slovo. */
     public const FIRM_ARCHIVE = 'firma';
 
@@ -54,8 +61,6 @@ class KnowledgeBase
 
     private const SKILL_OPENING_KNOWHOW = 2000;
 
-    private const SKILL_OPENING_EXPERIENCE = 1200;
-
     private const SKILL_OPENING_ARCHIVE = 6;
 
     /** Kolik dokumentů archivu vypsat jménem, zbytek dohledá `taveo archiv`. */
@@ -64,6 +69,8 @@ class KnowledgeBase
     /**
      * Schválené poznatky podle slov dotazu, nejlepší první. Česká slova se
      * zkracují na kmen (reklamy → rekla), ať se najdou i v jiném tvaru.
+     * S klientem jeho poznatky a firemní, bez klienta jen firemní: poznatky
+     * jednoho klienta jiný klient nikdy nedostane.
      *
      * @return Collection<int, KnowledgeEntry>
      */
@@ -71,12 +78,11 @@ class KnowledgeBase
     {
         $stems = self::stems($query);
 
-        $candidates = KnowledgeEntry::query()
+        $candidates = $this->forClient(KnowledgeEntry::query(), $client)
             ->with(['client', 'skill'])
             ->whereIn('status', $withProposals ? [KnowledgeEntry::STATUS_APPROVED, KnowledgeEntry::STATUS_PROPOSED] : [KnowledgeEntry::STATUS_APPROVED])
-            // Se skillem i zkušenosti jiných klientů v jeho oboru, o to tu jde.
+            // Se skillem jen jeho poznatky: know-how a zkušenosti vlastního klienta, jiní klienti ne.
             ->when($skill, fn (Builder $q) => $q->where('skill_id', $skill->getKey()))
-            ->when($client && ! $skill, fn (Builder $q) => $q->where(fn (Builder $q) => $q->where('client_id', $client->getKey())->orWhereNull('client_id')))
             ->when($stems !== [], fn (Builder $q) => $q->where(function (Builder $q) use ($stems): void {
                 foreach ($stems as $stem) {
                     $q->orWhere('title', 'like', "%{$stem}%")->orWhere('body', 'like', "%{$stem}%")->orWhere('tags', 'like', "%{$stem}%");
@@ -84,7 +90,8 @@ class KnowledgeBase
             }))
             ->latest('updated_at')
             ->limit(300)
-            ->get();
+            ->get()
+            ->filter(fn (KnowledgeEntry $entry): bool => $entry->visibleFor($client));
 
         if ($stems === []) {
             return $candidates->take($limit)->values();
@@ -102,6 +109,20 @@ class KnowledgeBase
             ->take($limit)
             ->map(fn (array $item): KnowledgeEntry => $item[0])
             ->values();
+    }
+
+    /** Poznatky, které smí dostat agent klienta: jeho a firemní (bez klienta). */
+    private function forClient(Builder $query, ?Client $client): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->whereNull('client_id')->when($client, fn (Builder $q) => $q->orWhere('client_id', $client->getKey())));
+    }
+
+    /** @return Collection<int, KnowledgeEntry> schválené „vždy v hlavě“ pro agenta klienta (bez klienta jen firemní) */
+    private function always(?Client $client, int $chars): Collection
+    {
+        return $this->fit($this->forClient(KnowledgeEntry::query()->approved()->where('always', true), $client)
+            ->orderBy('layer')->orderBy('id')->get()
+            ->filter(fn (KnowledgeEntry $entry): bool => $entry->visibleFor($client)), $chars);
     }
 
     /** @return list<string> */
@@ -122,9 +143,10 @@ class KnowledgeBase
      */
     public function briefing(?Client $client): string
     {
-        $always = $this->fit(KnowledgeEntry::query()->approved()->where('always', true)->orderBy('layer')->orderBy('id')->get(), self::BRIEFING_ALWAYS);
+        $always = $this->always($client, self::BRIEFING_ALWAYS);
         $forClient = $client
-            ? $this->fit(KnowledgeEntry::query()->approved()->where('client_id', $client->getKey())->where('always', false)->latest('updated_at')->get(), self::BRIEFING_CLIENT)
+            ? $this->fit(KnowledgeEntry::query()->approved()->where('client_id', $client->getKey())->where('always', false)->latest('updated_at')->get()
+                ->filter(fn (KnowledgeEntry $entry): bool => $entry->visibleFor($client)), self::BRIEFING_CLIENT)
             : collect();
 
         $lines = ['## Mozek TAVEO (schválené zkušenosti týmu)'];
@@ -159,8 +181,11 @@ class KnowledgeBase
         return implode("\n", [
             ...$lines,
             '',
-            'Další poznatky (postupy, jiní klienti, starší zkušenosti) najdeš v mozku, vrací JSON:',
-            $this->searchCommand(),
+            'Další poznatky ('.($client ? 'tohoto klienta, ' : '').'firemní postupy, starší zkušenosti) najdeš v mozku, vrací JSON:',
+            $this->searchCommand(client: $client),
+            $client
+                ? "Poznatky, data a archiv jiných klientů k téhle úloze nepatří: nehledej je a jejich čísla, objednávky ani výsledky s klientem {$client->name} nemíchej."
+                : 'Poznatky klientů jsou jen u jejich klienta (v hledání s `&klient=slug`). Čísla a data různých klientů nikdy nesčítej ani nesrovnávej do jednoho.',
             '',
             '## Nový poznatek do mozku',
             'Když se při práci dozvíš něco, co se příště bude hodit i jinému agentovi (jak to klient chce, co nefungovalo, ověřený postup), dej na úplný konec závěru blok, nejvýš '.self::MAX_PER_JOB.'. Do mozku přijde jako návrh a schválí ho člověk:',
@@ -168,7 +193,7 @@ class KnowledgeBase
             'Nadpis jednou větou',
             'Pár vět: co, proč, příklad.',
             '[/poznatek]',
-            'Vrstva za slovem poznatek: klient (jen tenhle klient), firma (platí pro všechny), postup (návod na opakovanou práci). Žádné osobní údaje zákazníků ani hesla. Obyčejný průběh úlohy poznatek není.',
+            'Vrstva za slovem poznatek: klient (jen tenhle klient), firma (platí pro všechny), postup (návod na opakovanou práci). '.self::LAYER_RULE.' Žádné osobní údaje zákazníků ani hesla. Obyčejný průběh úlohy poznatek není.',
         ]);
     }
 
@@ -185,11 +210,12 @@ class KnowledgeBase
             return $this->skill($skill, home: true);
         }
 
-        $always = $this->fit(KnowledgeEntry::query()->approved()->where('always', true)->orderBy('layer')->orderBy('id')->get(), self::OPENING_ALWAYS);
+        $always = $this->always($client, self::OPENING_ALWAYS);
         // Projekt bez klienta (web TAVEO, marketing): místo klienta firemní poznatky a archiv firmy.
         $own = KnowledgeEntry::query()->approved()->where('always', false)
             ->when($client, fn (Builder $q) => $q->where('client_id', $client->getKey()), fn (Builder $q) => $q->whereNull('client_id'))
-            ->latest('updated_at')->get();
+            ->latest('updated_at')->get()
+            ->filter(fn (KnowledgeEntry $entry): bool => $entry->visibleFor($client));
         $forClient = $this->fit($own, self::OPENING_CLIENT);
         $archive = $this->archiveLines(KnowledgeSource::query()->where('client_id', $client?->getKey()), self::OPENING_ARCHIVE, 180);
         $slug = $client?->slug ?? self::FIRM_ARCHIVE;
@@ -223,7 +249,7 @@ class KnowledgeBase
 
         if ($skills->isNotEmpty()) {
             array_push($lines, '', '## Skilly TAVEO',
-                'Specialisté s vlastním know-how a zkušenostmi z ostatních klientů: '.$skills->map(fn (string $slug): string => "/{$slug}")->implode(', ').'. '
+                'Specialisté s vlastním know-how z práce pro všechny klienty: '.$skills->map(fn (string $slug): string => "/{$slug}")->implode(', ').'. '
                 ."Když práce spadá do jejich oboru, použij skill (načte ho `taveo skill <skill>{$scope}`).");
         }
 
@@ -231,11 +257,15 @@ class KnowledgeBase
             ...$lines,
             '',
             '## Hledání a učení',
-            "- Víc v mozku: `taveo mozek \"slova\"{$scope}` (postupy, starší zkušenosti, jiní klienti).",
+            "- Víc v mozku: `taveo mozek \"slova\"{$scope}` (".($client ? 'poznatky klienta, ' : '').'firemní postupy, starší zkušenosti).',
+            $client
+                ? "- **Klienti se nemíchají.** Mozek, archiv a data jiných klientů sem nepatří: nehledej v nich a jejich čísla, objednávky ani výsledky s klientem {$client->name} nespojuj. `taveo` v tomhle projektu jiného klienta ani nepustí."
+                : '- **Klienti se nemíchají.** Poznatky a archiv klienta jsou jen u něj (`taveo mozek "slova" <slug>`, `taveo archiv <slug>`). Čísla a data různých klientů nikdy nesčítej ani nesrovnávej do jednoho.',
             '- Když se v konverzaci dozvíš něco, co se bude hodit příště (jak to klient chce, co fungovalo a co ne, domluva, číslo s datem), navrhni poznatek. Platit začne, až ho člověk schválí v Nástrojích → Mozek:',
             '  `taveo mozek-navrh '.($client ? 'klient' : 'firma')." \"Nadpis jednou větou\"{$scope} <<'EOF'` … pár vět: co, proč, příklad, datum u čísel … `EOF`".($client ? '' : ' (návod na opakovanou práci: `postup` místo `firma`)'),
+            '  '.self::LAYER_RULE,
             '  Před návrhem `taveo mozek-seznam` (ať nevznikne podruhé). Obyčejný průběh práce poznatek není. Žádná hesla ani osobní údaje zákazníků.',
-            '  Když se poznatek týká oboru skillu (reklamy na Meta, e-maily, web…), přidej `--skill <skill>`, ať se z něj učí i agenti jiných klientů.',
+            '  Když se poznatek týká oboru skillu (reklamy na Meta, e-maily, web…), přidej `--skill <skill>`. Obecné know-how (`firma`, bez jména klienta) skill dá všem klientům, poznatek klienta jen tomuto.',
             '- Když tě člověk opraví („tohle klient nechce“), je to přesně ten poznatek, který stojí za návrh.',
         ]);
     }
@@ -248,10 +278,12 @@ class KnowledgeBase
     public function skill(Skill $skill, ?Client $client = null, bool $home = false): string
     {
         $approved = fn (): Builder => KnowledgeEntry::query()->approved()->with('client')->where('skill_id', $skill->getKey())->latest('updated_at');
-        $knowhow = $this->fit($approved()->whereNull('client_id')->get(), $home ? self::SKILL_OPENING_KNOWHOW : self::SKILL_KNOWHOW);
-        $own = $client ? $this->fit($approved()->where('client_id', $client->getKey())->get(), self::SKILL_EXPERIENCE) : collect();
-        $experience = $this->fit($approved()->whereNotNull('client_id')->when($client, fn (Builder $q) => $q->where('client_id', '!=', $client->getKey()))->get(), $home ? self::SKILL_OPENING_EXPERIENCE : self::SKILL_EXPERIENCE);
-        $archive = $this->archiveLines(KnowledgeSource::query()->with('client')->where('skill_id', $skill->getKey()), $home ? self::SKILL_OPENING_ARCHIVE : self::SKILL_ARCHIVE, $home ? 150 : 300, withClient: true);
+        // Skill se učí ze všech klientů jen přes obecné know-how (bez jména a dat klienta).
+        // Zkušenosti a dokumenty klienta dostane jen agent téhož klienta (rozhodl uživatel 27. 10. 2026).
+        $visible = fn (KnowledgeEntry $entry): bool => $entry->visibleFor($client);
+        $knowhow = $this->fit($approved()->whereNull('client_id')->get()->filter($visible), $home ? self::SKILL_OPENING_KNOWHOW : self::SKILL_KNOWHOW);
+        $own = $client ? $this->fit($approved()->where('client_id', $client->getKey())->get()->filter($visible), self::SKILL_EXPERIENCE) : collect();
+        $archive = $this->archiveLines(self::skillSources($skill, $client), $home ? self::SKILL_OPENING_ARCHIVE : self::SKILL_ARCHIVE, $home ? 150 : 300);
         $scope = $client ? " {$client->slug}" : '';
 
         $lines = $home
@@ -267,7 +299,7 @@ class KnowledgeBase
         }
 
         if ($home) {
-            $always = $this->fit(KnowledgeEntry::query()->approved()->where('always', true)->orderBy('layer')->orderBy('id')->get(), self::OPENING_ALWAYS);
+            $always = $this->always(null, self::OPENING_ALWAYS);
 
             if ($always->isNotEmpty()) {
                 array_push($lines, '', '## Platí vždy', $always->map(fn (KnowledgeEntry $entry): string => $this->format($entry))->implode("\n"));
@@ -284,50 +316,55 @@ class KnowledgeBase
                 : 'Zatím nic. Mozek klienta máš v úvodu konverzace.');
         }
 
-        array_push($lines, '', $client ? '## Zkušenosti z jiných klientů' : '## Zkušenosti z klientů', $experience->isNotEmpty()
-            ? $experience->map(fn (KnowledgeEntry $entry): string => '- #'.$entry->getKey().' ['.$entry->client?->name.'] '.$entry->title.': '.preg_replace('/\s*\R\s*/u', ' ', $entry->body))->implode("\n")
-            : 'Zatím žádné.');
-
         array_push($lines, '', '## Archiv skillu (case studies, výsledky, vzory)', ...($archive !== []
             ? [...$archive, "Celý seznam `taveo skill-archiv {$skill->slug}`, dokument stáhne `taveo archiv-stahnout <id> <složka>`."]
             : ['Zatím prázdný.']));
 
         array_push($lines, '', '## Pravidla všech skillů',
             '- Nevymýšlej. Čísla jen z dat klienta, nebo se zdrojem (poznatek #id, dokument #id, odkaz). U rady řekni, z čeho vychází: data klienta, zkušenost TAVEO, praxe oboru, nebo tvůj odhad.',
-            '- Před radou se podívej, jestli podobné téma TAVEO neřešilo u jiného klienta (zkušenosti a archiv výš, '."`taveo mozek \"slova\" --skill {$skill->slug}`).",
+            '- Před radou se podívej, co o tématu skill ví (know-how a archiv výš, '."`taveo mozek \"slova\"{$scope} --skill {$skill->slug}`).",
+            '- **Klienti se nemíchají.** Data, čísla a dokumenty jiných klientů nepoužívej. Zkušenost z jiného klienta je v know-how skillu obecně, bez jména.',
             $client ? "- Data klienta: `taveo klient {$client->slug}`, archiv `taveo archiv {$client->slug}`." : '- Data klienta: `taveo klient <slug>`, archiv `taveo archiv <slug>`.',
             '- Nic neposíláš klientovi a nic neměníš v jeho účtech. Připravíš, člověk odešle nebo nastaví.');
 
         array_push($lines, '', '## Jak se skill učí',
-            "- Co se ukáže při práci (co u klienta fungovalo a co ne, oprava od člověka, ověřený postup), navrhni jako poznatek skillu, schválí ho člověk: `taveo mozek-navrh klient \"Nadpis\" <slug-klienta> --skill {$skill->slug}` (zkušenost u klienta, i s čísly a obdobím), `firma` bez slugu (obecné know-how), `postup` (návod). Text na vstupu (`<<'EOF' … EOF`).",
+            "- Co se ukáže při práci (co u klienta fungovalo a co ne, oprava od člověka, ověřený postup), navrhni jako poznatek skillu, schválí ho člověk: `taveo mozek-navrh klient \"Nadpis\" <slug-klienta> --skill {$skill->slug}` (zkušenost u klienta, i s čísly a obdobím, uvidí ji jen tenhle klient), `firma` bez slugu (obecné know-how, z něj se učí agenti všech klientů), `postup` (návod). Text na vstupu (`<<'EOF' … EOF`).",
+            '  '.self::LAYER_RULE,
             $home
                 ? "- Podklady, které ti člověk dá (case study, tabulka výsledků, vzorový web, poznámky, odkazy), ulož do archivu skillu: `taveo skill-nahrat {$skill->slug} \"Název\" --druh vysledky --popis \"co v nich je\" --poznatky soubor`. S `--poznatky` je přečte knihovník a navrhne z nich poznatky skillu. Řekni to člověku jednou větou."
-                : "- Dokument k oboru skillu (výsledky kampaní klienta, rozbor) ulož do archivu klienta s `--skill {$skill->slug}`, najdou ho i ostatní.",
+                : "- Dokument k oboru skillu (výsledky kampaní klienta, rozbor) ulož do archivu klienta s `--skill {$skill->slug}`. Uvidí ho jen agenti tohoto klienta.",
             $home ? '- Když se pokyny skillu (Jak pracuješ) ukážou jako špatné nebo neúplné, navrhni člověku nové znění. Upraví je v Nástrojích → Mozek → Skilly.' : "- Větší strategii nebo učení skillu probírej v projektu `{$skill->projectName()}`.",
             '- Platí jen schválené poznatky. Žádná hesla ani osobní údaje zákazníků.');
 
         return implode("\n", $lines);
     }
 
+    /** Podklady skillu, které smí vidět agent klienta: bez klienta a jeho vlastní (bez klienta jen ty bez klienta). */
+    public static function skillSources(Skill $skill, ?Client $client): Builder
+    {
+        return KnowledgeSource::query()->where('skill_id', $skill->getKey())
+            ->where(fn (Builder $q) => $q->whereNull('client_id')->when($client, fn (Builder $q) => $q->orWhere('client_id', $client->getKey())));
+    }
+
     /** @return list<string> dokumenty archivu (klienta, firmy, skillu), nejnovější první, s popisem obsahu */
-    private function archiveLines(Builder $query, int $listed = self::ARCHIVE_LISTED, int $summary = 300, bool $withClient = false): array
+    private function archiveLines(Builder $query, int $listed = self::ARCHIVE_LISTED, int $summary = 300): array
     {
         $sources = (clone $query)->latest('id')->limit($listed + 1)->get();
         $more = $sources->count() > $listed ? (clone $query)->count() - $listed : 0;
 
         return $sources->take($listed)
             ->map(fn (KnowledgeSource $source): string => '- #'.$source->getKey().' '.$source->title
-                .' ('.collect([$withClient ? $source->client?->name : null, $source->categoryLabel(), $source->document_date ? 'k '.$source->document_date->format('j. n. Y') : null, $source->sizeLabel()])->filter()->implode(', ').')'
+                .' ('.collect([$source->categoryLabel(), $source->document_date ? 'k '.$source->document_date->format('j. n. Y') : null, $source->sizeLabel()])->filter()->implode(', ').')'
                 .($source->summary ? ': '.Str::limit(preg_replace('/\s*\R\s*/u', ' ', $source->summary), $summary) : ''))
             ->push(...($more > 0 ? ["- … a {$more} starších"] : []))
             ->values()
             ->all();
     }
 
-    /** Hledání v mozku z kontejneru (token agenta leží v souboru, jako u `taveo`). */
-    public function searchCommand(string $query = 'slova+k+hledani'): string
+    /** Hledání v mozku z kontejneru (token agenta leží v souboru, jako u `taveo`), s klientem jen jeho a firemní. */
+    public function searchCommand(string $query = 'slova+k+hledani', ?Client $client = null): string
     {
-        return 'curl -sf -H "Authorization: Bearer $(cat ~/.config/taveo/token)" \''.route('agent.api.mozek').'?q='.$query.'\'';
+        return 'curl -sf -H "Authorization: Bearer $(cat ~/.config/taveo/token)" \''.route('agent.api.mozek').'?q='.$query.($client ? '&klient='.$client->slug : '').'\'';
     }
 
     /**
@@ -347,19 +384,23 @@ class KnowledgeBase
             $title = trim(array_shift($lines) ?? '');
             $body = trim(implode("\n", $lines));
 
+            $layer = $layer ?: KnowledgeEntry::LAYER_CLIENT;
+
+            // Úloha klienta (ClickUp, grafika) navrhuje jen pro svého klienta. Název úlohy
+            // (často se jménem klienta) jde do původu jen u poznatku klienta, úloha je i tak v agent_job_id.
             $entry = $this->propose([
-                'vrstva' => $layer ?: KnowledgeEntry::LAYER_CLIENT,
+                'vrstva' => $layer,
                 'klient' => $slug ?: $job->client?->slug,
                 'nadpis' => $title,
                 'text' => $body ?: $title,
-                'puvod' => Str::limit(($job->task_name ?: 'Úloha agenta').' ('.$job->created_at?->format('j. n. Y').')', 250, ''),
+                'puvod' => Str::limit(($layer === KnowledgeEntry::LAYER_CLIENT && $job->task_name ? $job->task_name : 'Úloha agenta ('.$originType.')').' ('.$job->created_at?->format('j. n. Y').')', 250, ''),
             ], [
                 'origin_type' => $originType,
                 'agent_job_id' => $job->getKey(),
                 'proposed_by' => 'agent ('.($job->author ?: $job->source).')',
-            ]);
+            ], $job->client);
 
-            $created += $entry ? 1 : 0;
+            $created += $entry instanceof KnowledgeEntry ? 1 : 0;
         }
 
         return [$clean, $created];
@@ -370,49 +411,75 @@ class KnowledgeBase
      * (platný nebo ke schválení), se nezakládá znovu. Agent nesmí nastavit
      * „vždy v hlavě“, to rozhoduje člověk.
      *
+     * Klienti se nemíchají: `$scope` je klient, pro kterého agent pracuje
+     * (úloha, podklady z archivu klienta, projekt klienta). Poznatek jiného
+     * klienta, poznatek klienta bez klienta a firemní poznatek se jménem
+     * klienta se nezaloží. Vrátí poznatek, nebo proč se nezaložil.
      * Bez skillu v návrhu zdědí skill podkladů (`skill_id` v `$context`).
      *
      * @param  array{vrstva?: ?string, klient?: ?string, skill?: ?string, nadpis?: ?string, text?: ?string, stitky?: mixed, puvod?: ?string, nahrazuje?: mixed}  $item
      * @param  array{origin_type: string, knowledge_source_id?: ?int, agent_job_id?: ?int, proposed_by?: ?string, skill_id?: ?int}  $context
      */
-    public function propose(array $item, array $context): ?KnowledgeEntry
+    public function propose(array $item, array $context, ?Client $scope = null): KnowledgeEntry|string
     {
         $title = Str::limit(trim((string) ($item['nadpis'] ?? '')), 200, '');
         $body = Str::limit(trim((string) ($item['text'] ?? '')), 5000, '');
 
         if ($title === '' || $body === '') {
-            return null;
+            return 'Chybí nadpis nebo text.';
+        }
+
+        $layer = array_key_exists((string) ($item['vrstva'] ?? ''), KnowledgeEntry::layers()) ? $item['vrstva'] : KnowledgeEntry::LAYER_COMPANY;
+        $client = null;
+
+        if ($layer === KnowledgeEntry::LAYER_CLIENT) {
+            $client = filled($item['klient'] ?? null) ? Client::query()->where('slug', $item['klient'])->first() : $scope;
+
+            if (! $client) {
+                return filled($item['klient'] ?? null)
+                    ? "Klient se slugem „{$item['klient']}“ v nástrojích není (seznam: taveo klienti). Poznatek klienta se jako firemní nezakládá."
+                    : 'Poznatek klienta potřebuje slug klienta. Jako firemní se nezakládá.';
+            }
+
+            if ($scope && ! $client->is($scope)) {
+                return "Pracuješ pro klienta {$scope->name} ({$scope->slug}), poznatek jiného klienta ({$client->slug}) odsud nejde. Klienti se nemíchají.";
+            }
+        }
+
+        $tags = collect(is_array($item['stitky'] ?? null) ? $item['stitky'] : [])
+            ->filter(fn ($tag): bool => is_string($tag) && trim($tag) !== '')
+            ->map(fn (string $tag): string => Str::limit(Str::lower(trim($tag)), 40, ''))
+            ->unique()->take(6)->values()->all();
+        $origin = filled($item['puvod'] ?? null) ? Str::limit(trim((string) $item['puvod']), 250, '') : null;
+
+        if ($problem = app(ClientMentions::class)->problem($layer, $client, $title, $body, implode(' ', $tags), (string) $origin)) {
+            return $problem;
         }
 
         $exists = KnowledgeEntry::query()
             ->whereIn('status', [KnowledgeEntry::STATUS_APPROVED, KnowledgeEntry::STATUS_PROPOSED])
+            ->where('client_id', $client?->getKey())
             ->whereRaw('lower(title) = ?', [Str::lower($title)])
             ->exists();
 
         if ($exists) {
-            return null;
+            return 'Stejný nadpis už v mozku je.';
         }
 
-        $client = filled($item['klient'] ?? null) ? Client::query()->where('slug', $item['klient'])->first() : null;
         $skill = filled($item['skill'] ?? null) ? Skill::query()->where('slug', $item['skill'])->first() : null;
-        $layer = array_key_exists((string) ($item['vrstva'] ?? ''), KnowledgeEntry::layers()) ? $item['vrstva'] : KnowledgeEntry::LAYER_COMPANY;
-        // Poznatek o klientovi bez známého klienta platí jako obecný.
-        $layer = $layer === KnowledgeEntry::LAYER_CLIENT && ! $client ? KnowledgeEntry::LAYER_COMPANY : $layer;
         $replaces = is_numeric($item['nahrazuje'] ?? null)
-            ? KnowledgeEntry::query()->approved()->find((int) $item['nahrazuje'])
+            // Nové znění jen svého nebo firemního poznatku (firemní jde i přesunout ke klientovi).
+            ? KnowledgeEntry::query()->approved()->where(fn (Builder $q) => $q->whereNull('client_id')->when($client, fn (Builder $q) => $q->orWhere('client_id', $client->getKey())))->find((int) $item['nahrazuje'])
             : null;
 
         return KnowledgeEntry::create([
             'layer' => $layer,
-            'client_id' => $layer === KnowledgeEntry::LAYER_CLIENT ? $client?->getKey() : null,
+            'client_id' => $client?->getKey(),
             'skill_id' => $skill?->getKey() ?? ($context['skill_id'] ?? null),
             'title' => $title,
             'body' => $body,
-            'tags' => collect(is_array($item['stitky'] ?? null) ? $item['stitky'] : [])
-                ->filter(fn ($tag): bool => is_string($tag) && trim($tag) !== '')
-                ->map(fn (string $tag): string => Str::limit(Str::lower(trim($tag)), 40, ''))
-                ->unique()->take(6)->values()->all() ?: null,
-            'origin' => filled($item['puvod'] ?? null) ? Str::limit(trim((string) $item['puvod']), 250, '') : null,
+            'tags' => $tags ?: null,
+            'origin' => $origin,
             'status' => KnowledgeEntry::STATUS_PROPOSED,
             'replaces_id' => $replaces?->getKey(),
             ...collect($context)->except('skill_id')->all(),
