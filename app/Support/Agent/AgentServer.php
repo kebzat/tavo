@@ -223,7 +223,7 @@ class AgentServer
      * Kopie živého webu (projekt typu server): jestli je, co se v ní proti
      * živému webu změnilo a kolik z toho je v database/ (migrace).
      *
-     * @return array{existuje: bool, zmeny: list<array{stav: string, soubor: string}>, migrace: int, nahled: string}
+     * @return array{existuje: bool, bezKopie?: bool, zmeny: list<array{stav: string, soubor: string}>, migrace: int, nahled: string}
      */
     public function copyStatus(string $slug): array
     {
@@ -239,6 +239,17 @@ class AgentServer
     public function startCopyJob(string $slug, string $action, ?int $time = null): array
     {
         return $this->call(fn (PendingRequest $http) => $http->timeout(30)->post($this->projectPath($slug).'/kopie/'.$action, array_filter(['cas' => $time])));
+    }
+
+    /**
+     * Projekt typu server bez kopie (vývojový web): agent pracuje rovnou na webu,
+     * jako dřív. `false` vrátí práci v kopii. Nezveřejněné změny v kopii vrací 409.
+     *
+     * @return array{bezKopie: bool}
+     */
+    public function setWithoutCopy(string $slug, bool $without): array
+    {
+        return $this->call(fn (PendingRequest $http) => $http->post($this->projectPath($slug).'/kopie/'.($without ? 'bez' : 's-kopii')));
     }
 
     /**

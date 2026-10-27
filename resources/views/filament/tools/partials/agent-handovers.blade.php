@@ -4,6 +4,13 @@
         <x-slot name="heading">{{ $copy['heading'] }}</x-slot>
         <x-slot name="description">{{ $copy['description'] }}</x-slot>
 
+        {{-- Živý web: v kopii, nebo bez ní (vývojový web). Přepnout jde, jen když v kopii nic nečeká. --}}
+        @if ($copyState && ! $running && $copyState['zmeny'] === [])
+            <x-slot name="afterHeader">
+                {{ $this->withoutCopy() ? $this->withCopyAction : $this->withoutCopyAction }}
+            </x-slot>
+        @endif
+
         <div class="-mx-6 -my-6 divide-y divide-gray-950/5 dark:divide-white/10">
             @unless ($configured)
                 <p class="bg-warning-50 px-6 py-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">
@@ -16,7 +23,7 @@
             @endif
 
             {{-- Živý web: co v kopii čeká na zveřejnění. Zveřejňuje se celá kopie najednou. --}}
-            @if ($copyState && ! $running)
+            @if ($copyState && ! $running && ! $this->withoutCopy())
                 @if (! $copyState['existuje'])
                     <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
                         <p class="text-sm text-gray-600 dark:text-gray-300">Kopie webu ještě není. Založí se sama s první konverzací, nebo hned tlačítkem.</p>
@@ -156,7 +163,7 @@
                 </div>
             @endforeach
 
-            @if ($handovers === [] && $active->isEmpty() && ! $error && ($copyState['zmeny'] ?? []) === [] && ($copyState['existuje'] ?? true))
+            @if ($handovers === [] && $active->isEmpty() && ! $error && ($copyState['zmeny'] ?? []) === [] && (($copyState['existuje'] ?? true) || $this->withoutCopy()))
                 <p class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $copy['empty'] }}</p>
             @endif
 

@@ -54,6 +54,8 @@ class AgentCopyPublishTest extends TestCase
                     'popis' => "# Nový nadpis úvodní stránky\n\nNadpis je kratší.", 'snimky' => ['01-pocitac.png'], 'kody' => [],
                 ]]),
                 $path === '/api/projekty/grillnor/kopie' => Http::response($this->state['kopie']),
+                $path === '/api/projekty/grillnor/kopie/bez' && ($this->state['kopie']['zmeny'] ?? []) !== [] => Http::response(['chyba' => 'V kopii jsou nezveřejněné změny. Zveřejněte je, nebo zahoďte.'], 409),
+                in_array($path, ['/api/projekty/grillnor/kopie/bez', '/api/projekty/grillnor/kopie/s-kopii'], true) => Http::response(['bezKopie' => str_ends_with($path, '/bez')]),
                 $request->method() === 'POST' && str_starts_with($path, '/api/projekty/grillnor/kopie/') => Http::response(['id' => self::JOB, 'stav' => 'nahrava'], 202),
                 $path === '/api/projekty/grillnor/uloha/'.self::JOB => Http::response($this->state['job']),
                 default => Http::response(['ok' => true]),
@@ -174,16 +176,53 @@ class AgentCopyPublishTest extends TestCase
         Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/kopie/zahodit'));
     }
 
-    public function test_bez_kopie_ji_jde_pripravit(): void
+    public function test_kdyz_kopie_neni_jde_pripravit(): void
     {
-        $this->state['kopie'] = ['existuje' => false, 'zmeny' => [], 'migrace' => 0, 'nahled' => ''];
+        $this->state['kopie'] = ['existuje' => false, 'bezKopie' => false, 'zmeny' => [], 'migrace' => 0, 'nahled' => ''];
 
         $this->karta()
             ->assertSee('Kopie webu ještě není')
+            ->assertSee('Pracovat bez kopie')
             ->callAction('prepareCopy')
             ->assertNotified('Kopie se připravuje');
 
         Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/kopie/obnovit'));
+    }
+
+    public function test_projekt_bez_kopie_nema_pripravit_kopii_ani_zverejnit(): void
+    {
+        $this->state['kopie'] = ['existuje' => false, 'bezKopie' => true, 'zmeny' => [], 'migrace' => 0, 'nahled' => ''];
+
+        $this->karta()
+            ->assertSee('Bez kopie: co agent udělá, je hned na webu.')
+            ->assertSee('Pracovat v kopii')
+            ->assertDontSee('Kopie webu ještě není')
+            ->assertDontSee('Připravit kopii')
+            ->assertDontSee('Čeká na zveřejnění')
+            // Předání, když ho agent i tak udělá, jde jen prohlédnout a označit jako hotové.
+            ->assertSee('Nový nadpis úvodní stránky')
+            ->assertActionVisible(TestAction::make('review')->arguments(['name' => 'nadpis', 'sha' => null]))
+            ->assertActionVisible(TestAction::make('discard')->arguments(['name' => 'nadpis', 'sha' => null]))
+            ->assertActionHidden(TestAction::make('publish')->arguments(['name' => 'nadpis', 'sha' => null]));
+    }
+
+    public function test_pracovat_bez_kopie_a_zpatky(): void
+    {
+        $this->state['kopie'] = ['existuje' => true, 'bezKopie' => false, 'zmeny' => [], 'migrace' => 0, 'nahled' => ''];
+
+        $this->karta()->callAction('withoutCopy')->assertNotified('Agent pracuje bez kopie');
+        $this->karta()->callAction('withCopy')->assertNotified('Agent pracuje v kopii');
+
+        Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/api/projekty/grillnor/kopie/bez'));
+        Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/api/projekty/grillnor/kopie/s-kopii'));
+    }
+
+    public function test_bez_kopie_nejde_s_nezverejnenymi_zmenami(): void
+    {
+        $this->karta()
+            ->assertDontSee('Pracovat bez kopie')
+            ->callAction('withoutCopy')
+            ->assertNotified('Nepovedlo se');
     }
 
     public function test_stranka_ziveho_webu_kartu_ma(): void

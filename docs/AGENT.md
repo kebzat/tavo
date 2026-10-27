@@ -92,7 +92,7 @@ git (Pavel), v ní zkontroluje snímky a popis. Co karta umí, záleží na typu
 | Typ | Karta | Tlačítka |
 |---|---|---|
 | git | Hotová práce | Zkontrolovat, **Zveřejnit** (testy → main → nasazení), Zahodit, Vrátit poslední zveřejnění |
-| server (živý web, grillnor) | Hotová práce | agent pracuje v **kopii webu**: Zkontrolovat, **Zveřejnit na web** (celá kopie najednou), Zahodit změny, Vrátit |
+| server (živý web) | Hotová práce | agent pracuje v **kopii webu**: Zkontrolovat, **Zveřejnit na web** (celá kopie najednou), Zahodit změny, Vrátit. Bez kopie (vývojový web, grillnor) jen předání a Hotovo |
 | prazdny (Shoptet, Upgates) | Hotové podklady | Zkontrolovat s tlačítkem **Zkopírovat** u každého kódu, u `.html` i **Otevřít jako stránku** a **Odkaz bez přihlášení**, Hotovo |
 
 Podklady přikládá agent do `/projekty/<projekt>/predani/<krátký-popis>/`
@@ -122,6 +122,14 @@ web** (rozhodl Tom 23. 10. 2026), v kartě nejsou.
   (`agent obnovit`, bez databáze), pak se kopie srovná s živým webem.
 - Dokud kopie nejde založit, konverzace běží postaru na živém webu (se snímkem
   a zálohou).
+
+**Bez kopie** (vývojový web, kde kopie nedává smysl, např. grillnor.taveo.cz):
+v kartě **Pracovat bez kopie** (jde, jen když v kopii nic nečeká). Služba si to
+pamatuje souborem `/projekty/<projekt>/bez-kopie`. Konverzace (terminál i aplikace
+Claude) pak běží rovnou v `kod/`, před každou se uloží snímek souborů a záloha
+databáze. V kartě není Připravit kopii ani Zveřejnit, předání jde jen prohlédnout
+a označit Hotovo. Zpátky tlačítkem **Pracovat v kopii**. Složka a databáze
+dřívější kopie zůstanou, jen se nepoužívají (`POST …/kopie/bez`, `…/kopie/s-kopii`).
 
 | Kus | Kde |
 |---|---|
