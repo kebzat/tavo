@@ -74,14 +74,33 @@ obsahu (`summary`, píše ho knihovník přes `POST /mozek/navrhy` s `popis`). S
   agenta a příkazy z `~/.local/bin/taveo`. Po nahrání `managed-settings.json` háček z `~/.claude/settings.json`
   smazat, jinak dostane konverzace úvod dvakrát.
 
+## Oddělení klientů
+
+Co mozek ví o jednom klientovi (objednávky, čísla, domluvy), nesmí dostat jiný klient ani firemní mozek,
+ať agent nemíchá data klientů dohromady (rozhodl uživatel 27. 10. 2026, po poznatcích o Snowbearu ve firemní vrstvě).
+
+- **Kdo co dostane:** agent klienta jen poznatky toho klienta a firemní (`KnowledgeBase::forClient()`), i u „vždy v hlavě“.
+  Hledání bez klienta (`GET /mozek` bez `klient`, `/mozek/seznam`) vrací jen firemní poznatky a postupy.
+- **Firemní poznatek a postup bez klienta:** nesmí zmínit klienta jménem (i v jiném pádě), slugem ani projektem agenta
+  (`ClientMentions`, vzory ze všech klientů v nástrojích). Poznatek klienta nesmí zmínit jiného klienta. Takový poznatek
+  agenti nedostanou ani když je schválený (`KnowledgeEntry::visibleFor()`, kromě klienta, kterého zmiňuje), neschválí se
+  (Schválit vrátí upozornění, `KnowledgeEntry::mixing()`) a formulář ho neuloží. V Poznatcích je u něj „Míchá klienty“.
+- **Návrhy od agentů** (`KnowledgeBase::propose()`): web odmítne firemní se jménem klienta, poznatek jiného klienta, než pro
+  kterého agent pracuje (úloha, podklady z archivu klienta, projekt), a poznatek klienta bez známého klienta (dřív se z něj
+  stal firemní). Důvod vrací v `proc`. Původ firemního návrhu ze závěru úlohy je obecný, název úlohy (se jménem klienta) ne.
+- **Projekt klienta** (`AgentProjectScope`): `taveo` posílá `X-Taveo-Projekt` podle složky konverzace. Z projektu klienta
+  jiný slug (`/klienti/…`, `/archiv/…`, `?klient=`), dokument z archivu, úkol nebo přístup v trezoru jiného klienta vrátí 403.
+  Projekt bez klienta (taveo, mozek, google-reklamy) omezený není. Je to pojistka proti omylu, ne zabezpečení: token je
+  jeden pro všechny projekty a hlavičku pošle jen `taveo` (curl bez ní omezený není).
+
 ## Rozhraní pro agenta
 
 Token agenta (`AGENT_API_TOKEN`, v kontejneru `~/.config/taveo/token`), prefix `/nastroje/api/agent`:
 
 | | |
 |---|---|
-| `GET /mozek?q=slova&klient=slug&navrhy=1` | hledání, nejlepší první (kmen slova: „reportu“ najde „Reporty“), `navrhy=1` přidá neschválené |
-| `GET /mozek/seznam` | všechno platné a navržené jen s nadpisem (kontrola duplicit) |
+| `GET /mozek?q=slova&klient=slug&navrhy=1` | hledání, nejlepší první (kmen slova: „reportu“ najde „Reporty“), `navrhy=1` přidá neschválené. Bez `klient` jen firemní, s ním i poznatky toho klienta |
+| `GET /mozek/seznam?klient=slug` | platné a navržené jen s nadpisem (kontrola duplicit): firemní, s `klient` i toho klienta |
 | `GET /mozek/zdroje/{id}`, `…/soubory/{i}` | text a soubory podkladů |
 | `POST /mozek/navrhy` | `{"zdroj": id?, "popis": "co v podkladech je"?, "poznatky": [{vrstva, klient?, nadpis, text, stitky?, puvod?, nahrazuje?}]}` |
 | `GET /mozek/uvod?projekt=slug` | úvod konverzace v projektu (text), pro háček SessionStart |

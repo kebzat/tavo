@@ -80,7 +80,9 @@ class ClientBrain extends Component implements HasActions, HasSchemas
 
     public function approve(int $id): void
     {
-        $this->entries()->proposed()->find($id)?->approve(KnowledgeEntryResource::reviewer());
+        if ($entry = $this->entries()->proposed()->find($id)) {
+            KnowledgeEntryResource::approveOrWarn($entry);
+        }
     }
 
     public function reject(int $id): void

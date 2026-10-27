@@ -71,7 +71,7 @@ class KnowledgeRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
                     ->visible(fn (KnowledgeEntry $record): bool => $record->isProposed())
-                    ->action(fn (KnowledgeEntry $record) => $record->approve(KnowledgeEntryResource::reviewer())),
+                    ->action(fn (KnowledgeEntry $record) => KnowledgeEntryResource::approveOrWarn($record)),
                 Action::make('reject')
                     ->label('Zamítnout')
                     ->icon(Heroicon::OutlinedXMark)
