@@ -24,7 +24,9 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
   a každý vidí totéž, mezi konverzacemi si ale každý přepíná sám.
 - Seznam projektů je podle abecedy (jméno klienta, jinak název projektu). Nad ním
   jde zvolit **Zobrazit** 10 / 20 / 50 / Vše a **Mřížka** (po třech) nebo **Seznam**.
-  Volba platí do odhlášení.
+  Volba platí do odhlášení. **Hledání** vlevo nad seznamem filtruje už při psaní
+  (jméno klienta i název projektu, háčky a velká písmena nevadí), Enter otevře první
+  nalezený. Na počítači je pole po otevření stránky rovnou aktivní.
 - **Přidat projekt** (v seznamu projektů) umí repozitář z GitHubu a projekt bez
   kódu. Web na serveru připojí jen root přes SSH, protože dává agentovi přístup
   k živému webu.

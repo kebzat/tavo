@@ -29,19 +29,29 @@
             <x-slot name="heading">Agent je nedostupný</x-slot>
             <p class="text-sm text-gray-600 dark:text-gray-300">{{ $listing['error'] }}</p>
         </x-filament::section>
-    @elseif ($listing['total'] === 0)
+    @elseif ($listing['all'] === 0)
         <x-filament::section>
             <p class="text-sm text-gray-500 dark:text-gray-400">Zatím žádný projekt. Přidejte ho tlačítkem vpravo nahoře.</p>
         </x-filament::section>
     @else
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                @if ($listing['pages'] > 1)
-                    {{ $listing['from'] }}–{{ $listing['to'] }} z {{ $listing['total'] }} projektů
-                @else
-                    {{ $listing['total'] }} {{ match (true) { $listing['total'] === 1 => 'projekt', $listing['total'] < 5 => 'projekty', default => 'projektů' } }}
-                @endif
-            </p>
+            <div class="flex w-full min-w-0 flex-wrap items-center gap-x-4 gap-y-2 sm:w-auto">
+                <x-filament::input.wrapper prefix-icon="heroicon-m-magnifying-glass" class="w-full sm:w-72">
+                    <x-filament::input type="search" wire:model.live.debounce.150ms="search" wire:keydown.enter="openFirst"
+                                       placeholder="Hledat agenta nebo klienta" aria-label="Hledat agenta nebo klienta" autocomplete="off"
+                                       x-init="window.matchMedia('(min-width: 1024px)').matches && $el.focus()" />
+                </x-filament::input.wrapper>
+
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    @if ($listing['pages'] > 1)
+                        {{ $listing['from'] }}–{{ $listing['to'] }} z {{ $listing['total'] }} projektů
+                    @elseif (filled($search))
+                        Nalezeno {{ $listing['total'] }} z {{ $listing['all'] }}
+                    @else
+                        {{ $listing['total'] }} {{ match (true) { $listing['total'] === 1 => 'projekt', $listing['total'] < 5 => 'projekty', default => 'projektů' } }}
+                    @endif
+                </p>
+            </div>
 
             <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-2">
@@ -74,7 +84,11 @@
             </div>
         </div>
 
-        @if ($display === 'list')
+        @if ($listing['total'] === 0)
+            <x-filament::section>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Žádný agent neodpovídá hledání „{{ $search }}“.</p>
+            </x-filament::section>
+        @elseif ($display === 'list')
             <div class="divide-y divide-gray-950/5 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:divide-white/10 dark:bg-gray-900 dark:ring-white/10">
                 @foreach ($listing['projects'] as $project)
                     <a href="{{ $project['url'] }}" wire:key="list-{{ $project['slug'] }}"

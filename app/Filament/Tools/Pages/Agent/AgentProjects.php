@@ -59,6 +59,24 @@ class AgentProjects extends Page
 
     public int $page = 1;
 
+    /** Hledání v seznamu, filtruje už při psaní. */
+    public string $search = '';
+
+    public function updatedSearch(): void
+    {
+        $this->page = 1;
+    }
+
+    /** Enter v hledání otevře první nalezený projekt. */
+    public function openFirst(): void
+    {
+        $first = $this->listing()['projects'][0] ?? null;
+
+        if ($first !== null && filled($this->search)) {
+            $this->redirect($first['url'], navigate: true);
+        }
+    }
+
     public function updatedPerPage(): void
     {
         $this->perPage = array_key_exists($this->perPage, self::PER_PAGE) ? $this->perPage : 'all';
@@ -82,17 +100,17 @@ class AgentProjects extends Page
 
     /**
      * Projekty s klientem a posledním pohybem podle abecedy (název klienta,
-     * jinak projektu), po stránkách. Chyba spojení se vrátí jako text,
+     * jinak projektu), po stránkách, jen ty, které odpovídají hledání. Chyba spojení se vrátí jako text,
      * stránka ji ukáže místo seznamu.
      *
-     * @return array{projects: list<array<string, mixed>>, error: ?string, total: int, page: int, pages: int, from: int, to: int}
+     * @return array{projects: list<array<string, mixed>>, error: ?string, total: int, all: int, page: int, pages: int, from: int, to: int}
      */
     public function listing(): array
     {
         try {
             $projects = app(AgentServer::class)->projects();
         } catch (AgentUnavailable $e) {
-            return ['projects' => [], 'error' => $e->getMessage(), 'total' => 0, 'page' => 1, 'pages' => 1, 'from' => 0, 'to' => 0];
+            return ['projects' => [], 'error' => $e->getMessage(), 'total' => 0, 'all' => 0, 'page' => 1, 'pages' => 1, 'from' => 0, 'to' => 0];
         }
 
         $clients = Client::query()->whereNotNull('agent_project')->pluck('name', 'agent_project');
@@ -105,15 +123,18 @@ class AgentProjects extends Page
             'url' => AgentProject::getUrl(['project' => $project['slug']]),
         ])->sortBy(fn (array $project): string => self::sortKey($project['client'] ?? $project['slug']))->values();
 
-        $size = $this->perPage === 'all' ? max(1, $all->count()) : (int) $this->perPage;
-        $pages = max(1, (int) ceil($all->count() / $size));
+        $found = $all->filter(fn (array $project): bool => self::matches($project, $this->search))->values();
+
+        $size = $this->perPage === 'all' ? max(1, $found->count()) : (int) $this->perPage;
+        $pages = max(1, (int) ceil($found->count() / $size));
         $page = min($this->page, $pages);
-        $slice = $all->slice(($page - 1) * $size, $size)->values();
+        $slice = $found->slice(($page - 1) * $size, $size)->values();
 
         return [
             'projects' => $slice->all(),
             'error' => null,
-            'total' => $all->count(),
+            'total' => $found->count(),
+            'all' => $all->count(),
             'page' => $page,
             'pages' => $pages,
             'from' => $slice->isEmpty() ? 0 : ($page - 1) * $size + 1,
@@ -121,10 +142,24 @@ class AgentProjects extends Page
         ];
     }
 
+    /** Každé slovo hledání je ve jméně klienta nebo projektu, bez ohledu na háčky: „ceska“ najde „Česká louka“. */
+    private static function matches(array $project, string $search): bool
+    {
+        $haystack = self::fold(($project['client'] ?? '').' '.$project['slug']);
+        $words = preg_split('/\s+/', self::fold($search), -1, PREG_SPLIT_NO_EMPTY);
+
+        return collect($words)->every(fn (string $word): bool => str_contains($haystack, $word));
+    }
+
+    private static function fold(string $text): string
+    {
+        return Str::lower(Str::ascii($text));
+    }
+
     /** Abeceda bez háčků: „Česká louka“ mezi C, ne na konec. */
     private static function sortKey(string $name): string
     {
-        return Str::lower(Str::ascii($name)).' '.$name;
+        return self::fold($name).' '.$name;
     }
 
     /**

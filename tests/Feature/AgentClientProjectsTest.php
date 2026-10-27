@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Filament\Tools\Pages\Agent\AgentProject;
 use App\Filament\Tools\Pages\Agent\AgentProjects;
 use App\Models\Client;
 use App\Models\User;
@@ -94,6 +95,33 @@ class AgentClientProjectsTest extends TestCase
             ->assertDontSeeHtml('wire:key="grid-alfa"')
             ->set('display', 'cokoli')
             ->assertSet('display', 'grid');
+    }
+
+    public function test_hledani_filtruje_pri_psani_a_enter_otevre_prvni(): void
+    {
+        $this->projects = array_map($this->project(...), ['zeta', 'taveo', 'ceskalouka', 'alfa', 'beta', 'delta', 'gama', 'kapa', 'lambda', 'omega', 'sigma']);
+        Client::query()->create(['name' => 'Česká louka', 'slug' => 'ceska-louka', 'agent_project' => 'ceskalouka']);
+
+        Livewire::actingAs($this->spravce())->test(AgentProjects::class)
+            ->set('perPage', '10')
+            ->call('goToPage', 2)
+            ->set('search', 'ČESKA')
+            ->assertSet('page', 1)
+            ->assertSee('Nalezeno 1 z 11')
+            ->assertSee('Česká louka')
+            ->assertDontSee('alfa')
+            ->set('search', 'louka cesk')
+            ->assertSee('Česká louka')
+            ->set('search', 'ta')
+            ->assertSeeInOrder(['beta', 'delta', 'taveo', 'zeta'])
+            ->assertDontSee('sigma')
+            ->set('search', 'xyz')
+            ->assertSee('Žádný agent neodpovídá hledání „xyz“')
+            ->call('openFirst')
+            ->assertNoRedirect()
+            ->set('search', 'sig')
+            ->call('openFirst')
+            ->assertRedirect(AgentProject::getUrl(['project' => 'sigma']));
     }
 
     public function test_zalozit_agenty_klientum_po_jednom_na_pozadi(): void
