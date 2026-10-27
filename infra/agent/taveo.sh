@@ -37,8 +37,9 @@ taveo ukoly <slug> < ukoly.json         návrhy úkolů ke schválení: {"tasks"
                                         s "schvaleno": true rovnou do plánu klienta (jen když to člověk řekl),
                                         měsíc u úkolu "v_planu_na": "RRRR-MM" (bez něj tento měsíc)
 taveo ukoly-seznam <slug>               úkoly s id: návrhy, otevřené a hotové za tento měsíc
-taveo ukol-upravit <id> [--mesic RRRR-MM] [--termin RRRR-MM-DD] [--schvalit]
-                                        přesune úkol na jiný měsíc, změní termín, schválí návrh (na pokyn člověka)
+taveo ukol-upravit <id> [--nazev "…"] [--popis "…"] [--mesic RRRR-MM] [--termin RRRR-MM-DD] [--schvalit]
+                                        přejmenuje úkol, změní popis pro klienta, přesune ho na jiný měsíc,
+                                        změní termín, schválí návrh (na pokyn člověka)
 taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"] ["na koho se čeká"]
                                         změní stav úkolu; hotový klient uvidí v „Co jsme udělali“ (poznámka jen interně)
 taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
@@ -92,10 +93,12 @@ case "${1:-}" in
         zmeny='{}'
         while [ $# -gt 0 ]; do
             case "$1" in
+                --nazev) zmeny=$(jq -c --arg v "${2:?název}" '. + {nazev: $v}' <<<"$zmeny"); shift 2 ;;
+                --popis) zmeny=$(jq -c --arg v "${2?popis}" '. + {popis: $v}' <<<"$zmeny"); shift 2 ;;
                 --mesic) zmeny=$(jq -c --arg m "${2:?měsíc RRRR-MM}" '. + {v_planu_na: $m}' <<<"$zmeny"); shift 2 ;;
                 --termin) zmeny=$(jq -c --arg t "${2:?termín RRRR-MM-DD}" '. + {termin: $t}' <<<"$zmeny"); shift 2 ;;
                 --schvalit) zmeny=$(jq -c '. + {schvalit: true}' <<<"$zmeny"); shift ;;
-                *) echo "Použití: taveo ukol-upravit <id> [--mesic RRRR-MM] [--termin RRRR-MM-DD] [--schvalit]" >&2; exit 1 ;;
+                *) echo "Použití: taveo ukol-upravit <id> [--nazev \"…\"] [--popis \"…\"] [--mesic RRRR-MM] [--termin RRRR-MM-DD] [--schvalit]" >&2; exit 1 ;;
             esac
         done
         volat POST "/ukoly/$id" --data-binary "$zmeny"

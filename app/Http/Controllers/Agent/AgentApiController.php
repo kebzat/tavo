@@ -182,8 +182,8 @@ class AgentApiController extends Controller
     }
 
     /**
-     * Měsíc v plánu, termín nebo schválení návrhu, když to agentovi řekne člověk.
-     * Změna jde do interní poznámky úkolu.
+     * Název, popis pro klienta, měsíc v plánu, termín nebo schválení návrhu,
+     * když to agentovi řekne člověk. Změna jde do interní poznámky úkolu.
      */
     public function taskUpdate(Request $request, ClientTask $task): JsonResponse
     {
@@ -191,10 +191,20 @@ class AgentApiController extends Controller
             'v_planu_na' => ['sometimes', 'nullable', 'date_format:Y-m'],
             'termin' => ['sometimes', 'nullable', 'date'],
             'schvalit' => ['sometimes', 'accepted'],
+            'nazev' => ['sometimes', 'string', 'max:200'],
+            'popis' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ]);
-        abort_if($data === [], 422, 'Není co změnit: v_planu_na, termin nebo schvalit.');
+        abort_if($data === [], 422, 'Není co změnit: nazev, popis, v_planu_na, termin nebo schvalit.');
 
         $changes = [];
+        if (array_key_exists('nazev', $data)) {
+            $task->title = $data['nazev'];
+            $changes[] = 'nový název';
+        }
+        if (array_key_exists('popis', $data)) {
+            $task->description = $data['popis'];
+            $changes[] = 'nový popis';
+        }
         if (array_key_exists('v_planu_na', $data)) {
             $task->planned_for = $this->month($data['v_planu_na']);
             $changes[] = 'v plánu na '.($data['v_planu_na'] ?? 'později');
@@ -219,6 +229,7 @@ class AgentApiController extends Controller
             'ok' => true,
             'id' => $task->getKey(),
             'navrh' => $task->is_proposal,
+            'nazev' => $task->title,
             'v_planu_na' => $task->planned_for?->format('Y-m'),
             'termin' => $task->due_on?->toDateString(),
         ]);

@@ -351,6 +351,11 @@ class MarketingTest extends TestCase
         $this->postJson("/nastroje/api/agent/ukoly/{$proposal->id}", ['schvalit' => true], $this->api())->assertOk()->assertJson(['navrh' => false, 'v_planu_na' => '2026-10']);
         $this->assertSame($tom->id, $proposal->fresh()->user_id);
 
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", ['nazev' => 'Dotaz na Heureku', 'popis' => 'Zeptám se Heureky.'], $this->api())
+            ->assertOk()->assertJson(['nazev' => 'Dotaz na Heureku']);
+        $this->assertSame('<p>Zeptám se Heureky.</p>', $task->fresh()->description);
+        $this->assertStringContainsString('agent: nový název, nový popis.', $task->fresh()->internal_note);
+
         $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", [], $this->api())->assertUnprocessable();
         $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", ['v_planu_na' => 'listopad'], $this->api())->assertUnprocessable();
         $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", ['v_planu_na' => '2026-10'])->assertUnauthorized();
