@@ -89,6 +89,11 @@ Route::prefix('nastroje/api/agent')
         Route::get('/mozek/zdroje/{source}/popis', [KnowledgeApiController::class, 'sourceInfo'])->name('agent.api.mozek.zdroj.popis');
         Route::get('/archiv/{slug}', [KnowledgeApiController::class, 'archive'])->name('agent.api.archiv');
         Route::post('/archiv/{slug}', [KnowledgeApiController::class, 'upload'])->name('agent.api.archiv.nahrat');
+        // Skilly TAVEO (docs/MOZEK.md, Skilly): pokyny a know-how specialistů, jejich archiv.
+        Route::get('/skilly', [KnowledgeApiController::class, 'skills'])->name('agent.api.skilly');
+        Route::get('/skilly/{skill:slug}', [KnowledgeApiController::class, 'skill'])->name('agent.api.skill');
+        Route::get('/skilly/{skill:slug}/archiv', [KnowledgeApiController::class, 'skillArchive'])->name('agent.api.skill.archiv');
+        Route::post('/skilly/{skill:slug}/archiv', [KnowledgeApiController::class, 'skillUpload'])->name('agent.api.skill.archiv.nahrat');
 
         // Trezor přístupů (docs/TREZOR.md): agent hesla nedostane, práci s nimi dělá web.
         Route::get('/trezor', [VaultApiController::class, 'index'])->name('agent.api.trezor');

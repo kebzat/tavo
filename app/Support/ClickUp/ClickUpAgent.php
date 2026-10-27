@@ -186,7 +186,7 @@ class ClickUpAgent
         } catch (Throwable $e) {
             Log::warning('ClickUp: úlohu agenta se nepodařilo spustit.', ['job' => $job->getKey(), 'error' => $e->getMessage()]);
             $job->update(['status' => AgentJob::STATUS_FAILED, 'error' => $e->getMessage(), 'finished_at' => now()]);
-            rescue(fn () => $this->say($job, 'nepodařilo se mě spustit ('.Str::limit($e->getMessage(), 200).'). Zkuste to prosím později, nebo přímo v Nástroje → Agent.'), report: false);
+            rescue(fn () => $this->say($job, 'nepodařilo se mě spustit ('.Str::limit($e->getMessage(), 200).'). Zkuste to prosím později, nebo přímo v Nástroje → Projekty.'), report: false);
         }
     }
 

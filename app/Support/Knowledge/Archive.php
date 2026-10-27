@@ -21,6 +21,7 @@ class Archive
         $source = KnowledgeSource::create([
             'title' => $data['title'],
             'client_id' => $data['client_id'] ?? null,
+            'skill_id' => $data['skill_id'] ?? null,
             'category' => $data['category'] ?? null,
             'document_date' => $data['document_date'] ?? null,
             'learn' => $learn,

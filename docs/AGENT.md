@@ -7,8 +7,10 @@ která běží dál i po zavření terminálu. Soubory instalace jsou v
 
 ## V nástrojích
 
-**Nástroje → Agent** (`/nastroje/agent`): projekty a u každého terminál s Claudem
-přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel).
+**Nástroje → Projekty** (`/nastroje/agent`, dřív Agent): projekty a u každého terminál s Claudem
+přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel). Stránka je rozdělená
+na **Skilly** (specialisté po skupinách, docs/MOZEK.md, Skilly), **Klienty** (po stránkách)
+a **Interní projekty** (taveo, marketing, mozek…). Hledání prochází všechno, Enter otevře první.
 
 - Po otevření projektu se terminál připojí k naposledy běžící konverzaci. Když
   žádná neběží, sama se založí nová a dá se rovnou psát. U živého webu před tím
@@ -249,7 +251,7 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
    scp infra/agent/terminal/server.js root@88.198.31.29:/srv/agent/docker/terminal/
    ssh root@88.198.31.29 'install -m 755 /srv/agent/docker/agent.sh /usr/local/bin/agent && agent sluzba'
    ```
-5. Kontrola: Nástroje → Agent → taveo, karta Hotová práce bez žlutého upozornění.
+5. Kontrola: Nástroje → Projekty → taveo, karta Hotová práce bez žlutého upozornění.
 
 **Po každé změně `agent.sh` nebo `agent-fronta.py`** (třeba okamžité zveřejnění
 23. 10. 2026) je potřeba je na server nahrát ručně, krok 4. Samy se z GitHubu
@@ -267,7 +269,7 @@ se pak píše bez spouštěče jako v chatu: každá další zpráva od Toma neb
 v tom vlákně naváže na stejnou konverzaci. Agent odpovídá vždy do hlavního
 komentáře vlákna (odpověď na odpověď by ClickUp schoval do vnořeného vlákna).
 Nový spouštěč jinde ve stejném úkolu naváže na poslední konverzaci úkolu. Konverzace je pak i v nástrojích
-→ Agent, dá se na ni navázat ručně.
+→ Projekty, dá se na ni navázat ručně.
 
 | Krok | Kde |
 |---|---|
@@ -309,7 +311,7 @@ nad seznamem klientů ukáže složky, které ještě klienta nemají, a u vybra
   `@agent` u úkolu z kteréhokoli seznamu složky pak jde do projektu klienta. Klient
   s přiřazeným seznamem (`clickup_list_id`) má přednost (`ClickUpAgent::resolve()`),
 - zařadí založení projektu agenta bez kódu se stejným názvem jako zkratka klienta (na pozadí,
-  stejně jako Agent → Založit agenty klientům). Když už projekt existuje a nepatří jinému
+  stejně jako Projekty → Založit agenty klientům). Když už projekt existuje a nepatří jinému
   klientovi, jen ho přiřadí,
 - zařadí načtení složky do archivu klienta (`clients.clickup_import`). `clickup:nacist`
   (každou minutu, bez žádosti nic nevolá) načte **každý seznam s úkoly** jako dokument

@@ -270,7 +270,7 @@ class ClientForm
                         ->label('Projekt agenta')
                         ->options(fn (?Client $record): array => self::agentProjects($record?->agent_project))
                         ->placeholder('Bez agenta')
-                        ->helperText('Vlákna Clauda u tohoto klienta. Projekty se přidávají v nástrojích → Agent.'),
+                        ->helperText('Vlákna Clauda u tohoto klienta. Projekty se přidávají v nástrojích → Projekty.'),
 
                     Select::make('clickup_list_id')
                         ->label('ClickUp seznam')

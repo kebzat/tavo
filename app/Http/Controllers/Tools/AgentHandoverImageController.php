@@ -7,7 +7,7 @@ use App\Support\Agent\AgentUnavailable;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Snímek k hotové práci agenta (Nástroje → Agent → projekt → Hotová práce).
+ * Snímek k hotové práci agenta (Nástroje → Projekty → projekt → Hotová práce).
  * Leží v kontejneru agenta, web ho jen přepošle. Jen pro přihlášené do
  * nástrojů (routa je v ToolsPanelProvider::authenticatedRoutes).
  */
