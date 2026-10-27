@@ -7,8 +7,10 @@ která běží dál i po zavření terminálu. Soubory instalace jsou v
 
 ## V nástrojích
 
-**Nástroje → Agent** (`/nastroje/agent`): projekty a u každého terminál s Claudem
-přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel).
+**Nástroje → Projekty** (`/nastroje/agent`, dřív Agent): projekty a u každého terminál s Claudem
+přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pavel). Stránka je rozdělená
+na **Skilly** (specialisté po skupinách, docs/MOZEK.md, Skilly), **Klienty** (po stránkách)
+a **Interní projekty** (taveo, marketing, mozek…). Hledání prochází všechno, Enter otevře první.
 
 - Po otevření projektu se terminál připojí k naposledy běžící konverzaci. Když
   žádná neběží, sama se založí nová a dá se rovnou psát. U živého webu před tím
@@ -16,10 +18,10 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
 - **Nová konverzace** nad terminálem založí další. Pod terminálem je seznam
   konverzací: běžící jde **otevřít**, uspanou **probudit** (`claude --resume`).
   Název je první zpráva z konverzace.
-- **Uspat / Připnout:** nepřipnutá konverzace se po 12 hodinách bez pohybu sama
+- **Uspat / Připnout:** nepřipnutá konverzace se po 2 hodinách bez pohybu sama
   uspí (proces skončí a uvolní asi 300–400 MB paměti, konverzace zůstane uložená).
   **Připnutá (trvalá)** běží pořád, takže je dostupná i v aplikaci Claude na mobilu,
-  kde uspanou probudit nejde. Doba se mění proměnnou `USPAT_PO_HODINACH`.
+  kde uspanou probudit nejde. Doba a strop souběžných sezení: oddíl Sezení, strop a paměť.
 - Konverzace běží dál i po zavření stránky. V jedné může být víc lidí zároveň
   a každý vidí totéž, mezi konverzacemi si ale každý přepíná sám.
 - Seznam projektů je podle abecedy (jméno klienta, jinak název projektu). Nad ním
@@ -44,7 +46,8 @@ přímo v prohlížeči. Vidí je každý přihlášený do nástrojů (Tom, Pav
   se serverovým režimem (`claude remote-control`, relace „TAVEO · projekt“), takže
   v aplikaci jde zakládat i nové konverzace, které běží na serveru. Tlačítko
   **Otevřít v aplikaci Claude** na stránce projektu. Když serverový režim spadne,
-  služba ho do tří minut spustí znovu.
+  služba ho do tří minut spustí znovu. Serverový režim si **předem nezakládá prázdné
+  sezení** (`--no-create-session-in-dir`), sezení vznikne, až ho někdo v aplikaci založí.
 - **Kopírování:** výběr myší text rovnou zkopíruje (v rohu se ukáže „Zkopírováno“).
   Když prohlížeč zápis odmítne (Safari), dokončí ho ⌘C. Výběr s ⌥ funguje klasicky.
   Dlouhé odkazy zalomené přes více řádků jdou otevřít kliknutím kamkoli na ně.
@@ -249,7 +252,7 @@ nenahrazuje, to dál nahrává Tom (oddíl Úprava instalace).
    scp infra/agent/terminal/server.js root@88.198.31.29:/srv/agent/docker/terminal/
    ssh root@88.198.31.29 'install -m 755 /srv/agent/docker/agent.sh /usr/local/bin/agent && agent sluzba'
    ```
-5. Kontrola: Nástroje → Agent → taveo, karta Hotová práce bez žlutého upozornění.
+5. Kontrola: Nástroje → Projekty → taveo, karta Hotová práce bez žlutého upozornění.
 
 **Po každé změně `agent.sh` nebo `agent-fronta.py`** (třeba okamžité zveřejnění
 23. 10. 2026) je potřeba je na server nahrát ručně, krok 4. Samy se z GitHubu
@@ -267,7 +270,7 @@ se pak píše bez spouštěče jako v chatu: každá další zpráva od Toma neb
 v tom vlákně naváže na stejnou konverzaci. Agent odpovídá vždy do hlavního
 komentáře vlákna (odpověď na odpověď by ClickUp schoval do vnořeného vlákna).
 Nový spouštěč jinde ve stejném úkolu naváže na poslední konverzaci úkolu. Konverzace je pak i v nástrojích
-→ Agent, dá se na ni navázat ručně.
+→ Projekty, dá se na ni navázat ručně.
 
 | Krok | Kde |
 |---|---|
@@ -309,7 +312,7 @@ nad seznamem klientů ukáže složky, které ještě klienta nemají, a u vybra
   `@agent` u úkolu z kteréhokoli seznamu složky pak jde do projektu klienta. Klient
   s přiřazeným seznamem (`clickup_list_id`) má přednost (`ClickUpAgent::resolve()`),
 - zařadí založení projektu agenta bez kódu se stejným názvem jako zkratka klienta (na pozadí,
-  stejně jako Agent → Založit agenty klientům). Když už projekt existuje a nepatří jinému
+  stejně jako Projekty → Založit agenty klientům). Když už projekt existuje a nepatří jinému
   klientovi, jen ho přiřadí,
 - zařadí načtení složky do archivu klienta (`clients.clickup_import`). `clickup:nacist`
   (každou minutu, bez žádosti nic nevolá) načte **každý seznam s úkoly** jako dokument
@@ -492,10 +495,88 @@ v `~/.claude/settings.json` (kopie v `~/.claude/mody/`). Testy:
 | Pošle změnu rovnou na produkci | Klíč v kontejneru umí jen číst. Na GitHub posílá server ze schránky jen větve `agent/…` (cron, `agent preposlat`). Do `main` se agent nedostane. |
 | Změní data na živém webu | Zápis do databáze, migrace a mazání jedou bez ptaní (zvládne to i marketér). Claude běží v automatickém režimu, jehož kontrola by zápis do databáze živého webu sama zablokovala. Proto `autoMode.environment` a `autoMode.allow` v `managed-settings.json` popisují kontejner a říkají, že úprava připojeného webu je přidělená práce. Výchozí ochrany automatického režimu zůstávají (`$defaults`). Ověří se příkazem `claude auto-mode config`. Háček `zaloha-pred-zmenou` (PreToolUse) těsně před nimi uloží zálohu databáze a snímek souborů, nejvýš jednou za dvě minuty. Když záloha selže, příkaz se nespustí. |
 | Spustí ničivý příkaz | `/etc/claude-code/managed-settings.json` v kontejneru: zákaz `migrate:fresh`, `db:wipe`, `rm -rf`, force push, `ssh`; na push, migrace a mazání se ptá. Agent soubor nepřepíše. Režim „bez ptaní“ je vypnutý. Pravidla jsou druhá vrstva, hlavní je kontejner. |
-| Vytíží server | Strop 4 jádra, 8 GB RAM. |
+| Vytíží server | Strop 4 jádra, 16 GB RAM a 2048 PIDs (compose). Ve službě strop souběžných sezení, uspání nečinných a hlídka paměti, viz Sezení, strop a paměť. |
 
 Zálohy databází: `/srv/agent/zalohy/<projekt>/` (posledních 50, jen root).
 Snímky: `/srv/agent/snimky/<projekt>.git`. Log přeposílání: `/var/log/taveo-agent.log`.
+
+## Sezení, strop a paměť
+
+Incident 27. 10. 2026: za ~4 h 1 800 procesů, došla paměť a server se zasekl. Příčina: serverový
+režim (`claude remote-control`) běží u každého projektu (41) a každý si po startu sám založil
+jedno prázdné sezení `claude --print --sdk-url …` (~250 MB i s Playwright MCP). Služba ta sezení
+neviděla, nikdy je neuspala a po automatické aktualizaci Clauda je serverový režim dál
+spouštěl ve staré verzi. Navíc `GET /api/projekty` pouštěl na každý projekt pět příkazů tmuxu.
+
+Teď vede služba (`server.js`, oddíl registr sezení) **registr všech procesů s Claudem**:
+
+| Druh | Co to je | Strop | Uspání |
+|---|---|---|---|
+| `konverzace` | okno tmuxu s Claudem (nástroje, grafika, `agent <projekt>`) | ano | po nečinnosti, připnutá ne, běžící úloha ne |
+| `okno` | okno, kde Claude skončil a zbyl shell | ne | po nečinnosti |
+| `aplikace` | serverový režim projektu (`claude remote-control`) | ne | ne, jen výměna při staré verzi |
+| `aplikace-sezeni` | sezení založené z aplikace Claude (`--print --sdk-url`) | ano | po nečinnosti |
+| `uloha`, `ranni` | `claude -p` z ClickUpu a ranní přehled | ano | ne, mají časový limit |
+
+- **Aktivita:** okno podle výstupu (tmux `window_activity`) a psaní z terminálu v nástrojích,
+  sezení z aplikace podle spotřeby procesoru (`AKTIVITA_CPU_S` za minutu = aktivní).
+- **Ukončení** je vždy celý strom procesů: potomci, skupiny procesů, které v něm začínají
+  (Chrome z Playwrightu má vlastní), u okna i `kill-window`. SIGTERM, po 10 s SIGKILL.
+- **Strop:** nad `SEZENI_MAX` se ukončí nejdéle nečinné sezení (nečinné aspoň
+  `SEZENI_NECINNE_MIN`, připnuté ne). Když žádné takové není, nová konverzace se odmítne
+  hláškou v nástrojích (429), úloha z ClickUpu nebo grafiky počká ve frontě. Sezení z aplikace
+  předem odmítnout nejde, nad strop se ukončí to, které vzniklo v posledních 5 minutách.
+- **Starší verze Clauda** (proces běží z jiné verze, než kam teď míří `~/.local/bin/claude`):
+  při startu služby a každou minutu se ukončí, až je nečinné aspoň `STARA_VERZE_NECINNE_MIN`.
+  Připnutá konverzace se hned otevře znovu v nové verzi, serverový režim se spustí znovu.
+- **Osiřelé procesy** (rodič umřel, visí pod PID 1): Claude po `ULOHA_LIMIT_MIN`,
+  Playwright MCP a Chrome po 2 min. Vypnout jde `UKLID_OSIRELYCH=0`.
+- **Paměť:** každých 15 s cgroupa kontejneru. Nad `PAMET_VAROVANI_PROCENT` varování do logu
+  a ukončí se nejdéle nečinné sezení (připnuté až nakonec), další nejdřív za 30 s. Procento je
+  z pracovní sady (`memory.current` minus `inactive_file`, page cache uvolní jádro samo),
+  v `/health` je i procento z `memory.current`.
+- **tmux:** jeden `tmux list-windows -a` sdílený pro všechny dotazy, nejvýš jednou za
+  `TMUX_INTERVAL_MS`. Adresa pro aplikaci Claude se čte z okna jen jednou.
+
+Proměnné v `/srv/agent/terminal.env` (po změně `agent sluzba`):
+
+| Proměnná | Výchozí | Co |
+|---|---|---|
+| `SEZENI_MAX` | 15 | strop souběžných sezení |
+| `SEZENI_NECINNE_HODIN` | 2 | uspání nečinných (dřív `USPAT_PO_HODINACH`, ta platí, když nová chybí) |
+| `SEZENI_NECINNE_MIN` | 15 | od kdy je sezení „nečinné“ pro uvolnění místa nad stropem |
+| `STARA_VERZE_NECINNE_MIN` | 10 | jak dlouho musí být sezení staré verze nečinné, než skončí |
+| `SEZENI_SIGKILL_S` | 10 | od SIGTERM do SIGKILL |
+| `HLIDKA_SEZENI_S` | 60 | jak často hlídka sezení běží |
+| `AKTIVITA_CPU_S` | 2 | sekundy procesoru za hlídku, od kterých je sezení z aplikace aktivní |
+| `PAMET_VAROVANI_PROCENT` | 85 | hranice paměti |
+| `PAMET_INTERVAL_S` | 15 | jak často se paměť kontroluje |
+| `UKLID_OSIRELYCH` | 1 | úklid osiřelých procesů (0 = vypnuto) |
+| `TMUX_INTERVAL_MS` | 1500 | nejstarší snímek oken tmuxu |
+| `APLIKACE_KAPACITA` | 4 | nejvíc sezení z aplikace na projekt (`--capacity`) |
+| `APLIKACE_PROJEKTY` | všechny | serverový režim jen u těchto projektů (čárkami), `zadne` = u žádného |
+| `ULOHA_LIMIT_MIN` | 30 | limit úlohy z ClickUpu a grafiky, pak skončí celý strom |
+| `ULOHY_SOUBEZNE` | 2 | úloh z ClickUpu najednou (platí i strop sezení) |
+| `RANNI_LIMIT_MIN` | 40 | limit ranního přehledu |
+| `FRONTA_LIMIT_MIN` | 10 | limit příkazu `agent` z fronty na serveru (`agent-fronta.py`, čte totéž env) |
+
+Serverový režim u 41 projektů je i bez sezení asi 140 MB na projekt (~5,7 GB). Když bude paměti
+málo, `APLIKACE_PROJEKTY` ho omezí na projekty, které se z aplikace opravdu používají.
+
+**Dohled:**
+
+- `GET /health` bez přihlášení (`curl -s 127.0.0.1:7681/health` na serveru): počet sezení a strop,
+  počty podle druhu, procesy v kontejneru, `pids.current`/`pids.max`, paměť cgroupy, verze Clauda.
+  Nic o projektech ani konverzacích.
+- `GET /api/sezeni` s tajemstvím: registr (projekt, okno tmuxu, PID, PGID, start, poslední aktivita,
+  nečinnost, verze, připnutí).
+- Log služby (`docker logs taveo-agent`): `ukončuji …` s důvodem, `SIGKILL …`, `VAROVÁNÍ: paměť …`,
+  `úlohy čekají …`, `osiřelý proces …`.
+
+**Fronta na serveru** (`agent-fronta.py`, root) Clauda nikdy nespouští, jen zálohy, nasazení
+a nové projekty. Každý příkaz `agent` běží ve vlastní skupině procesů s limitem `FRONTA_LIMIT_MIN`.
+Po limitu i po konci skončí celá skupina (mysqldump, rsync…). Unit `taveo-agent-fronta.service`
+proto čte `/srv/agent/terminal.env`.
 
 ## Úprava instalace
 

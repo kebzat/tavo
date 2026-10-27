@@ -212,6 +212,7 @@ class BrainAgent
             '',
             '## Podklady',
             'Nahrál '.($source->author ?: 'člověk z týmu').' '.$source->created_at?->format('j. n. Y').'. '.($source->client ? "Týkají se klienta {$source->client->name} (`{$source->client->slug}`) a zůstanou v jeho archivu." : 'Bez klienta: týkají se firmy, nebo víc klientů najednou.'),
+            $source->skill ? "Patří ke skillu {$source->skill->name} (`{$source->skill->slug}`, {$source->skill->categoryLabel()}): know-how a zkušenosti z jeho oboru. Návrhy z nich dostanou skill samy. Obecné know-how dávej do vrstvy `firma` (návod `postup`), výsledky a zkušenosti konkrétního klienta do vrstvy `klient` s jeho slugem (s obdobím a čísly, uvidí je jen ten klient). Co se z nich naučí i jiní klienti, napiš zvlášť obecně do vrstvy `firma`, bez jména a dat klienta." : null,
             $source->categoryLabel() || $source->document_date ? 'Druh: '.($source->categoryLabel() ?? 'neurčeno').($source->document_date ? ', platí k '.$source->document_date->format('j. n. Y') : '').'.' : null,
             $source->note ? "Poznámka k podkladům: {$source->note}" : null,
             'Velikost: '.$source->sizeLabel().'. Stáhni je:',

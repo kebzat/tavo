@@ -58,6 +58,12 @@ class KnowledgeSource extends Model
         return $this->belongsTo(Client::class);
     }
 
+    /** Skill, ke kterému poznatek / dokument patří (know-how skillu, zkušenost u klienta v jeho oboru). */
+    public function skill(): BelongsTo
+    {
+        return $this->belongsTo(Skill::class);
+    }
+
     public function agentJob(): BelongsTo
     {
         return $this->belongsTo(AgentJob::class);
@@ -140,6 +146,7 @@ class KnowledgeSource extends Model
             'id' => $this->getKey(),
             'nazev' => $this->title,
             'druh' => $this->categoryLabel(),
+            'skill' => $this->skill?->slug,
             'k_datu' => $this->document_date?->toDateString(),
             'popis' => $this->summary,
             'poznamka' => $this->note,

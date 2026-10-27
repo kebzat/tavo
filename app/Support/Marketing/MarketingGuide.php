@@ -76,13 +76,13 @@ final class MarketingGuide
             'intro' => 'Claude běží na našem serveru a vidí do nástrojů Taveo: karty klientů, čísla reklam spočítaná systémem, upozornění, úkoly, kvalitu leadů a kreativní testy. Poznámky ze schůzek si ukládá, takže kontext nemusíš pokaždé vkládat znovu. Řídí se pravidly z tvého dotazníku: fakta odděluje od hypotéz, u čísel píše zdroj a období a nic si nedomýšlí.',
             'asked' => 'Udržování kontextu a házení věcí do AI, protože nemám vše na jednom místě.',
             'question' => 3,
-            'where' => ['Nástroje', 'Agent', 'marketing'],
+            'where' => ['Nástroje', 'Projekty', 'marketing'],
             'auto' => [
                 'Každý všední den v 6:50 projde klienty a napíše Ranní přehled: co se změnilo, jestli jsou data spolehlivá, co vyžaduje pozornost a jaký krok navrhuje.',
                 'Ke konceptům reportů doplní Co se stalo, Možné příčiny a Co doporučujeme z čísel za období reportu. Ty je jen upravíš.',
             ],
             'how' => [
-                'Otevři Nástroje › Agent › marketing. Konverzace se otevře rovnou, piš normálně česky.',
+                'Otevři Nástroje › Projekty › marketing. Konverzace se otevře rovnou, piš normálně česky.',
                 'Řekni, o kterého klienta jde. Kartu a čísla si načte sám, nic nemusíš kopírovat.',
                 'Na nové téma dej Nová konverzace. Ke starší se vrátíš v seznamu Konverzace, uspanou probudíš. Tu, kterou chceš mít pořád po ruce, si připni.',
                 'Všechno, co navrhne, je návrh. Úkoly schvaluješ v Návrzích úkolů, texty si upravíš a pošleš sám.',
@@ -130,7 +130,7 @@ final class MarketingGuide
                 'label' => 'Mozek klienta',
                 'title' => 'Mozek klienta: agent ví, co o klientovi víme',
                 'intro' => 'Každý klient má vlastní archiv dokumentů a vlastní mozek. Agent ho dostane na začátku každé konverzace v projektu klienta, takže mu nemusíš pořád dokola vysvětlovat, co klient chce a co se domluvilo.',
-                'where' => ['Nástroje', 'Agent', 'klient', 'Mozek klienta'],
+                'where' => ['Nástroje', 'Projekty', 'klient', 'Mozek klienta'],
                 'how' => [
                     'Nad konverzací je tlačítko Mozek klienta. Z boku ukáže, co agent o klientovi ví, návrhy ke schválení a archiv. Konverzace přitom běží dál.',
                     'Nahrát do archivu: vize, strategie, data, výsledky, marže, zápisy ze schůzek. Vyber druh a k jakému datu to platí. Tabulky stačí uložit, ze strategií a zápisů ať agent udělá poznatky.',
@@ -155,7 +155,7 @@ final class MarketingGuide
                     'V komentáři označ uživatele Agent, nabídne se v našeptávači. Stačí i napsat @agent, /agent nebo !agent.',
                     'Hned odpoví, že se do toho pouští. Až skončí, označí tě v odpovědi, takže ti přijde upozornění.',
                     'Ve vlákně pak piš jako v chatu, už bez @agent. Navazuje na stejnou konverzaci.',
-                    'U klienta s propojeným seznamem v ClickUpu pracuje v jeho projektu, jinak v projektu marketing. Konverzaci najdeš i v Nástroje › Agent, odkaz je na konci odpovědi.',
+                    'U klienta s propojeným seznamem v ClickUpu pracuje v jeho projektu, jinak v projektu marketing. Konverzaci najdeš i v Nástroje › Projekty, odkaz je na konci odpovědi.',
                     'Spustit ho můžete jen ty a Tom. V ClickUpu jen čte a přidává odpovědi, nic nemaže. Odpověď ale uvidí každý, kdo vidí úkol.',
                 ],
                 'thread' => [
@@ -179,7 +179,7 @@ final class MarketingGuide
                 'label' => 'Hotová práce',
                 'title' => 'Hotová práce: zkontroluješ a zveřejníš sám',
                 'intro' => 'Když agent upraví web Taveo, sám ho na web nepošle. Úprava se objeví v kartě Hotová práce s popisem a snímky, které si nafotil ve svém prohlížeči. Kód číst nemusíš, kontroluješ podle snímků.',
-                'where' => ['Nástroje', 'Agent', 'taveo'],
+                'where' => ['Nástroje', 'Projekty', 'taveo'],
                 'how' => [
                     'Zkontrolovat otevře popis, co je jinak, a snímky z počítače i telefonu. Kliknutím je zvětšíš.',
                     'Zveřejnit jde až se zelenými testy (Testy prošly). Pak to běží samo: testy, nasazení, na webu. Obvykle do 2 minut. Zveřejnit můžeš ty i Tom.',
@@ -292,7 +292,7 @@ final class MarketingGuide
                 'title' => 'Ze schůzek a zpráv návrhy úkolů',
                 'asked' => 'Převádět komunikaci z meetingů, mailů, WhatsAppu a Slacku do návrhů úkolů. Úkoly a termíny nemá domýšlet.',
                 'question' => 2,
-                'where' => ['Nástroje', 'Agent', 'marketing'],
+                'where' => ['Nástroje', 'Projekty', 'marketing'],
                 'how' => [
                     'Do agenta vlož přepis schůzky, e-mail nebo zprávu a napiš, o kterého klienta jde.',
                     'Agent uloží poznámku, dohody zapíše do karty klienta a úkoly připraví jako návrhy s termínem, prioritou, tím, na co se čeká, a zdrojem. Co nezaznělo, označí „k doplnění“.',

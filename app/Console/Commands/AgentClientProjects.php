@@ -6,8 +6,8 @@ use App\Support\Agent\ClientProjects;
 use Illuminate\Console\Command;
 
 /**
- * Založí projekty agenta klientům, kteří na něj čekají (Agent → Založit agenty
- * klientům, Klienti → Načíst z ClickUpu). Bez žádosti nic nevolá.
+ * Založí projekty agenta klientům, kteří na něj čekají (Projekty → Založit agenty
+ * klientům, Klienti → Načíst z ClickUpu) a skillům (Mozek → Skilly). Bez žádosti nic nevolá.
  */
 class AgentClientProjects extends Command
 {

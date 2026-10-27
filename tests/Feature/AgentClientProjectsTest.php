@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Filament\Tools\Pages\Agent\AgentProject;
 use App\Filament\Tools\Pages\Agent\AgentProjects;
 use App\Models\Client;
+use App\Models\Skill;
 use App\Models\User;
 use App\Support\Agent\ClientProjects;
 use Filament\Facades\Filament;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -36,8 +38,9 @@ class AgentClientProjectsTest extends TestCase
         config(['services.agent.url' => 'http://agent.test', 'services.agent.secret' => 'tajne']);
         Sleep::fake();
 
-        // Klienti z dřívějších migrací (Česká louka…) by se zakládali taky.
+        // Klienti z dřívějších migrací (Česká louka…) a skilly by se zakládali taky.
         Client::query()->delete();
+        Skill::query()->update(['agent_project_request' => null]);
 
         Http::fake(['agent.test/api/projekty' => function (Request $request) {
             if ($request->method() !== 'POST') {
@@ -68,31 +71,37 @@ class AgentClientProjectsTest extends TestCase
         return ['slug' => $slug, 'typ' => 'prazdny', 'zdroj' => '', 'vlakna' => []];
     }
 
-    public function test_projekty_jsou_podle_abecedy_po_strankach_v_mrizce_i_seznamu(): void
+    public function test_projekty_klientu_jsou_podle_abecedy_po_strankach_interni_zvlast(): void
     {
-        $this->projects = array_map($this->project(...), ['zeta', 'taveo', 'ceskalouka', 'alfa', 'mozek', 'beta', 'delta', 'gama', 'kapa', 'lambda', 'omega', 'sigma']);
-        Client::query()->create(['name' => 'Česká louka', 'slug' => 'ceska-louka', 'agent_project' => 'ceskalouka']);
+        $clients = ['Lima', 'Echo', 'Česká louka', 'Alfa', 'Kilo', 'Bravo', 'Delta', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliet'];
+        $this->projects = array_map($this->project(...), ['taveo', 'mozek', ...array_map(fn (string $name): string => Str::slug($name), $clients)]);
+        foreach ($clients as $name) {
+            Client::query()->create(['name' => $name, 'slug' => Str::slug($name), 'agent_project' => Str::slug($name)]);
+        }
 
         $page = Livewire::actingAs($this->spravce())->test(AgentProjects::class)
             ->assertSet('perPage', 'all')
             ->assertSee('12 projektů')
-            ->assertSeeInOrder(['alfa', 'beta', 'Česká louka', 'delta', 'gama', 'kapa', 'lambda', 'mozek', 'omega', 'sigma', 'taveo', 'zeta']);
+            ->assertSeeInOrder(['Skilly', 'Klienti', 'Alfa', 'Bravo', 'Česká louka', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliet', 'Kilo', 'Lima', 'Interní projekty', 'mozek', 'taveo']);
 
+        // Po stránkách jen klienti, interní projekty zůstávají pod nimi.
         $page->set('perPage', '10')
             ->assertSee('1–10 z 12 projektů')
-            ->assertSee('sigma')
-            ->assertDontSee('zeta')
+            ->assertSee('Juliet')
+            ->assertDontSee('Lima')
+            ->assertSee('taveo')
             ->call('goToPage', 2)
             ->assertSee('11–12 z 12 projektů')
-            ->assertSeeInOrder(['taveo', 'zeta'])
-            ->assertDontSee('sigma');
+            ->assertSeeInOrder(['Kilo', 'Lima', 'taveo'])
+            ->assertDontSee('Juliet');
 
         // Jiný počet na stránku začne od první, seznam má řádky místo karet.
         $page->set('perPage', '20')
             ->assertSet('page', 1)
             ->set('display', 'list')
-            ->assertSeeHtml('wire:key="list-alfa"')
-            ->assertDontSeeHtml('wire:key="grid-alfa"')
+            ->assertSeeHtml('wire:key="list-klient-alfa"')
+            ->assertSeeHtml('wire:key="list-interni-taveo"')
+            ->assertDontSeeHtml('wire:key="grid-klient-alfa"')
             ->set('display', 'cokoli')
             ->assertSet('display', 'grid');
     }
@@ -101,22 +110,24 @@ class AgentClientProjectsTest extends TestCase
     {
         $this->projects = array_map($this->project(...), ['zeta', 'taveo', 'ceskalouka', 'alfa', 'beta', 'delta', 'gama', 'kapa', 'lambda', 'omega', 'sigma']);
         Client::query()->create(['name' => 'Česká louka', 'slug' => 'ceska-louka', 'agent_project' => 'ceskalouka']);
+        $all = 11 + Skill::query()->count();
 
         Livewire::actingAs($this->spravce())->test(AgentProjects::class)
             ->set('perPage', '10')
             ->call('goToPage', 2)
             ->set('search', 'ČESKA')
             ->assertSet('page', 1)
-            ->assertSee('Nalezeno 1 z 11')
+            ->assertSee("Nalezeno 1 z {$all}")
             ->assertSee('Česká louka')
             ->assertDontSee('alfa')
+            ->assertDontSeeHtml('wire:key="skill-copywriting"')
             ->set('search', 'louka cesk')
             ->assertSee('Česká louka')
             ->set('search', 'ta')
-            ->assertSeeInOrder(['beta', 'delta', 'taveo', 'zeta'])
+            ->assertSeeInOrder(['Meta Ads', 'beta', 'delta', 'taveo', 'zeta'])
             ->assertDontSee('sigma')
             ->set('search', 'xyz')
-            ->assertSee('Žádný agent neodpovídá hledání „xyz“')
+            ->assertSee('Nic neodpovídá hledání „xyz“')
             ->call('openFirst')
             ->assertNoRedirect()
             ->set('search', 'sig')

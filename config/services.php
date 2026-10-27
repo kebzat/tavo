@@ -68,7 +68,7 @@ return [
 
     // Claude Code v kontejneru taveo-agent na stejném serveru (docs/AGENT.md).
     // API běží jen na 127.0.0.1, terminál z prohlížeče jde přes LiteSpeed
-    // na /agent-terminal/. Bez tajemství se stránka Agent v nástrojích jen omluví.
+    // na /agent-terminal/. Bez tajemství se stránka Projekty v nástrojích jen omluví.
     'agent' => [
         'url' => env('AGENT_URL', 'http://127.0.0.1:7681'),
         'secret' => env('AGENT_SECRET'),

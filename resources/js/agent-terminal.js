@@ -4,7 +4,7 @@ import { ClipboardAddon } from '@xterm/addon-clipboard';
 import '@xterm/xterm/css/xterm.css';
 
 /**
- * Terminál vlákna agenta v nástrojích (stránka Agent → projekt).
+ * Terminál vlákna agenta v nástrojích (stránka Projekty → projekt).
  *
  * Připojuje se WebSocketem k službě v kontejneru taveo-agent. Adresu
  * s vstupenkou dává Livewire (`url()`), vstupenka platí minutu, proto si ji
