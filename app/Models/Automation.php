@@ -41,6 +41,11 @@ class Automation extends Model
         'send_reminder' => true,
         'send_last_day' => true,
         'send_returned' => true,
+        // Den zapnutí: připomínka jen u zásilek, které na výdejní místo dorazily od něj.
+        'reminders_since' => null,
+        // Kam web nahrává změny stavů: přihlášení z trezoru a číslo importu objednávek v Upgates.
+        'upgates_vault_entry_id' => null,
+        'upgates_import_id' => null,
         // Úložní doba (dny od příchodu na výdejní místo), když ji dopravce neřekne sám.
         'carrier_storage_days' => ['zasilkovna' => 7, 'ppl' => 7, 'dpd' => 7, 'default' => 7],
     ];
@@ -62,6 +67,17 @@ class Automation extends Model
         static::creating(function (self $automation): void {
             $automation->import_token ??= self::newToken();
             $automation->settings = array_replace(self::DEFAULT_SETTINGS, $automation->settings ?? []);
+        });
+
+        // Po zapnutí připomínat jen zásilky, které na výdejní místo dorazí od teď:
+        // starším klient připomínky posílal ručně a druhou by dostali zbytečně.
+        static::saving(function (self $automation): void {
+            $turnedOn = $automation->enabled && (! $automation->exists || $automation->isDirty('enabled'));
+            $given = $automation->exists ? null : (($automation->settings ?? [])['reminders_since'] ?? null);
+
+            if ($turnedOn && $given === null) {
+                $automation->settings = [...($automation->settings ?? []), 'reminders_since' => now('Europe/Prague')->toDateString()];
+            }
         });
     }
 
@@ -124,7 +140,15 @@ class Automation extends Model
         return array_values(array_filter(preg_split('/[\s,]+/', (string) $this->order_export_url) ?: []));
     }
 
-    /** Adresa CSV pro pravidelný import v Upgates. Chrání ji token. */
+    /** Přihlášení do administrace Upgates z trezoru (druh Upgates, stejný klient), kterým web nahrává import. */
+    public function upgatesEntry(): ?VaultEntry
+    {
+        $id = $this->setting('upgates_vault_entry_id');
+
+        return $id ? VaultEntry::query()->whereKey($id)->where('type', VaultType::Upgates)->where('client_id', $this->client_id)->first() : null;
+    }
+
+    /** Adresa CSV čekajících změn stavů (kontrola, ruční import). Chrání ji token. */
     public function csvUrl(): string
     {
         return route('automations.csv', ['token' => $this->import_token]);

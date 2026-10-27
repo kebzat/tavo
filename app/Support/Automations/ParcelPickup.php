@@ -34,6 +34,7 @@ class ParcelPickup
         private UpgatesOrders $orders,
         private PacketaTracking $packeta,
         private AutomationAlerts $alerts,
+        private UpgatesImportUpload $upload,
     ) {}
 
     /**
@@ -41,7 +42,7 @@ class ParcelPickup
      */
     public function run(Automation $automation, bool $dryRun = false): array
     {
-        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'warnings' => [], 'error' => null];
+        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
 
         if (! $automation->enabled) {
             $report['warnings'][] = 'Automatizace je vypnutá, nic se nezakládá.';
@@ -57,6 +58,10 @@ class ParcelPickup
 
             $this->settle($automation, $orders, $report, $dryRun);
             $this->plan($automation, $orders, $shipments, $report, $dryRun);
+
+            if (! $dryRun) {
+                $this->push($automation, $report);
+            }
         } catch (AutomationException $e) {
             $report['error'] = $e->getMessage();
         } catch (Throwable $e) {
@@ -84,10 +89,27 @@ class ParcelPickup
         if ($report['failed'] !== []) {
             $this->alerts->problem($automation, 'failed',
                 'U '.count($report['failed']).' '.(count($report['failed']) === 1 ? 'objednávky' : 'objednávek').' ('.implode(', ', $report['failed']).') Upgates do '.self::FAIL_AFTER_HOURS.' hodin nezměnil stav, zpráva zákazníkovi tedy nejspíš neodešla.',
-                'Zkontroluj v Upgates pravidelný import objednávek (Import objednávek, adresa CSV z nástrojů) a stav těch objednávek. Případně zprávu pošli ručně z objednávky.');
+                'Zkontroluj v Upgates import objednávek, do kterého web nahrává změny (Objednávky → Import), a stav těch objednávek. Případně zprávu pošli ručně z objednávky.');
         }
 
         return $report;
+    }
+
+    /**
+     * Čekající změny stavů nahraje do importu v Upgates. Opakovaný import je
+     * neškodný, proto jdou při každém běhu všechny čekající řádky.
+     */
+    private function push(Automation $automation, array &$report): void
+    {
+        $rows = ImportCsv::rows($automation);
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $this->upload->upload($automation, ImportCsv::build($rows));
+        ImportCsv::markExported($rows);
+        $report['uploaded'] = $rows->count();
     }
 
     /**
@@ -186,18 +208,18 @@ class ParcelPickup
 
         foreach ($shipments as $shipment) {
             $number = trim((string) ($shipment['reference'] ?? ''));
+            $carrier = strtolower((string) ($shipment['carrier'] ?? '')) ?: null;
             $returned = (bool) data_get($shipment, 'tracking_information.returned', false);
-            $atPickup = strtoupper((string) ($shipment['status'] ?? '')) === 'PARCELSHOP';
+            $atPickup = ! $returned && $this->atPickup($shipment, $carrier);
 
             if ($number === '' || (! $returned && ! $atPickup)) {
                 continue;
             }
 
-            $carrier = strtolower((string) ($shipment['carrier'] ?? '')) ?: null;
-            $storedUntil = $atPickup && ! $returned ? $this->storedUntil($automation, $shipment, $carrier) : null;
+            $storedUntil = $atPickup ? $this->storedUntil($automation, $shipment, $carrier) : null;
             $daysLeft = $storedUntil ? (int) $today->diffInDays($storedUntil, false) : null;
             $sent = $events->get($number, collect())->pluck('kind')->all();
-            $kind = $this->kind($automation, $orders[$number] ?? null, $returned, $daysLeft);
+            $kind = $this->kind($automation, $orders[$number] ?? null, $returned, $daysLeft, $this->arrivedAt($shipment));
 
             if ($kind !== null && ! $this->alreadyCovered($kind, $sent) && trim((string) ($orders[$number] ?? '')) !== $this->target($automation, $kind)) {
                 if ($this->create($automation, $number, $kind, $storedUntil, $carrier, $daysLeft, $report, $dryRun)) {
@@ -220,8 +242,63 @@ class ParcelPickup
         usort($report['parcels'], fn (array $a, array $b): int => [$a['days_left'] ?? PHP_INT_MAX, $a['order']] <=> [$b['days_left'] ?? PHP_INT_MAX, $b['order']]);
     }
 
-    /** Která zpráva teď platí. Pořadí důležitosti: vrácená > poslední den > připomínka. */
-    private function kind(Automation $automation, ?string $current, bool $returned, ?int $daysLeft): ?string
+    /**
+     * Leží zásilka teď na výdejním místě? Zaslat nechává stav PARCELSHOP i u
+     * zásilky, která se mezitím vrátila do rozvozu nebo jede zpět (DPD, PPL,
+     * ověřeno 27. 10. 2026), proto rozhoduje poslední událost. Zásilkovna
+     * hlásí na výdejním místě i jiné události (prodloužení), u ní stačí stav,
+     * datum dá její sledování. Zásilka, která podle událostí jde zpět, nikdy.
+     */
+    private function atPickup(array $shipment, ?string $carrier): bool
+    {
+        $events = $this->trackingEvents($shipment);
+
+        if (strtoupper((string) ($shipment['status'] ?? '')) !== 'PARCELSHOP' || $this->looksReturning($events)) {
+            return false;
+        }
+
+        return in_array($carrier, ['zasilkovna', 'packeta'], true)
+            || strtoupper((string) ($events[0]['status'] ?? '')) === 'PARCELSHOP';
+    }
+
+    /** Texty dopravců o cestě zpět (Zaslat u nich `returned` nastaví až po doručení odesílateli). */
+    private function looksReturning(array $events): bool
+    {
+        return collect($events)->contains(fn (array $event): bool => (bool) preg_match(
+            '~vrácen|vrátí|vrací|zpět k odesílateli|odmítl|uplynula doba|nevyzvednut|return~iu',
+            (string) ($event['name'] ?? ''),
+        ));
+    }
+
+    /**
+     * Události všech balíků, nejnovější první.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function trackingEvents(array $shipment): array
+    {
+        $events = [];
+
+        foreach ((array) data_get($shipment, 'tracking_information.packages', []) as $package) {
+            foreach (is_array($package) && isset($package['status']) ? [$package] : (array) $package as $event) {
+                if (is_array($event)) {
+                    $events[] = $event;
+                }
+            }
+        }
+
+        usort($events, fn (array $a, array $b): int => ($b['date'] ?? '').' '.($b['time'] ?? '') <=> ($a['date'] ?? '').' '.($a['time'] ?? ''));
+
+        return $events;
+    }
+
+    /**
+     * Která zpráva teď platí. Pořadí důležitosti: vrácená > poslední den > připomínka.
+     * SMS jen přesně v poslední den: po konci úložní doby už zásilka obvykle jede zpět.
+     * Připomínka jen u zásilek, které dorazily po zapnutí automatizace
+     * (`reminders_since`), dřívějším ji klient posílal ručně.
+     */
+    private function kind(Automation $automation, ?string $current, bool $returned, ?int $daysLeft, ?CarbonImmutable $arrivedAt = null): ?string
     {
         if ($current === null || ! in_array($current, $automation->sourceStatuses(), true)) {
             return null;
@@ -229,13 +306,22 @@ class ParcelPickup
 
         return match (true) {
             $returned => $automation->setting('send_returned') ? AutomationEvent::KIND_RETURNED : null,
-            $daysLeft === null => null,
-            $daysLeft <= 0 => $automation->setting('send_last_day') ? AutomationEvent::KIND_LAST_DAY : null,
-            $daysLeft <= (int) $automation->setting('remind_days_before') => $automation->setting('send_reminder') && $current === $automation->status('sent')
+            $daysLeft === null, $daysLeft < 0 => null,
+            $daysLeft === 0 => $automation->setting('send_last_day') ? AutomationEvent::KIND_LAST_DAY : null,
+            $daysLeft <= (int) $automation->setting('remind_days_before') => $automation->setting('send_reminder')
+                && $current === $automation->status('sent')
+                && $this->arrivedSince($automation, $arrivedAt)
                 ? AutomationEvent::KIND_REMINDER
                 : null,
             default => null,
         };
+    }
+
+    private function arrivedSince(Automation $automation, ?CarbonImmutable $arrivedAt): bool
+    {
+        $since = $automation->setting('reminders_since');
+
+        return blank($since) || ($arrivedAt !== null && $arrivedAt->toDateString() >= substr((string) $since, 0, 10));
     }
 
     /** Tahle nebo důležitější zpráva už u objednávky je. */
@@ -316,19 +402,13 @@ class ParcelPickup
         return $this->arrivedAt($shipment)?->addDays($automation->storageDays($carrier));
     }
 
-    /** Den první události PARCELSHOP (události jsou po balících, nejnovější první). */
+    /** Den první události PARCELSHOP. */
     private function arrivedAt(array $shipment): ?CarbonImmutable
     {
-        $dates = [];
+        $dates = collect($this->trackingEvents($shipment))
+            ->filter(fn (array $event): bool => strtoupper((string) ($event['status'] ?? '')) === 'PARCELSHOP' && preg_match('~^\d{4}-\d{2}-\d{2}~', (string) ($event['date'] ?? '')))
+            ->map(fn (array $event): string => substr($event['date'], 0, 10));
 
-        foreach ((array) data_get($shipment, 'tracking_information.packages', []) as $package) {
-            foreach (is_array($package) && isset($package['status']) ? [$package] : (array) $package as $event) {
-                if (is_array($event) && strtoupper((string) ($event['status'] ?? '')) === 'PARCELSHOP' && preg_match('~^\d{4}-\d{2}-\d{2}~', (string) ($event['date'] ?? ''))) {
-                    $dates[] = substr($event['date'], 0, 10);
-                }
-            }
-        }
-
-        return $dates === [] ? null : CarbonImmutable::parse(min($dates), 'Europe/Prague')->startOfDay();
+        return $dates->isEmpty() ? null : CarbonImmutable::parse($dates->min(), 'Europe/Prague')->startOfDay();
     }
 }

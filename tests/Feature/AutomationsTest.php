@@ -15,7 +15,9 @@ use App\Models\VaultEntry;
 use App\Support\Automations\AutomationException;
 use App\Support\Automations\PacketaTracking;
 use App\Support\Automations\ParcelPickup;
+use App\Support\Automations\UpgatesImportUpload;
 use App\Support\Automations\UpgatesOrders;
+use App\Support\Vault\LoginBroker;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -49,6 +51,12 @@ class AutomationsTest extends TestCase
     /** @var array<string, int> URL exportu => HTTP stav, když má selhat */
     private array $broken = [];
 
+    /** @var list<string> soubory, které by web nahrál do importu v Upgates (UTF-8) */
+    private array $uploads = [];
+
+    /** Odpověď Upgates na nahraný import. */
+    private bool $uploadAccepted = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,11 +78,26 @@ class AutomationsTest extends TestCase
             'client_id' => $this->client->id,
             'type' => AutomationType::UpgatesParcelPickup,
             'enabled' => true,
-            'settings' => ['vault_entry_id' => $entry->id],
+            'settings' => ['vault_entry_id' => $entry->id, 'reminders_since' => '2026-10-01'],
             'order_export_url' => self::FULL."\n".self::DAY,
         ]);
 
         Http::fake(fn (Request $request) => $this->respond($request));
+
+        // Nahrávání do Upgates jen zaznamenat, skutečné přihlášení a nahrání má vlastní test.
+        $uploads = &$this->uploads;
+        $this->app->instance(UpgatesImportUpload::class, new class(app(LoginBroker::class), $uploads) extends UpgatesImportUpload
+        {
+            public function __construct(LoginBroker $broker, private array &$uploads)
+            {
+                parent::__construct($broker);
+            }
+
+            public function upload(Automation $automation, string $csv): void
+            {
+                $this->uploads[] = iconv('Windows-1250', 'UTF-8', $csv);
+            }
+        });
     }
 
     private function respond(Request $request)
@@ -103,6 +126,16 @@ class AutomationsTest extends TestCase
 
         if (str_starts_with($url, 'https://tracking.packeta.com/')) {
             return Http::response(self::packetaHtml('2026-10-29'));
+        }
+
+        if ($url === 'https://svetcejlonu-1.admin.test/login/') {
+            return $request->method() === 'GET'
+                ? Http::response('<form method="post" action="/login/?do=loginForm-submit"><input name="email"><input type="password" name="password"><input type="hidden" name="_token_" value="t1"></form>')
+                : Http::response('<h1>Přehled</h1>', 200, ['Set-Cookie' => 'PHPSESSID=relace; path=/; domain=svetcejlonu-1.admin.test']);
+        }
+
+        if ($url === 'https://svetcejlonu-1.admin.test/setup/export-import/default/orders/') {
+            return Http::response(['success' => $this->uploadAccepted, 'state' => []]);
         }
 
         return Http::response('', 404);
@@ -243,6 +276,111 @@ class AutomationsTest extends TestCase
         $this->runEngine();
 
         $this->assertSame(['2001' => AutomationEvent::KIND_LAST_DAY], $this->events());
+    }
+
+    public function test_vracejici_se_a_rozvazena_zasilka_nedostane_sms_ani_pripominku(): void
+    {
+        $this->full = ['5001' => ['Odeslána', null], '5002' => ['Odeslána', null], '5003' => ['Odeslána', null]];
+        $returning = $this->shipment('5001', '2026-10-20');
+        array_unshift($returning['tracking_information']['packages'][0],
+            ['date' => '2026-10-27', 'time' => '10:38:00', 'status' => 'INTRANSIT', 'name' => 'Zásilku jsme převzali od odesílatele.'],
+            ['date' => '2026-10-26', 'time' => '16:48:00', 'status' => 'PARCELSHOP', 'name' => 'Zásilka nebyla příjemcem vyzvednuta a bude vrácena odesílateli.'],
+        );
+        $backInDelivery = $this->shipment('5002', '2026-10-20', 'dpd');
+        array_unshift($backInDelivery['tracking_information']['packages'][0],
+            ['date' => '2026-10-27', 'time' => '07:52:00', 'status' => 'ONDELIVERY', 'name' => 'Zásilka je v rozvozu'],
+        );
+        $expired = $this->shipment('5003', '2026-10-19');      // úložní doba skončila 26. 10.
+        $this->shipments = [$returning, $backInDelivery, $expired];
+
+        $this->runEngine();
+
+        $this->assertSame([], $this->events());
+        $this->assertSame([], collect($this->automation->fresh()->parcels())->pluck('order')->map(fn ($order): string => (string) $order)->intersect(['5001', '5002'])->values()->all());
+    }
+
+    public function test_po_zapnuti_pripominka_jen_u_novych_zasilek_a_posledni_den_u_vsech(): void
+    {
+        $this->automation->update(['enabled' => false]);
+        $this->automation->update(['enabled' => true]);
+        $this->assertSame('2026-10-27', $this->automation->fresh()->setting('reminders_since'));
+
+        $this->full = ['6001' => ['Odeslána', null], '6002' => ['Odeslána', null], '6003' => ['Odeslána', null]];
+        $this->shipments = [
+            $this->shipment('6001', '2026-10-22'),   // dorazila před zapnutím, do 29. 10. → připomínka ne
+            $this->shipment('6002', '2026-10-20'),   // dorazila před zapnutím, dnes poslední den → SMS ano
+            $this->shipment('6003', null),
+        ];
+        // 6003 dorazí až 28. 10., úložní doba do 4. 11.
+        $this->shipments[2]['tracking_information']['packages'][0] = [
+            ['date' => '2026-10-28', 'time' => '09:00:00', 'status' => 'PARCELSHOP', 'name' => 'Zásilku jsme doručili na výdejní místo.'],
+            ['date' => '2026-10-27', 'time' => '07:00:00', 'status' => 'ONDELIVERY', 'name' => 'Zásilka se dnes doručuje.'],
+        ];
+
+        $this->runEngine();
+        $this->assertSame(['6002' => AutomationEvent::KIND_LAST_DAY], $this->events());
+
+        $this->travel(6)->days();                 // 2. 11.: 6003 má do 4. 11. → připomínka
+        $this->runEngine();
+        $this->assertSame(AutomationEvent::KIND_REMINDER, $this->events()['6003'] ?? null);
+        $this->assertArrayNotHasKey('6001', $this->events());
+    }
+
+    public function test_cekajici_zmeny_se_nahraji_do_importu_v_upgates(): void
+    {
+        $this->full = ['7001' => ['Odeslána', null], '7002' => ['Odeslána', null]];
+        $this->shipments = [$this->shipment('7001', '2026-10-22'), $this->shipment('7002', '2026-10-25')];
+
+        $report = $this->runEngine();
+
+        $this->assertNull($report['error']);
+        $this->assertSame(1, $report['uploaded']);
+        $this->assertSame(["[ORDER_NUMBER];[ORDER_STATUS]\r\n7001;Čeká na vyzvednutí\r\n"], $this->uploads);
+        $this->assertNotNull(AutomationEvent::query()->where('order_number', '7001')->value('exported_at'));
+
+        // Upgates stav změnil (export za 24 h) → potvrzeno, bez čekajících změn se nic nenahrává.
+        $this->day['7001'] = ['Čeká na vyzvednutí', '2026-10-27T10:45:00+01:00'];
+        $this->runEngine();
+        $this->assertCount(1, $this->uploads);
+    }
+
+    public function test_nahrani_importu_se_prihlasi_z_trezoru_a_posle_soubor(): void
+    {
+        $entry = VaultEntry::query()->create([
+            'client_id' => $this->client->id,
+            'type' => VaultType::Upgates,
+            'name' => 'Upgates administrace',
+            'url' => 'https://svetcejlonu-1.admin.test',
+            'username' => 'automatizace@taveo.cz',
+            'secret' => 'tajne-heslo',
+            'settings' => ['login_url' => 'https://svetcejlonu-1.admin.test/login/'],
+            'agent_access' => 'none',
+        ]);
+        $this->automation->update(['settings' => [...$this->automation->settings, 'upgates_vault_entry_id' => $entry->id, 'upgates_import_id' => 12]]);
+        $csv = iconv('UTF-8', 'Windows-1250', "[ORDER_NUMBER];[ORDER_STATUS]\r\n7001;Čeká na vyzvednutí\r\n");
+
+        (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->url() === 'https://svetcejlonu-1.admin.test/setup/export-import/default/orders/?do=runAgainWithNewFile'
+            && $request->hasHeader('X-Requested-With', 'XMLHttpRequest')
+            && str_contains($request->header('Cookie')[0] ?? '', 'PHPSESSID=relace')
+            && collect($request->data())->contains(fn ($part): bool => ($part['name'] ?? null) === 'import_id' && (string) $part['contents'] === '12')
+            && collect($request->data())->contains(fn ($part): bool => ($part['name'] ?? null) === 'file' && $part['contents'] === $csv));
+        $this->assertDatabaseHas('vault_logs', ['vault_entry_id' => $entry->id, 'action' => 'upgates_import']);
+
+        $this->uploadAccepted = false;
+        try {
+            (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
+            $this->fail('Odmítnutý import má skončit chybou.');
+        } catch (AutomationException $e) {
+            $this->assertStringContainsString('nepřijal', $e->getMessage());
+        }
+
+        // Bez přihlášení v nastavení automatizace se nic neposílá.
+        $this->automation->update(['settings' => [...$this->automation->settings, 'upgates_vault_entry_id' => null]]);
+        $this->expectException(AutomationException::class);
+        (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
     }
 
     public function test_vypnute_druhy_zprav_se_neposilaji(): void

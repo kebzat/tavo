@@ -122,7 +122,8 @@ class Automations extends Page
             })
             ->schema([
                 Toggle::make('enabled')->label('Zapnuto')->helperText('Vypnutá automatizace nic neposílá.'),
-                Toggle::make('send_reminder')->label('Připomínka vyzvednutí e-mailem'),
+                Toggle::make('send_reminder')->label('Připomínka vyzvednutí e-mailem')
+                    ->helperText('Jen u zásilek, které na výdejní místo dorazí po zapnutí automatizace.'),
                 TextInput::make('remind_days_before')
                     ->label('Kolik dní před koncem úložní doby připomenout')
                     ->numeric()

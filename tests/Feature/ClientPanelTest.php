@@ -139,6 +139,8 @@ class ClientPanelTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $zaslat = VaultEntry::query()->create(['client_id' => $this->cejlon->id, 'type' => VaultType::ApiKey, 'name' => 'Zaslat API', 'url' => 'zaslat.cz', 'secret' => 'k', 'agent_access' => 'read']);
         VaultEntry::query()->create(['client_id' => $this->other->id, 'type' => VaultType::ApiKey, 'name' => 'Cizí Zaslat', 'url' => 'zaslat.cz', 'secret' => 'k', 'agent_access' => 'read']);
+        $upgates = VaultEntry::query()->create(['client_id' => $this->cejlon->id, 'type' => VaultType::Upgates, 'name' => 'Upgates administrace', 'url' => 'https://svetcejlonu-1.admin.test', 'username' => 'a@b.cz', 'secret' => 'h', 'agent_access' => 'none']);
+        VaultEntry::query()->create(['client_id' => $this->other->id, 'type' => VaultType::Upgates, 'name' => 'Cizí Upgates', 'url' => 'https://cizi.admin.test', 'username' => 'a@b.cz', 'secret' => 'h', 'agent_access' => 'none']);
 
         Livewire::actingAs($admin)
             ->test(CreateAutomation::class)
@@ -146,6 +148,8 @@ class ClientPanelTest extends TestCase
                 'client_id' => $this->cejlon->id,
                 'type' => AutomationType::UpgatesParcelPickup->value,
                 'settings.vault_entry_id' => $zaslat->id,
+                'settings.upgates_vault_entry_id' => $upgates->id,
+                'settings.upgates_import_id' => 12,
                 'order_export_url' => "https://svetcejlonu.cz/export/vse.xml\nhttps://svetcejlonu.cz/export/24h.xml",
             ])
             ->assertFormFieldExists('settings.vault_entry_id')
@@ -154,6 +158,8 @@ class ClientPanelTest extends TestCase
 
         $automation = Automation::query()->latest('id')->first();
         $this->assertSame($zaslat->id, (int) $automation->setting('vault_entry_id'));
+        $this->assertSame($upgates->id, $automation->upgatesEntry()?->id);
+        $this->assertSame(12, (int) $automation->setting('upgates_import_id'));
         $this->assertSame(['https://svetcejlonu.cz/export/vse.xml', 'https://svetcejlonu.cz/export/24h.xml'], $automation->exportUrls());
         $this->assertSame(['Odeslána', 'Čeká na vyzvednutí', 'Poslední den k vyzvednutí'], $automation->sourceStatuses());
         $this->assertFalse($automation->enabled);
@@ -164,7 +170,8 @@ class ClientPanelTest extends TestCase
         $this->actingAs($admin)->get('/nastroje/automatizace/'.$automation->id.'/edit')
             ->assertOk()
             ->assertSee($automation->csvUrl())
-            ->assertDontSee('Cizí Zaslat');
+            ->assertDontSee('Cizí Zaslat')
+            ->assertDontSee('Cizí Upgates');
 
         // Adresa exportu je v modelu skrytá, ale do formuláře se načte (jinak by uložení spadlo na povinném poli).
         Livewire::actingAs($admin)
