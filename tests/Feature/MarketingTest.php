@@ -19,6 +19,7 @@ use App\Models\Ads\AdDailyStat;
 use App\Models\Client;
 use App\Models\Marketing\ClientBriefing;
 use App\Models\Marketing\LandingCheck;
+use App\Models\ClientTask;
 use App\Models\User;
 use App\Settings\AdsSettings;
 use App\Support\Ads\AlertEngine;
@@ -319,6 +320,40 @@ class MarketingTest extends TestCase
         $this->postJson("/nastroje/api/agent/ukoly/{$proposal->id}/stav", ['stav' => 'done'], $this->api())->assertStatus(409);
         $this->postJson("/nastroje/api/agent/ukoly/{$task->id}/stav", ['stav' => 'smazano'], $this->api())->assertUnprocessable();
         $this->postJson("/nastroje/api/agent/ukoly/{$task->id}/stav", ['stav' => 'done'])->assertUnauthorized();
+    }
+
+    public function test_agent_zapise_ukol_rovnou_do_planu_a_presune_ho_na_jiny_mesic(): void
+    {
+        $client = $this->klient(attributes: ['dashboard_enabled' => true]);
+        $tom = User::factory()->create();
+        $client->tasks()->create(['title' => 'Úklid sitemapy', 'area' => WorkArea::Web, 'status' => TaskStatus::Planned, 'user_id' => $tom->id, 'planned_for' => '2026-11-01']);
+        $proposal = $client->taskProposals()->create(['title' => 'Merchant Center', 'area' => WorkArea::Web, 'is_proposal' => true]);
+
+        $tasks = ['schvaleno' => true, 'tasks' => [
+            ['title' => 'Dotaz na Upgates', 'area' => 'web', 'v_planu_na' => '2026-11'],
+            ['title' => 'Přehled za říjen', 'area' => 'web'],
+            ['title' => 'úklid sitemapy'],
+        ]];
+        $ids = $this->postJson('/nastroje/api/agent/klienti/cajovna-zkouska/ukoly', $tasks, $this->api())->assertOk()->assertJson(['zalozeno' => 2])->json('ids');
+
+        $task = ClientTask::find($ids[0]);
+        $this->assertFalse($task->is_proposal);
+        $this->assertSame('2026-11-01', $task->planned_for->toDateString());
+        $this->assertSame($tom->id, $task->user_id);
+        $this->assertSame('2026-10-01', ClientTask::find($ids[1])->planned_for->toDateString());
+        $this->assertSame(['Přehled za říjen'], array_column(ClientDashboard::for($client->fresh())->plan()[0]['tasks'], 'title'));
+
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", ['v_planu_na' => '2026-10', 'termin' => '2026-10-31'], $this->api())
+            ->assertOk()->assertJson(['v_planu_na' => '2026-10', 'termin' => '2026-10-31', 'navrh' => false]);
+        $this->assertStringContainsString('agent: v plánu na 2026-10, termín 2026-10-31.', $task->fresh()->internal_note);
+
+        $this->assertSame([$proposal->id], array_column($this->getJson('/nastroje/api/agent/klienti/cajovna-zkouska/ukoly', $this->api())->json('navrhy'), 'id'));
+        $this->postJson("/nastroje/api/agent/ukoly/{$proposal->id}", ['schvalit' => true], $this->api())->assertOk()->assertJson(['navrh' => false, 'v_planu_na' => '2026-10']);
+        $this->assertSame($tom->id, $proposal->fresh()->user_id);
+
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", [], $this->api())->assertUnprocessable();
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", ['v_planu_na' => 'listopad'], $this->api())->assertUnprocessable();
+        $this->postJson("/nastroje/api/agent/ukoly/{$task->id}", ['v_planu_na' => '2026-10'])->assertUnauthorized();
     }
 
     public function test_agent_prida_rozhodnuti_a_doplni_jen_prazdna_pole_konceptu_reportu(): void

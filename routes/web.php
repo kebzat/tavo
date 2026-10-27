@@ -72,6 +72,7 @@ Route::prefix('nastroje/api/agent')
         Route::post('/klienti/{slug}/ukoly', [AgentApiController::class, 'tasks'])->name('agent.api.tasks');
         Route::get('/klienti/{slug}/ukoly', [AgentApiController::class, 'taskList'])->name('agent.api.tasks.list');
         Route::post('/ukoly/{task}/stav', [AgentApiController::class, 'taskStatus'])->whereNumber('task')->name('agent.api.tasks.status');
+        Route::post('/ukoly/{task}', [AgentApiController::class, 'taskUpdate'])->whereNumber('task')->name('agent.api.tasks.update');
         Route::post('/klienti/{slug}/rozhodnuti', [AgentApiController::class, 'decision'])->name('agent.api.decision');
         Route::post('/reporty/{report}', [AgentApiController::class, 'report'])->name('agent.api.report');
         Route::post('/ulohy/{job}/vysledek', [AgentApiController::class, 'jobResult'])->name('agent.api.job-result');

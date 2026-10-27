@@ -34,7 +34,11 @@ taveo klienti                           seznam klientů (slug, cíl, upozorněn�
 taveo klient <slug>                     všechno o klientovi: karta, čísla, upozornění, úkoly
 taveo prehled <slug> < prehled.md       uloží dnešní ranní přehled (Markdown ze vstupu)
 taveo ukoly <slug> < ukoly.json         návrhy úkolů ke schválení: {"tasks":[{"title":…,"source":…}]}
-taveo ukoly-seznam <slug>               schválené úkoly s id: otevřené a hotové za tento měsíc
+                                        s "schvaleno": true rovnou do plánu klienta (jen když to člověk řekl),
+                                        měsíc u úkolu "v_planu_na": "RRRR-MM" (bez něj tento měsíc)
+taveo ukoly-seznam <slug>               úkoly s id: návrhy, otevřené a hotové za tento měsíc
+taveo ukol-upravit <id> [--mesic RRRR-MM] [--termin RRRR-MM-DD] [--schvalit]
+                                        přesune úkol na jiný měsíc, změní termín, schválí návrh (na pokyn člověka)
 taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"] ["na koho se čeká"]
                                         změní stav úkolu; hotový klient uvidí v „Co jsme udělali“ (poznámka jen interně)
 taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
@@ -81,6 +85,20 @@ case "${1:-}" in
         jq -n --arg s "$stav" --arg p "${4:-}" --arg c "${5:-}" \
             '{stav: $s} + (if $p == "" then {} else {poznamka: $p} end) + (if $c == "" then {} else {ceka_na: $c} end)' \
             | volat POST "/ukoly/${2:?id úkolu z taveo ukoly-seznam}/stav" --data-binary @-
+        ;;
+    ukol-upravit)
+        id=${2:?id úkolu z taveo ukoly-seznam}
+        shift 2
+        zmeny='{}'
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --mesic) zmeny=$(jq -c --arg m "${2:?měsíc RRRR-MM}" '. + {v_planu_na: $m}' <<<"$zmeny"); shift 2 ;;
+                --termin) zmeny=$(jq -c --arg t "${2:?termín RRRR-MM-DD}" '. + {termin: $t}' <<<"$zmeny"); shift 2 ;;
+                --schvalit) zmeny=$(jq -c '. + {schvalit: true}' <<<"$zmeny"); shift ;;
+                *) echo "Použití: taveo ukol-upravit <id> [--mesic RRRR-MM] [--termin RRRR-MM-DD] [--schvalit]" >&2; exit 1 ;;
+            esac
+        done
+        volat POST "/ukoly/$id" --data-binary "$zmeny"
         ;;
     rozhodnuti)
         jq -n --arg d "${3:?rozhodnutí}" --arg s "${4:?zdroj}" --arg v "${5:-}" '{decision: $d, source: $s} + (if $v == "" then {} else {valid_until: $v} end)' \
