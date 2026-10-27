@@ -15,7 +15,9 @@ use App\Models\VaultEntry;
 use App\Support\Automations\AutomationException;
 use App\Support\Automations\PacketaTracking;
 use App\Support\Automations\ParcelPickup;
+use App\Support\Automations\UpgatesImportUpload;
 use App\Support\Automations\UpgatesOrders;
+use App\Support\Vault\LoginBroker;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -49,6 +51,12 @@ class AutomationsTest extends TestCase
     /** @var array<string, int> URL exportu => HTTP stav, když má selhat */
     private array $broken = [];
 
+    /** @var list<string> soubory, které by web nahrál do importu v Upgates (UTF-8) */
+    private array $uploads = [];
+
+    /** Odpověď Upgates na nahraný import. */
+    private bool $uploadAccepted = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -75,6 +83,21 @@ class AutomationsTest extends TestCase
         ]);
 
         Http::fake(fn (Request $request) => $this->respond($request));
+
+        // Nahrávání do Upgates jen zaznamenat, skutečné přihlášení a nahrání má vlastní test.
+        $uploads = &$this->uploads;
+        $this->app->instance(UpgatesImportUpload::class, new class(app(LoginBroker::class), $uploads) extends UpgatesImportUpload
+        {
+            public function __construct(LoginBroker $broker, private array &$uploads)
+            {
+                parent::__construct($broker);
+            }
+
+            public function upload(Automation $automation, string $csv): void
+            {
+                $this->uploads[] = iconv('Windows-1250', 'UTF-8', $csv);
+            }
+        });
     }
 
     private function respond(Request $request)
@@ -103,6 +126,16 @@ class AutomationsTest extends TestCase
 
         if (str_starts_with($url, 'https://tracking.packeta.com/')) {
             return Http::response(self::packetaHtml('2026-10-29'));
+        }
+
+        if ($url === 'https://svetcejlonu-1.admin.test/login/') {
+            return $request->method() === 'GET'
+                ? Http::response('<form method="post" action="/login/?do=loginForm-submit"><input name="email"><input type="password" name="password"><input type="hidden" name="_token_" value="t1"></form>')
+                : Http::response('<h1>Přehled</h1>', 200, ['Set-Cookie' => 'PHPSESSID=relace; path=/; domain=svetcejlonu-1.admin.test']);
+        }
+
+        if ($url === 'https://svetcejlonu-1.admin.test/setup/export-import/default/orders/') {
+            return Http::response(['success' => $this->uploadAccepted, 'state' => []]);
         }
 
         return Http::response('', 404);
@@ -291,6 +324,63 @@ class AutomationsTest extends TestCase
         $this->runEngine();
         $this->assertSame(AutomationEvent::KIND_REMINDER, $this->events()['6003'] ?? null);
         $this->assertArrayNotHasKey('6001', $this->events());
+    }
+
+    public function test_cekajici_zmeny_se_nahraji_do_importu_v_upgates(): void
+    {
+        $this->full = ['7001' => ['Odeslána', null], '7002' => ['Odeslána', null]];
+        $this->shipments = [$this->shipment('7001', '2026-10-22'), $this->shipment('7002', '2026-10-25')];
+
+        $report = $this->runEngine();
+
+        $this->assertNull($report['error']);
+        $this->assertSame(1, $report['uploaded']);
+        $this->assertSame(["[ORDER_NUMBER];[ORDER_STATUS]\r\n7001;Čeká na vyzvednutí\r\n"], $this->uploads);
+        $this->assertNotNull(AutomationEvent::query()->where('order_number', '7001')->value('exported_at'));
+
+        // Upgates stav změnil (export za 24 h) → potvrzeno, bez čekajících změn se nic nenahrává.
+        $this->day['7001'] = ['Čeká na vyzvednutí', '2026-10-27T10:45:00+01:00'];
+        $this->runEngine();
+        $this->assertCount(1, $this->uploads);
+    }
+
+    public function test_nahrani_importu_se_prihlasi_z_trezoru_a_posle_soubor(): void
+    {
+        $entry = VaultEntry::query()->create([
+            'client_id' => $this->client->id,
+            'type' => VaultType::Upgates,
+            'name' => 'Upgates administrace',
+            'url' => 'https://svetcejlonu-1.admin.test',
+            'username' => 'automatizace@taveo.cz',
+            'secret' => 'tajne-heslo',
+            'settings' => ['login_url' => 'https://svetcejlonu-1.admin.test/login/'],
+            'agent_access' => 'none',
+        ]);
+        $this->automation->update(['settings' => [...$this->automation->settings, 'upgates_vault_entry_id' => $entry->id, 'upgates_import_id' => 12]]);
+        $csv = iconv('UTF-8', 'Windows-1250', "[ORDER_NUMBER];[ORDER_STATUS]\r\n7001;Čeká na vyzvednutí\r\n");
+
+        (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->url() === 'https://svetcejlonu-1.admin.test/setup/export-import/default/orders/?do=runAgainWithNewFile'
+            && $request->hasHeader('X-Requested-With', 'XMLHttpRequest')
+            && str_contains($request->header('Cookie')[0] ?? '', 'PHPSESSID=relace')
+            && collect($request->data())->contains(fn ($part): bool => ($part['name'] ?? null) === 'import_id' && (string) $part['contents'] === '12')
+            && collect($request->data())->contains(fn ($part): bool => ($part['name'] ?? null) === 'file' && $part['contents'] === $csv));
+        $this->assertDatabaseHas('vault_logs', ['vault_entry_id' => $entry->id, 'action' => 'upgates_import']);
+
+        $this->uploadAccepted = false;
+        try {
+            (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
+            $this->fail('Odmítnutý import má skončit chybou.');
+        } catch (AutomationException $e) {
+            $this->assertStringContainsString('nepřijal', $e->getMessage());
+        }
+
+        // Bez přihlášení v nastavení automatizace se nic neposílá.
+        $this->automation->update(['settings' => [...$this->automation->settings, 'upgates_vault_entry_id' => null]]);
+        $this->expectException(AutomationException::class);
+        (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
     }
 
     public function test_vypnute_druhy_zprav_se_neposilaji(): void

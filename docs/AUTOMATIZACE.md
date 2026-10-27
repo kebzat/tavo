@@ -10,9 +10,16 @@ Web TAVEO dělá pro e-shopy klientů práci, která se jinak dělá ručně. Za
 ## Jak to funguje
 
 Upgates umí sám poslat e-mail nebo SMS, když se objednávce změní stav. Stav objednávky
-umí změnit **pravidelný import objednávek** z CSV na adrese. Automatizace proto nic
-neposílá sama: jen každou hodinu připraví CSV „objednávka → nový stav“ a Upgates zbytek
-udělá sám. Ověřeno naostro 27. 10. 2026.
+umí změnit **import objednávek** z CSV. Automatizace proto nic neposílá sama: jen každou
+hodinu připraví CSV „objednávka → nový stav“, nahraje ho do importu v Upgates a Upgates
+zbytek udělá sám. Ověřeno naostro 27. 10. 2026.
+
+Pravidelně z adresy Upgates objednávky importovat **neumí** (u objednávek je jen
+„Jednorázově“ ze souboru). Web se proto přihlásí přístupem z trezoru (druh Upgates)
+a nahraje soubor do existujícího importu stejně jako tlačítko „Zopakovat s novým souborem“:
+`POST /setup/export-import/default/orders/?do=runAgainWithNewFile` s `file` a `import_id`,
+odpověď `{"success": true}` (`App\Support\Automations\UpgatesImportUpload`). Import se
+zpracuje ve frontě Upgates za 1–5 minut.
 
 Každou hodinu v :40 (`automations:run`, `App\Support\Automations\ParcelPickup`):
 
@@ -79,10 +86,12 @@ Pro každé číslo vyhraje záznam s novějším `UPDATED_AT`, bez času pozdě
    stavům přiřadit e-mail nebo SMS, který se má poslat.
 2. **Export objednávek XML** (pravidelný, na adrese): kompletní a „Posledních 24 hodin“.
    Adresy vložit do automatizace v nástrojích (ukládají se zašifrovaně).
-3. **Import objednávek → Pravidelně (malý import)** z adresy CSV z nástrojů, 1× za hodinu:
-   oddělovač středník, kódování Windows-1250, jen aktualizace existujících objednávek.
-   Sloupce Zaplaceno, Sledovací číslo, Vyřešeno = nezpracovávat. Hlavička CSV je
-   `[ORDER_NUMBER];[ORDER_STATUS]`.
+3. **Import objednávek** (Objednávky → Import, Upgates CSV, Jednorázově) jednou založit ručně se
+   souborem s hlavičkou `[ORDER_NUMBER];[ORDER_STATUS]`, pak v jeho nastavení: oddělovač středník,
+   jen aktualizace existujících, sloupce Zaplaceno, Sledovací číslo, Vyřešeno = nezpracovávat.
+   Jeho číslo (#12 u Světa Cejlonu) dát do automatizace. Web do něj pak nahrává soubory sám.
+4. **Přihlášení do Upgates v trezoru** (druh Upgates, adresa administrace, adresa přihlášení
+   `…/login/`), ideálně vlastní účet jen pro automatizace. Vybrat ho v automatizaci.
 
 ## CSV pro Upgates
 
@@ -90,7 +99,8 @@ Pro každé číslo vyhraje záznam s novějším `UPDATED_AT`, bez času pozdě
 `noindex`). Hlavička + všechny čekající zprávy (`číslo;cílový stav`), Windows-1250, CRLF.
 Při stažení se u řádků zapíše `exported_at` (pozná se, jestli Upgates import vůbec běží).
 Vypnutá automatizace = jen hlavička. Neznámý token = 404. Kdo adresu zná, vidí jen čísla
-objednávek a stavy. Novou adresu vygeneruje tlačítko **Nová adresa CSV** (pak ji vložit do Upgates).
+objednávek a stavy. Slouží ke kontrole a k ručnímu importu, kdyby nahrávání selhávalo.
+Novou adresu vygeneruje tlačítko **Nová adresa CSV**.
 
 ## Upozornění a souhrn
 

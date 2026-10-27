@@ -34,6 +34,7 @@ class ParcelPickup
         private UpgatesOrders $orders,
         private PacketaTracking $packeta,
         private AutomationAlerts $alerts,
+        private UpgatesImportUpload $upload,
     ) {}
 
     /**
@@ -41,7 +42,7 @@ class ParcelPickup
      */
     public function run(Automation $automation, bool $dryRun = false): array
     {
-        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'warnings' => [], 'error' => null];
+        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
 
         if (! $automation->enabled) {
             $report['warnings'][] = 'Automatizace je vypnutá, nic se nezakládá.';
@@ -57,6 +58,10 @@ class ParcelPickup
 
             $this->settle($automation, $orders, $report, $dryRun);
             $this->plan($automation, $orders, $shipments, $report, $dryRun);
+
+            if (! $dryRun) {
+                $this->push($automation, $report);
+            }
         } catch (AutomationException $e) {
             $report['error'] = $e->getMessage();
         } catch (Throwable $e) {
@@ -84,10 +89,27 @@ class ParcelPickup
         if ($report['failed'] !== []) {
             $this->alerts->problem($automation, 'failed',
                 'U '.count($report['failed']).' '.(count($report['failed']) === 1 ? 'objednávky' : 'objednávek').' ('.implode(', ', $report['failed']).') Upgates do '.self::FAIL_AFTER_HOURS.' hodin nezměnil stav, zpráva zákazníkovi tedy nejspíš neodešla.',
-                'Zkontroluj v Upgates pravidelný import objednávek (Import objednávek, adresa CSV z nástrojů) a stav těch objednávek. Případně zprávu pošli ručně z objednávky.');
+                'Zkontroluj v Upgates import objednávek, do kterého web nahrává změny (Objednávky → Import), a stav těch objednávek. Případně zprávu pošli ručně z objednávky.');
         }
 
         return $report;
+    }
+
+    /**
+     * Čekající změny stavů nahraje do importu v Upgates. Opakovaný import je
+     * neškodný, proto jdou při každém běhu všechny čekající řádky.
+     */
+    private function push(Automation $automation, array &$report): void
+    {
+        $rows = ImportCsv::rows($automation);
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $this->upload->upload($automation, ImportCsv::build($rows));
+        ImportCsv::markExported($rows);
+        $report['uploaded'] = $rows->count();
     }
 
     /**

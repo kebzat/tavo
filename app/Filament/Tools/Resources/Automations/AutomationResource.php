@@ -117,6 +117,24 @@ class AutomationResource extends Resource
                             ->all())
                         ->required()
                         ->helperText('Jen API klíče se Zaslatem u tohoto klienta (Trezor, druh API klíč, adresa zaslat.cz). Klíč nikdo neuvidí, web jím jen čte aktivní zásilky.'),
+                    Select::make('settings.upgates_vault_entry_id')
+                        ->label('Přihlášení do Upgates z trezoru')
+                        ->options(fn (Get $get): array => VaultEntry::query()
+                            ->where('client_id', $get('client_id') ?: 0)
+                            ->where('type', VaultType::Upgates)
+                            ->get()
+                            ->mapWithKeys(fn (VaultEntry $entry): array => [$entry->getKey() => $entry->name.' (#'.$entry->getKey().')'])
+                            ->all())
+                        ->required()
+                        ->helperText('Trezor, druh Upgates, adresa administrace e-shopu a adresa přihlášení (…/login/). Web se tím přihlásí a nahraje změny stavů do importu objednávek. Ideálně vlastní účet jen pro automatizace.'),
+                    TextInput::make('settings.upgates_import_id')
+                        ->label('Číslo importu objednávek v Upgates')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->required()
+                        ->prefix('#')
+                        ->helperText('Objednávky → Import: existující import Upgates CSV (oddělovač středník, jen aktualizace, Zaplaceno/Sledovací číslo/Vyřešeno nezpracovávat). Web do něj nahraje soubor jako „Zopakovat s novým souborem“.'),
                     Textarea::make('order_export_url')
                         ->label('Adresy XML exportu objednávek z Upgates')
                         ->rows(3)
@@ -172,10 +190,10 @@ class AutomationResource extends Resource
                     TextInput::make('settings.carrier_storage_days.default')->label('Úložní doba ostatních (dny)')->numeric()->integer()->minValue(1)->default(7),
                 ]),
 
-            Section::make('Adresa CSV pro Upgates import')
+            Section::make('Čekající změny stavů (CSV)')
                 ->columnSpanFull()
                 ->visible(fn (?Automation $record): bool => $record !== null)
-                ->description('V Upgates: Objednávky → Import objednávek → Pravidelně (malý import) z této adresy, oddělovač středník, jen aktualizace existujících. Kdo adresu zná, vidí jen čísla objednávek a stavy.')
+                ->description('Tenhle soubor web každou hodinu sám nahraje do importu v Upgates (pravidelně z adresy Upgates objednávky importovat neumí). Adresa je pro kontrolu, nebo pro ruční import, kdyby nahrávání selhávalo. Kdo ji zná, vidí jen čísla objednávek a stavy.')
                 ->schema([
                     TextEntry::make('csv_url')
                         ->hiddenLabel()
