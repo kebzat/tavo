@@ -19,7 +19,9 @@ use Throwable;
  *    než 3 h označí jako chybu,
  * 4. pro zásilky na výdejním místě nebo vrácené založí zprávy (každou jen
  *    jednou), Upgates si je stáhne jako CSV import a stav změní sám,
- * 5. uloží přehled zásilek na výdejních místech (jen čísla objednávek a data).
+ * 5. uloží přehled zásilek na výdejních místech (jen čísla objednávek a data),
+ * 6. hlídá vracející se zásilky: když jejich objednávka skončí ve stavu
+ *    Vyřešeno, upozorní (faktura a žádost o hodnocení u vrácené zásilky).
  *
  * Stav objednávky mění jen ze `source_statuses`, takže nepřepíše ruční
  * práci (Vyřešeno, Stornováno…). Viz docs/AUTOMATIZACE.md.
@@ -28,6 +30,9 @@ class ParcelPickup
 {
     /** Za jak dlouho musí Upgates zprávu stáhnout a stav změnit, jinak je to chyba. */
     public const FAIL_AFTER_HOURS = 3;
+
+    /** Jak dlouho hlídat vracející se zásilku, jestli její objednávka neskončí jako vyřešená. */
+    public const WATCH_RETURNS_DAYS = 21;
 
     public function __construct(
         private ZaslatApi $zaslat,
@@ -38,11 +43,11 @@ class ParcelPickup
     ) {}
 
     /**
-     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, warnings: list<string>, error: ?string}
+     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array{tracking: string, order: string, since: string}>, resolved_returns: list<string>, warnings: list<string>, error: ?string}
      */
     public function run(Automation $automation, bool $dryRun = false): array
     {
-        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
+        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
 
         if (! $automation->enabled) {
             $report['warnings'][] = 'Automatizace je vypnutá, nic se nezakládá.';
@@ -58,6 +63,7 @@ class ParcelPickup
 
             $this->settle($automation, $orders, $report, $dryRun);
             $this->plan($automation, $orders, $shipments, $report, $dryRun);
+            $report['returning'] = $this->watchReturns($automation, $orders, $shipments, $report);
 
             if (! $dryRun) {
                 $this->push($automation, $report);
@@ -78,7 +84,7 @@ class ParcelPickup
             'last_run_at' => now(),
             'last_error' => $report['error'],
             'last_warning' => $report['warnings'] ? implode(' ', $report['warnings']) : null,
-            ...($report['error'] === null ? ['snapshot' => ['updated_at' => now()->toIso8601String(), 'parcels' => $report['parcels']]] : []),
+            ...($report['error'] === null ? ['snapshot' => ['updated_at' => now()->toIso8601String(), 'parcels' => $report['parcels'], 'returning' => $report['returning']]] : []),
         ])->save();
 
         if ($report['error'] !== null) {
@@ -90,6 +96,12 @@ class ParcelPickup
             $this->alerts->problem($automation, 'failed',
                 'U '.count($report['failed']).' '.(count($report['failed']) === 1 ? 'objednávky' : 'objednávek').' ('.implode(', ', $report['failed']).') Upgates do '.self::FAIL_AFTER_HOURS.' hodin nezměnil stav, zpráva zákazníkovi tedy nejspíš neodešla.',
                 'Zkontroluj v Upgates import objednávek, do kterého web nahrává změny (Objednávky → Import), a stav těch objednávek. Případně zprávu pošli ručně z objednávky.');
+        }
+
+        foreach ($report['resolved_returns'] as $number) {
+            $this->alerts->problem($automation, 'resolved-return:'.$number,
+                'Objednávka '.$number.' má stav „'.$automation->status('resolved').'“, ale zásilka se podle Zaslatu vrátila k vám. Tenhle stav spouští fakturu a za pár dní zákazníkovi žádost o hodnocení.',
+                'V objednávce přepni tlačítko Vyřešeno na Nevyřešeno, pak žádost o hodnocení neodejde. Stav Vráceno nastav jen, když ho objednávka ještě neměla (odejde tím e-mail o nevyzvednuté zásilce). Fakturu u nezaplacené objednávky vyřeš s účetní.');
         }
 
         return $report;
@@ -240,6 +252,83 @@ class ParcelPickup
         }
 
         usort($report['parcels'], fn (array $a, array $b): int => [$a['days_left'] ?? PHP_INT_MAX, $a['order']] <=> [$b['days_left'] ?? PHP_INT_MAX, $b['order']]);
+    }
+
+    /**
+     * Vracející se zásilky hlídá i po zmizení z aktivních. Zaslat zásilku
+     * vrácenou odesílateli občas označí jako doručenou a objednávce dá
+     * Vyřešeno (PPL, 26. 10. 2026), jindy ho vrácené objednávce dá ručně
+     * klient. Vyřešeno v Upgates spouští fakturu a žádost o hodnocení. Když
+     * objednávka hlídané zásilky skončí v `status_resolved` a podle sledování
+     * zásilka opravdu skončila u odesílatele, přijde upozornění (jednou).
+     * Doručená příjemci (vrácení se nakonec nekonalo) se jen přestane hlídat.
+     *
+     * @param  array<string, string>  $orders
+     * @param  list<array<string, mixed>>  $shipments
+     * @return list<array{tracking: string, order: string, since: string}> hlídané zásilky pro příští běh
+     */
+    private function watchReturns(Automation $automation, array $orders, array $shipments, array &$report): array
+    {
+        $today = CarbonImmutable::now('Europe/Prague')->startOfDay();
+        $watch = collect((array) ($automation->snapshot['returning'] ?? []))
+            ->filter(fn ($item): bool => is_array($item) && filled($item['tracking'] ?? null) && filled($item['order'] ?? null)
+                && CarbonImmutable::parse((string) ($item['since'] ?? ''), 'Europe/Prague')->addDays(self::WATCH_RETURNS_DAYS)->gte($today))
+            ->keyBy('tracking');
+
+        foreach ($shipments as $shipment) {
+            $tracking = (string) ($shipment['tracking_number'] ?? '');
+            $number = trim((string) ($shipment['reference'] ?? ''));
+
+            if ($tracking !== '' && $number !== '' && ! $watch->has($tracking) && $this->isReturn($shipment, false)) {
+                $watch[$tracking] = ['tracking' => $tracking, 'order' => $number, 'since' => $today->toDateString()];
+            }
+        }
+
+        $resolved = $automation->status('resolved');
+        $suspects = $watch->filter(fn (array $item): bool => trim((string) ($orders[$item['order']] ?? '')) === $resolved);
+
+        foreach ($suspects->chunk(50) as $chunk) {
+            try {
+                $response = $this->zaslat->call($automation->vaultEntry(), 'POST', '/shipments/tracking', [], ['shipments' => $chunk->keys()->values()->all()]);
+            } catch (Throwable) {
+                $response = null;
+            }
+
+            if (! $response?->successful()) {
+                $report['warnings'][] = 'Sledování vracejících se zásilek ze Zaslatu se nepodařilo načíst, zkusí se při dalším běhu.';
+
+                continue;
+            }
+
+            foreach ($chunk as $tracking => $item) {
+                $tracked = $response->json('data.'.$tracking);
+
+                if (! is_array($tracked)) {
+                    continue;
+                }
+
+                if ($this->isReturn(['tracking_information' => $tracked], true)) {
+                    $report['resolved_returns'][] = $item['order'];
+                }
+
+                $watch->forget($tracking);
+            }
+        }
+
+        return $watch->values()->all();
+    }
+
+    /**
+     * Vrací se zásilka? Podle příznaku `returned` ze Zaslatu, nebo podle textu
+     * událostí: všech (`$latestOnly = false`, cesta zpět), nebo jen poslední
+     * (konečný stav, kdyby se vrácení nakonec nekonalo).
+     */
+    private function isReturn(array $shipment, bool $latestOnly): bool
+    {
+        $events = $this->trackingEvents($shipment);
+
+        return (bool) data_get($shipment, 'tracking_information.returned', false)
+            || $this->looksReturning($latestOnly ? array_slice($events, 0, 1) : $events);
     }
 
     /**
