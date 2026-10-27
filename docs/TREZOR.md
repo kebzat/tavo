@@ -65,6 +65,7 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
   u přístupu ho jinam neodvede. Jen čtení: GET a POST na `/shipments/tracking`, `/shipments/detail`, `/shipments/label`.
   Zakládat a rušit zásilky agent nemůže, stálo by to klienta peníze. Vyzkoušet zavolá výpis aktivních zásilek.
   Proč: přihlášení do app.zaslat.cz je aplikace v JavaScriptu (server vrací 404) s reCAPTCHA, `prihlasit` tam neprojde.
+  Týž klíč používá web pro automatizace klientů (připomínky vyzvednutí zásilek, docs/AUTOMATIZACE.md), nezávisle na „Co smí agent“.
 - **Přihlášení** (`LoginBroker`): web otevře přihlašovací stránku, najde formulář s heslem,
   vyplní ho (i s kódem 2FA, když je uložený klíč) a agentovi vrátí jen cookies. Agent si je
   vloží do prohlížeče (`browser_run_code_unsafe`: `await page.context().addCookies(cookies)`).

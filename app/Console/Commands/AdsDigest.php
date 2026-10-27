@@ -78,6 +78,7 @@ class AdsDigest extends Command
         $configured = collect($settings->digest_recipients)->map(fn ($email): string => trim((string) $email))->filter();
 
         return User::query()
+            ->staff()
             ->when($configured->isNotEmpty(), fn ($query) => $query->whereIn('email', $configured))
             ->orderBy('name')
             ->get();

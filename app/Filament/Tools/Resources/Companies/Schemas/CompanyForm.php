@@ -128,7 +128,7 @@ class CompanyForm
 
                     Select::make('owner_id')
                         ->label('Vede')
-                        ->options(fn (): array => User::orderBy('name')->pluck('name', 'id')->all())
+                        ->options(fn (): array => User::query()->staff()->orderBy('name')->pluck('name', 'id')->all())
                         ->default(fn () => Auth::id())
                         ->native(false),
 

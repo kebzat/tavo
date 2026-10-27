@@ -19,7 +19,7 @@ class UsersTable
             ->columns([
                 TextColumn::make('name')->label('Jméno')->weight('bold')->searchable(),
                 TextColumn::make('email')->label('E-mail')->searchable()->copyable(),
-                TextColumn::make('role')->label('Role')->badge(),
+                TextColumn::make('role')->label('Role')->badge()->description(fn ($record): ?string => $record->client?->name),
                 TextColumn::make('created_at')->label('Vytvořen')->date('j. n. Y')->sortable(),
             ])
             ->filters([
