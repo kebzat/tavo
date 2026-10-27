@@ -140,3 +140,15 @@ V nástrojích u automatizace je i **Vyzkoušet nanečisto** (stejné jako `--dr
   robotům). Když `storedUntil` nenajde, použije se výpočet (první den na výdejním místě + 7).
 - Skutečné XML z exportu Svět Cejlonu (tvar `ORDER_NUMBER`) se v testech jen napodobuje.
   Vyzkoušet nanečisto v nástrojích ukáže, jestli export čte.
+
+## Úpravy po prvním běhu nanečisto (27. 10. 2026)
+
+- **Na výdejním místě** = u Zásilkovny stav `PARCELSHOP` (datum dá její sledování), u ostatních dopravců navíc
+  poslední událost `PARCELSHOP`. Zaslat nechává `PARCELSHOP` i u zásilky, která se vrátila do rozvozu (DPD).
+- **Jede zpět** podle textu událostí (bude vrácena, odmítl převzetí, uplynula doba uskladnění, return…) = žádná připomínka
+  ani SMS. E-mail k vrácené zásilce až podle `returned` ze Zaslatu.
+- **SMS jen přesně v poslední den** (zbývá 0 dní). Po konci úložní doby už se nic neposílá.
+- **`reminders_since`**: při zapnutí automatizace se uloží dnešní den a připomínka e-mailem jde jen zásilkám, které
+  na výdejní místo dorazily od něj. Starším ji klient posílal ručně. SMS v poslední den a e-mail k vrácené zásilce platí pro všechny.
+- Zaslat sám mění stavy objednávek v Upgates („API Zaslat“: Připraveno na odeslání, Odeslána, někdy Vráceno a zpět Odeslána).
+- Úložní doba PPL a DPD je odhad (7 dní od příchodu). PPL boxy mají možná 72 hodin, neověřeno. Mění se v nástrojích u automatizace.

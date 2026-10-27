@@ -70,7 +70,7 @@ class AutomationsTest extends TestCase
             'client_id' => $this->client->id,
             'type' => AutomationType::UpgatesParcelPickup,
             'enabled' => true,
-            'settings' => ['vault_entry_id' => $entry->id],
+            'settings' => ['vault_entry_id' => $entry->id, 'reminders_since' => '2026-10-01'],
             'order_export_url' => self::FULL."\n".self::DAY,
         ]);
 
@@ -243,6 +243,54 @@ class AutomationsTest extends TestCase
         $this->runEngine();
 
         $this->assertSame(['2001' => AutomationEvent::KIND_LAST_DAY], $this->events());
+    }
+
+    public function test_vracejici_se_a_rozvazena_zasilka_nedostane_sms_ani_pripominku(): void
+    {
+        $this->full = ['5001' => ['Odeslána', null], '5002' => ['Odeslána', null], '5003' => ['Odeslána', null]];
+        $returning = $this->shipment('5001', '2026-10-20');
+        array_unshift($returning['tracking_information']['packages'][0],
+            ['date' => '2026-10-27', 'time' => '10:38:00', 'status' => 'INTRANSIT', 'name' => 'Zásilku jsme převzali od odesílatele.'],
+            ['date' => '2026-10-26', 'time' => '16:48:00', 'status' => 'PARCELSHOP', 'name' => 'Zásilka nebyla příjemcem vyzvednuta a bude vrácena odesílateli.'],
+        );
+        $backInDelivery = $this->shipment('5002', '2026-10-20', 'dpd');
+        array_unshift($backInDelivery['tracking_information']['packages'][0],
+            ['date' => '2026-10-27', 'time' => '07:52:00', 'status' => 'ONDELIVERY', 'name' => 'Zásilka je v rozvozu'],
+        );
+        $expired = $this->shipment('5003', '2026-10-19');      // úložní doba skončila 26. 10.
+        $this->shipments = [$returning, $backInDelivery, $expired];
+
+        $this->runEngine();
+
+        $this->assertSame([], $this->events());
+        $this->assertSame([], collect($this->automation->fresh()->parcels())->pluck('order')->map(fn ($order): string => (string) $order)->intersect(['5001', '5002'])->values()->all());
+    }
+
+    public function test_po_zapnuti_pripominka_jen_u_novych_zasilek_a_posledni_den_u_vsech(): void
+    {
+        $this->automation->update(['enabled' => false]);
+        $this->automation->update(['enabled' => true]);
+        $this->assertSame('2026-10-27', $this->automation->fresh()->setting('reminders_since'));
+
+        $this->full = ['6001' => ['Odeslána', null], '6002' => ['Odeslána', null], '6003' => ['Odeslána', null]];
+        $this->shipments = [
+            $this->shipment('6001', '2026-10-22'),   // dorazila před zapnutím, do 29. 10. → připomínka ne
+            $this->shipment('6002', '2026-10-20'),   // dorazila před zapnutím, dnes poslední den → SMS ano
+            $this->shipment('6003', null),
+        ];
+        // 6003 dorazí až 28. 10., úložní doba do 4. 11.
+        $this->shipments[2]['tracking_information']['packages'][0] = [
+            ['date' => '2026-10-28', 'time' => '09:00:00', 'status' => 'PARCELSHOP', 'name' => 'Zásilku jsme doručili na výdejní místo.'],
+            ['date' => '2026-10-27', 'time' => '07:00:00', 'status' => 'ONDELIVERY', 'name' => 'Zásilka se dnes doručuje.'],
+        ];
+
+        $this->runEngine();
+        $this->assertSame(['6002' => AutomationEvent::KIND_LAST_DAY], $this->events());
+
+        $this->travel(6)->days();                 // 2. 11.: 6003 má do 4. 11. → připomínka
+        $this->runEngine();
+        $this->assertSame(AutomationEvent::KIND_REMINDER, $this->events()['6003'] ?? null);
+        $this->assertArrayNotHasKey('6001', $this->events());
     }
 
     public function test_vypnute_druhy_zprav_se_neposilaji(): void

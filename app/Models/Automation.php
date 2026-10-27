@@ -41,6 +41,8 @@ class Automation extends Model
         'send_reminder' => true,
         'send_last_day' => true,
         'send_returned' => true,
+        // Den zapnutí: připomínka jen u zásilek, které na výdejní místo dorazily od něj.
+        'reminders_since' => null,
         // Úložní doba (dny od příchodu na výdejní místo), když ji dopravce neřekne sám.
         'carrier_storage_days' => ['zasilkovna' => 7, 'ppl' => 7, 'dpd' => 7, 'default' => 7],
     ];
@@ -62,6 +64,17 @@ class Automation extends Model
         static::creating(function (self $automation): void {
             $automation->import_token ??= self::newToken();
             $automation->settings = array_replace(self::DEFAULT_SETTINGS, $automation->settings ?? []);
+        });
+
+        // Po zapnutí připomínat jen zásilky, které na výdejní místo dorazí od teď:
+        // starším klient připomínky posílal ručně a druhou by dostali zbytečně.
+        static::saving(function (self $automation): void {
+            $turnedOn = $automation->enabled && (! $automation->exists || $automation->isDirty('enabled'));
+            $given = $automation->exists ? null : (($automation->settings ?? [])['reminders_since'] ?? null);
+
+            if ($turnedOn && $given === null) {
+                $automation->settings = [...($automation->settings ?? []), 'reminders_since' => now('Europe/Prague')->toDateString()];
+            }
         });
     }
 
