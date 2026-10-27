@@ -8,6 +8,7 @@ use App\Filament\Tools\Resources\KnowledgeSources\Pages\ViewKnowledgeSource;
 use App\Models\Client;
 use App\Models\KnowledgeEntry;
 use App\Models\KnowledgeSource;
+use App\Models\Skill;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
@@ -81,11 +82,11 @@ class KnowledgeSourceResource extends Resource
 
     /**
      * Pole nahrávání. Bez klienta pro nahrání z konverzace s agentem,
-     * kde je klient daný projektem.
+     * kde je klient daný projektem, bez skillu v projektu skillu.
      *
      * @return list<Component>
      */
-    public static function uploadFields(bool $withClient = true): array
+    public static function uploadFields(bool $withClient = true, bool $withSkill = true): array
     {
         return array_values(array_filter([
             TextInput::make('title')
@@ -99,6 +100,11 @@ class KnowledgeSourceResource extends Resource
                 ->searchable()
                 ->placeholder('Bez klienta (firma, víc klientů)')
                 ->helperText('S klientem zůstanou v jeho archivu a agent je najde v každé konverzaci o něm.'),
+            Select::make('skill_id')
+                ->label('Skill')
+                ->options(fn (): array => Skill::query()->orderBy('sort')->pluck('name', 'id')->all())
+                ->placeholder('Žádný')
+                ->helperText('Case study, výsledky kampaní, vzorový web: najde je skill i u ostatních klientů.'),
             Select::make('category')
                 ->label('Druh')
                 ->options(KnowledgeSource::categories())
@@ -144,14 +150,14 @@ class KnowledgeSourceResource extends Resource
                 ->default(true)
                 ->helperText('Vypněte u dokumentů, které chcete jen uložit (měsíční export, tabulka). Agent v projektu klienta je i tak najde a přečte celé.')
                 ->columnSpanFull(),
-        ], fn (Component $field): bool => $withClient || $field->getName() !== 'client_id'));
+        ], fn (Component $field): bool => ($withClient || $field->getName() !== 'client_id') && ($withSkill || $field->getName() !== 'skill_id')));
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->defaultSort('id', 'desc')
-            ->modifyQueryUsing(fn ($query) => $query->with('client')->withCount([
+            ->modifyQueryUsing(fn ($query) => $query->with(['client', 'skill'])->withCount([
                 'entries',
                 'entries as proposed_count' => fn ($query) => $query->where('status', KnowledgeEntry::STATUS_PROPOSED),
             ]))
@@ -160,7 +166,7 @@ class KnowledgeSourceResource extends Resource
                 TextColumn::make('title')
                     ->label('Podklady')
                     ->weight('bold')
-                    ->description(fn (KnowledgeSource $record): string => collect([$record->client?->name, $record->categoryLabel(), $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null, $record->sizeLabel()])->filter()->implode(' · '))
+                    ->description(fn (KnowledgeSource $record): string => collect([$record->client?->name, $record->skill ? 'skill '.$record->skill->name : null, $record->categoryLabel(), $record->document_date ? 'k '.$record->document_date->format('j. n. Y') : null, $record->sizeLabel()])->filter()->implode(' · '))
                     ->wrap()
                     ->searchable(),
                 TextColumn::make('entries_count')
@@ -176,6 +182,7 @@ class KnowledgeSourceResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('client')->label('Klient')->relationship('client', 'name')->searchable()->preload(),
+                SelectFilter::make('skill')->label('Skill')->relationship('skill', 'name'),
                 SelectFilter::make('category')->label('Druh')->options(KnowledgeSource::categories()),
             ])
             ->recordActions([

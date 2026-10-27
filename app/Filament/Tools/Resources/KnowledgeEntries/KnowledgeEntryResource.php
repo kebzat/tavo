@@ -8,6 +8,7 @@ use App\Filament\Tools\Resources\KnowledgeEntries\Pages\ListKnowledgeEntries;
 use App\Filament\Tools\Resources\KnowledgeSources\KnowledgeSourceResource;
 use App\Models\Client;
 use App\Models\KnowledgeEntry;
+use App\Models\Skill;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -118,6 +119,11 @@ class KnowledgeEntryResource extends Resource
                         ->searchable()
                         ->visible(fn (Get $get): bool => $get('layer') === KnowledgeEntry::LAYER_CLIENT)
                         ->required(fn (Get $get): bool => $get('layer') === KnowledgeEntry::LAYER_CLIENT),
+                    Select::make('skill_id')
+                        ->label('Skill')
+                        ->options(fn (): array => Skill::query()->orderBy('sort')->pluck('name', 'id')->all())
+                        ->placeholder('Žádný')
+                        ->helperText('Know-how skillu, nebo zkušenost u klienta v jeho oboru. Skill ji ukáže i agentům ostatních klientů.'),
                     TagsInput::make('tags')
                         ->label('Štítky')
                         ->placeholder('reklamy, reporty, tón…')
@@ -138,7 +144,7 @@ class KnowledgeEntryResource extends Resource
     {
         return $table
             ->defaultSort('updated_at', 'desc')
-            ->modifyQueryUsing(fn ($query) => $query->with(['client', 'source']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['client', 'source', 'skill']))
             ->columns([
                 TextColumn::make('title')
                     ->label('Poznatek')
@@ -154,7 +160,7 @@ class KnowledgeEntryResource extends Resource
                     ->icon(fn (KnowledgeEntry $record): ?Heroicon => $record->always ? Heroicon::Star : null)
                     ->tooltip(fn (KnowledgeEntry $record): ?string => $record->always ? 'Vždy v hlavě: agent ho dostane v každém zadání' : null)
                     ->formatStateUsing(fn (KnowledgeEntry $record): string => $record->layerLabel())
-                    ->description(fn (KnowledgeEntry $record): ?string => $record->client?->name),
+                    ->description(fn (KnowledgeEntry $record): ?string => collect([$record->client?->name, $record->skill?->name])->filter()->implode(' · ') ?: null),
                 TextColumn::make('status')
                     ->label('Stav')
                     ->badge()
@@ -173,6 +179,7 @@ class KnowledgeEntryResource extends Resource
             ->filters([
                 SelectFilter::make('layer')->label('Vrstva')->options(KnowledgeEntry::layers()),
                 SelectFilter::make('client')->label('Klient')->relationship('client', 'name')->searchable()->preload(),
+                SelectFilter::make('skill')->label('Skill')->relationship('skill', 'name'),
                 SelectFilter::make('origin_type')->label('Odkud')->options(KnowledgeEntry::originTypes()),
                 SelectFilter::make('source')->label('Podklady')->relationship('source', 'title')->searchable(),
             ])

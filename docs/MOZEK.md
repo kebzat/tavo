@@ -13,7 +13,7 @@ Platí jen poznatky, které schválil člověk.
 | **Zeptat se** (`/nastroje/mozek`) | Otázka na mozek. Agent hledá ve schválených poznatcích a odpoví s čísly poznatků (#id). Na „zapamatuj si…“ navrhne nový poznatek. Otázky jdou do jedné dlouhé konverzace, „Začít nový rozhovor“ ji založí znovu. Poznatky zůstávají. |
 | **Poznatky** (`/nastroje/mozek/poznatky`) | Návrhy ke schválení (hromadně i po jednom), platné, „vždy v hlavě“, archiv. Ručně napsaný poznatek platí hned. |
 | **Archiv a podklady** (`/nastroje/mozek/podklady`) | Vložený text nebo soubory (poznámky, e-maily, přepisy schůzek, PDF, Word, Excel). Knihovník je na pozadí přečte, napíše popis obsahu a pošle návrhy poznatků. Víc podkladů najednou bere jedny po druhých (fronta projektu). Podklady s klientem jsou jeho archiv, viz níž. |
-| **Agent → projekt → Mozek klienta / Mozek TAVEO** | Tlačítka nad terminálem (`ClientBrain`): panel z boku s návrhy ke schválení, poznatky a archivem, Nahrát do archivu. Konverzace zůstává otevřená. Projekt bez klienta (taveo, marketing) ukáže Mozek TAVEO: firemní poznatky a postupy a archiv firmy. |
+| **Projekty → projekt → Mozek klienta / Mozek TAVEO / Mozek skillu** | Tlačítka nad terminálem (`ClientBrain`): panel z boku s návrhy ke schválení, poznatky a archivem, Nahrát do archivu. Konverzace zůstává otevřená. Projekt bez klienta (taveo, marketing) ukáže Mozek TAVEO: firemní poznatky a postupy a archiv firmy. |
 | **Klienti → klient → Archiv / Mozek klienta** | Archiv klienta (nahrát, stáhnout, smazat) a jeho poznatky (platné a ke schválení, schválit jde i tady). |
 
 ## Poznatek
@@ -74,21 +74,54 @@ obsahu (`summary`, píše ho knihovník přes `POST /mozek/navrhy` s `popis`). S
   agenta a příkazy z `~/.local/bin/taveo`. Po nahrání `managed-settings.json` háček z `~/.claude/settings.json`
   smazat, jinak dostane konverzace úvod dvakrát.
 
+## Skilly
+
+Skill je specialista na jednu oblast (Meta Ads, copywriting, onboarding…). Rozdělení podle Pavla (27. 10. 2026):
+Strategie a základ (onboarding, marketing), Obsah (copywriting, socialmediacontent, emailing), Reklama (meta-ads,
+google-reklamy, sklik-ads), Web a konverze (web), Data (data-analytik), Agenturní provoz (obchod).
+
+| Část | Kde | Co |
+|---|---|---|
+| **Pokyny** | Mozek → Skilly (`skills.instructions`) | jak specialista pracuje: postup, pravidla, výstup. Upravuje člověk, ne migrace. |
+| **Kdy ho použít** | `skills.description` | podle toho ho agent vybere sám, jde do SKILL.md |
+| **Čerpá z** | `skills.builds_on` | třeba copywriting: agent si ho načte, když píše texty |
+| **Know-how** | poznatky se `skill_id` bez klienta | schválené jako vše ostatní |
+| **Zkušenosti z klientů** | poznatky se `skill_id` a klientem | co u klienta fungovalo. Skill je ukazuje agentům **ostatních** klientů. |
+| **Archiv skillu** | podklady se `skill_id` | case studies, výsledky, vzory. I dokument klienta označený skillem (zůstane i v archivu klienta). |
+| **Agent skillu** | projekt bez kódu (`skills.agent_project`) | Projekty → Skilly. Tam se skill učí: Pavel a Tom nahrávají podklady, probírají strategie, opravují ho. |
+
+- **Jak ho agent klienta použije:** v `~/.claude/skills/<slug>/SKILL.md` je jen kdy skill použít a příkaz
+  `taveo skill <slug> <klient>` (`GET /skilly/{slug}?klient=`, `KnowledgeBase::skill()`). Ten vrátí pokyny, know-how,
+  poznatky klienta ke skillu, zkušenosti jiných klientů a archiv skillu. Skill se tak zlepšuje bez přepisování souborů.
+  Klient i člověk ho volají `/meta-ads`. Úvod konverzace u klienta skilly vyjmenuje.
+- **SKILL.md** zapisuje `taveo skilly-sync` (z `GET /skilly`, pole `soubor`), spouští ho na pozadí háček `mozek-uvod`.
+  Nový skill z nástrojů je tak v další konverzaci. Soubor bez značky `<!-- taveo skilly-sync -->` (ručně psaný `google-reklamy`)
+  nepřepíše.
+- **Úvod konverzace v projektu skillu** (`opening()` → `skill(home: true)`): kdo je, pokyny, know-how, zkušenosti, archiv
+  a jak se učí (`taveo skill-nahrat`, `taveo mozek-navrh … --skill`). Pod 10 000 znaků.
+- **Knihovník** u podkladů skillu ví, ke kterému skillu patří, a návrhy skill zdědí (`propose()`, `skill_id` z podkladů).
+- **Agent skillu** se zakládá na pozadí stejně jako u klientů (`ClientProjects`, `agent:projekty-klientu`, po jednom).
+  Nový skill z nástrojů dostane agenta hned. `marketing` je obsazený Pavlovým reportovacím agentem, skill má `marketing-strategie`,
+  Google Ads už měl `google-reklamy` (26. 10.).
+
 ## Rozhraní pro agenta
 
 Token agenta (`AGENT_API_TOKEN`, v kontejneru `~/.config/taveo/token`), prefix `/nastroje/api/agent`:
 
 | | |
 |---|---|
-| `GET /mozek?q=slova&klient=slug&navrhy=1` | hledání, nejlepší první (kmen slova: „reportu“ najde „Reporty“), `navrhy=1` přidá neschválené |
+| `GET /mozek?q=slova&klient=slug&skill=meta-ads&navrhy=1` | hledání, nejlepší první (kmen slova: „reportu“ najde „Reporty“), `navrhy=1` přidá neschválené, `skill` jen poznatky skillu i od jiných klientů |
 | `GET /mozek/seznam` | všechno platné a navržené jen s nadpisem (kontrola duplicit) |
 | `GET /mozek/zdroje/{id}`, `…/soubory/{i}` | text a soubory podkladů |
-| `POST /mozek/navrhy` | `{"zdroj": id?, "popis": "co v podkladech je"?, "poznatky": [{vrstva, klient?, nadpis, text, stitky?, puvod?, nahrazuje?}]}` |
+| `POST /mozek/navrhy` | `{"zdroj": id?, "popis": "co v podkladech je"?, "poznatky": [{vrstva, klient?, skill?, nadpis, text, stitky?, puvod?, nahrazuje?}]}` |
 | `GET /mozek/uvod?projekt=slug` | úvod konverzace v projektu (text), pro háček SessionStart |
 | `GET /archiv/{slug}?druh=obchod` | archiv klienta s popisy a adresami souborů, `GET /mozek/zdroje/{id}/popis` jeden dokument |
-| `POST /archiv/{slug}` | agent uloží dokument do archivu (multipart, viz Archiv klienta) |
+| `POST /archiv/{slug}` | agent uloží dokument do archivu (multipart, viz Archiv klienta), `skill` ho označí skillem |
+| `GET /skilly`, `GET /skilly/{slug}?klient=` | seznam skillů (i SKILL.md), skill pro agenta (text) |
+| `GET /skilly/{slug}/archiv`, `POST /skilly/{slug}/archiv` | archiv skillu, uložení do něj (jako archiv klienta) |
 
-Příkaz `taveo mozek "co hledám" [slug]`, `taveo mozek-navrh firma|klient|postup "nadpis" [slug] < text.md`,
+Příkaz `taveo mozek "co hledám" [slug] [--skill S]`, `taveo mozek-navrh firma|klient|postup "nadpis" [slug] [--skill S] < text.md`,
+`taveo skilly`, `taveo skill <skill> [slug]`, `taveo skill-archiv <skill>`, `taveo skill-nahrat <skill> "název" … soubor`, `taveo skilly-sync`,
 `taveo archiv <slug> [druh]`, `taveo archiv-stahnout <id> <složka>`, `taveo archiv-nahrat <slug> "název" [--druh …] soubor…` a `taveo mozek-uvod`
 (`infra/agent/taveo.sh`, do kontejneru ho nahrává Tom). Zadání z nástrojů volají `curl` přímo, na nový `taveo` nečekají.
 

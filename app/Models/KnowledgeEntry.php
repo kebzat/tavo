@@ -70,6 +70,12 @@ class KnowledgeEntry extends Model
         return $this->belongsTo(Client::class);
     }
 
+    /** Skill, ke kterému poznatek / dokument patří (know-how skillu, zkušenost u klienta v jeho oboru). */
+    public function skill(): BelongsTo
+    {
+        return $this->belongsTo(Skill::class);
+    }
+
     public function source(): BelongsTo
     {
         return $this->belongsTo(KnowledgeSource::class, 'knowledge_source_id');
@@ -150,6 +156,7 @@ class KnowledgeEntry extends Model
             'id' => $this->getKey(),
             'vrstva' => $this->layer,
             'klient' => $this->client?->slug,
+            'skill' => $this->skill?->slug,
             'nadpis' => $this->title,
             'text' => $this->body,
             'stitky' => $this->tags ?: null,

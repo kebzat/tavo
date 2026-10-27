@@ -101,7 +101,7 @@ Schedule::command('clickup:nacist')
     ->runInBackground()
     ->onOneServer();
 
-// Projekty agenta pro klienty (Agent → Založit agenty klientům) po jednom s odstupem,
+// Projekty agenta pro klienty (Projekty → Založit agenty klientům, Mozek → Skilly) po jednom s odstupem,
 // víc spuštění fronty na serveru naráz systemd zastaví. Bez žádosti nic nevolá.
 Schedule::command('agent:projekty-klientu')
     ->everyMinute()

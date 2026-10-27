@@ -3,7 +3,9 @@
 namespace App\Filament\Tools\Pages\Agent;
 
 use App\Filament\Tools\Resources\Clients\ClientResource;
+use App\Filament\Tools\Resources\Skills\SkillResource;
 use App\Models\Client;
+use App\Models\Skill;
 use App\Support\Agent\AgentServer;
 use App\Support\Agent\AgentUnavailable;
 use Filament\Actions\Action;
@@ -72,11 +74,15 @@ class AgentProject extends Page
 
     public function getTitle(): string
     {
-        return $this->client()?->name ?? $this->project;
+        return $this->client()?->name ?? $this->skill()?->name ?? $this->project;
     }
 
     public function getSubheading(): ?string
     {
+        if ($skill = $this->skill()) {
+            return 'Skill '.$skill->categoryLabel().' · agenti klientů ho volají jako /'.$skill->slug.'. Tady se učí: nahrajte mu podklady do archivu skillu, probírejte s ním strategie a opravujte ho.';
+        }
+
         if (($this->details()['bezKopie'] ?? false) === true) {
             return 'Web na serveru, bez kopie: agent ho upravuje přímo a úpravy jsou hned venku. Před každou konverzací se uloží záloha.';
         }
@@ -92,7 +98,7 @@ class AgentProject extends Page
     /** @return array<string, string> */
     public function getBreadcrumbs(): array
     {
-        return [AgentProjects::getUrl() => 'Agent', $this->project];
+        return [AgentProjects::getUrl() => 'Projekty', $this->project];
     }
 
     /** @return array<string, mixed>|null */
@@ -162,6 +168,11 @@ class AgentProject extends Page
     public function client(): ?Client
     {
         return Client::query()->where('agent_project', $this->project)->first();
+    }
+
+    public function skill(): ?Skill
+    {
+        return Skill::query()->where('agent_project', $this->project)->first();
     }
 
     public function clientUrl(): ?string
@@ -234,6 +245,13 @@ class AgentProject extends Page
                 ->color('gray')
                 ->url(fn (): ?string => $this->clientUrl())
                 ->visible(fn (): bool => $this->clientUrl() !== null),
+
+            Action::make('skill')
+                ->label('Pokyny skillu')
+                ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                ->color('gray')
+                ->url(fn (): ?string => ($skill = $this->skill()) ? SkillResource::getUrl('edit', ['record' => $skill]) : null)
+                ->visible(fn (): bool => $this->skill() !== null),
         ];
     }
 

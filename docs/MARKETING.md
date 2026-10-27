@@ -73,7 +73,7 @@ Co ban riskuje i tak, a není to technika:
   `infra/agent/terminal/ranni-prehled.md`. Log v kontejneru `~/.taveo-ranni/<den>.log`.
   Ručně (ověření): `curl -X POST -H "Authorization: Bearer <AGENT_SECRET>" http://127.0.0.1:7681/api/ranni-prehled`
   na serveru. Běží nejvýš jednou denně.
-- Pavel v nástrojích → Agent → `marketing`: „tady je zápis ze schůzky
+- Pavel v nástrojích → Projekty → `marketing`: „tady je zápis ze schůzky
   s MIRNIX…“ a agent uloží poznámku, dohody do karty a návrhy úkolů.
 - Stav schváleného úkolu agent mění sám (od 26. 10. 2026, chtěl uživatel): `taveo ukoly-seznam <slug>`
   vypíše úkoly s id, `taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"]` stav změní.

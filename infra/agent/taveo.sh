@@ -45,16 +45,23 @@ taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"] ["na koho se
 taveo rozhodnuti <slug> "rozhodnutí" "zdroj" [platí do RRRR-MM-DD]
 taveo report <id> fakta|fungovalo|nefungovalo|priciny|doporuceni <<'EOF' … EOF
                                         jedna část konceptu reportu v Markdownu (jen prázdná pole se doplní)
-taveo mozek "co hledám" [slug]          hledání v mozku TAVEO (schválené poznatky, JSON)
+taveo mozek "co hledám" [slug] [--skill S]
+                                        hledání v mozku TAVEO (schválené poznatky, JSON); se skillem i u jiných klientů
 taveo mozek-seznam                      nadpisy všeho v mozku (kontrola duplicit)
-taveo mozek-navrh firma|klient|postup "nadpis" [slug] < text.md
+taveo mozek-navrh firma|klient|postup "nadpis" [slug] [--skill S] < text.md
                                         návrh poznatku do mozku, schválí ho člověk v nástrojích
 taveo mozek-uvod                        mozek klienta pro začátek konverzace (háček SessionStart, projekt podle složky)
 taveo archiv <slug|firma> [druh]        archiv klienta (firma = archiv TAVEO): data, strategie, výsledky, marže
 taveo archiv-stahnout <id> <složka>     stáhne dokument z archivu (text a soubory) do místní složky
-taveo archiv-nahrat <slug> "název" [--druh D] [--k-datu RRRR-MM-DD] [--popis "co v něm je"] [--poznatky] <soubor>… | -
+taveo archiv-nahrat <slug> "název" [--druh D] [--k-datu RRRR-MM-DD] [--popis "co v něm je"] [--poznatky] [--skill S] <soubor>… | -
                                         uloží soubory (nebo text ze vstupu: -) do archivu klienta; --poznatky = přečte ho i knihovník
                                         druhy: strategie, data, vysledky, obchod, schuzky, jine
+taveo skilly                            skilly TAVEO (specialisté): kdy který použít, jeho projekt
+taveo skill <skill> [slug]              pokyny, know-how, zkušenosti z klientů a archiv skillu (se slugem i ke klientovi)
+taveo skill-archiv <skill> [druh]       archiv skillu (case studies, výsledky, vzory)
+taveo skill-nahrat <skill> "název" [--druh D] [--popis "…"] [--poznatky] <soubor>… | -
+                                        uloží podklady do archivu skillu; --poznatky = knihovník z nich navrhne know-how
+taveo skilly-sync                       SKILL.md skillů do ~/.claude/skills (dělá i mozek-uvod)
 taveo trezor [slug]                     přístupy, které agent smí použít (hesla nedostane nikdy)
 taveo ftp <id> [cesta]                  výpis složky na FTP (cesta od složky webu)
 taveo ftp-soubor <id> <cesta>           obsah jednoho souboru z FTP
@@ -120,14 +127,32 @@ case "${1:-}" in
         jq -Rs --arg pole "$pole" '{($pole): .}' | volat POST "/reporty/${2:?id reportu}" --data-binary @-
         ;;
     mozek)
-        volat GET /mozek -G --data-urlencode "q=${2:?co hledáte}" ${3:+--data-urlencode "klient=$3"}
+        dotaz=(-G --data-urlencode "q=${2:?co hledáte}")
+        shift 2
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --skill) dotaz+=(--data-urlencode "skill=${2:?skill}"); shift 2 ;;
+                *) dotaz+=(--data-urlencode "klient=$1"); shift ;;
+            esac
+        done
+        volat GET /mozek "${dotaz[@]}"
         ;;
     mozek-seznam)
         volat GET /mozek/seznam
         ;;
     mozek-navrh)
-        jq -Rs --arg v "${2:?firma, klient nebo postup}" --arg n "${3:?nadpis}" --arg k "${4:-}" \
-            '{poznatky: [{vrstva: $v, nadpis: $n, text: .} + (if $k == "" then {} else {klient: $k} end)]}' \
+        vrstva=${2:?firma, klient nebo postup}
+        nadpis=${3:?nadpis}
+        shift 3
+        klient="" skill=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --skill) skill=${2:?skill}; shift 2 ;;
+                *) klient=$1; shift ;;
+            esac
+        done
+        jq -Rs --arg v "$vrstva" --arg n "$nadpis" --arg k "$klient" --arg s "$skill" \
+            '{poznatky: [{vrstva: $v, nadpis: $n, text: .} + (if $k == "" then {} else {klient: $k} end) + (if $s == "" then {} else {skill: $s} end)]}' \
             | volat POST /mozek/navrhy --data-binary @-
         ;;
     mozek-uvod)
@@ -138,6 +163,32 @@ case "${1:-}" in
         projekt=$(printf '%s\n' "${CLAUDE_PROJECT_DIR:-$PWD}" | sed -n 's#^/projekty/\([^/]*\).*#\1#p')
         [ -n "$projekt" ] || exit 0
         curl -sf --max-time 8 -H "Authorization: Bearer $TOKEN" "$API/mozek/uvod" -G --data-urlencode "projekt=$projekt" || true
+        # Skilly přidané v nástrojích budou jako /slug v příští konverzaci. Na pozadí, nezdrží.
+        ( "$0" skilly-sync >/dev/null 2>&1 & )
+        exit 0
+        ;;
+    skilly)
+        volat GET /skilly | jq '[.[] | del(.soubor)]'
+        ;;
+    skill)
+        surove GET "/skilly/${2:?skill, třeba meta-ads (seznam: taveo skilly)}" ${3:+-G --data-urlencode "klient=$3"}
+        echo
+        ;;
+    skill-archiv)
+        volat GET "/skilly/${2:?skill}/archiv" ${3:+-G --data-urlencode "druh=$3"}
+        ;;
+    skilly-sync)
+        # SKILL.md každého skillu z nástrojů do ~/.claude/skills/<slug>/. Ručně psané (bez značky) nepřepíše.
+        seznam=$(curl -sf --max-time 8 -H "Authorization: Bearer $TOKEN" "$API/skilly") || exit 0
+        slozka="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills"
+        jq -c '.[] | select(.soubor)' <<<"$seznam" | while read -r polozka; do
+            slug=$(jq -r .slug <<<"$polozka")
+            [[ "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]] || continue
+            soubor="$slozka/$slug/SKILL.md"
+            if [ -f "$soubor" ] && ! grep -qF '<!-- taveo skilly-sync -->' "$soubor"; then continue; fi
+            mkdir -p "$slozka/$slug"
+            jq -r .soubor <<<"$polozka" >"$soubor.novy" && mv "$soubor.novy" "$soubor"
+        done
         exit 0
         ;;
     archiv)
@@ -155,8 +206,8 @@ case "${1:-}" in
         done
         echo "Staženo do $cil: $(ls -1 "$cil" | tr '\n' ' ')"
         ;;
-    archiv-nahrat)
-        slug=${2:?slug klienta}
+    archiv-nahrat|skill-nahrat)
+        [ "$1" = skill-nahrat ] && cesta="/skilly/${2:?skill}/archiv" || cesta="/archiv/${2:?slug klienta}"
         nazev=${3:?název dokumentu}
         shift 3
         pole=(-F "nazev=$nazev")
@@ -167,12 +218,13 @@ case "${1:-}" in
                 --popis) pole+=(-F "popis=${2:?popis}"); shift 2 ;;
                 --poznamka) pole+=(-F "poznamka=${2:?poznámka}"); shift 2 ;;
                 --poznatky) pole+=(-F "uceni=1"); shift ;;
+                --skill) pole+=(-F "skill=${2:?skill}"); shift 2 ;;
                 -) pole+=(-F "text=<-"); shift ;;
                 *) [ -f "$1" ] || { echo "Soubor $1 neexistuje." >&2; exit 1; }
                    pole+=(-F "soubory[]=@$1"); shift ;;
             esac
         done
-        surove POST "/archiv/$slug" "${pole[@]}"
+        surove POST "$cesta" "${pole[@]}"
         echo
         ;;
     trezor)

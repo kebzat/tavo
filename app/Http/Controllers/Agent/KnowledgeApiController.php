@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\KnowledgeEntry;
 use App\Models\KnowledgeSource;
+use App\Models\Skill;
 use App\Support\Knowledge\BrainAgent;
 use App\Support\Knowledge\KnowledgeBase;
 use Illuminate\Http\JsonResponse;
@@ -32,13 +33,14 @@ class KnowledgeApiController extends Controller
     /** Čeština bez \u escapů: agent to čte (a platí za každý znak). */
     private const JSON = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
-    /** Hledání: `?q=slova&klient=slug&navrhy=1` (i neschválené návrhy). */
+    /** Hledání: `?q=slova&klient=slug&skill=meta-ads&navrhy=1` (i neschválené návrhy). Se skillem i jiní klienti. */
     public function search(Request $request, KnowledgeBase $knowledge): JsonResponse
     {
         $client = $request->filled('klient') ? Client::query()->where('slug', $request->string('klient'))->firstOrFail() : null;
+        $skill = $request->filled('skill') ? Skill::query()->where('slug', $request->string('skill'))->firstOrFail() : null;
 
         return response()->json([
-            'poznatky' => $knowledge->search((string) $request->string('q'), $client, $request->boolean('navrhy'), 20)
+            'poznatky' => $knowledge->search((string) $request->string('q'), $client, $request->boolean('navrhy'), 20, $skill)
                 ->map(fn (KnowledgeEntry $entry): array => $entry->toAgent())
                 ->values(),
         ], options: self::JSON);
@@ -48,15 +50,16 @@ class KnowledgeApiController extends Controller
     public function index(): JsonResponse
     {
         return response()->json(KnowledgeEntry::query()
-            ->with('client:id,slug')
+            ->with(['client:id,slug', 'skill:id,slug'])
             ->whereIn('status', [KnowledgeEntry::STATUS_APPROVED, KnowledgeEntry::STATUS_PROPOSED])
             ->orderBy('layer')->orderBy('id')
             ->limit(3000)
-            ->get(['id', 'layer', 'client_id', 'title', 'status'])
+            ->get(['id', 'layer', 'client_id', 'skill_id', 'title', 'status'])
             ->map(fn (KnowledgeEntry $entry): array => array_filter([
                 'id' => $entry->getKey(),
                 'vrstva' => $entry->layer,
                 'klient' => $entry->client?->slug,
+                'skill' => $entry->skill?->slug,
                 'nadpis' => $entry->title,
                 'stav' => $entry->status === KnowledgeEntry::STATUS_PROPOSED ? 'navrh' : null,
             ]))
@@ -75,23 +78,60 @@ class KnowledgeApiController extends Controller
         return response($knowledge->opening($project, $client), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
-    /** Archiv klienta (`firma` = archiv firmy), nejnovější první: `?druh=obchod` jen jeden druh. */
+    /** Archiv klienta (`firma` = archiv firmy), nejnovější první: `?druh=obchod` jen jeden druh, `?skill=meta-ads` jen k jednomu skillu. */
     public function archive(Request $request, string $slug): JsonResponse
     {
         $client = $this->archiveOwner($slug);
+        $skill = $request->filled('skill') ? Skill::query()->where('slug', $request->string('skill'))->firstOrFail() : null;
 
         return response()->json([
             'klient' => $client?->slug ?? KnowledgeBase::FIRM_ARCHIVE,
             'druhy' => KnowledgeSource::categories(),
-            'dokumenty' => KnowledgeSource::query()
-                ->where('client_id', $client?->getKey())
-                ->when($request->filled('druh'), fn ($query) => $query->where('category', $request->string('druh')))
-                ->latest('id')
-                ->limit(200)
-                ->get()
-                ->map(fn (KnowledgeSource $source): array => $source->toAgent())
-                ->values(),
+            'dokumenty' => $this->documents(KnowledgeSource::query()->where('client_id', $client?->getKey())->when($skill, fn ($query) => $query->where('skill_id', $skill->getKey())), $request),
         ], options: self::JSON);
+    }
+
+    /** Skilly TAVEO (`taveo skilly`, `taveo skilly-sync`): kdy který použít, jeho agent a SKILL.md. */
+    public function skills(): JsonResponse
+    {
+        return response()->json(Skill::query()->orderBy('sort')->get()->map(fn (Skill $skill): array => $skill->toAgent())->values(), options: self::JSON);
+    }
+
+    /** Skill pro agenta (`taveo skill <slug> [klient]`): pokyny, know-how, zkušenosti z klientů, archiv. Text. */
+    public function skill(Request $request, Skill $skill, KnowledgeBase $knowledge): Response
+    {
+        $client = $request->filled('klient') ? Client::query()->where('slug', $request->string('klient'))->firstOrFail() : null;
+
+        return response($knowledge->skill($skill, $client), 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    /** Archiv skillu: case studies, výsledky, vzory, i dokumenty klientů označené skillem. */
+    public function skillArchive(Request $request, Skill $skill): JsonResponse
+    {
+        return response()->json([
+            'skill' => $skill->slug,
+            'druhy' => KnowledgeSource::categories(),
+            'dokumenty' => $this->documents(KnowledgeSource::query()->with('client')->where('skill_id', $skill->getKey()), $request, withClient: true),
+        ], options: self::JSON);
+    }
+
+    /** Agent uloží podklady do archivu skillu (`taveo skill-nahrat`), s `uceni` z nich knihovník navrhne poznatky skillu. */
+    public function skillUpload(Request $request, Skill $skill, BrainAgent $brain): JsonResponse
+    {
+        return $this->store($request, $brain, null, $skill);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function documents($query, Request $request, bool $withClient = false): array
+    {
+        return $query
+            ->when($request->filled('druh'), fn ($query) => $query->where('category', $request->string('druh')))
+            ->latest('id')
+            ->limit(200)
+            ->get()
+            ->map(fn (KnowledgeSource $source): array => $withClient && $source->client ? ['klient' => $source->client->slug, ...$source->toAgent()] : $source->toAgent())
+            ->values()
+            ->all();
     }
 
     /**
@@ -102,6 +142,14 @@ class KnowledgeApiController extends Controller
     public function upload(Request $request, string $slug, BrainAgent $brain): JsonResponse
     {
         $client = $this->archiveOwner($slug);
+        $skill = $request->filled('skill') ? Skill::query()->where('slug', $request->string('skill'))->firstOrFail() : null;
+
+        return $this->store($request, $brain, $client, $skill);
+    }
+
+    /** Uložení do archivu klienta / firmy (bez klienta), případně označené skillem. */
+    private function store(Request $request, BrainAgent $brain, ?Client $client, ?Skill $skill): JsonResponse
+    {
         $data = $request->validate([
             'nazev' => ['required', 'string', 'max:200'],
             'druh' => ['nullable', 'string', 'in:'.implode(',', array_keys(KnowledgeSource::categories()))],
@@ -118,6 +166,7 @@ class KnowledgeApiController extends Controller
         $source = KnowledgeSource::create([
             'title' => $data['nazev'],
             'client_id' => $client?->getKey(),
+            'skill_id' => $skill?->getKey(),
             'category' => $data['druh'] ?? null,
             'document_date' => $data['k_datu'] ?? null,
             'summary' => $data['popis'] ?? null,
@@ -178,6 +227,7 @@ class KnowledgeApiController extends Controller
             'poznatky' => ['array', 'max:'.self::MAX_BATCH, 'required_without:popis'],
             'poznatky.*.vrstva' => ['required', 'string', 'in:'.implode(',', array_keys(KnowledgeEntry::layers()))],
             'poznatky.*.klient' => ['nullable', 'string', 'max:100'],
+            'poznatky.*.skill' => ['nullable', 'string', 'max:40'],
             'poznatky.*.nadpis' => ['required', 'string', 'max:300'],
             'poznatky.*.text' => ['required', 'string', 'max:8000'],
             'poznatky.*.stitky' => ['nullable', 'array', 'max:10'],
@@ -201,6 +251,7 @@ class KnowledgeApiController extends Controller
                 'origin_type' => $source ? 'podklad' : 'agent',
                 'knowledge_source_id' => $source?->getKey(),
                 'agent_job_id' => $source?->agent_job_id,
+                'skill_id' => $source?->skill_id,
                 'proposed_by' => 'agent'.($source?->author ? ' (podklady od '.$source->author.')' : ''),
             ]) : null;
 
