@@ -34,6 +34,7 @@ class VaultLog extends Model
             'upload_reverted' => 'FTP: nahrání vráceno',
             'upload_failed' => 'FTP: nahrání selhalo',
             'wp_api' => 'WordPress: dotaz',
+            'zaslat_api' => 'Zaslat: dotaz',
             'login' => 'Přihlášení agenta',
             'login_failed' => 'Přihlášení se nepovedlo',
             'denied' => 'Odmítnuto',

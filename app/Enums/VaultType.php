@@ -114,7 +114,11 @@ enum VaultType: string implements HasIcon, HasLabel
                 'none' => 'Nic, přístup je jen pro lidi',
                 'read' => 'Přihlásit se do administrace (heslo neuvidí)',
             ],
-            self::ApiKey, self::Other => [
+            self::ApiKey => [
+                'none' => 'Nic, přístup je jen pro lidi',
+                'read' => 'Číst přes API (zatím jen Zaslat), klíč neuvidí',
+            ],
+            self::Other => [
                 'none' => 'Nic, přístup je jen pro lidi',
             ],
         };

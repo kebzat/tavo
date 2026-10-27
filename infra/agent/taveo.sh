@@ -65,6 +65,8 @@ taveo ftp-nahrat <id> "popis" <složka> <soubor>…
 taveo nahrani <id> <číslo>              stav nahrání (čeká, nahráno, vráceno)
 taveo wp <id> GET|POST… <cesta> ['{"json"}']
                                         REST API WordPressu s aplikačním heslem z trezoru
+taveo zaslat <id> GET|POST <cesta> ['{"json"}']
+                                        API Zaslat.cz s klíčem z trezoru, jen čtení (zásilky, sledování)
 taveo prihlasit <id>                    přihlásí se do administrace a vrátí cookies pro prohlížeč
 TXT
 }
@@ -210,6 +212,11 @@ case "${1:-}" in
         jq -n --arg m "${3:?metoda, třeba GET}" --arg c "${4:?cesta, třeba /wp/v2/plugins}" --argjson d "${5:-null}" \
             '{metoda: $m, cesta: $c} + (if $d == null then {} else {data: $d} end)' \
             | volat POST "/trezor/${2:?id přístupu}/wp" --data-binary @-
+        ;;
+    zaslat)
+        jq -n --arg m "${3:?metoda, třeba GET}" --arg c "${4:?cesta, třeba /shipments/list?tracking}" --argjson d "${5:-null}" \
+            '{metoda: $m, cesta: $c} + (if $d == null then {} else {data: $d} end)' \
+            | volat POST "/trezor/${2:?id přístupu}/zaslat" --data-binary @-
         ;;
     prihlasit)
         volat POST "/trezor/${2:?id přístupu}/prihlasit"

@@ -18,9 +18,9 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 |---|---|
 | Data | `vault_entries` (heslo, aplikační heslo, klíč 2FA a poznámka šifrované klíčem aplikace, cast `encrypted`), `vault_uploads`, `vault_logs` |
 | Stránka | `App\Filament\Tools\Resources\VaultEntries` (seznam, přidání, úpravy, Nahrání od agenta, Historie) |
-| Práce za agenta | `App\Support\Vault`: `FtpConnector` → `NativeFtpClient` (FTP/FTPS, rozšíření PHP `ftp`) nebo `SftpClient` (SFTP přes SSH, knihovna phpseclib), `FtpZipper`, `FtpUploader`, `WordPressApi`, `LoginBroker` |
+| Práce za agenta | `App\Support\Vault`: `FtpConnector` → `NativeFtpClient` (FTP/FTPS, rozšíření PHP `ftp`) nebo `SftpClient` (SFTP přes SSH, knihovna phpseclib), `FtpZipper`, `FtpUploader`, `WordPressApi`, `ZaslatApi`, `LoginBroker` |
 | Rozhraní pro agenta | `/nastroje/api/agent/trezor…` (token agenta), `App\Http\Controllers\Agent\VaultApiController` |
-| Příkazy | `taveo trezor`, `ftp`, `ftp-soubor`, `ftp-stahnout`, `ftp-nahrat`, `nahrani`, `wp`, `prihlasit` (`infra/agent/taveo.sh`) |
+| Příkazy | `taveo trezor`, `ftp`, `ftp-soubor`, `ftp-stahnout`, `ftp-nahrat`, `nahrani`, `wp`, `zaslat`, `prihlasit` (`infra/agent/taveo.sh`) |
 
 ## Pro lidi
 
@@ -46,7 +46,8 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 | FTP | nic · číst (výpis, soubor, ZIP složky) · nahrávat po schválení · nahrávat hned |
 | WordPress | nic · číst přes aplikační heslo + přihlásit se · i měnit přes aplikační heslo |
 | Shoptet, Upgates, jiná administrace | nic · přihlásit se |
-| API klíč, jiné heslo | jen pro lidi (zatím) |
+| API klíč | nic · číst přes API (zatím jen Zaslat) |
+| Jiné heslo | jen pro lidi (zatím) |
 
 - **FTP:** cesty jsou vždy od složky webu, `..` neprojde. ZIP vynechá `wp-content/uploads`,
   cache, zálohy, `.git`, `node_modules` a soubory nad 10 MB (seznam v `_vynechano.txt`).
@@ -59,6 +60,11 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
   který trezor nezruší). Parametry jdou v cestě (`/wp/v2/posts?per_page=100&page=2`),
   kromě `_method` a `rest_route`, které by ta pravidla obešly. Aktualizace pluginů REST API
   WordPressu neumí, ty jdou přes FTP nebo přihlášení.
+- **Zaslat** (API klíč s adresou `zaslat.cz`, `www.`, `app.` nebo `test.zaslat.cz`): `taveo zaslat <id> GET "/shipments/list?tracking&status=ACTIVE"`.
+  Web pošle klíč v hlavičce `X-Apikey` vždy na `https://www.zaslat.cz/api/v1` (test na `test.zaslat.cz`), adresa
+  u přístupu ho jinam neodvede. Jen čtení: GET a POST na `/shipments/tracking`, `/shipments/detail`, `/shipments/label`.
+  Zakládat a rušit zásilky agent nemůže, stálo by to klienta peníze. Vyzkoušet zavolá výpis aktivních zásilek.
+  Proč: přihlášení do app.zaslat.cz je aplikace v JavaScriptu (server vrací 404) s reCAPTCHA, `prihlasit` tam neprojde.
 - **Přihlášení** (`LoginBroker`): web otevře přihlašovací stránku, najde formulář s heslem,
   vyplní ho (i s kódem 2FA, když je uložený klíč) a agentovi vrátí jen cookies. Agent si je
   vloží do prohlížeče (`browser_run_code_unsafe`: `await page.context().addCookies(cookies)`).
