@@ -105,8 +105,11 @@ const projekt = (slug) => projekty().find((p) => p.slug === slug) || null;
 const slozka = (p) => `/projekty/${p.slug}/kod`;
 // Živý web (server) se v terminálu a v aplikaci Claude upravuje v kopii, na web
 // ho pošle tlačítko Zveřejnit (viz kopie webu). Úlohy z ClickUpu jdou rovnou na živý.
+// Projekt „bez kopie“ (vývojový web) se upravuje rovnou, jako dřív.
 const kopieSlozka = (p) => `/projekty/${p.slug}/kopie`;
-const maKopii = (p) => p.typ === 'server' && fs.existsSync(path.join(kopieSlozka(p), '.git'));
+const bezKopieSoubor = (p) => `/projekty/${p.slug}/bez-kopie`;
+const bezKopie = (p) => p.typ === 'server' && fs.existsSync(bezKopieSoubor(p));
+const maKopii = (p) => p.typ === 'server' && !bezKopie(p) && fs.existsSync(path.join(kopieSlozka(p), '.git'));
 const pracovni = (p) => (maKopii(p) ? kopieSlozka(p) : slozka(p));
 
 /**
@@ -333,9 +336,9 @@ async function zalozit(p, { autor, session, nahradit, uloha }) {
     }
 
     // Živý web: konverzace běží v kopii. Když ještě není, založí se (pár vteřin).
-    // Když to nejde (server ještě nemá agent kopie-db), postaru na živém webu,
-    // a před tím snímek souborů a záloha databáze.
-    if (p.typ === 'server' && !maKopii(p)) {
+    // Když to nejde (server ještě nemá agent kopie-db) nebo je projekt bez kopie,
+    // postaru na živém webu, a před tím snímek souborů a záloha databáze.
+    if (p.typ === 'server' && !maKopii(p) && !bezKopie(p)) {
         await pripravitKopii(p).catch((e) => console.error(`kopie ${p.slug}: ${e.message}`));
     }
     if (p.typ === 'server' && !maKopii(p)) {
@@ -781,9 +784,33 @@ async function pripravitKopii(p, { prepsat = false } = {}) {
     await gitKopie(p, ['commit', '-q', '--allow-empty', '-m', `Živý web ${new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' })}`]);
     await gitKopie(p, ['tag', '-f', 'zivy']);
 
-    // Aplikace Claude (serverový režim) má běžet v kopii: služba ji do tří minut spustí znovu.
+    await restartovatAplikaci(p);
+}
+
+/** Aplikace Claude (serverový režim) má běžet ve správné složce: služba ji do tří minut spustí znovu. */
+async function restartovatAplikaci(p) {
     const rc = (await okna(p.slug)).find((o) => o.rc);
     if (rc) await tmux(['kill-window', '-t', rc.id]).catch(() => {});
+}
+
+/**
+ * Bez kopie (vývojový web, kde kopie nedává smysl): konverzace běží rovnou
+ * v kod/ se zálohou předem, Zveřejnit ani kopie v nástrojích nejsou. Složka
+ * a databáze dřívější kopie zůstanou, jen se nepoužívají.
+ */
+async function nastavitBezKopie(p, bez) {
+    if (bez === bezKopie(p)) return;
+    // Napůl založená kopie (bez značky `zivy`) změny nemá, git by jen spadl.
+    if (bez && (await zmenyKopie(p).catch(() => [])).length > 0) {
+        throw new Error('V kopii jsou nezveřejněné změny. Zveřejněte je, nebo zahoďte.');
+    }
+
+    if (bez) {
+        fs.writeFileSync(bezKopieSoubor(p), 'Projekt bez kopie: agent pracuje přímo v kod/ (před konverzací záloha).\nNastavuje se v nástrojích, karta Hotová práce.\n');
+    } else {
+        fs.rmSync(bezKopieSoubor(p), { force: true });
+    }
+    await restartovatAplikaci(p);
 }
 
 /** Smaže předání (popis, snímky) živého webu: po zveřejnění nebo zahození už neplatí. */
@@ -815,7 +842,7 @@ function spustitUlohuKopie(p, akce, { cas = null } = {}) {
         } else if (akce === 'vratit') {
             const r = await fronta({ akce: 'obnovit', projekt: p.slug, cas, databaze: false }, 300);
             if (!r.ok) throw new Error(r.vystup);
-            await pripravitKopii(p, { prepsat: true });
+            if (!bezKopie(p)) await pripravitKopii(p, { prepsat: true });
             uloha.vystup = r.vystup;
         } else {
             await pripravitKopii(p);
@@ -860,7 +887,7 @@ async function api(req, res) {
     }
 
     if (req.method === 'GET' && url.pathname === '/api/projekty') {
-        const seznam = await Promise.all(projekty().map(async (p) => ({ ...p, vlakna: await konverzacniOkna(p.slug), aplikace: await adresaAplikace(p) })));
+        const seznam = await Promise.all(projekty().map(async (p) => ({ ...p, bezKopie: bezKopie(p), vlakna: await konverzacniOkna(p.slug), aplikace: await adresaAplikace(p) })));
         return odpoved(res, 200, seznam);
     }
 
@@ -898,6 +925,7 @@ async function api(req, res) {
             const zmeny = await zmenyKopie(p);
             return odpoved(res, 200, {
                 existuje: maKopii(p),
+                bezKopie: bezKopie(p),
                 zmeny,
                 migrace: zmeny.filter((z) => z.soubor.startsWith('database/')).length,
                 nahled: `http://127.0.0.1:${KOPIE_PORT}`,
@@ -905,6 +933,20 @@ async function api(req, res) {
         }
 
         const akce = casti[4] || 'obnovit';
+        if (req.method === 'POST' && casti.length === 5 && ['bez', 's-kopii'].includes(akce)) {
+            try {
+                await nastavitBezKopie(p, akce === 'bez');
+            } catch (e) {
+                return odpoved(res, 409, { chyba: e.message });
+            }
+            return odpoved(res, 200, { bezKopie: bezKopie(p) });
+        }
+
+        // Bez kopie jde jen Vrátit (soubory webu ze snímku před dřívějším zveřejněním).
+        if (req.method === 'POST' && bezKopie(p) && akce !== 'vratit') {
+            return odpoved(res, 409, { chyba: 'Projekt je bez kopie, agent pracuje přímo na webu.' });
+        }
+
         if (req.method === 'POST' && casti.length <= 5 && ['zverejnit', 'zahodit', 'vratit', 'obnovit'].includes(akce)) {
             const { cas } = await telo(req);
             if (akce === 'vratit' && !(Number.isInteger(cas) && cas > 0)) {

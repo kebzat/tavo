@@ -42,6 +42,9 @@ databází. Na živý web ji pošle člověk tlačítkem Zveřejnit v nástrojí
 - Výjimka: úlohy z ClickUpu jdou rovnou na živý web, řekne ti to zadání.
 - Dokud složka `kopie` neexistuje, pracuj postaru přímo v `kod/` (živý web,
   před sezením se uložil snímek a záloha databáze).
+- Projekt **bez kopie** (soubor `/projekty/{{PROJEKT}}/bez-kopie`, vývojový web):
+  pracuj přímo v `kod/` (konverzace se v něm otevírá sama), kopii nepoužívej
+  a předání nedělej, úpravy jsou hned na webu.
 
 **prazdny:** projekt bez kódu (Shoptet, Upgates, marketing).
 Výstupem jsou texty, kódy do šablony nebo podklady k ručnímu vložení.
