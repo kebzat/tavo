@@ -79,7 +79,8 @@ Co ban riskuje i tak, a není to technika:
   vypíše úkoly s id, `taveo ukol-stav <id> hotovo|rozpracovano|ceka|v-planu ["poznámka"]` stav změní.
 - Úkoly rovnou do plánu klienta (od 27. 10. 2026, chtěl uživatel: „já chci, aby jsi rovnou zapisoval“):
   `taveo ukoly <slug>` s `"schvaleno": true` a u úkolu `"v_planu_na": "2026-10"` je založí schválené,
-  `taveo ukol-upravit <id> --mesic 2026-10 [--termin …] [--schvalit]` přesune úkol nebo schválí návrh.
+  `taveo ukol-upravit <id> [--nazev …] [--popis …] [--mesic 2026-10] [--termin …] [--schvalit]` úkol přejmenuje,
+  přepíše popis pro klienta, přesune ho nebo schválí návrh.
   Jen když to člověk v konverzaci řekne, jinak dál návrhy ke schválení. Každá změna jde do interní poznámky.
   Hotový úkol klient uvidí na přehledu v „Co jsme udělali“ (měsíc podle data dokončení), poznámka
   s datem a „agent“ se připíše jen do interní poznámky. Návrhy úkolů dál schvaluje člověk (409).
