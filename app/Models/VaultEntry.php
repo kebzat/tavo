@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\VaultType;
+use App\Support\Vault\ZaslatApi;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -160,6 +161,10 @@ class VaultEntry extends Model
 
         if ($this->type === VaultType::WordPress && $this->agentAllows('read') && filled($this->app_password)) {
             $commands[] = 'taveo wp <id> GET /wp/v2/plugins';
+        }
+
+        if (ZaslatApi::supports($this) && $this->agentAllows('read') && filled($this->secret)) {
+            $commands[] = 'taveo zaslat <id> GET "/shipments/list?tracking&status=ACTIVE"';
         }
 
         if ($this->type->isLogin() && $this->agentAllows('read') && filled($this->secret)) {

@@ -13,13 +13,14 @@ use App\Support\Vault\LoginBroker;
 use App\Support\Vault\VaultException;
 use App\Support\Vault\VaultPath;
 use App\Support\Vault\WordPressApi;
+use App\Support\Vault\ZaslatApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Trezor pro agenta (token agenta, příkazy `taveo ftp…`, `taveo wp`,
- * `taveo prihlasit`). Agent vidí, jaké přístupy má, a práci s nimi za něj
+ * `taveo zaslat`, `taveo prihlasit`). Agent vidí, jaké přístupy má, a práci s nimi za něj
  * dělá web. Heslo, klíč ani poznámku žádná odpověď neobsahuje. Každé
  * použití jde do historie přístupu. Viz docs/TREZOR.md.
  */
@@ -164,6 +165,27 @@ class VaultApiController extends Controller
         $method = strtoupper($data['metoda'] ?? 'GET');
 
         return $this->attempt($entry, 'wp_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
+            $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? [], $data['data'] ?? []);
+
+            return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);
+        });
+    }
+
+    /** `{"metoda": "GET", "cesta": "/shipments/list?tracking", "dotaz": {}, "data": {}}`, jen čtení. */
+    public function zaslat(Request $request, VaultEntry $entry, ZaslatApi $api): Response
+    {
+        $this->allow($entry, 'read', VaultType::ApiKey);
+        abort_unless(ZaslatApi::supports($entry), 422, 'Tenhle klíč není k Zaslatu (adresa u přístupu musí být zaslat.cz).');
+
+        $data = $request->validate([
+            'metoda' => ['nullable', 'string', 'max:10'],
+            'cesta' => ['required', 'string', 'max:500'],
+            'dotaz' => ['nullable', 'array'],
+            'data' => ['nullable', 'array'],
+        ]);
+        $method = strtoupper($data['metoda'] ?? 'GET');
+
+        return $this->attempt($entry, 'zaslat_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
             $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? [], $data['data'] ?? []);
 
             return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);

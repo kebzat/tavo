@@ -16,6 +16,7 @@ use App\Support\Vault\LoginBroker;
 use App\Support\Vault\VaultException;
 use App\Support\Vault\VaultLock;
 use App\Support\Vault\WordPressApi;
+use App\Support\Vault\ZaslatApi;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
@@ -127,7 +128,8 @@ class VaultEntryResource extends Resource
                         ->placeholder(fn (Get $get): string => match ($type($get)) {
                             VaultType::Ftp => 'ftp.pizzadigomma.eu',
                             VaultType::Shoptet, VaultType::Upgates => 'https://www.eshop.cz',
-                            VaultType::ApiKey, VaultType::Other => '',
+                            VaultType::ApiKey => 'zaslat.cz',
+                            VaultType::Other => '',
                             default => 'https://www.web.cz',
                         })
                         ->required(fn (Get $get): bool => $type($get) === VaultType::Ftp || $type($get)?->isLogin())
@@ -211,7 +213,8 @@ class VaultEntryResource extends Resource
                         ->helperText(fn (Get $get): string => match (true) {
                             $type($get)?->isLogin() => 'Heslo agent nikdy neuvidí, trezor ho přihlásí sám. Přihlášený ale smí v administraci, co smí ten účet: dej mu vlastní účet s menšími právy, když to jde.',
                             $type($get) === VaultType::Ftp => 'Heslo agent nikdy neuvidí. Soubory za něj stahuje a nahrává web, před nahráním je záloha a jde to vrátit.',
-                            default => 'Klíče a jiná hesla jsou zatím jen pro lidi.',
+                            $type($get) === VaultType::ApiKey => 'Klíč agent nikdy neuvidí. Číst přes API umí zatím jen u Zaslatu (adresa zaslat.cz): stav a sledování zásilek, zakládat ani rušit je nemůže. U jiných služeb nech „Nic“.',
+                            default => 'Jiná hesla jsou zatím jen pro lidi.',
                         })
                         ->columnSpanFull(),
                     Textarea::make('notes')
@@ -356,11 +359,12 @@ class VaultEntryResource extends Resource
             ->label('Vyzkoušet')
             ->icon(Heroicon::OutlinedSignal)
             ->color('gray')
-            ->visible(fn (VaultEntry $record): bool => $record->type === VaultType::Ftp || $record->type->isLogin())
+            ->visible(fn (VaultEntry $record): bool => $record->type === VaultType::Ftp || $record->type->isLogin() || ZaslatApi::supports($record))
             ->action(function (VaultEntry $record): void {
                 try {
                     $message = match (true) {
                         $record->type === VaultType::Ftp => self::testFtp($record),
+                        ZaslatApi::supports($record) => self::testZaslat($record),
                         $record->type === VaultType::WordPress && filled($record->app_password) => self::testWordPress($record),
                         default => self::testLogin($record),
                     };
@@ -403,6 +407,17 @@ class VaultEntryResource extends Resource
 
         return 'Aplikační heslo funguje, účet '.$response->json('name').($roles ? ' (role '.$roles.')' : '').'.'
             .(filled($record->secret) ? ' Přihlášení do administrace se zkouší zvlášť, až ho agent bude potřebovat.' : '');
+    }
+
+    private static function testZaslat(VaultEntry $record): string
+    {
+        $response = app(ZaslatApi::class)->call($record, 'GET', '/shipments/list', ['status' => 'ACTIVE']);
+
+        if (! $response->successful()) {
+            throw new VaultException('Zaslat klíč nepřijal (HTTP '.$response->status().'). '.($response->json('message') ?? ''));
+        }
+
+        return 'Klíč k Zaslatu funguje, API odpovídá.';
     }
 
     private static function testLogin(VaultEntry $record): string

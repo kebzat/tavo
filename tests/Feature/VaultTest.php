@@ -275,6 +275,84 @@ class VaultTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_zaslat_cte_s_klicem_z_trezoru_a_zasilky_nezalozi(): void
+    {
+        Http::fake(['www.zaslat.cz/api/v1/*' => Http::response(['status' => 200, 'data' => []])]);
+
+        $entry = VaultEntry::query()->create([
+            'client_id' => $this->client->getKey(),
+            'type' => VaultType::ApiKey,
+            'name' => 'Zaslat API',
+            'url' => 'zaslat.cz',
+            'secret' => 'tajny-klic-zaslat',
+            'agent_access' => 'read',
+        ]);
+
+        $this->getJson('/nastroje/api/agent/trezor', $this->agent())
+            ->assertOk()
+            ->assertJsonPath('pristupy.0.umi.0', 'taveo zaslat <id> GET "/shipments/list?tracking&status=ACTIVE"')
+            ->assertDontSee('tajny-klic-zaslat');
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/zaslat", ['cesta' => '/shipments/list?tracking&status=ACTIVE'], $this->agent())
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/zaslat", ['metoda' => 'POST', 'cesta' => '/api/v1/shipments/tracking', 'data' => ['shipments' => ['ZA123']]], $this->agent())
+            ->assertOk();
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://www.zaslat.cz/api/v1/shipments/list?tracking=&status=ACTIVE'
+            && $request->header('X-Apikey')[0] === 'tajny-klic-zaslat');
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->url() === 'https://www.zaslat.cz/api/v1/shipments/tracking'
+            && $request['shipments'] === ['ZA123']);
+
+        foreach ([
+            ['metoda' => 'POST', 'cesta' => '/shipments/create', 'data' => ['shipments' => []]],
+            ['metoda' => 'POST', 'cesta' => '/shipments/cancel'],
+            ['metoda' => 'DELETE', 'cesta' => '/shipments/ZA123'],
+            ['metoda' => 'POST', 'cesta' => '/shipments/tracking/../create'],
+        ] as $payload) {
+            $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/zaslat", $payload, $this->agent())->assertStatus(422);
+        }
+
+        Http::assertSentCount(2);
+        $this->assertDatabaseHas('vault_logs', ['vault_entry_id' => $entry->id, 'action' => 'zaslat_api']);
+    }
+
+    public function test_jiny_api_klic_agent_nepouzije_a_bez_prava_ani_zaslat(): void
+    {
+        Http::fake();
+
+        $other = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Klíč k API Upgates',
+            'url' => 'https://api.upgates.com',
+            'secret' => 'klic',
+            'agent_access' => 'read',
+        ]);
+        $hidden = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Zaslat jen pro lidi',
+            'url' => 'https://www.zaslat.cz',
+            'secret' => 'klic',
+            'agent_access' => 'none',
+        ]);
+        $evil = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Podvržená adresa',
+            'url' => 'https://zaslat.cz.utocnik.example',
+            'secret' => 'klic',
+            'agent_access' => 'read',
+        ]);
+
+        $this->postJson("/nastroje/api/agent/trezor/{$other->id}/zaslat", ['cesta' => '/shipments/list'], $this->agent())->assertStatus(422);
+        $this->postJson("/nastroje/api/agent/trezor/{$evil->id}/zaslat", ['cesta' => '/shipments/list'], $this->agent())->assertStatus(422);
+        $this->postJson("/nastroje/api/agent/trezor/{$hidden->id}/zaslat", ['cesta' => '/shipments/list'], $this->agent())->assertForbidden();
+        $this->assertSame([], $other->agentCommands());
+
+        Http::assertNothingSent();
+    }
+
     public function test_prihlaseni_do_shoptetu_vrati_jen_cookies(): void
     {
         Http::fake([
