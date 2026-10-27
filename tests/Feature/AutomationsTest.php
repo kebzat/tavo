@@ -48,6 +48,9 @@ class AutomationsTest extends TestCase
     /** @var list<array<string, mixed>> aktivní zásilky v Zaslatu */
     private array $shipments = [];
 
+    /** @var array<string, array<string, mixed>> sledování zásilek v Zaslatu (POST /shipments/tracking), číslo zásilky => data */
+    private array $tracking = [];
+
     /** @var array<string, int> URL exportu => HTTP stav, když má selhat */
     private array $broken = [];
 
@@ -122,6 +125,10 @@ class AutomationsTest extends TestCase
                 'meta' => ['offset' => $offset, 'limit' => 50, 'total' => count($this->shipments)],
                 'data' => collect($page)->keyBy(fn (array $shipment): string => 'ZA'.$shipment['reference'])->all(),
             ]);
+        }
+
+        if ($url === 'https://www.zaslat.cz/api/v1/shipments/tracking') {
+            return Http::response(['status' => 200, 'message' => 'OK', 'data' => array_intersect_key($this->tracking, array_flip((array) ($request->data()['shipments'] ?? [])))]);
         }
 
         if (str_starts_with($url, 'https://tracking.packeta.com/')) {
@@ -297,6 +304,59 @@ class AutomationsTest extends TestCase
 
         $this->assertSame([], $this->events());
         $this->assertSame([], collect($this->automation->fresh()->parcels())->pluck('order')->map(fn ($order): string => (string) $order)->intersect(['5001', '5002'])->values()->all());
+    }
+
+    public function test_vracena_zasilka_ve_stavu_vyreseno_upozorni_jednou(): void
+    {
+        Mail::fake();
+        User::factory()->create(['role' => UserRole::Admin]);
+        $this->full = ['6001' => ['Odeslána', null], '6002' => ['Odeslána', null], '6003' => ['Odeslána', null], '6004' => ['Odeslána', null]];
+        foreach (['6001', '6002', '6003'] as $order) {
+            $shipment = $this->shipment($order, null, 'ppl', 'ONDELIVERY');
+            array_unshift($shipment['tracking_information']['packages'][0],
+                ['date' => '2026-10-26', 'time' => '13:55:00', 'status' => 'ONDELIVERY', 'name' => 'The shipment has not been collected by the recipient and will be returned to the sender.'],
+            );
+            $this->shipments[] = $shipment;
+        }
+        $this->shipments[] = $this->shipment('6004', null, 'ppl', 'ONDELIVERY');   // obyčejně v rozvozu
+
+        $this->runEngine();
+
+        $this->assertSame(['6001', '6002', '6003'], collect($this->automation->fresh()->snapshot['returning'])->pluck('order')->all());
+        Mail::assertNothingSent();
+
+        // Zásilky zmizely z aktivních. 6001 se vrátila, Zaslat ji vzal jako doručenou a dal Vyřešeno,
+        // 6002 nakonec převzal příjemce, 6003 má správně Vráceno, 6004 doručená normálně.
+        $this->travel(1)->days();
+        $this->shipments = [];
+        $this->day = ['6001' => ['Vyřešeno', '2026-10-28 12:00:00'], '6002' => ['Vyřešeno', '2026-10-28 12:00:00'], '6003' => ['Vráceno', '2026-10-28 12:00:00'], '6004' => ['Vyřešeno', '2026-10-28 12:00:00']];
+        $this->tracking = [
+            'ZA6001' => ['status' => 'DELIVERED', 'returned' => false, 'packages' => [[
+                ['date' => '2026-10-28', 'time' => '12:00:37', 'status' => 'DELIVERED', 'name' => 'We have returned the shipment to the sender.'],
+                ['date' => '2026-10-26', 'time' => '13:55:00', 'status' => 'ONDELIVERY', 'name' => 'The shipment has not been collected by the recipient and will be returned to the sender.'],
+            ]]],
+            'ZA6002' => ['status' => 'DELIVERED', 'returned' => false, 'packages' => [[
+                ['date' => '2026-10-28', 'time' => '10:00:00', 'status' => 'DELIVERED', 'name' => 'Zásilku jsme doručili příjemci.'],
+                ['date' => '2026-10-26', 'time' => '13:55:00', 'status' => 'ONDELIVERY', 'name' => 'The shipment has not been collected by the recipient and will be returned to the sender.'],
+            ]]],
+        ];
+
+        $report = $this->runEngine();
+
+        $this->assertSame(['6001'], $report['resolved_returns']);
+        Mail::assertSent(AutomationProblem::class, 1);
+        $this->assertSame(['6003'], collect($this->automation->fresh()->snapshot['returning'])->pluck('order')->all());
+        Http::assertSent(fn (Request $request): bool => str_ends_with(strtok($request->url(), '?'), '/shipments/tracking')
+            && $request->data()['shipments'] === ['ZA6001', 'ZA6002']);
+
+        $this->travel(7)->hours();
+        $this->runEngine();
+        Mail::assertSent(AutomationProblem::class, 1);
+
+        // Po třech týdnech se přestane hlídat i zásilka, která skončila správně jako vrácená.
+        $this->travel(21)->days();
+        $this->runEngine();
+        $this->assertSame([], $this->automation->fresh()->snapshot['returning']);
     }
 
     public function test_po_zapnuti_pripominka_jen_u_novych_zasilek_a_posledni_den_u_vsech(): void

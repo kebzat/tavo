@@ -36,6 +36,8 @@ class Automation extends Model
         'status_reminder' => 'Čeká na vyzvednutí',
         'status_last_day' => 'Poslední den k vyzvednutí',
         'status_returned' => 'Vráceno',
+        // Stav, který v Upgates spouští fakturu a žádost o hodnocení. U vrácené zásilky nesmí zůstat.
+        'status_resolved' => 'Vyřešeno',
         'source_statuses' => ['Odeslána', 'Čeká na vyzvednutí', 'Poslední den k vyzvednutí'],
         'remind_days_before' => 2,
         'send_reminder' => true,

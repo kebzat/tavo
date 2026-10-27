@@ -108,6 +108,8 @@ Novou adresu vygeneruje tlačítko **Nová adresa CSV**.
   a účtům klienta (`App\Mail\AutomationProblem`). Stejný problém nejvýš 1× za 6 h (cache).
 - Ranní souhrn v 7:00 (`automations:summary`) účtům klienta: kolik zpráv se včera potvrdilo
   podle druhu, chyby, kolik zásilek leží na výdejních místech. Jen u zapnutých automatizací.
+- **Vrácená zásilka ve stavu Vyřešeno** → stejné upozornění, u objednávky jen jednou. Vyřešeno v Upgates spouští
+  fakturu a žádost o hodnocení. Viz níže „Hlídání vrácených zásilek“.
 
 ## Účet klienta (`/muj-ucet`)
 
@@ -162,3 +164,18 @@ V nástrojích u automatizace je i **Vyzkoušet nanečisto** (stejné jako `--dr
   na výdejní místo dorazily od něj. Starším ji klient posílal ručně. SMS v poslední den a e-mail k vrácené zásilce platí pro všechny.
 - Zaslat sám mění stavy objednávek v Upgates („API Zaslat“: Připraveno na odeslání, Odeslána, někdy Vráceno a zpět Odeslána).
 - Úložní doba PPL a DPD je odhad (7 dní od příchodu). PPL boxy mají možná 72 hodin, neověřeno. Mění se v nástrojích u automatizace.
+
+## Hlídání vrácených zásilek (27. 10. 2026)
+
+Zaslat zásilku vrácenou odesílateli občas označí jako doručenou (`DELIVERED`, `returned: false`) a objednávce dá
+**Vyřešeno**: PPL, objednávka 03896, poslední událost „We have returned the shipment to the sender.“. Jindy dá klient
+Vyřešeno vrácené objednávce ručně (04004, odmítnutá Zásilkovna). Vyřešeno spouští fakturu (u dobírky vznikne
+k nezaplacené objednávce) a za 3 dny žádost o hodnocení.
+
+- Každá aktivní zásilka, která se vrací (`returned` nebo text událostí), se zapíše do `snapshot.returning`
+  (číslo zásilky, objednávka, den) a hlídá se 21 dní, i když z aktivních zmizí.
+- Když má její objednávka v exportu stav `status_resolved` (výchozí **Vyřešeno**), web se zeptá Zaslatu
+  (`POST /shipments/tracking`). Příznak `returned` nebo poslední událost o vrácení = upozornění správcům a klientovi
+  (jednou), zásilka se přestane hlídat. Doručená příjemci (vrácení se nakonec nekonalo) se jen přestane hlídat.
+- Automatizace sama nic nemění: přepnutí na Vráceno by poslalo e-mail o nevyzvednuté zásilce podruhé.
+  Upozornění radí přepnout Vyřešeno na Nevyřešeno (žádost o hodnocení pak neodejde).
