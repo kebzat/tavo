@@ -4,8 +4,7 @@ namespace App\Support\ClickUp;
 
 use App\Models\Client;
 use App\Models\KnowledgeSource;
-use App\Support\Agent\AgentServer;
-use App\Support\Agent\AgentUnavailable;
+use App\Support\Agent\ClientProjects;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -45,7 +44,7 @@ class ClientImport
 
     public function __construct(
         private readonly ClickUp $clickUp,
-        private readonly AgentServer $agent,
+        private readonly ClientProjects $projects,
     ) {}
 
     /**
@@ -79,7 +78,7 @@ class ClientImport
 
     /**
      * Klient ze složky: založí ho, nebo napojí stávajícího se stejným názvem,
-     * přidá projekt agenta (když ho klient ještě nemá) a zařadí načtení archivu.
+     * zařadí založení projektu agenta (když ho klient ještě nemá) a načtení archivu.
      *
      * @param  array{id: string, name: string}  $folder
      */
@@ -96,20 +95,19 @@ class ClientImport
         }
 
         $client->forceFill(['clickup_folder_id' => $folder['id']])->save();
-        $note = blank($client->agent_project) ? $this->addProject($client) : null;
-        $this->queue($client, $author, $note);
+        $this->projects->request($client, $author);
+        $this->queue($client, $author);
 
         return $client;
     }
 
     /** Načíst složku do archivu znovu (tlačítko u klienta). */
-    public function queue(Client $client, ?string $author, ?string $note = null): void
+    public function queue(Client $client, ?string $author): void
     {
         $client->forceFill(['clickup_import' => array_filter([
             'status' => self::STATUS_QUEUED,
             'requested_at' => now()->toIso8601String(),
             'author' => $author,
-            'project_note' => $note,
         ])])->save();
     }
 
@@ -178,7 +176,7 @@ class ClientImport
             self::STATUS_DONE => 'Z ClickUpu načteno '.$time($state['finished_at'] ?? null).': '.($counts ?: 'složka je prázdná').'.'
                 .(filled($state['problems'] ?? null) ? ' Nenačteno: '.implode('; ', $state['problems']).'.' : ''),
             default => null,
-        }.(filled($state['project_note'] ?? null) ? ' '.$state['project_note'] : '');
+        };
     }
 
     /** @param  list<string>  $problems */
@@ -465,40 +463,6 @@ class ClientImport
         $extension = Str::lower((string) pathinfo($name, PATHINFO_EXTENSION));
 
         return preg_match('/^[a-z0-9]{1,8}$/', $extension) ? '.'.$extension : '';
-    }
-
-    /**
-     * Projekt agenta bez kódu se stejným názvem jako zkratka klienta. Když
-     * projekt už existuje a nepatří jinému klientovi, jen se přiřadí.
-     * Vrátí větu do přehledu, když se nepovedl.
-     */
-    private function addProject(Client $client): ?string
-    {
-        $slug = Str::limit(trim(preg_replace('/[^a-z0-9-]+/', '-', Str::slug($client->slug)), '-'), 40, '');
-
-        if (! preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug)) {
-            return 'Projekt agenta se nezaložil (zkratka „'.$client->slug.'“ nejde použít), přidejte ho v Agent → Přidat projekt.';
-        }
-
-        try {
-            $existing = collect($this->agent->projects())->pluck('slug');
-
-            if ($existing->contains($slug) && Client::query()->where('agent_project', $slug)->whereKeyNot($client->getKey())->exists()) {
-                return 'Projekt agenta „'.$slug.'“ už patří jinému klientovi, přidejte klientovi jiný v Agent → Přidat projekt.';
-            }
-
-            $result = $existing->contains($slug) ? ['ok' => true] : $this->agent->addProject($slug, 'prazdny');
-        } catch (AgentUnavailable $e) {
-            return 'Projekt agenta se nezaložil (služba agenta neodpovídá), přidejte ho v Agent → Přidat projekt.';
-        }
-
-        if (! $result['ok']) {
-            return 'Projekt agenta se nezaložil: '.Str::limit(trim((string) ($result['vystup'] ?? '')), 200).'.';
-        }
-
-        $client->forceFill(['agent_project' => $slug])->save();
-
-        return null;
     }
 
     private function uniqueSlug(string $base): string

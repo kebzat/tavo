@@ -325,6 +325,7 @@ class Client extends Model
             'landing_pages' => 'array',
             'billing_statement' => 'array',
             'clickup_import' => 'array',
+            'agent_project_request' => 'array',
         ];
     }
 }
