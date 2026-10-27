@@ -29,6 +29,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Tools\AgentHandoverPageController;
 use App\Http\Controllers\Tools\ArchivePageController;
+use App\Http\Middleware\AgentProjectScope;
 use App\Http\Middleware\NoIndex;
 use App\Http\Middleware\VerifyAgentToken;
 use App\Http\Middleware\VerifyCrmToken;
@@ -58,7 +59,7 @@ Route::withoutMiddleware([
 // Rozhraní pro agenta v kontejneru taveo-agent (docs/MARKETING.md). Čte data
 // klientů a zapisuje jen koncepty. Vlastní token, bez session a CSRF.
 Route::prefix('nastroje/api/agent')
-    ->middleware([VerifyAgentToken::class, 'throttle:120,1'])
+    ->middleware([VerifyAgentToken::class, 'throttle:120,1', AgentProjectScope::class])
     ->withoutMiddleware([
         EncryptCookies::class,
         AddQueuedCookiesToResponse::class,

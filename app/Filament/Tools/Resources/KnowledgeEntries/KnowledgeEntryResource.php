@@ -8,7 +8,9 @@ use App\Filament\Tools\Resources\KnowledgeEntries\Pages\ListKnowledgeEntries;
 use App\Filament\Tools\Resources\KnowledgeSources\KnowledgeSourceResource;
 use App\Models\Client;
 use App\Models\KnowledgeEntry;
+use App\Support\Knowledge\ClientMentions;
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -82,6 +84,14 @@ class KnowledgeEntryResource extends Resource
                 ->columnSpanFull()
                 ->columns(2)
                 ->schema([
+                    Placeholder::make('mixing_note')
+                        ->hiddenLabel()
+                        ->visible(fn (?KnowledgeEntry $record): bool => $record?->mixing() !== null)
+                        ->content(fn (?KnowledgeEntry $record): HtmlString => new HtmlString(
+                            '<div class="rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger-800 dark:bg-danger-500/10 dark:text-danger-300">'
+                            .'<strong>Agenti tenhle poznatek nedostanou a neschválí se.</strong> '.e((string) $record?->mixing()).'</div>'
+                        ))
+                        ->columnSpanFull(),
                     Placeholder::make('replaces_note')
                         ->hiddenLabel()
                         ->visible(fn (?KnowledgeEntry $record): bool => $record?->isProposed() && $record->replaces !== null)
@@ -101,9 +111,21 @@ class KnowledgeEntryResource extends Resource
                     Textarea::make('body')
                         ->label('Poznatek')
                         ->placeholder('Co platí, proč a příklad. U postupu očíslované kroky.')
+                        ->helperText('Firemní poznatek a postup dostanou agenti všech klientů: bez jména klienta a jeho čísel, objednávek a výsledků. Co se týká jednoho klienta, dejte do vrstvy Klient.')
                         ->rows(8)
                         ->required()
                         ->maxLength(5000)
+                        ->rules([fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                            $problem = app(ClientMentions::class)->problem(
+                                (string) $get('layer'),
+                                $get('layer') === KnowledgeEntry::LAYER_CLIENT && $get('client_id') ? Client::query()->find($get('client_id')) : null,
+                                (string) $get('title'), (string) $value, implode(' ', (array) $get('tags')), (string) $get('origin'),
+                            );
+
+                            if ($problem) {
+                                $fail($problem);
+                            }
+                        }])
                         ->columnSpanFull(),
                     Select::make('layer')
                         ->label('Vrstva')
@@ -160,7 +182,10 @@ class KnowledgeEntryResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (KnowledgeEntry $record): string => $record->replaces_id && $record->isProposed() ? 'Nové znění #'.$record->replaces_id : $record->statusLabel())
                     ->color(fn (KnowledgeEntry $record): string => $record->statusColor())
-                    ->description(fn (KnowledgeEntry $record): string => KnowledgeEntry::originTypes()[$record->origin_type] ?? $record->origin_type),
+                    ->description(fn (KnowledgeEntry $record): HtmlString|string => ($problem = $record->mixing())
+                        ? new HtmlString('<span class="text-danger-600 dark:text-danger-400">Míchá klienty</span>')
+                        : (KnowledgeEntry::originTypes()[$record->origin_type] ?? $record->origin_type))
+                    ->tooltip(fn (KnowledgeEntry $record): ?string => $record->mixing()),
                 TextColumn::make('origin')
                     ->label('Odkud')
                     ->state(fn (KnowledgeEntry $record): ?string => $record->origin ?? $record->source?->title)
@@ -182,7 +207,7 @@ class KnowledgeEntryResource extends Resource
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
                     ->visible(fn (KnowledgeEntry $record): bool => $record->isProposed())
-                    ->action(fn (KnowledgeEntry $record) => $record->approve(self::reviewer())),
+                    ->action(fn (KnowledgeEntry $record) => self::approveOrWarn($record)),
                 Action::make('reject')
                     ->label('Zamítnout')
                     ->icon(Heroicon::OutlinedXMark)
@@ -200,8 +225,14 @@ class KnowledgeEntryResource extends Resource
                         ->icon(Heroicon::OutlinedCheck)
                         ->color('success')
                         ->action(function (Collection $records): void {
-                            $records->filter(fn (KnowledgeEntry $record): bool => $record->isProposed())->each(fn (KnowledgeEntry $record) => $record->approve(self::reviewer()));
-                            Notification::make()->title('Schváleno')->success()->send();
+                            $refused = $records->filter(fn (KnowledgeEntry $record): bool => $record->isProposed())
+                                ->reject(fn (KnowledgeEntry $record): bool => $record->approve(self::reviewer()));
+
+                            $refused->isEmpty()
+                                ? Notification::make()->title('Schváleno')->success()->send()
+                                : Notification::make()->title('Neschváleno: '.$refused->count().' míchá klienty')
+                                    ->body($refused->map(fn (KnowledgeEntry $record): string => '#'.$record->getKey().' '.$record->title)->implode(', ').'. Otevřete je a upravte (vrstva nebo text).')
+                                    ->warning()->persistent()->send();
                         })
                         ->deselectRecordsAfterCompletion(),
                     BulkAction::make('rejectSelected')
@@ -220,6 +251,26 @@ class KnowledgeEntryResource extends Resource
             ])
             ->emptyStateHeading('Tady zatím nic není')
             ->emptyStateDescription('Poznatky vznikají z nahraných podkladů, z práce agentů (ClickUp, grafika) a z rozhovoru s mozkem. Napsat jde i ručně.');
+    }
+
+    /**
+     * Schválí, nebo řekne proč ne: poznatek, který míchá klienty (firemní se
+     * jménem klienta, klienta s jiným klientem), se neschválí.
+     */
+    public static function approveOrWarn(KnowledgeEntry $record): bool
+    {
+        if ($record->approve(self::reviewer())) {
+            return true;
+        }
+
+        Notification::make()
+            ->title('Neschváleno: poznatek míchá klienty')
+            ->body($record->mixing().' Otevřete ho a upravte.')
+            ->warning()
+            ->persistent()
+            ->send();
+
+        return false;
     }
 
     public static function reviewer(): string

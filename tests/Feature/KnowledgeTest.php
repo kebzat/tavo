@@ -124,7 +124,9 @@ class KnowledgeTest extends TestCase
         $this->assertStringContainsString(route('agent.api.mozek.soubor', [$source, 0]), $task['zadani']);
         $this->assertStringContainsString('01-schuzka-310.pdf', $task['zadani']);
         $this->assertStringContainsString('Ceny z roku 2024 neplatí.', $task['zadani']);
-        $this->assertStringContainsString('svet-cejlonu (Svět Cejlonu)', $task['zadani']);
+        // Podklady klienta: knihovník navrhuje jen pro něj a vidí jen jeho poznatky.
+        $this->assertStringContainsString('poznatky klienta jen pro `svet-cejlonu`', $task['zadani']);
+        $this->assertStringContainsString(route('agent.api.mozek.seznam', ['klient' => 'svet-cejlonu']), $task['zadani']);
         $this->assertSame(BrainAgent::SOURCE, $source->agentJob->source);
     }
 
@@ -153,7 +155,8 @@ class KnowledgeTest extends TestCase
                 ['vrstva' => 'firma', 'nadpis' => 'klientům nikdy neslibujeme konkrétní ROAS', 'text' => 'Totéž znovu.'],
                 ['vrstva' => 'klient', 'klient' => 'neexistuje', 'nadpis' => 'Neznámý klient', 'text' => 'Obecně platné.'],
             ],
-        ])->assertOk()->assertJson(['zalozeno' => 2, 'preskoceno' => ['klientům nikdy neslibujeme konkrétní ROAS']]);
+        ])->assertOk()->assertJson(['zalozeno' => 1, 'preskoceno' => ['klientům nikdy neslibujeme konkrétní ROAS', 'Neznámý klient']])
+            ->assertJsonPath('proc.1.proc', 'Klient se slugem „neexistuje“ v nástrojích není (seznam: taveo klienti). Poznatek klienta se jako firemní nezakládá.');
 
         $entry = KnowledgeEntry::query()->where('title', 'Svět Cejlonu nechce slevy')->sole();
         $this->assertSame(KnowledgeEntry::STATUS_PROPOSED, $entry->status);
@@ -162,11 +165,12 @@ class KnowledgeTest extends TestCase
         $this->assertSame('podklad', $entry->origin_type);
         $this->assertSame($source->getKey(), $entry->knowledge_source_id);
         $this->assertFalse($entry->always);
-        $this->assertSame(KnowledgeEntry::LAYER_COMPANY, KnowledgeEntry::query()->where('title', 'Neznámý klient')->value('layer'));
+        // Poznatek klienta s neznámým klientem se jako firemní nezaloží (dřív se z něj stal firemní).
+        $this->assertFalse(KnowledgeEntry::query()->where('title', 'Neznámý klient')->exists());
 
         // Neschválené agenti nedostanou.
-        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'slevy']))->assertJsonCount(0, 'poznatky');
-        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'slevy', 'navrhy' => 1]))->assertJsonPath('poznatky.0.stav', 'proposed');
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'slevy', 'klient' => 'svet-cejlonu']))->assertJsonCount(0, 'poznatky');
+        $this->withToken(self::TOKEN)->getJson(route('agent.api.mozek', ['q' => 'slevy', 'klient' => 'svet-cejlonu', 'navrhy' => 1]))->assertJsonPath('poznatky.0.stav', 'proposed');
     }
 
     public function test_z_jednech_podkladu_nejvys_strop_navrhu(): void

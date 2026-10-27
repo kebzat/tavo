@@ -41,8 +41,10 @@ class EditKnowledgeEntry extends EditRecord
                 ->visible(fn (): bool => $this->getRecord()->isProposed())
                 ->action(function (): void {
                     $this->save(shouldRedirect: false, shouldSendSavedNotification: false);
-                    $this->getRecord()->approve(KnowledgeEntryResource::reviewer());
-                    $this->redirect($this->getResource()::getUrl('index'));
+
+                    if (KnowledgeEntryResource::approveOrWarn($this->getRecord()->refresh())) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
                 }),
             Action::make('reject')
                 ->label('Zamítnout')
