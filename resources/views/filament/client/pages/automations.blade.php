@@ -22,6 +22,7 @@
     @forelse ($this->automations as $automation)
         @php
             $parcels = $automation->parcels();
+            $returns = $automation->returns();
             $events = $this->events($automation);
         @endphp
 
@@ -37,7 +38,7 @@
                 </x-filament::badge>
                 {{ ($this->settingsAction)(['automation' => $automation->id]) }}
             </div>
-            <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <div>
                     <dt class="text-sm text-gray-500 dark:text-gray-400">Připomínka e-mailem</dt>
                     <dd class="font-semibold text-gray-950 dark:text-white">
@@ -51,6 +52,11 @@
                 <div>
                     <dt class="text-sm text-gray-500 dark:text-gray-400">E-mail k vrácené zásilce</dt>
                     <dd class="font-semibold text-gray-950 dark:text-white">{{ $automation->setting('send_returned') ? 'Ano' : 'Ne' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Kdy se posílá</dt>
+                    <dd class="font-semibold text-gray-950 dark:text-white">{{ $automation->setting('send_from') }}:00–{{ $automation->setting('send_until') }}:00</dd>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">V noci změny počkají do rána.</p>
                 </div>
                 <div>
                     <dt class="text-sm text-gray-500 dark:text-gray-400">Naposledy běžela</dt>
@@ -143,6 +149,45 @@
                                     <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                                         {{ collect($parcel['sent'])->map(fn ($kind) => AutomationEvent::kindLabel($kind))->implode(', ') ?: 'zatím nic' }}
                                     </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-filament::section>
+
+        <x-filament::section>
+            <x-slot name="heading">Vrácené zásilky za posledních {{ \App\Support\Automations\ParcelPickup::WATCH_RETURNS_DAYS }} dní ({{ count($returns) }})</x-slot>
+            <x-slot name="description">Zásilky, které se vrací nebo už vrátily k vám. Nejnovější nahoře.</x-slot>
+
+            @if ($returns === [])
+                <p class="text-sm text-gray-500 dark:text-gray-400">Nic se nevracelo.</p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[36rem] text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-white/10">
+                                <th class="whitespace-nowrap px-3 py-2 font-semibold text-gray-950 dark:text-white">Objednávka</th>
+                                <th class="whitespace-nowrap px-3 py-2 font-semibold text-gray-950 dark:text-white">Dopravce</th>
+                                <th class="whitespace-nowrap px-3 py-2 font-semibold text-gray-950 dark:text-white">Zásilka</th>
+                                <th class="whitespace-nowrap px-3 py-2 font-semibold text-gray-950 dark:text-white">Stav objednávky</th>
+                                <th class="whitespace-nowrap px-3 py-2 font-semibold text-gray-950 dark:text-white">Vrací se od</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($returns as $return)
+                                @php
+                                    $back = ! empty($return['returned']) || ($return['status'] ?? null) === $automation->status('returned');
+                                @endphp
+                                <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $return['order'] }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ match ($return['carrier'] ?? null) { 'zasilkovna', 'packeta' => 'Zásilkovna', 'ppl' => 'PPL', 'dpd' => 'DPD', 'balikovna' => 'Balíkovna', null => '–', default => ucfirst($return['carrier']) } }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2">
+                                        <x-filament::badge :color="$back ? 'danger' : 'warning'">{{ $back ? 'Vrátila se' : 'Na cestě zpět' }}</x-filament::badge>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ ($return['status'] ?? null) ?: '–' }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 tabular-nums text-gray-600 dark:text-gray-400">{{ \Illuminate\Support\Carbon::parse($return['since'])->format('j. n.') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

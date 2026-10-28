@@ -20,6 +20,7 @@ class AutomationSummary extends Mailable
 
     /**
      * @param  array<string, int>  $sent  počty potvrzených zpráv podle druhu (AutomationEvent::kindLabel)
+     * @param  array<string, list<string>>  $orders  čísla objednávek k nim, ať klient ví, kterých se to týká
      */
     public function __construct(
         public Automation $automation,
@@ -28,6 +29,7 @@ class AutomationSummary extends Mailable
         public array $sent,
         public int $failed,
         public int $parcels,
+        public array $orders = [],
     ) {
         $this->url = Automations::getUrl(panel: 'client');
     }

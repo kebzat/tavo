@@ -164,6 +164,10 @@ class AutomationResource extends Resource
                         ->required(),
                     Toggle::make('settings.send_last_day')->label('SMS v poslední den')->default($defaults['send_last_day']),
                     Toggle::make('settings.send_returned')->label('E-mail k vrácené zásilce')->default($defaults['send_returned']),
+                    Select::make('settings.send_from')->label('Posílat od')->options(ClientAutomations::hours(0, 23))->default($defaults['send_from'])->required()->selectablePlaceholder(false),
+                    Select::make('settings.send_until')->label('Posílat do')->options(ClientAutomations::hours(1, 24))->default($defaults['send_until'])->required()->selectablePlaceholder(false)
+                        ->gt('settings.send_from')
+                        ->helperText('Mimo tuhle dobu změny stavů počkají, zákazníkům nic nepřijde v noci.'),
                 ]),
 
             Section::make('Stavy objednávek v Upgates')

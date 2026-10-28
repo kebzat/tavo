@@ -21,6 +21,7 @@ use App\Support\Vault\LoginBroker;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -323,6 +324,8 @@ class AutomationsTest extends TestCase
         $this->runEngine();
 
         $this->assertSame(['6001', '6002', '6003'], collect($this->automation->fresh()->snapshot['returning'])->pluck('order')->all());
+        $returning = collect($this->automation->fresh()->returns())->firstWhere('order', '6001');
+        $this->assertEquals(['carrier' => 'ppl', 'returned' => false, 'status' => 'Odeslána'], Arr::only($returning, ['carrier', 'returned', 'status']));
         Mail::assertNothingSent();
 
         // Zásilky zmizely z aktivních. 6001 se vrátila, Zaslat ji vzal jako doručenou a dal Vyřešeno,
@@ -345,7 +348,11 @@ class AutomationsTest extends TestCase
 
         $this->assertSame(['6001'], $report['resolved_returns']);
         Mail::assertSent(AutomationProblem::class, 1);
-        $this->assertSame(['6003'], collect($this->automation->fresh()->snapshot['returning'])->pluck('order')->all());
+        // 6001 zůstane v přehledu vrácených (už prověřená), 6002 převzal příjemce a zmizí.
+        $returns = collect($this->automation->fresh()->returns())->keyBy('order');
+        $this->assertSame(['6001', '6003'], $returns->pluck('order')->sort()->values()->all());
+        $this->assertTrue($returns['6001']['returned'] && $returns['6001']['checked']);
+        $this->assertSame('Vráceno', $returns['6003']['status']);
         Http::assertSent(fn (Request $request): bool => str_ends_with(strtok($request->url(), '?'), '/shipments/tracking')
             && $request->data()['shipments'] === ['ZA6001', 'ZA6002']);
 
@@ -441,6 +448,55 @@ class AutomationsTest extends TestCase
         $this->automation->update(['settings' => [...$this->automation->settings, 'upgates_vault_entry_id' => null]]);
         $this->expectException(AutomationException::class);
         (new UpgatesImportUpload(app(LoginBroker::class)))->upload($this->automation->fresh(), $csv);
+    }
+
+    public function test_v_noci_zmeny_pockaji_do_rana_a_chyba_se_pocita_od_nahrani(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-28 01:40:00', 'Europe/Prague'));
+        $this->full = ['7101' => ['Odeslána', null]];
+        $this->shipments = [$this->shipment('7101', '2026-10-23')];
+
+        $report = $this->runEngine();
+
+        $this->assertSame(['7101' => AutomationEvent::KIND_REMINDER], $this->events());
+        $this->assertSame([], $this->uploads);
+        $this->assertSame(1, $report['held']);
+
+        // Ráno v 8:40 se nahraje. Že čekala přes noc, chyba není.
+        $this->travelTo(CarbonImmutable::parse('2026-10-28 08:40:00', 'Europe/Prague'));
+        $report = $this->runEngine();
+
+        $this->assertSame([], $report['failed']);
+        $this->assertSame(1, $report['uploaded']);
+        $this->assertSame(AutomationEvent::STATE_PENDING, AutomationEvent::query()->value('state'));
+
+        // Chyba až 3 h od nahrání, kdyby Upgates stav nezměnil.
+        $this->travel(2)->hours();
+        $this->assertSame([], $this->runEngine()['failed']);
+        $this->travel(2)->hours();
+        $this->assertSame(['7101'], $this->runEngine()['failed']);
+
+        // Klient si okno může změnit, od >= do znamená bez omezení.
+        $this->automation->update(['settings' => [...$this->automation->settings, 'send_from' => 0, 'send_until' => 0]]);
+        $this->assertTrue($this->automation->fresh()->canSendNow(CarbonImmutable::parse('2026-10-28 03:00:00', 'Europe/Prague')));
+        $this->assertFalse(Automation::query()->make()->canSendNow(CarbonImmutable::parse('2026-10-28 20:00:00', 'Europe/Prague')));
+        $this->assertTrue(Automation::query()->make()->canSendNow(CarbonImmutable::parse('2026-10-28 19:59:00', 'Europe/Prague')));
+    }
+
+    public function test_klient_vidi_vracene_zasilky(): void
+    {
+        $this->automation->update(['last_run_at' => now(), 'snapshot' => ['parcels' => [], 'returning' => [
+            ['tracking' => 'ZA1', 'order' => '04138', 'since' => '2026-10-25', 'carrier' => 'zasilkovna', 'returned' => true, 'status' => 'Vráceno'],
+            ['tracking' => 'ZA2', 'order' => '04150', 'since' => '2026-10-27', 'carrier' => 'ppl', 'returned' => false, 'status' => 'Odeslána'],
+            ['tracking' => 'ZA3', 'order' => '04001', 'since' => '2026-10-20'],   // zapsaná před 28. 10., bez dopravce
+        ]]]);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Client, 'client_id' => $this->client->id]));
+
+        $this->get('/muj-ucet/automatizace')
+            ->assertOk()
+            ->assertSee('Vrácené zásilky za posledních 21 dní (3)')
+            ->assertSeeInOrder(['04150', 'Na cestě zpět', '04138', 'Zásilkovna', 'Vrátila se', 'Vráceno', '04001'])
+            ->assertSee('8:00–20:00');
     }
 
     public function test_vypnute_druhy_zprav_se_neposilaji(): void
@@ -715,6 +771,7 @@ class AutomationsTest extends TestCase
         Mail::assertSent(AutomationSummary::class, 1);
         Mail::assertSent(AutomationSummary::class, fn (AutomationSummary $mail): bool => $mail->hasTo($marek->email)
             && $mail->sent === [AutomationEvent::kindLabel('reminder') => 2]
+            && $mail->orders === [AutomationEvent::kindLabel('reminder') => ['1', '2']]
             && $mail->parcels === 3);
 
         $this->automation->update(['enabled' => false]);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AutomationType;
 use App\Enums\VaultType;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,7 +29,7 @@ class Automation extends Model
     protected $hidden = ['order_export_url', 'import_token'];
 
     /** Co smí měnit klient sám. Zbytek nastavení je technický. */
-    public const CLIENT_SETTINGS = ['send_reminder', 'send_last_day', 'send_returned', 'remind_days_before'];
+    public const CLIENT_SETTINGS = ['send_reminder', 'send_last_day', 'send_returned', 'remind_days_before', 'send_from', 'send_until'];
 
     public const DEFAULT_SETTINGS = [
         'vault_entry_id' => null,
@@ -43,6 +44,9 @@ class Automation extends Model
         'send_reminder' => true,
         'send_last_day' => true,
         'send_returned' => true,
+        // Kdy smí zprávy odcházet (hodiny v Praze, od včetně, do vyjma). Mimo okno změny počkají na první běh v něm.
+        'send_from' => 8,
+        'send_until' => 20,
         // Den zapnutí: připomínka jen u zásilek, které na výdejní místo dorazily od něj.
         'reminders_since' => null,
         // Kam web nahrává změny stavů: přihlášení z trezoru a číslo importu objednávek v Upgates.
@@ -123,6 +127,16 @@ class Automation extends Model
         return array_values(array_filter(array_map(fn ($status): string => trim((string) $status), (array) $this->setting('source_statuses'))));
     }
 
+    /** Smí teď zprávy odejít? Noční změna stavu by zákazníkovi poslala e-mail nebo SMS ve 2 ráno. */
+    public function canSendNow(?CarbonInterface $at = null): bool
+    {
+        $hour = ($at ?? now())->copy()->setTimezone('Europe/Prague')->hour;
+        $from = (int) $this->setting('send_from');
+        $until = (int) $this->setting('send_until');
+
+        return $from >= $until || ($hour >= $from && $hour < $until);
+    }
+
     public function storageDays(?string $carrier): int
     {
         $days = (array) $this->setting('carrier_storage_days');
@@ -166,6 +180,20 @@ class Automation extends Model
     public function parcels(): array
     {
         return array_values((array) ($this->snapshot['parcels'] ?? []));
+    }
+
+    /**
+     * Vracející se a vrácené zásilky za posledních 21 dní, nejnovější první.
+     *
+     * @return list<array{tracking: string, order: string, since: string, carrier?: ?string, returned?: bool, status?: ?string, checked?: bool}>
+     */
+    public function returns(): array
+    {
+        return collect((array) ($this->snapshot['returning'] ?? []))
+            ->filter(fn ($item): bool => is_array($item) && filled($item['order'] ?? null))
+            ->sortBy([['since', 'desc'], ['order', 'desc']])
+            ->values()
+            ->all();
     }
 
     /** @return list<array{order: string, status: string, created_at: ?string, to_pack: bool, boxes: list<array{title: string, items: list<array{qty: int, name: string}>, count: int, preview: ?string}>}> */

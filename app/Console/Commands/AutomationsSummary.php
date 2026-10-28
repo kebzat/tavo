@@ -33,12 +33,14 @@ class AutomationsSummary extends Command
             }
 
             $sent = [];
+            $orders = [];
 
             foreach (AutomationEvent::KINDS as $kind) {
-                $count = $automation->events()->where('kind', $kind)->where('state', AutomationEvent::STATE_CONFIRMED)->whereBetween('confirmed_at', [$from, $to])->count();
+                $numbers = $automation->events()->where('kind', $kind)->where('state', AutomationEvent::STATE_CONFIRMED)->whereBetween('confirmed_at', [$from, $to])->orderBy('order_number')->pluck('order_number')->all();
 
-                if ($count > 0) {
-                    $sent[AutomationEvent::kindLabel($kind)] = $count;
+                if ($numbers !== []) {
+                    $sent[AutomationEvent::kindLabel($kind)] = count($numbers);
+                    $orders[AutomationEvent::kindLabel($kind)] = $numbers;
                 }
             }
 
@@ -52,7 +54,7 @@ class AutomationsSummary extends Command
                 }
 
                 try {
-                    Mail::to($user->email)->send(new AutomationSummary($automation, $user, $yesterday->format('j. n.'), $sent, $failed, count($automation->parcels())));
+                    Mail::to($user->email)->send(new AutomationSummary($automation, $user, $yesterday->format('j. n.'), $sent, $failed, count($automation->parcels()), $orders));
                 } catch (Throwable $e) {
                     Log::error('Ranní souhrn automatizace se nepodařilo odeslat.', ['automation' => $automation->getKey(), 'user' => $user->getKey(), 'error' => $e->getMessage()]);
                 }

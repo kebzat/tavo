@@ -18,10 +18,12 @@ use Throwable;
  * 3. potvrdí čekající zprávy, jejichž objednávka už má cílový stav, a starší
  *    než 3 h označí jako chybu,
  * 4. pro zásilky na výdejním místě nebo vrácené založí zprávy (každou jen
- *    jednou), Upgates si je stáhne jako CSV import a stav změní sám,
+ *    jednou) a v povolených hodinách (`send_from`–`send_until`) je nahraje
+ *    do importu v Upgates, ten stav změní a zprávu pošle sám. V noci čekají,
  * 5. uloží přehled zásilek na výdejních místech (jen čísla objednávek a data),
- * 6. hlídá vracející se zásilky: když jejich objednávka skončí ve stavu
- *    Vyřešeno, upozorní (faktura a žádost o hodnocení u vrácené zásilky).
+ * 6. hlídá vracející se zásilky (přehled vrácených v účtu klienta): když
+ *    jejich objednávka skončí ve stavu Vyřešeno, upozorní (faktura a žádost
+ *    o hodnocení u vrácené zásilky).
  * 7. uloží přehled dárkových balíčků k zabalení (GiftBoxes), jen obsah krabic.
  *
  * Stav objednávky mění jen ze `source_statuses`, takže nepřepíše ruční
@@ -44,11 +46,11 @@ class ParcelPickup
     ) {}
 
     /**
-     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array{tracking: string, order: string, since: string}>, boxes: list<array<string, mixed>>, resolved_returns: list<string>, warnings: list<string>, error: ?string}
+     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array<string, mixed>>, boxes: list<array<string, mixed>>, resolved_returns: list<string>, warnings: list<string>, error: ?string, uploaded: int, held: int}
      */
     public function run(Automation $automation, bool $dryRun = false): array
     {
-        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'boxes' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
+        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'boxes' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0, 'held' => 0];
 
         if (! $automation->enabled) {
             $report['warnings'][] = 'Automatizace je vypnutá, nic se nezakládá.';
@@ -67,8 +69,10 @@ class ParcelPickup
             $report['returning'] = $this->watchReturns($automation, $orders, $shipments, $report);
             $report['boxes'] = GiftBoxes::overview($automation, $export['orders']);
 
-            if (! $dryRun) {
+            if (! $dryRun && $automation->canSendNow()) {
                 $this->push($automation, $report);
+            } elseif (! $dryRun) {
+                $report['held'] = ImportCsv::rows($automation)->count();
             }
         } catch (AutomationException $e) {
             $report['error'] = $e->getMessage();
@@ -176,7 +180,9 @@ class ParcelPickup
 
     /**
      * Čekající zprávy: cílový stav v exportu = potvrzeno. Objednávka mezitím
-     * v jiném stavu (ručně vyřízená) = už neposílat. Starší než 3 h = chyba.
+     * v jiném stavu (ručně vyřízená) = už neposílat. Nahraná do Upgates před
+     * víc než 3 h a stav pořád nezměněný = chyba. Nenahraná (noc) chybou není,
+     * nahraje se při prvním běhu v povolených hodinách.
      *
      * @param  array<string, string>  $orders
      */
@@ -189,9 +195,8 @@ class ParcelPickup
             $changes = match (true) {
                 $current === trim($event->target_status) => ['state' => AutomationEvent::STATE_CONFIRMED, 'confirmed_at' => now()],
                 $current !== null && ! in_array($current, $sources, true) => ['state' => AutomationEvent::STATE_SKIPPED, 'detail' => 'Objednávka mezitím přešla do stavu „'.$current.'“, zpráva se už neposílá.'],
-                $event->created_at->lt(now()->subHours(self::FAIL_AFTER_HOURS)) => ['state' => AutomationEvent::STATE_FAILED, 'detail' => $event->exported_at
-                    ? 'Upgates si CSV stáhl, ale stav objednávky do '.self::FAIL_AFTER_HOURS.' hodin nezměnil.'
-                    : 'Upgates si CSV do '.self::FAIL_AFTER_HOURS.' hodin nestáhl.'],
+                $event->exported_at?->lt(now()->subHours(self::FAIL_AFTER_HOURS)) === true => ['state' => AutomationEvent::STATE_FAILED,
+                    'detail' => 'Upgates si CSV stáhl, ale stav objednávky do '.self::FAIL_AFTER_HOURS.' hodin nezměnil.'],
                 default => null,
             };
 
@@ -257,17 +262,18 @@ class ParcelPickup
     }
 
     /**
-     * Vracející se zásilky hlídá i po zmizení z aktivních. Zaslat zásilku
+     * Vracející se zásilky hlídá i po zmizení z aktivních a ukazuje je
+     * v účtu klienta (dopravce, jestli už dorazila zpět, stav objednávky). Zaslat zásilku
      * vrácenou odesílateli občas označí jako doručenou a objednávce dá
      * Vyřešeno (PPL, 26. 10. 2026), jindy ho vrácené objednávce dá ručně
      * klient. Vyřešeno v Upgates spouští fakturu a žádost o hodnocení. Když
      * objednávka hlídané zásilky skončí v `status_resolved` a podle sledování
-     * zásilka opravdu skončila u odesílatele, přijde upozornění (jednou).
-     * Doručená příjemci (vrácení se nakonec nekonalo) se jen přestane hlídat.
+     * zásilka opravdu skončila u odesílatele, přijde upozornění (jednou,
+     * `checked`). Doručená příjemci (vrácení se nakonec nekonalo) zmizí.
      *
      * @param  array<string, string>  $orders
      * @param  list<array<string, mixed>>  $shipments
-     * @return list<array{tracking: string, order: string, since: string}> hlídané zásilky pro příští běh
+     * @return list<array{tracking: string, order: string, since: string, carrier: ?string, returned: bool, status: ?string, checked?: bool}> hlídané zásilky pro příští běh
      */
     private function watchReturns(Automation $automation, array $orders, array $shipments, array &$report): array
     {
@@ -281,13 +287,23 @@ class ParcelPickup
             $tracking = (string) ($shipment['tracking_number'] ?? '');
             $number = trim((string) ($shipment['reference'] ?? ''));
 
-            if ($tracking !== '' && $number !== '' && ! $watch->has($tracking) && $this->isReturn($shipment, false)) {
-                $watch[$tracking] = ['tracking' => $tracking, 'order' => $number, 'since' => $today->toDateString()];
+            if ($tracking === '' || $number === '' || ! ($watch->has($tracking) || $this->isReturn($shipment, false))) {
+                continue;
             }
+
+            $known = (array) $watch->get($tracking, []);
+            $watch[$tracking] = [
+                'tracking' => $tracking,
+                'order' => $number,
+                'since' => $known['since'] ?? $today->toDateString(),
+                'carrier' => strtolower((string) ($shipment['carrier'] ?? '')) ?: null,
+                'returned' => ! empty($known['returned']) || (bool) data_get($shipment, 'tracking_information.returned', false),
+            ] + $known;
         }
 
+        $watch = $watch->map(fn (array $item): array => ['status' => trim((string) ($orders[$item['order']] ?? '')) ?: ($item['status'] ?? null)] + $item);
         $resolved = $automation->status('resolved');
-        $suspects = $watch->filter(fn (array $item): bool => trim((string) ($orders[$item['order']] ?? '')) === $resolved);
+        $suspects = $watch->filter(fn (array $item): bool => empty($item['checked']) && $item['status'] === $resolved);
 
         foreach ($suspects->chunk(50) as $chunk) {
             try {
@@ -311,9 +327,10 @@ class ParcelPickup
 
                 if ($this->isReturn(['tracking_information' => $tracked], true)) {
                     $report['resolved_returns'][] = $item['order'];
+                    $watch[$tracking] = ['returned' => true, 'checked' => true] + $item;
+                } else {
+                    $watch->forget($tracking);
                 }
-
-                $watch->forget($tracking);
             }
         }
 

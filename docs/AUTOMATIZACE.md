@@ -104,10 +104,10 @@ Novou adresu vygeneruje tlačítko **Nová adresa CSV**.
 
 ## Upozornění a souhrn
 
-- Chyba běhu nebo zpráva, kterou Upgates do 3 h nepotvrdil → e-mail správcům (role Správce)
+- Chyba běhu nebo zpráva, kterou Upgates do 3 h od nahrání nepotvrdil → e-mail správcům (role Správce)
   a účtům klienta (`App\Mail\AutomationProblem`). Stejný problém nejvýš 1× za 6 h (cache).
 - Ranní souhrn v 7:00 (`automations:summary`) účtům klienta: kolik zpráv se včera potvrdilo
-  podle druhu, chyby, kolik zásilek leží na výdejních místech. Jen u zapnutých automatizací.
+  podle druhu i s čísly objednávek, chyby, kolik zásilek leží na výdejních místech. Jen u zapnutých automatizací.
 - **Vrácená zásilka ve stavu Vyřešeno** → stejné upozornění, u objednávky jen jednou. Vyřešeno v Upgates spouští
   fakturu a žádost o hodnocení. Viz níže „Hlídání vrácených zásilek“.
 
@@ -118,7 +118,7 @@ Novou adresu vygeneruje tlačítko **Nová adresa CSV**.
   v administraci → Uživatelé. Klient se nedostane do `/admin` ani `/nastroje`
   (`User::canAccessPanel`). Správce do `/muj-ucet` smí (náhled, výběr klienta `?klient=`).
 - Klient vidí jen automatizace svého klienta a mění jen: zapnuto, připomínka ano/ne, kolik dní
-  předem (1–6), SMS poslední den, e-mail k vrácené. Technické nastavení jen v nástrojích.
+  předem (1–6), SMS poslední den, e-mail k vrácené, hodiny posílání. Technické nastavení jen v nástrojích.
 - **Zapomenuté heslo** jen pro účty s rolí Klient (`App\Filament\Client\Pages\Auth\RequestPasswordReset`),
   účty týmu si heslo touhle cestou obnovit nemůžou. Neznámý e-mail dostane stejnou odpověď.
 - Dvoufázové ověření si klient může zapnout v profilu, povinné není.
@@ -195,3 +195,20 @@ odkaz a čas vytvoření, nic o zákazníkovi (ani poznámka zákazníka).
 - V účtu klienta je sekce jen tehdy, když nějaký balíček je. Karta: obrázek `/b/<id>.jpg` (kreslí server
   náhledů, `server-sbirka/balicek.js` v repu Svět Cejlonu), číslo a stav objednávky, krabice a obsah s počty.
   Když obrázek není (server ho ještě neumí), karta ho vynechá a zůstane odkaz na stránku `/b/<id>`.
+
+## Hodiny posílání a vrácené zásilky (28. 10. 2026)
+
+Po prvním ostrém dni (Marek): e-maily „Čeká na vyzvednutí“ odešly ve 2:00 (běh v 1:40, Upgates import zpracoval ve 2:00),
+ranní souhrn psal „1 vrácená“ bez čísla a vrácené se ztrácely mezi posledními 50 zprávami.
+
+- **Hodiny posílání** `send_from`–`send_until` (výchozí 8–20, Praha, od včetně, do vyjma; od ≥ do = bez omezení).
+  Engine běží dál každou hodinu a zprávy zakládá, ale do importu Upgates je nahraje jen v povolených hodinách
+  (`Automation::canSendNow`). Noční změny odejdou v 8:40. Chyba „Upgates stav nezměnil“ se počítá 3 h od nahrání
+  (`exported_at`), čekání přes noc chybou není. SMS v poslední den tak přijde ráno téhož dne.
+  Klient hodiny mění v účtu (Upravit), správce v nástrojích. `automations:run` vypíše, kolik změn čeká.
+- **Vrácené zásilky** v účtu klienta: tabulka z `snapshot.returning` (hlídání 21 dní, viz výše), u každé zásilky
+  nově dopravce, `returned` (už dorazila zpět) a stav objednávky z exportu. „Vrátila se“ = `returned` nebo stav
+  objednávky `status_returned`, jinak „Na cestě zpět“. Zásilka prověřená kvůli Vyřešeno (`checked`) v přehledu
+  zůstává, upozornění jde dál jen jednou. Záznamy zapsané před 28. 10. dopravce nemají, dokud je běh znovu neuvidí mezi aktivními.
+- **Ranní souhrn** u každého druhu zprávy vypíše čísla objednávek.
+- Odpověď na SMS: Upgates (Nastavení → SMS) odesílatele nastavit neumí, na SMS odpovědět nejde. Kontakt patří do textu SMS.

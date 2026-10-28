@@ -7,7 +7,7 @@ Co automatizace zásilek za {{ $day }} poslala zákazníkům:
 Včera se nic neposílalo.
 @else
 @foreach ($sent as $label => $count)
-- {{ $label }}: **{{ $count }}**
+- {{ $label }}: **{{ $count }}**@if (! empty($orders[$label])) ({{ implode(', ', $orders[$label]) }})@endif
 @endforeach
 @endif
 
