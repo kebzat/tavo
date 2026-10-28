@@ -118,13 +118,21 @@ class ClientPanelTest extends TestCase
 
         Livewire::actingAs($marek)
             ->test(Automations::class)
-            ->callAction('settings', ['enabled' => false, 'send_reminder' => false, 'send_last_day' => true, 'send_returned' => false, 'remind_days_before' => 3], ['automation' => $this->mine->id])
+            ->callAction('settings', ['enabled' => false, 'send_reminder' => false, 'send_last_day' => true, 'send_returned' => false, 'remind_days_before' => 3, 'send_from' => 9, 'send_until' => 19], ['automation' => $this->mine->id])
             ->assertHasNoActionErrors();
 
         $mine = $this->mine->fresh();
         $this->assertFalse($mine->enabled);
         $this->assertFalse($mine->setting('send_reminder'));
         $this->assertSame(3, $mine->setting('remind_days_before'));
+        $this->assertSame([9, 19], [$mine->setting('send_from'), $mine->setting('send_until')]);
+
+        // Konec před začátkem neprojde.
+        Livewire::actingAs($marek)
+            ->test(Automations::class)
+            ->callAction('settings', ['enabled' => true, 'send_reminder' => true, 'send_last_day' => true, 'send_returned' => true, 'remind_days_before' => 1, 'send_from' => 20, 'send_until' => 8], ['automation' => $this->mine->id])
+            ->assertHasActionErrors(['send_until']);
+        $this->assertSame(19, $this->mine->fresh()->setting('send_until'));
         $this->assertSame('Odeslána', $mine->setting('status_sent'));
 
         $this->expectException(ModelNotFoundException::class);

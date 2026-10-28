@@ -57,6 +57,10 @@ class AutomationsRun extends Command
 
             $this->line(sprintf('  Nové zprávy %d, potvrzené %d, chyby %d, na výdejních místech %d.',
                 count($report['created']), count($report['confirmed']), count($report['failed']), count($report['parcels'])));
+
+            if ($report['held'] > 0) {
+                $this->line("  Mimo hodiny posílání, {$report['held']} změn počká na první běh od {$automation->setting('send_from')}:00.");
+            }
         }
 
         if ($this->option('dry-run')) {

@@ -8,10 +8,12 @@ use App\Models\Client;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -102,7 +104,13 @@ class Automations extends Page
         unset($this->automations);
     }
 
-    /** Přepínače a počet dní. Nic technického, to je v nástrojích. */
+    /** @return array<int, string> hodiny pro výběr (8 => „8:00“) */
+    public static function hours(int $from, int $to): array
+    {
+        return collect(range($from, $to))->mapWithKeys(fn (int $hour): array => [$hour => $hour.':00'])->all();
+    }
+
+    /** Přepínače, počet dní a hodiny posílání. Nic technického, to je v nástrojích. */
     public function settingsAction(): Action
     {
         return Action::make('settings')
@@ -134,6 +142,12 @@ class Automations extends Page
                     ->suffix('dní'),
                 Toggle::make('send_last_day')->label('SMS v poslední den k vyzvednutí'),
                 Toggle::make('send_returned')->label('E-mail, když se zásilka vrátí'),
+                Grid::make(2)->schema([
+                    Select::make('send_from')->label('Posílat od')->options(self::hours(0, 23))->required()->selectablePlaceholder(false),
+                    Select::make('send_until')->label('do')->options(self::hours(1, 24))->required()->selectablePlaceholder(false)
+                        ->gt('send_from')
+                        ->validationMessages(['gt' => 'Konec musí být později než začátek.']),
+                ]),
             ])
             ->modalSubmitActionLabel('Uložit')
             ->action(function (array $data, array $arguments): void {
@@ -141,7 +155,12 @@ class Automations extends Page
                 $settings = $automation->settings ?? [];
 
                 foreach (Automation::CLIENT_SETTINGS as $key) {
-                    $settings[$key] = $key === 'remind_days_before' ? max(1, min(6, (int) $data[$key])) : (bool) $data[$key];
+                    $settings[$key] = match ($key) {
+                        'remind_days_before' => max(1, min(6, (int) $data[$key])),
+                        'send_from' => max(0, min(23, (int) $data[$key])),
+                        'send_until' => max((int) $settings['send_from'] + 1, min(24, (int) $data[$key])),
+                        default => (bool) $data[$key],
+                    };
                 }
 
                 $automation->update(['enabled' => (bool) $data['enabled'], 'settings' => $settings]);
