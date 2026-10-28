@@ -131,6 +131,7 @@ php artisan automations:run                      # zapnuté automatizace (pláno
 php artisan automations:run --automation=1       # jen jedna
 php artisan automations:run --automation=1 --dry-run   # co by se stalo, nic neuloží ani nepošle
 php artisan automations:summary [--dry-run]      # ranní souhrn (plánovač v 7:00)
+php artisan automations:boxes                    # přehled dárkových balíčků (plánovač každých 10 minut)
 ```
 
 V nástrojích u automatizace je i **Vyzkoušet nanečisto** (stejné jako `--dry-run`).
@@ -192,6 +193,10 @@ odkaz a čas vytvoření, nic o zákazníkovi (ani poznámka zákazníka).
   (`status_sent`, `status_reminder`, `status_last_day`, `status_returned`, `status_resolved`), nejstarší nahoře.
   Odeslané se ukazují ještě 14 dní, stornované vůbec.
 - Kompletní export se kvůli tomu stahuje znovu (verze cache 2), jinak by starší balíčky chyběly až 6 hodin.
+- **Častěji než hodinový běh:** `automations:boxes` každých 10 minut (v :05, :15…, mimo :40 kvůli sdílené cache exportu)
+  obnoví jen `snapshot.boxes` (`GiftBoxes::refresh`), u zapnutých automatizací, které balíčky mají. Zákazníkům nic nepošle.
+  V účtu klienta je u sekce tlačítko **Aktualizovat** (to samé hned, nejvýš 1× za minutu na automatizaci). Upgates export
+  za 24 h obnovuje zhruba po 5 minutách, rychleji to nejde. Popisek sekce ukazuje čas posledního obnovení.
 - V účtu klienta je sekce jen tehdy, když nějaký balíček je. Karta: obrázek `/b/<id>.jpg` (kreslí server
   náhledů, `server-sbirka/balicek.js` v repu Svět Cejlonu), číslo a stav objednávky, krabice a obsah s počty.
   Když obrázek není (server ho ještě neumí), karta ho vynechá a zůstane odkaz na stránku `/b/<id>`.

@@ -6,6 +6,9 @@ use App\Models\Automation;
 use App\Models\AutomationEvent;
 use App\Models\Client;
 use App\Models\User;
+use App\Support\Automations\AutomationException;
+use App\Support\Automations\GiftBoxes;
+use App\Support\Automations\UpgatesOrders;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -17,6 +20,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 
@@ -102,6 +106,44 @@ class Automations extends Page
     public function updatedClientId(): void
     {
         unset($this->automations);
+    }
+
+    /** Obnoví hned přehled dárkových balíčků (jinak každých 10 minut). Zákazníkům nic neposílá. */
+    public function refreshBoxesAction(): Action
+    {
+        return Action::make('refreshBoxes')
+            ->label('Aktualizovat')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->color('gray')
+            ->size('sm')
+            ->action(function (array $arguments): void {
+                $automation = $this->find($arguments['automation'] ?? 0);
+                $key = 'gift-boxes-refresh:'.$automation->getKey();
+
+                if (RateLimiter::tooManyAttempts($key, 1)) {
+                    Notification::make()->info()->title('Právě se aktualizovalo')->body('Zkus to znovu za '.RateLimiter::availableIn($key).' s.')->send();
+
+                    return;
+                }
+
+                RateLimiter::hit($key, GiftBoxes::REFRESH_COOLDOWN_SECONDS);
+
+                try {
+                    $count = GiftBoxes::refresh($automation, app(UpgatesOrders::class));
+                } catch (AutomationException $e) {
+                    Notification::make()->danger()->title('Nepodařilo se načíst objednávky')->body($e->getMessage())->send();
+
+                    return;
+                } catch (\Throwable $e) {
+                    report($e);
+                    Notification::make()->danger()->title('Nepodařilo se načíst objednávky')->body('Zkus to za chvíli znovu.')->send();
+
+                    return;
+                }
+
+                unset($this->automations);
+                Notification::make()->success()->title('Aktualizováno')->body('K zabalení: '.$count.'.')->send();
+            });
     }
 
     /** @return array<int, string> hodiny pro výběr (8 => „8:00“) */

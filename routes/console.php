@@ -124,6 +124,12 @@ Schedule::command('automations:run')
     ->withoutOverlapping(30)
     ->onOneServer();
 
+// Dárkové balíčky k zabalení: přehled častěji než hodinový běh, mimo :40 (stejný soubor cache exportu).
+Schedule::command('automations:boxes')
+    ->cron('5-55/10 * * * *')
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
 // Ranní souhrn automatizací pro účty klientů (co se včera poslalo).
 Schedule::command('automations:summary')
     ->dailyAt('07:00')

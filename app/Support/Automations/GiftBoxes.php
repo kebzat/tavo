@@ -25,6 +25,9 @@ class GiftBoxes
     /** Jak dlouho ukazovat už odeslané balíčky. */
     public const DONE_DAYS = 14;
 
+    /** Tlačítko Aktualizovat nejvýš jednou za tolik sekund (export za 24 h Upgates stejně obnovuje po 5 minutách). */
+    public const REFRESH_COOLDOWN_SECONDS = 60;
+
     /**
      * @return ?array{title: string, items: list<array{qty: int, name: string}>, count: int, preview: ?string}
      */
@@ -69,6 +72,32 @@ class GiftBoxes
             'count' => $marks ?: array_sum(array_column($items, 'qty')),
             'preview' => $preview,
         ];
+    }
+
+    /**
+     * Obnoví jen přehled balíčků z exportu objednávek, zákazníkům nic
+     * neposílá. Volá ho `automations:boxes` (každých 10 minut) a tlačítko
+     * Aktualizovat v účtu klienta. Hodinový běh ParcelPickup přehled
+     * obnovuje taky.
+     *
+     * @return int kolik objednávek čeká na zabalení
+     */
+    public static function refresh(Automation $automation, UpgatesOrders $orders): int
+    {
+        $rows = self::overview($automation, $orders->load($automation)['orders']);
+        $snapshot = $automation->fresh()?->snapshot ?? [];
+
+        $automation->forceFill(['snapshot' => [...$snapshot, 'boxes' => $rows, 'boxes_updated_at' => now()->toIso8601String()]])->save();
+
+        return count(array_filter($rows, fn (array $row): bool => $row['to_pack']));
+    }
+
+    /** Kdy se přehled balíčků naposledy obnovil (tlačítkem, po 10 minutách nebo hodinovým během). */
+    public static function updatedAt(Automation $automation): ?Carbon
+    {
+        $times = array_filter([$automation->snapshot['boxes_updated_at'] ?? null, $automation->snapshot['updated_at'] ?? null]);
+
+        return $times === [] ? null : Carbon::parse(max(array_map(fn (string $time): string => Carbon::parse($time)->toIso8601String(), $times)));
     }
 
     /**
