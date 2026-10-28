@@ -22,6 +22,7 @@ use Throwable;
  * 5. uloží přehled zásilek na výdejních místech (jen čísla objednávek a data),
  * 6. hlídá vracející se zásilky: když jejich objednávka skončí ve stavu
  *    Vyřešeno, upozorní (faktura a žádost o hodnocení u vrácené zásilky).
+ * 7. uloží přehled dárkových balíčků k zabalení (GiftBoxes), jen obsah krabic.
  *
  * Stav objednávky mění jen ze `source_statuses`, takže nepřepíše ruční
  * práci (Vyřešeno, Stornováno…). Viz docs/AUTOMATIZACE.md.
@@ -43,11 +44,11 @@ class ParcelPickup
     ) {}
 
     /**
-     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array{tracking: string, order: string, since: string}>, resolved_returns: list<string>, warnings: list<string>, error: ?string}
+     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array{tracking: string, order: string, since: string}>, boxes: list<array<string, mixed>>, resolved_returns: list<string>, warnings: list<string>, error: ?string}
      */
     public function run(Automation $automation, bool $dryRun = false): array
     {
-        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
+        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'boxes' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0];
 
         if (! $automation->enabled) {
             $report['warnings'][] = 'Automatizace je vypnutá, nic se nezakládá.';
@@ -64,6 +65,7 @@ class ParcelPickup
             $this->settle($automation, $orders, $report, $dryRun);
             $this->plan($automation, $orders, $shipments, $report, $dryRun);
             $report['returning'] = $this->watchReturns($automation, $orders, $shipments, $report);
+            $report['boxes'] = GiftBoxes::overview($automation, $export['orders']);
 
             if (! $dryRun) {
                 $this->push($automation, $report);
@@ -84,7 +86,7 @@ class ParcelPickup
             'last_run_at' => now(),
             'last_error' => $report['error'],
             'last_warning' => $report['warnings'] ? implode(' ', $report['warnings']) : null,
-            ...($report['error'] === null ? ['snapshot' => ['updated_at' => now()->toIso8601String(), 'parcels' => $report['parcels'], 'returning' => $report['returning']]] : []),
+            ...($report['error'] === null ? ['snapshot' => ['updated_at' => now()->toIso8601String(), 'parcels' => $report['parcels'], 'returning' => $report['returning'], 'boxes' => $report['boxes']]] : []),
         ])->save();
 
         if ($report['error'] !== null) {
