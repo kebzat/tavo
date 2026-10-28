@@ -197,6 +197,9 @@ odkaz a čas vytvoření, nic o zákazníkovi (ani poznámka zákazníka).
   obnoví jen `snapshot.boxes` (`GiftBoxes::refresh`), u zapnutých automatizací, které balíčky mají. Zákazníkům nic nepošle.
   V účtu klienta je u sekce tlačítko **Aktualizovat** (to samé hned, nejvýš 1× za minutu na automatizaci). Upgates export
   za 24 h obnovuje zhruba po 5 minutách, rychleji to nejde. Popisek sekce ukazuje čas posledního obnovení.
+- **Velké / Úsporné** karty (přepínač nad seznamem, pamatuje se v prohlížeči přes Alpine `$persist`): úsporné mají malý
+  obrázek, obsah ve dvou sloupcích a bez odkazu „Jak krabici poskládat“ (obrázek je klikací), na hodně balíčků.
+  Ovládání je v obsahu sekce, ne v hlavičce (na telefonu by hlavičku zmáčklo). Řazení zůstává od nejstarší.
 - V účtu klienta je sekce jen tehdy, když nějaký balíček je. Karta: obrázek `/b/<id>.jpg` (kreslí server
   náhledů, `server-sbirka/balicek.js` v repu Svět Cejlonu), číslo a stav objednávky, krabice a obsah s počty.
   Když obrázek není (server ho ještě neumí), karta ho vynechá a zůstane odkaz na stránku `/b/<id>`.
@@ -217,3 +220,17 @@ ranní souhrn psal „1 vrácená“ bez čísla a vrácené se ztrácely mezi p
   zůstává, upozornění jde dál jen jednou. Záznamy zapsané před 28. 10. dopravce nemají, dokud je běh znovu neuvidí mezi aktivními.
 - **Ranní souhrn** u každého druhu zprávy vypíše čísla objednávek.
 - Odpověď na SMS: Upgates (Nastavení → SMS) odesílatele nastavit neumí, na SMS odpovědět nejde. Kontakt patří do textu SMS.
+
+## Odkazy do administrace Upgates (28. 10. 2026)
+
+Čísla objednávek v účtu klienta (balíčky, výdejní místa, vrácené, poslané zprávy) vedou rovnou do detailu objednávky
+v administraci Upgates (nová karta). Detail má adresu podle interního ID (`/orders/edit-order/default/4441/` pro 04430),
+které export neobsahuje a od čísla se liší nepravidelně. `UpgatesOrderLinks::resolve` se přihlásí přístupem z trezoru
+(`upgates_vault_entry_id`, jako nahrávání importu) a ID najde filtrem seznamu `/orders/?ordersGrid-filter[order_number]=…`.
+Bere jen jednoznačný výsledek (filtr hledá i část čísla), nejvýš 40 nových čísel za běh. ID se ukládají natrvalo
+do `automatizace/{id}/odkazy.json` (jen čísla, ID a adresa administrace) a znovu se nehledají. Volá se po hodinovém
+běhu a po obnovení balíčků (10 minut, tlačítko). Bez ID je číslo bez odkazu.
+
+Filtr seznamu si Upgates pamatuje jen v relaci, ne u uživatele (ověřeno 28. 10. 2026). Odkaz přímo na filtr by proto
+klientovi nechal seznam objednávek v adminu vyfiltrovaný, ID se hledá na serveru v jeho vlastní relaci.
+

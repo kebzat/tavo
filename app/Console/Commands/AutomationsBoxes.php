@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Automation;
 use App\Support\Automations\GiftBoxes;
+use App\Support\Automations\UpgatesOrderLinks;
 use App\Support\Automations\UpgatesOrders;
 use Illuminate\Console\Command;
 use Throwable;
@@ -19,14 +20,14 @@ class AutomationsBoxes extends Command
 
     protected $description = 'Obnoví přehled dárkových balíčků k zabalení z exportu objednávek';
 
-    public function handle(UpgatesOrders $orders): int
+    public function handle(UpgatesOrders $orders, UpgatesOrderLinks $links): int
     {
         $automations = Automation::query()->where('enabled', true)->orderBy('id')->get()
             ->filter(fn (Automation $automation): bool => $automation->giftBoxes() !== []);
 
         foreach ($automations as $automation) {
             try {
-                $this->line("#{$automation->id}: k zabalení ".GiftBoxes::refresh($automation, $orders).'.');
+                $this->line("#{$automation->id}: k zabalení ".GiftBoxes::refresh($automation, $orders, $links).'.');
             } catch (Throwable $e) {
                 // Text chyby může obsahovat adresu exportu s klíčem, ven jen druh. Hodinový běh chyby hlásí sám.
                 report($e);

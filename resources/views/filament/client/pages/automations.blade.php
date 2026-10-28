@@ -89,13 +89,25 @@
         @endphp
 
         @if ($boxes !== [])
+            {{-- Velké / úsporné karty: volba se pamatuje v prohlížeči. --}}
+            <div class="grid gap-y-8" x-data="{ compact: $persist(false).as('taveo-darkove-balicky-usporne') }">
             <x-filament::section icon="heroicon-o-gift" icon-color="primary">
                 <x-slot name="heading">Dárkové balíčky k zabalení ({{ count($boxesToPack) }})</x-slot>
                 <x-slot name="description">
                     Nejstarší objednávky nahoře. Obrázek ukazuje, jak krabici poskládat, kliknutím se otevře větší.
                     Obnovuje se samo každých 10 minut{{ $boxesAt ? ', naposledy v '.$boxesAt->timezone('Europe/Prague')->format('G:i') : '' }}.
                 </x-slot>
-                <x-slot name="afterHeader">{{ ($this->refreshBoxesAction)(['automation' => $automation->id]) }}</x-slot>
+
+                {{-- Ovládání v obsahu, ne v hlavičce sekce: na telefonu by hlavičku zmáčklo do úzkého sloupce. --}}
+                <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
+                    <div class="inline-flex rounded-lg border border-gray-200 p-0.5 text-sm dark:border-white/10" role="group" aria-label="Zobrazení">
+                        <button type="button" x-on:click="compact = false" x-bind:aria-pressed="! compact"
+                            class="rounded-md px-2.5 py-1 font-medium" x-bind:class="compact ? 'text-gray-500 dark:text-gray-400' : 'bg-gray-100 text-gray-950 dark:bg-white/10 dark:text-white'">Velké</button>
+                        <button type="button" x-on:click="compact = true" x-bind:aria-pressed="compact"
+                            class="rounded-md px-2.5 py-1 font-medium" x-bind:class="compact ? 'bg-gray-100 text-gray-950 dark:bg-white/10 dark:text-white' : 'text-gray-500 dark:text-gray-400'">Úsporné</button>
+                    </div>
+                    {{ ($this->refreshBoxesAction)(['automation' => $automation->id]) }}
+                </div>
 
                 @if ($boxesToPack === [])
                     <p class="text-sm text-gray-500 dark:text-gray-400">Teď není co balit.</p>
@@ -111,6 +123,7 @@
                     @include('filament.client.pages.partials.gift-boxes', ['rows' => $boxesDone])
                 </x-filament::section>
             @endif
+            </div>
         @endif
 
         <x-filament::section>
@@ -134,7 +147,7 @@
                         <tbody>
                             @foreach ($parcels as $parcel)
                                 <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
-                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $parcel['order'] }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $parcel['order']])</td>
                                     <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ match ($parcel['carrier']) { 'zasilkovna', 'packeta' => 'Zásilkovna', 'ppl' => 'PPL', 'dpd' => 'DPD', 'balikovna' => 'Balíkovna', null => '–', default => ucfirst($parcel['carrier']) } }}</td>
                                     <td class="whitespace-nowrap px-3 py-2 tabular-nums text-gray-600 dark:text-gray-400">{{ $parcel['stored_until'] ? \Illuminate\Support\Carbon::parse($parcel['stored_until'])->format('j. n. Y') : 'nevíme' }}</td>
                                     <td @class([
@@ -186,7 +199,7 @@
                                     $back = ! empty($return['returned']) || ($return['status'] ?? null) === $automation->status('returned');
                                 @endphp
                                 <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
-                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $return['order'] }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $return['order']])</td>
                                     <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ match ($return['carrier'] ?? null) { 'zasilkovna', 'packeta' => 'Zásilkovna', 'ppl' => 'PPL', 'dpd' => 'DPD', 'balikovna' => 'Balíkovna', null => '–', default => ucfirst($return['carrier']) } }}</td>
                                     <td class="whitespace-nowrap px-3 py-2">
                                         <x-filament::badge :color="$back ? 'danger' : 'warning'">{{ $back ? 'Vrátila se' : 'Na cestě zpět' }}</x-filament::badge>
@@ -222,7 +235,7 @@
                             @foreach ($events as $event)
                                 <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
                                     <td class="whitespace-nowrap px-3 py-2 tabular-nums text-gray-600 dark:text-gray-400">{{ $event->created_at->timezone('Europe/Prague')->format('j. n. G:i') }}</td>
-                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $event->order_number }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $event->order_number])</td>
                                     <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                                         {{ AutomationEvent::kindLabel($event->kind) }}
                                         @if ($event->detail)

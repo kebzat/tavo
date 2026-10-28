@@ -16,6 +16,7 @@ use App\Support\Automations\AutomationException;
 use App\Support\Automations\PacketaTracking;
 use App\Support\Automations\ParcelPickup;
 use App\Support\Automations\UpgatesImportUpload;
+use App\Support\Automations\UpgatesOrderLinks;
 use App\Support\Automations\UpgatesOrders;
 use App\Support\Vault\LoginBroker;
 use Carbon\CarbonImmutable;
@@ -57,6 +58,9 @@ class AutomationsTest extends TestCase
 
     /** @var list<string> soubory, které by web nahrál do importu v Upgates (UTF-8) */
     private array $uploads = [];
+
+    /** @var list<string> čísla objednávek hledaná v administraci (odkazy) */
+    private array $adminLookups = [];
 
     /** Odpověď Upgates na nahraný import. */
     private bool $uploadAccepted = true;
@@ -140,6 +144,15 @@ class AutomationsTest extends TestCase
             return $request->method() === 'GET'
                 ? Http::response('<form method="post" action="/login/?do=loginForm-submit"><input name="email"><input type="password" name="password"><input type="hidden" name="_token_" value="t1"></form>')
                 : Http::response('<h1>Přehled</h1>', 200, ['Set-Cookie' => 'PHPSESSID=relace; path=/; domain=svetcejlonu-1.admin.test']);
+        }
+
+        if ($url === 'https://svetcejlonu-1.admin.test/orders/') {
+            // Seznam objednávek s filtrem čísla: 7002 najde víc objednávek (nejednoznačné), ostatní jednu s ID 9000 + číslo.
+            $number = (string) data_get($request->data(), 'ordersGrid-filter.order_number');
+            $this->adminLookups[] = $number;
+            $row = fn (int $id, string $code): string => '<tr><td><a href="/orders/edit-order/default/'.$id.'/">'.$code.'</a></td></tr>';
+
+            return Http::response('<table>'.($number === '7002' ? $row(1, '07002').$row(2, '17002') : $row(9000 + (int) $number, $number)).'</table>');
         }
 
         if ($url === 'https://svetcejlonu-1.admin.test/setup/export-import/default/orders/') {
@@ -497,6 +510,44 @@ class AutomationsTest extends TestCase
             ->assertSee('Vrácené zásilky za posledních 21 dní (3)')
             ->assertSeeInOrder(['04150', 'Na cestě zpět', '04138', 'Zásilkovna', 'Vrátila se', 'Vráceno', '04001'])
             ->assertSee('8:00–20:00');
+    }
+
+    public function test_odkazy_na_objednavky_v_upgates(): void
+    {
+        $entry = VaultEntry::query()->create([
+            'client_id' => $this->client->id,
+            'type' => VaultType::Upgates,
+            'name' => 'Upgates administrace',
+            'url' => 'https://svetcejlonu-1.admin.test',
+            'username' => 'automatizace@taveo.cz',
+            'secret' => 'tajne-heslo',
+            'settings' => ['login_url' => 'https://svetcejlonu-1.admin.test/login/'],
+            'agent_access' => 'none',
+        ]);
+        $this->automation->update(['settings' => [...$this->automation->settings, 'upgates_vault_entry_id' => $entry->id, 'upgates_import_id' => 12]]);
+        $this->full = ['7001' => ['Odeslána', null], '7002' => ['Odeslána', null], '7003' => ['Odeslána', null]];
+        $this->shipments = [$this->shipment('7001', '2026-10-22'), $this->shipment('7002', '2026-10-25'), $this->shipment('7003', null, 'dpd', 'INTRANSIT', returned: true)];
+
+        $this->runEngine();
+
+        $automation = $this->automation->fresh();
+        $this->assertSame('https://svetcejlonu-1.admin.test/orders/edit-order/default/16001/', UpgatesOrderLinks::url($automation, '7001'));
+        $this->assertNull(UpgatesOrderLinks::url($automation, '7002'));
+        $this->assertNotNull(UpgatesOrderLinks::url($automation, '7003'));
+        $this->assertDatabaseHas('vault_logs', ['vault_entry_id' => $entry->id, 'action' => 'upgates_order_links']);
+
+        // Známá ID se znovu nehledají, nejednoznačná ano.
+        $this->adminLookups = [];
+        $this->travel(1)->hours();
+        $this->runEngine();
+        $this->assertSame(['7002'], $this->adminLookups);
+
+        $this->actingAs(User::factory()->create(['role' => UserRole::Client, 'client_id' => $this->client->id]));
+        $this->get('/muj-ucet/automatizace')
+            ->assertOk()
+            ->assertSee('href="https://svetcejlonu-1.admin.test/orders/edit-order/default/16001/"', false)
+            ->assertSee('href="https://svetcejlonu-1.admin.test/orders/edit-order/default/16003/"', false)
+            ->assertDontSee('edit-order/default/1/', false);
     }
 
     public function test_vypnute_druhy_zprav_se_neposilaji(): void
