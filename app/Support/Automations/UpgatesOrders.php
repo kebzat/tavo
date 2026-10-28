@@ -12,8 +12,9 @@ use XMLReader;
 
 /**
  * Aktuální stavy objednávek z XML exportů Upgates (číslo → stav). Z exportu
- * se čte jen číslo objednávky, stav a čas poslední změny, osobní údaje
- * zákazníků se nikam neukládají.
+ * se čte jen číslo objednávky, stav a čas poslední změny, u objednávek
+ * s dárkovým balíčkem navíc obsah balíčku z poznámky (GiftBoxes) a čas
+ * vytvoření. Osobní údaje zákazníků se nikam neukládají.
  *
  * Při víc adresách je první kompletní export (tisíce objednávek): stahuje se
  * nejvýš jednou za 6 h a mezi tím se drží v cache na disku (jen čísla,
@@ -28,8 +29,11 @@ class UpgatesOrders
     /** Jak starý kompletní export z cache ještě stačí, když stažení selže. */
     public const FULL_MAX_AGE_HOURS = 30;
 
+    /** Verze cache kompletního exportu; zvýšit, když parse() začne číst něco nového. */
+    private const CACHE_VERSION = 2;
+
     /**
-     * @return array{orders: array<string, array{status: string, updated_at: ?string}>, warnings: list<string>}
+     * @return array{orders: array<string, array<string, mixed>>, warnings: list<string>}
      */
     public function load(Automation $automation, bool $dryRun = false): array
     {
@@ -92,7 +96,7 @@ class UpgatesOrders
     {
         $path = 'automatizace/'.$automation->getKey().'/objednavky.json';
         $cache = Storage::disk('local')->exists($path) ? json_decode((string) Storage::disk('local')->get($path), true) : null;
-        $cached = is_array($cache) && ($cache['url'] ?? null) === sha1($url) ? $cache : null;
+        $cached = is_array($cache) && ($cache['url'] ?? null) === sha1($url) && ($cache['v'] ?? 1) === self::CACHE_VERSION ? $cache : null;
         $age = $cached ? Carbon::parse($cached['fetched_at'])->diffInMinutes(now()) / 60 : null;
 
         if ($cached && $age < self::FULL_REFRESH_HOURS) {
@@ -113,7 +117,7 @@ class UpgatesOrders
         }
 
         if (! $dryRun) {
-            Storage::disk('local')->put($path, json_encode(['url' => sha1($url), 'fetched_at' => now()->toIso8601String(), 'orders' => $orders]));
+            Storage::disk('local')->put($path, json_encode(['v' => self::CACHE_VERSION, 'url' => sha1($url), 'fetched_at' => now()->toIso8601String(), 'orders' => $orders]));
         }
 
         return $orders;
@@ -142,9 +146,10 @@ class UpgatesOrders
     /**
      * Čísla objednávek a jejich stavy z XML Upgates. Číslo je v ORDER_NUMBER
      * (vlastní export) nebo HEADER/CODE (vzorový formát), stav v STATUS
-     * přímo v objednávce nebo v HEADER (ne STATUS souhlasů).
+     * přímo v objednávce nebo v HEADER (ne STATUS souhlasů). Položky s dárkovým
+     * balíčkem v poznámce (ITEMS/ITEM/NOTE) přidají `boxes` a `created_at`.
      *
-     * @return array<string, array{status: string, updated_at: ?string}>
+     * @return array<string, array{status: string, updated_at: ?string, created_at?: ?string, boxes?: list<array<string, mixed>>}>
      */
     public static function parse(string $xml): array
     {
@@ -185,6 +190,13 @@ class UpgatesOrders
                             'status' => $status,
                             'updated_at' => self::time(self::text($order, 'UPDATED_AT') ?? self::text($header, 'UPDATED_AT')),
                         ];
+
+                        $boxes = self::boxes($order);
+
+                        if ($boxes !== []) {
+                            $orders[$number]['created_at'] = self::time(self::text($order, 'CREATED_AT') ?? self::text($header, 'CREATED_AT'));
+                            $orders[$number]['boxes'] = $boxes;
+                        }
                     }
                 }
 
@@ -197,6 +209,23 @@ class UpgatesOrders
         }
 
         return $orders;
+    }
+
+    /** @return list<array<string, mixed>> dárkové balíčky z poznámek položek */
+    private static function boxes(DOMElement $order): array
+    {
+        $boxes = [];
+
+        foreach (self::child($order, 'ITEMS')?->childNodes ?? [] as $item) {
+            $note = $item instanceof DOMElement && $item->tagName === 'ITEM' ? self::text($item, 'NOTE') : null;
+            $box = $note !== null ? GiftBoxes::fromNote((string) self::text($item, 'TITLE'), $note) : null;
+
+            if ($box !== null) {
+                $boxes[] = $box;
+            }
+        }
+
+        return $boxes;
     }
 
     private static function child(?DOMElement $parent, string $name): ?DOMElement

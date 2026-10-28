@@ -75,6 +75,33 @@
             </dl>
         </x-filament::section>
 
+        @php
+            $boxes = $automation->giftBoxes();
+            $boxesToPack = array_values(array_filter($boxes, fn (array $row): bool => $row['to_pack']));
+            $boxesDone = array_values(array_filter($boxes, fn (array $row): bool => ! $row['to_pack']));
+        @endphp
+
+        @if ($boxes !== [])
+            <x-filament::section icon="heroicon-o-gift" icon-color="primary">
+                <x-slot name="heading">Dárkové balíčky k zabalení ({{ count($boxesToPack) }})</x-slot>
+                <x-slot name="description">Nejstarší objednávky nahoře. Obrázek ukazuje, jak krabici poskládat, kliknutím se otevře větší. Stav z posledního běhu (každou hodinu).</x-slot>
+
+                @if ($boxesToPack === [])
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Teď není co balit.</p>
+                @else
+                    @include('filament.client.pages.partials.gift-boxes', ['rows' => $boxesToPack])
+                @endif
+            </x-filament::section>
+
+            @if ($boxesDone !== [])
+                <x-filament::section collapsible collapsed>
+                    <x-slot name="heading">Odeslané balíčky za posledních {{ \App\Support\Automations\GiftBoxes::DONE_DAYS }} dní ({{ count($boxesDone) }})</x-slot>
+
+                    @include('filament.client.pages.partials.gift-boxes', ['rows' => $boxesDone])
+                </x-filament::section>
+            @endif
+        @endif
+
         <x-filament::section>
             <x-slot name="heading">Zásilky na výdejních místech ({{ count($parcels) }})</x-slot>
             <x-slot name="description">Stav z posledního běhu. Nejdřív ty, kterým úložní doba končí nejdřív.</x-slot>

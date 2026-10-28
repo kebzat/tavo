@@ -167,4 +167,10 @@ class Automation extends Model
     {
         return array_values((array) ($this->snapshot['parcels'] ?? []));
     }
+
+    /** @return list<array{order: string, status: string, created_at: ?string, to_pack: bool, boxes: list<array{title: string, items: list<array{qty: int, name: string}>, count: int, preview: ?string}>}> */
+    public function giftBoxes(): array
+    {
+        return array_values((array) ($this->snapshot['boxes'] ?? []));
+    }
 }

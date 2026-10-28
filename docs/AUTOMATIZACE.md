@@ -179,3 +179,19 @@ k nezaplacené objednávce) a za 3 dny žádost o hodnocení.
   (jednou), zásilka se přestane hlídat. Doručená příjemci (vrácení se nakonec nekonalo) se jen přestane hlídat.
 - Automatizace sama nic nemění: přepnutí na Vráceno by poslalo e-mail o nevyzvednuté zásilce podruhé.
   Upozornění radí přepnout Vyřešeno na Nevyřešeno (žádost o hodnocení pak neodejde).
+
+## Dárkové balíčky k zabalení (28. 10. 2026)
+
+Skládačka dárkových balíčků na e-shopu (Svět Cejlonu) píše do poznámky krabice v objednávce obsah balíčku,
+odkaz na obrázek poskládané krabice (`https://svetcejlonu.tomaskebza.cz/b/<id>`) a značky `[balicek][…]`.
+Export objednávek má poznámku v `ITEMS/ITEM/NOTE`, takže ji `UpgatesOrders::parse` čte rovnou z něj
+(`GiftBoxes::fromNote`). Z exportu se k objednávce s balíčkem uloží jen název krabice, obsah, počet kusů,
+odkaz a čas vytvoření, nic o zákazníkovi (ani poznámka zákazníka).
+
+- Každý běh uloží do `snapshot.boxes` přehled (`GiftBoxes::overview`): **k zabalení** = stav není odeslaný
+  (`status_sent`, `status_reminder`, `status_last_day`, `status_returned`, `status_resolved`), nejstarší nahoře.
+  Odeslané se ukazují ještě 14 dní, stornované vůbec.
+- Kompletní export se kvůli tomu stahuje znovu (verze cache 2), jinak by starší balíčky chyběly až 6 hodin.
+- V účtu klienta je sekce jen tehdy, když nějaký balíček je. Karta: obrázek `/b/<id>.jpg` (kreslí server
+  náhledů, `server-sbirka/balicek.js` v repu Svět Cejlonu), číslo a stav objednávky, krabice a obsah s počty.
+  Když obrázek není (server ho ještě neumí), karta ho vynechá a zůstane odkaz na stránku `/b/<id>`.
