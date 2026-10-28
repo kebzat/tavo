@@ -82,12 +82,13 @@ class GiftBoxes
      *
      * @return int kolik objednávek čeká na zabalení
      */
-    public static function refresh(Automation $automation, UpgatesOrders $orders): int
+    public static function refresh(Automation $automation, UpgatesOrders $orders, ?UpgatesOrderLinks $links = null): int
     {
         $rows = self::overview($automation, $orders->load($automation)['orders']);
         $snapshot = $automation->fresh()?->snapshot ?? [];
 
         $automation->forceFill(['snapshot' => [...$snapshot, 'boxes' => $rows, 'boxes_updated_at' => now()->toIso8601String()]])->save();
+        $links?->resolve($automation, array_column($rows, 'order'));
 
         return count(array_filter($rows, fn (array $row): bool => $row['to_pack']));
     }

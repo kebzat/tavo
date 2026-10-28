@@ -14,7 +14,7 @@
 
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white">{{ $row['order'] }}</span>
+                        <span class="text-lg font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $row['order']])</span>
                         @if ($row['created_at'])
                             <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{{ \Illuminate\Support\Carbon::parse($row['created_at'])->timezone('Europe/Prague')->format('j. n. G:i') }}</span>
                         @endif

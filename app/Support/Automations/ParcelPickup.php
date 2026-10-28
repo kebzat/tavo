@@ -24,7 +24,8 @@ use Throwable;
  * 6. hlídá vracející se zásilky (přehled vrácených v účtu klienta): když
  *    jejich objednávka skončí ve stavu Vyřešeno, upozorní (faktura a žádost
  *    o hodnocení u vrácené zásilky).
- * 7. uloží přehled dárkových balíčků k zabalení (GiftBoxes), jen obsah krabic.
+ * 7. uloží přehled dárkových balíčků k zabalení (GiftBoxes), jen obsah krabic,
+ * 8. dohledá odkazy do administrace u objednávek v přehledech (UpgatesOrderLinks).
  *
  * Stav objednávky mění jen ze `source_statuses`, takže nepřepíše ruční
  * práci (Vyřešeno, Stornováno…). Viz docs/AUTOMATIZACE.md.
@@ -43,6 +44,7 @@ class ParcelPickup
         private PacketaTracking $packeta,
         private AutomationAlerts $alerts,
         private UpgatesImportUpload $upload,
+        private UpgatesOrderLinks $links,
     ) {}
 
     /**
@@ -92,6 +94,15 @@ class ParcelPickup
             'last_warning' => $report['warnings'] ? implode(' ', $report['warnings']) : null,
             ...($report['error'] === null ? ['snapshot' => ['updated_at' => now()->toIso8601String(), 'parcels' => $report['parcels'], 'returning' => $report['returning'], 'boxes' => $report['boxes']]] : []),
         ])->save();
+
+        if ($report['error'] === null) {
+            $this->links->resolve($automation, [
+                ...array_column($report['boxes'], 'order'),
+                ...array_column($report['parcels'], 'order'),
+                ...array_column($report['returning'], 'order'),
+                ...$automation->events()->latest('id')->limit(50)->pluck('order_number'),
+            ]);
+        }
 
         if ($report['error'] !== null) {
             $this->alerts->problem($automation, 'error:'.sha1($report['error']), $report['error'],

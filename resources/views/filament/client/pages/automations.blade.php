@@ -134,7 +134,7 @@
                         <tbody>
                             @foreach ($parcels as $parcel)
                                 <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
-                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $parcel['order'] }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $parcel['order']])</td>
                                     <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ match ($parcel['carrier']) { 'zasilkovna', 'packeta' => 'Zásilkovna', 'ppl' => 'PPL', 'dpd' => 'DPD', 'balikovna' => 'Balíkovna', null => '–', default => ucfirst($parcel['carrier']) } }}</td>
                                     <td class="whitespace-nowrap px-3 py-2 tabular-nums text-gray-600 dark:text-gray-400">{{ $parcel['stored_until'] ? \Illuminate\Support\Carbon::parse($parcel['stored_until'])->format('j. n. Y') : 'nevíme' }}</td>
                                     <td @class([
@@ -186,7 +186,7 @@
                                     $back = ! empty($return['returned']) || ($return['status'] ?? null) === $automation->status('returned');
                                 @endphp
                                 <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
-                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $return['order'] }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $return['order']])</td>
                                     <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-400">{{ match ($return['carrier'] ?? null) { 'zasilkovna', 'packeta' => 'Zásilkovna', 'ppl' => 'PPL', 'dpd' => 'DPD', 'balikovna' => 'Balíkovna', null => '–', default => ucfirst($return['carrier']) } }}</td>
                                     <td class="whitespace-nowrap px-3 py-2">
                                         <x-filament::badge :color="$back ? 'danger' : 'warning'">{{ $back ? 'Vrátila se' : 'Na cestě zpět' }}</x-filament::badge>
@@ -222,7 +222,7 @@
                             @foreach ($events as $event)
                                 <tr class="border-b border-gray-100 last:border-0 dark:border-white/5">
                                     <td class="whitespace-nowrap px-3 py-2 tabular-nums text-gray-600 dark:text-gray-400">{{ $event->created_at->timezone('Europe/Prague')->format('j. n. G:i') }}</td>
-                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">{{ $event->order_number }}</td>
+                                    <td class="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-gray-950 dark:text-white">@include('filament.client.pages.partials.order-number', ['number' => $event->order_number])</td>
                                     <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                                         {{ AutomationEvent::kindLabel($event->kind) }}
                                         @if ($event->detail)

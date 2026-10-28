@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\User;
 use App\Support\Automations\AutomationException;
 use App\Support\Automations\GiftBoxes;
+use App\Support\Automations\UpgatesOrderLinks;
 use App\Support\Automations\UpgatesOrders;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -129,7 +130,7 @@ class Automations extends Page
                 RateLimiter::hit($key, GiftBoxes::REFRESH_COOLDOWN_SECONDS);
 
                 try {
-                    $count = GiftBoxes::refresh($automation, app(UpgatesOrders::class));
+                    $count = GiftBoxes::refresh($automation, app(UpgatesOrders::class), app(UpgatesOrderLinks::class));
                 } catch (AutomationException $e) {
                     Notification::make()->danger()->title('Nepodařilo se načíst objednávky')->body($e->getMessage())->send();
 

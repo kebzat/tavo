@@ -217,3 +217,17 @@ ranní souhrn psal „1 vrácená“ bez čísla a vrácené se ztrácely mezi p
   zůstává, upozornění jde dál jen jednou. Záznamy zapsané před 28. 10. dopravce nemají, dokud je běh znovu neuvidí mezi aktivními.
 - **Ranní souhrn** u každého druhu zprávy vypíše čísla objednávek.
 - Odpověď na SMS: Upgates (Nastavení → SMS) odesílatele nastavit neumí, na SMS odpovědět nejde. Kontakt patří do textu SMS.
+
+## Odkazy do administrace Upgates (28. 10. 2026)
+
+Čísla objednávek v účtu klienta (balíčky, výdejní místa, vrácené, poslané zprávy) vedou rovnou do detailu objednávky
+v administraci Upgates (nová karta). Detail má adresu podle interního ID (`/orders/edit-order/default/4441/` pro 04430),
+které export neobsahuje a od čísla se liší nepravidelně. `UpgatesOrderLinks::resolve` se přihlásí přístupem z trezoru
+(`upgates_vault_entry_id`, jako nahrávání importu) a ID najde filtrem seznamu `/orders/?ordersGrid-filter[order_number]=…`.
+Bere jen jednoznačný výsledek (filtr hledá i část čísla), nejvýš 40 nových čísel za běh. ID se ukládají natrvalo
+do `automatizace/{id}/odkazy.json` (jen čísla, ID a adresa administrace) a znovu se nehledají. Volá se po hodinovém
+běhu a po obnovení balíčků (10 minut, tlačítko). Bez ID je číslo bez odkazu.
+
+Filtr seznamu si Upgates pamatuje jen v relaci, ne u uživatele (ověřeno 28. 10. 2026). Odkaz přímo na filtr by proto
+klientovi nechal seznam objednávek v adminu vyfiltrovaný, ID se hledá na serveru v jeho vlastní relaci.
+
