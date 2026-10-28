@@ -85,12 +85,17 @@
             $boxes = $automation->giftBoxes();
             $boxesToPack = array_values(array_filter($boxes, fn (array $row): bool => $row['to_pack']));
             $boxesDone = array_values(array_filter($boxes, fn (array $row): bool => ! $row['to_pack']));
+            $boxesAt = \App\Support\Automations\GiftBoxes::updatedAt($automation);
         @endphp
 
         @if ($boxes !== [])
             <x-filament::section icon="heroicon-o-gift" icon-color="primary">
                 <x-slot name="heading">Dárkové balíčky k zabalení ({{ count($boxesToPack) }})</x-slot>
-                <x-slot name="description">Nejstarší objednávky nahoře. Obrázek ukazuje, jak krabici poskládat, kliknutím se otevře větší. Stav z posledního běhu (každou hodinu).</x-slot>
+                <x-slot name="description">
+                    Nejstarší objednávky nahoře. Obrázek ukazuje, jak krabici poskládat, kliknutím se otevře větší.
+                    Obnovuje se samo každých 10 minut{{ $boxesAt ? ', naposledy v '.$boxesAt->timezone('Europe/Prague')->format('G:i') : '' }}.
+                </x-slot>
+                <x-slot name="afterHeader">{{ ($this->refreshBoxesAction)(['automation' => $automation->id]) }}</x-slot>
 
                 @if ($boxesToPack === [])
                     <p class="text-sm text-gray-500 dark:text-gray-400">Teď není co balit.</p>

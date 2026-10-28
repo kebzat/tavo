@@ -4,13 +4,18 @@ namespace Tests\Feature;
 
 use App\Enums\AutomationType;
 use App\Enums\UserRole;
+use App\Filament\Client\Pages\Automations;
 use App\Models\Automation;
+use App\Models\AutomationEvent;
 use App\Models\Client;
 use App\Models\User;
 use App\Support\Automations\GiftBoxes;
 use App\Support\Automations\UpgatesOrders;
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /** Dárkové balíčky v přehledu automatizace: obsah z poznámky krabice v exportu Upgates. Viz docs/AUTOMATIZACE.md. */
@@ -98,7 +103,7 @@ class GiftBoxesTest extends TestCase
             'type' => AutomationType::UpgatesParcelPickup,
             'enabled' => true,
             'last_run_at' => now(),
-            'snapshot' => ['parcels' => [], 'boxes' => [
+            'snapshot' => ['updated_at' => now()->toIso8601String(), 'parcels' => [], 'boxes' => [
                 ['order' => '05001', 'status' => 'Přijatá', 'created_at' => '2026-10-28T09:00:00+01:00', 'to_pack' => true, 'boxes' => [$box]],
                 ['order' => '05003', 'status' => 'Odeslána', 'created_at' => '2026-10-26T09:00:00+01:00', 'to_pack' => false, 'boxes' => [$box]],
             ]],
@@ -112,7 +117,61 @@ class GiftBoxesTest extends TestCase
             ->assertSee('https://svetcejlonu.tomaskebza.cz/b/sVqGtBlQ.jpg', false)
             ->assertSee('SOURSOP - ZELENÝ ČAJ 20 G')
             ->assertSee('2×')
-            ->assertSee('Odeslané balíčky za posledních 14 dní (1)');
+            ->assertSee('Odeslané balíčky za posledních 14 dní (1)')
+            ->assertSee('Obnovuje se samo každých 10 minut, naposledy v 15:00')
+            ->assertSee('Aktualizovat');
+    }
+
+    public function test_prehled_se_obnovi_prikazem_i_tlacitkem_a_nic_neposle(): void
+    {
+        $client = Client::query()->firstOrCreate(['slug' => 'svet-cejlonu'], ['name' => 'Svět Cejlonu']);
+        $box = GiftBoxes::fromNote('Dárková krabice velká (30 × 30 cm)', self::NOTE);
+        $automation = Automation::query()->create([
+            'client_id' => $client->id,
+            'type' => AutomationType::UpgatesParcelPickup,
+            'enabled' => true,
+            'order_export_url' => 'https://svetcejlonu.test/export/24h.xml',
+            'snapshot' => ['updated_at' => now()->subHour()->toIso8601String(), 'parcels' => [$parcel = ['order' => '09103', 'carrier' => 'ppl', 'stored_until' => null, 'days_left' => null, 'status' => 'PARCELSHOP', 'sent' => []]], 'boxes' => [
+                ['order' => '05001', 'status' => 'Přijatá', 'created_at' => '2026-10-28T09:00:00+01:00', 'to_pack' => true, 'boxes' => [$box]],
+            ]],
+        ]);
+        $orders = ['05001' => 'Odeslána', '05002' => 'Přijatá'];
+        Http::fake(function () use (&$orders) {
+            $xml = '';
+            foreach ($orders as $number => $status) {
+                $xml .= '<ORDER><HEADER><CODE>'.$number.'</CODE><STATUS>'.$status.'</STATUS><CREATED_AT>2026-10-28 1'.substr($number, -1).':00:00</CREATED_AT></HEADER>'
+                    .'<ITEMS><ITEM><TITLE>Dárková krabice velká (30 × 30 cm)</TITLE><NOTE>'.htmlspecialchars(self::NOTE).'</NOTE></ITEM></ITEMS></ORDER>';
+            }
+
+            return Http::response('<?xml version="1.0" encoding="utf-8"?><ORDERS>'.$xml.'</ORDERS>');
+        });
+
+        $this->artisan('automations:boxes')->expectsOutputToContain('k zabalení 1')->assertSuccessful();
+
+        $snapshot = $automation->fresh()->snapshot;
+        $this->assertSame(['05002', '05001'], array_column($snapshot['boxes'], 'order'));
+        $this->assertSame([$parcel], $snapshot['parcels']);
+        $this->assertTrue(GiftBoxes::updatedAt($automation->fresh())->equalTo(now()));
+
+        // Tlačítko: hned nové objednávky, podruhé do minuty už export nestahuje.
+        $orders['05003'] = 'Přijatá';
+        Filament::setCurrentPanel('client');
+        $marek = User::factory()->create(['role' => UserRole::Client, 'client_id' => $client->id]);
+        Livewire::actingAs($marek)->test(Automations::class)
+            ->callAction('refreshBoxes', [], ['automation' => $automation->id])
+            ->assertNotified('Aktualizováno');
+        $this->assertCount(3, $automation->fresh()->giftBoxes());
+
+        Livewire::actingAs($marek)->test(Automations::class)
+            ->callAction('refreshBoxes', [], ['automation' => $automation->id])
+            ->assertNotified('Právě se aktualizovalo');
+        Http::assertSentCount(2);
+        $this->assertSame(0, AutomationEvent::query()->count());
+
+        // Cizí klient obnovit nesmí.
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $other = User::factory()->create(['role' => UserRole::Client, 'client_id' => Client::query()->create(['name' => 'Jiný', 'slug' => 'jiny'])->id]);
+        Livewire::actingAs($other)->test(Automations::class)->callAction('refreshBoxes', [], ['automation' => $automation->id]);
     }
 
     public function test_bez_balicku_se_sekce_neukaze(): void
