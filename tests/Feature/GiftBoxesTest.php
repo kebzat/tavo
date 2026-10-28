@@ -119,7 +119,9 @@ class GiftBoxesTest extends TestCase
             ->assertSee('2×')
             ->assertSee('Odeslané balíčky za posledních 14 dní (1)')
             ->assertSee('Obnovuje se samo každých 10 minut, naposledy v 15:00')
-            ->assertSee('Aktualizovat');
+            ->assertSee('Aktualizovat')
+            ->assertSee('Úsporné')
+            ->assertSee("\$persist(false).as('taveo-darkove-balicky-usporne')", false);
     }
 
     public function test_prehled_se_obnovi_prikazem_i_tlacitkem_a_nic_neposle(): void

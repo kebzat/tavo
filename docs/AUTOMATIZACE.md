@@ -197,6 +197,9 @@ odkaz a čas vytvoření, nic o zákazníkovi (ani poznámka zákazníka).
   obnoví jen `snapshot.boxes` (`GiftBoxes::refresh`), u zapnutých automatizací, které balíčky mají. Zákazníkům nic nepošle.
   V účtu klienta je u sekce tlačítko **Aktualizovat** (to samé hned, nejvýš 1× za minutu na automatizaci). Upgates export
   za 24 h obnovuje zhruba po 5 minutách, rychleji to nejde. Popisek sekce ukazuje čas posledního obnovení.
+- **Velké / Úsporné** karty (přepínač nad seznamem, pamatuje se v prohlížeči přes Alpine `$persist`): úsporné mají malý
+  obrázek, obsah ve dvou sloupcích a bez odkazu „Jak krabici poskládat“ (obrázek je klikací), na hodně balíčků.
+  Ovládání je v obsahu sekce, ne v hlavičce (na telefonu by hlavičku zmáčklo). Řazení zůstává od nejstarší.
 - V účtu klienta je sekce jen tehdy, když nějaký balíček je. Karta: obrázek `/b/<id>.jpg` (kreslí server
   náhledů, `server-sbirka/balicek.js` v repu Svět Cejlonu), číslo a stav objednávky, krabice a obsah s počty.
   Když obrázek není (server ho ještě neumí), karta ho vynechá a zůstane odkaz na stránku `/b/<id>`.
