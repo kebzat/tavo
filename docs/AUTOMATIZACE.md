@@ -195,11 +195,11 @@ odkaz a čas vytvoření, nic o zákazníkovi (ani poznámka zákazníka).
 - Kompletní export se kvůli tomu stahuje znovu (verze cache 2), jinak by starší balíčky chyběly až 6 hodin.
 - **Častěji než hodinový běh:** `automations:boxes` každých 10 minut (v :05, :15…, mimo :40 kvůli sdílené cache exportu)
   obnoví jen `snapshot.boxes` (`GiftBoxes::refresh`), u zapnutých automatizací, které balíčky mají. Zákazníkům nic nepošle.
-  V účtu klienta je u sekce tlačítko **Aktualizovat** (to samé hned, nejvýš 1× za minutu na automatizaci). Upgates export
+  Upgates export
   za 24 h obnovuje zhruba po 5 minutách, rychleji to nejde. Popisek sekce ukazuje čas posledního obnovení.
 - **Velké / Úsporné** karty (přepínač nad seznamem, pamatuje se v prohlížeči přes Alpine `$persist`): úsporné mají malý
   obrázek, obsah ve dvou sloupcích a bez odkazu „Jak krabici poskládat“ (obrázek je klikací), na hodně balíčků.
-  Ovládání je v obsahu sekce, ne v hlavičce (na telefonu by hlavičku zmáčklo). Řazení zůstává od nejstarší.
+  Přepínač je v obsahu sekce, ne v hlavičce (na telefonu by hlavičku zmáčkl). Řazení zůstává od nejstarší.
 - V účtu klienta je sekce jen tehdy, když nějaký balíček je. Karta: obrázek `/b/<id>.jpg` (kreslí server
   náhledů, `server-sbirka/balicek.js` v repu Svět Cejlonu), číslo a stav objednávky, krabice a obsah s počty.
   Když obrázek není (server ho ještě neumí), karta ho vynechá a zůstane odkaz na stránku `/b/<id>`.
@@ -233,4 +233,12 @@ běhu a po obnovení balíčků (10 minut, tlačítko). Bez ID je číslo bez od
 
 Filtr seznamu si Upgates pamatuje jen v relaci, ne u uživatele (ověřeno 28. 10. 2026). Odkaz přímo na filtr by proto
 klientovi nechal seznam objednávek v adminu vyfiltrovaný, ID se hledá na serveru v jeho vlastní relaci.
+
+## Tlačítko Aktualizovat (28. 10. 2026)
+
+Nahoře na stránce Automatizace v účtu klienta (`refreshAll`, hlavička stránky). Spustí hned celý běh `ParcelPickup::run`
+u zapnutých automatizací, které uživatel vidí: stavy, zprávy, výdejní místa, vrácené, balíčky, odkazy. Platí stejná
+pravidla jako hodinový běh (každá zpráva jen jednou, do Upgates jen v hodinách posílání). Nejvýš 1× za minutu.
+Běh drží zámek `automations:run:{id}` (cache, 10 min): když zrovna jede hodinový, ruční se přeskočí (`busy`) a nic neuloží.
+Tlačítko u sekce balíčků zmizelo, balíčky se dál obnovují i samy po 10 minutách.
 

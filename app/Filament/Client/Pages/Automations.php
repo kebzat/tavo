@@ -6,10 +6,7 @@ use App\Models\Automation;
 use App\Models\AutomationEvent;
 use App\Models\Client;
 use App\Models\User;
-use App\Support\Automations\AutomationException;
-use App\Support\Automations\GiftBoxes;
-use App\Support\Automations\UpgatesOrderLinks;
-use App\Support\Automations\UpgatesOrders;
+use App\Support\Automations\ParcelPickup;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -43,6 +40,9 @@ class Automations extends Page
     protected static ?string $slug = 'automatizace';
 
     protected string $view = 'filament.client.pages.automations';
+
+    /** Tlačítko Aktualizovat nejvýš jednou za tolik sekund. */
+    public const REFRESH_COOLDOWN_SECONDS = 60;
 
     /** Jen pro správce: kterého klienta ukázat. Klientovi se nepoužije. */
     #[Url(as: 'klient')]
@@ -109,42 +109,55 @@ class Automations extends Page
         unset($this->automations);
     }
 
-    /** Obnoví hned přehled dárkových balíčků (jinak každých 10 minut). Zákazníkům nic neposílá. */
-    public function refreshBoxesAction(): Action
+    /** Aktualizovat nahoře: hned celý běh jako každou hodinu (zásilky, vrácené, balíčky, odkazy). */
+    protected function getHeaderActions(): array
     {
-        return Action::make('refreshBoxes')
-            ->label('Aktualizovat')
-            ->icon(Heroicon::OutlinedArrowPath)
-            ->color('gray')
-            ->size('sm')
-            ->action(function (array $arguments): void {
-                $automation = $this->find($arguments['automation'] ?? 0);
-                $key = 'gift-boxes-refresh:'.$automation->getKey();
+        return [
+            Action::make('refreshAll')
+                ->label('Aktualizovat')
+                ->icon(Heroicon::OutlinedArrowPath)
+                ->color('gray')
+                ->visible(fn (): bool => $this->automations->contains('enabled', true))
+                ->action(function (): void {
+                    $automations = $this->automations->where('enabled', true);
+                    $key = 'automations-refresh:'.$automations->pluck('id')->implode(',');
 
-                if (RateLimiter::tooManyAttempts($key, 1)) {
-                    Notification::make()->info()->title('Právě se aktualizovalo')->body('Zkus to znovu za '.RateLimiter::availableIn($key).' s.')->send();
+                    if (RateLimiter::tooManyAttempts($key, 1)) {
+                        Notification::make()->info()->title('Právě se aktualizovalo')->body('Zkus to znovu za '.RateLimiter::availableIn($key).' s.')->send();
 
-                    return;
-                }
+                        return;
+                    }
 
-                RateLimiter::hit($key, GiftBoxes::REFRESH_COOLDOWN_SECONDS);
+                    RateLimiter::hit($key, self::REFRESH_COOLDOWN_SECONDS);
+                    // Stažení exportu, Zaslatu a sledování zásilek trvá i desítky sekund.
+                    @set_time_limit(180);
+                    $reports = $automations->map(fn (Automation $automation): array => app(ParcelPickup::class)->run($automation));
+                    unset($this->automations);
 
-                try {
-                    $count = GiftBoxes::refresh($automation, app(UpgatesOrders::class), app(UpgatesOrderLinks::class));
-                } catch (AutomationException $e) {
-                    Notification::make()->danger()->title('Nepodařilo se načíst objednávky')->body($e->getMessage())->send();
+                    if ($error = $reports->pluck('error')->filter()->first()) {
+                        Notification::make()->danger()->title('Nepodařilo se aktualizovat')->body($error)->send();
 
-                    return;
-                } catch (\Throwable $e) {
-                    report($e);
-                    Notification::make()->danger()->title('Nepodařilo se načíst objednávky')->body('Zkus to za chvíli znovu.')->send();
+                        return;
+                    }
 
-                    return;
-                }
+                    if ($reports->contains('busy', true)) {
+                        Notification::make()->info()->title('Automatizace právě běží')->body('Za chvíli obnov stránku.')->send();
 
-                unset($this->automations);
-                Notification::make()->success()->title('Aktualizováno')->body('K zabalení: '.$count.'.')->send();
-            });
+                        return;
+                    }
+
+                    $created = $reports->sum(fn (array $report): int => count($report['created']));
+                    $held = $reports->sum('held');
+
+                    Notification::make()->success()->title('Aktualizováno')
+                        ->body(match (true) {
+                            $created === 0 => 'Nic nového k poslání.',
+                            $held > 0 => 'Nové zprávy zákazníkům: '.$created.'. Odejdou v hodinách posílání.',
+                            default => 'Nové zprávy zákazníkům: '.$created.'.',
+                        })
+                        ->send();
+                }),
+        ];
     }
 
     /** @return array<int, string> hodiny pro výběr (8 => „8:00“) */

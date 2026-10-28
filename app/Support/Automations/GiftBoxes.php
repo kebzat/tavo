@@ -25,9 +25,6 @@ class GiftBoxes
     /** Jak dlouho ukazovat už odeslané balíčky. */
     public const DONE_DAYS = 14;
 
-    /** Tlačítko Aktualizovat nejvýš jednou za tolik sekund (export za 24 h Upgates stejně obnovuje po 5 minutách). */
-    public const REFRESH_COOLDOWN_SECONDS = 60;
-
     /**
      * @return ?array{title: string, items: list<array{qty: int, name: string}>, count: int, preview: ?string}
      */
@@ -76,8 +73,8 @@ class GiftBoxes
 
     /**
      * Obnoví jen přehled balíčků z exportu objednávek, zákazníkům nic
-     * neposílá. Volá ho `automations:boxes` (každých 10 minut) a tlačítko
-     * Aktualizovat v účtu klienta. Hodinový běh ParcelPickup přehled
+     * neposílá. Volá ho `automations:boxes` (každých 10 minut). Hodinový
+     * běh ParcelPickup (i tlačítko Aktualizovat v účtu klienta) přehled
      * obnovuje taky.
      *
      * @return int kolik objednávek čeká na zabalení

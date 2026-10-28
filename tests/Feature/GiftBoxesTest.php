@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\AutomationType;
 use App\Enums\UserRole;
-use App\Filament\Client\Pages\Automations;
 use App\Models\Automation;
 use App\Models\AutomationEvent;
 use App\Models\Client;
@@ -12,10 +11,8 @@ use App\Models\User;
 use App\Support\Automations\GiftBoxes;
 use App\Support\Automations\UpgatesOrders;
 use Carbon\CarbonImmutable;
-use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /** Dárkové balíčky v přehledu automatizace: obsah z poznámky krabice v exportu Upgates. Viz docs/AUTOMATIZACE.md. */
@@ -119,12 +116,11 @@ class GiftBoxesTest extends TestCase
             ->assertSee('2×')
             ->assertSee('Odeslané balíčky za posledních 14 dní (1)')
             ->assertSee('Obnovuje se samo každých 10 minut, naposledy v 15:00')
-            ->assertSee('Aktualizovat')
             ->assertSee('Úsporné')
             ->assertSee("\$persist(false).as('taveo-darkove-balicky-usporne')", false);
     }
 
-    public function test_prehled_se_obnovi_prikazem_i_tlacitkem_a_nic_neposle(): void
+    public function test_prehled_se_obnovi_prikazem_a_nic_neposle(): void
     {
         $client = Client::query()->firstOrCreate(['slug' => 'svet-cejlonu'], ['name' => 'Svět Cejlonu']);
         $box = GiftBoxes::fromNote('Dárková krabice velká (30 × 30 cm)', self::NOTE);
@@ -155,25 +151,7 @@ class GiftBoxesTest extends TestCase
         $this->assertSame([$parcel], $snapshot['parcels']);
         $this->assertTrue(GiftBoxes::updatedAt($automation->fresh())->equalTo(now()));
 
-        // Tlačítko: hned nové objednávky, podruhé do minuty už export nestahuje.
-        $orders['05003'] = 'Přijatá';
-        Filament::setCurrentPanel('client');
-        $marek = User::factory()->create(['role' => UserRole::Client, 'client_id' => $client->id]);
-        Livewire::actingAs($marek)->test(Automations::class)
-            ->callAction('refreshBoxes', [], ['automation' => $automation->id])
-            ->assertNotified('Aktualizováno');
-        $this->assertCount(3, $automation->fresh()->giftBoxes());
-
-        Livewire::actingAs($marek)->test(Automations::class)
-            ->callAction('refreshBoxes', [], ['automation' => $automation->id])
-            ->assertNotified('Právě se aktualizovalo');
-        Http::assertSentCount(2);
         $this->assertSame(0, AutomationEvent::query()->count());
-
-        // Cizí klient obnovit nesmí.
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
-        $other = User::factory()->create(['role' => UserRole::Client, 'client_id' => Client::query()->create(['name' => 'Jiný', 'slug' => 'jiny'])->id]);
-        Livewire::actingAs($other)->test(Automations::class)->callAction('refreshBoxes', [], ['automation' => $automation->id]);
     }
 
     public function test_bez_balicku_se_sekce_neukaze(): void

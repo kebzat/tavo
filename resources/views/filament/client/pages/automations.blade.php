@@ -98,7 +98,7 @@
                     Obnovuje se samo každých 10 minut{{ $boxesAt ? ', naposledy v '.$boxesAt->timezone('Europe/Prague')->format('G:i') : '' }}.
                 </x-slot>
 
-                {{-- Ovládání v obsahu, ne v hlavičce sekce: na telefonu by hlavičku zmáčklo do úzkého sloupce. --}}
+                {{-- Přepínač v obsahu, ne v hlavičce sekce: na telefonu by hlavičku zmáčkl do úzkého sloupce. Aktualizovat je nahoře na stránce. --}}
                 <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
                     <div class="inline-flex rounded-lg border border-gray-200 p-0.5 text-sm dark:border-white/10" role="group" aria-label="Zobrazení">
                         <button type="button" x-on:click="compact = false" x-bind:aria-pressed="! compact"
@@ -106,7 +106,6 @@
                         <button type="button" x-on:click="compact = true" x-bind:aria-pressed="compact"
                             class="rounded-md px-2.5 py-1 font-medium" x-bind:class="compact ? 'bg-gray-100 text-gray-950 dark:bg-white/10 dark:text-white' : 'text-gray-500 dark:text-gray-400'">Úsporné</button>
                     </div>
-                    {{ ($this->refreshBoxesAction)(['automation' => $automation->id]) }}
                 </div>
 
                 @if ($boxesToPack === [])
