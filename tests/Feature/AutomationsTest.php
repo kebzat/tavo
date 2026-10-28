@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AutomationType;
 use App\Enums\UserRole;
 use App\Enums\VaultType;
+use App\Filament\Client\Pages\Automations;
 use App\Mail\AutomationProblem;
 use App\Mail\AutomationSummary;
 use App\Models\Automation;
@@ -20,12 +21,15 @@ use App\Support\Automations\UpgatesOrderLinks;
 use App\Support\Automations\UpgatesOrders;
 use App\Support\Vault\LoginBroker;
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /** Připomínky vyzvednutí zásilek: engine, CSV pro Upgates, upozornění. Viz docs/AUTOMATIZACE.md. */
@@ -548,6 +552,42 @@ class AutomationsTest extends TestCase
             ->assertSee('href="https://svetcejlonu-1.admin.test/orders/edit-order/default/16001/"', false)
             ->assertSee('href="https://svetcejlonu-1.admin.test/orders/edit-order/default/16003/"', false)
             ->assertDontSee('edit-order/default/1/', false);
+    }
+
+    public function test_tlacitko_aktualizovat_spusti_cely_beh(): void
+    {
+        $this->full = ['7201' => ['Odeslána', null]];
+        $this->shipments = [$this->shipment('7201', '2026-10-22')];
+        Filament::setCurrentPanel('client');
+        $marek = User::factory()->create(['role' => UserRole::Client, 'client_id' => $this->client->id]);
+
+        Livewire::actingAs($marek)->test(Automations::class)
+            ->assertActionVisible('refreshAll')
+            ->callAction('refreshAll')
+            ->assertNotified('Aktualizováno');
+
+        $this->assertSame(['7201' => AutomationEvent::KIND_REMINDER], $this->events());
+        $this->assertCount(1, $this->uploads);
+        $this->assertNotNull($this->automation->fresh()->last_run_at);
+
+        // Podruhé do minuty nic nespustí.
+        Livewire::actingAs($marek)->test(Automations::class)
+            ->callAction('refreshAll')
+            ->assertNotified('Právě se aktualizovalo');
+        $this->assertCount(1, $this->uploads);
+
+        // Když zrovna jede hodinový běh, druhý se přeskočí a nic neuloží.
+        $this->travel(2)->minutes();
+        $lock = Cache::lock('automations:run:'.$this->automation->id, 600);
+        $lock->get();
+        $report = $this->runEngine();
+        $lock->release();
+        $this->assertTrue($report['busy']);
+        $this->assertTrue($this->automation->fresh()->last_run_at->lt(now()));
+
+        // Vypnutá automatizace tlačítko nemá.
+        $this->automation->update(['enabled' => false]);
+        Livewire::actingAs($marek)->test(Automations::class)->assertActionHidden('refreshAll');
     }
 
     public function test_vypnute_druhy_zprav_se_neposilaji(): void

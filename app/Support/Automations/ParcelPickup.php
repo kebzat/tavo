@@ -8,6 +8,7 @@ use App\Support\Vault\VaultException;
 use App\Support\Vault\ZaslatApi;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
@@ -48,11 +49,37 @@ class ParcelPickup
     ) {}
 
     /**
-     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array<string, mixed>>, boxes: list<array<string, mixed>>, resolved_returns: list<string>, warnings: list<string>, error: ?string, uploaded: int, held: int}
+     * @return array{created: list<array{order: string, kind: string, detail: string}>, confirmed: list<string>, failed: list<string>, parcels: list<array<string, mixed>>, returning: list<array<string, mixed>>, boxes: list<array<string, mixed>>, resolved_returns: list<string>, warnings: list<string>, error: ?string, uploaded: int, held: int, busy: bool}
      */
     public function run(Automation $automation, bool $dryRun = false): array
     {
-        $report = ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'boxes' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0, 'held' => 0];
+        if ($dryRun) {
+            return $this->execute($automation, true);
+        }
+
+        // Ruční Aktualizovat v účtu klienta a hodinový běh se nesmí potkat (dvakrát totéž nahrání, přepsaný přehled).
+        $lock = Cache::lock('automations:run:'.$automation->getKey(), 600);
+
+        if (! $lock->get()) {
+            return [...$this->emptyReport(), 'busy' => true, 'warnings' => ['Automatizace právě běží, výsledek bude za chvíli.']];
+        }
+
+        try {
+            return $this->execute($automation, false);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function emptyReport(): array
+    {
+        return ['created' => [], 'confirmed' => [], 'failed' => [], 'parcels' => [], 'returning' => [], 'boxes' => [], 'resolved_returns' => [], 'warnings' => [], 'error' => null, 'uploaded' => 0, 'held' => 0, 'busy' => false];
+    }
+
+    private function execute(Automation $automation, bool $dryRun): array
+    {
+        $report = $this->emptyReport();
 
         if (! $automation->enabled) {
             $report['warnings'][] = 'Automatizace je vypnutá, nic se nezakládá.';
