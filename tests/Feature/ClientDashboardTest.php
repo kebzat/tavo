@@ -409,4 +409,32 @@ class ClientDashboardTest extends TestCase
             ->assertSee('Cena spolupráce')
             ->assertSee('říjen 2026 – březen 2027');
     }
+
+    public function test_dlouhy_seznam_prace_je_po_strankach(): void
+    {
+        $client = $this->klient();
+
+        foreach (range(1, 12) as $i) {
+            $client->tasks()->create(['title' => "Hotový úkol {$i}", 'area' => WorkArea::Web, 'status' => TaskStatus::Done, 'done_on' => '2026-10-'.str_pad((string) $i, 2, '0', STR_PAD_LEFT)]);
+        }
+
+        // Všech 12 je v HTML (bez JS a při tisku se ukáže celý seznam), po stránkách je rozdělí Alpine.
+        $this->get($this->url($client))
+            ->assertOk()
+            ->assertSee('12 úkolů')
+            ->assertSee('Hotový úkol 12')
+            ->assertSee('tavoTaskPages(10, 12)', false)
+            ->assertSee('shown(11)', false);
+    }
+
+    public function test_kratky_seznam_prace_strankovani_nema(): void
+    {
+        $client = $this->klient();
+        $client->tasks()->create(['title' => 'Jediný úkol', 'area' => WorkArea::Web, 'status' => TaskStatus::Done, 'done_on' => '2026-10-05']);
+
+        $this->get($this->url($client))
+            ->assertOk()
+            ->assertSee('1 úkol')
+            ->assertDontSee('tavoTaskPages', false);
+    }
 }
