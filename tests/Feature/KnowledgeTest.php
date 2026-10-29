@@ -535,7 +535,11 @@ class KnowledgeTest extends TestCase
         $this->withToken(self::TOKEN)->post(route('agent.api.archiv.nahrat', 'svet-cejlonu'), ['nazev' => 'Skript', 'soubory' => [UploadedFile::fake()->create('x.php', 1)]], ['Accept' => 'application/json'])->assertJsonValidationErrors(['soubory.0']);
         $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'svet-cejlonu'), ['nazev' => 'Druh', 'text' => 'x', 'druh' => 'hesla'])->assertJsonValidationErrors(['druh']);
         $this->withToken(self::TOKEN)->postJson(route('agent.api.archiv.nahrat', 'neexistuje'), ['nazev' => 'x', 'text' => 'x'])->assertNotFound();
-        $this->assertSame(2, KnowledgeSource::query()->count());
+        $this->withToken(self::TOKEN)->post(route('agent.api.archiv.nahrat', 'svet-cejlonu'), [
+            'nazev' => 'Varianty loga',
+            'soubory' => [UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>'), UploadedFile::fake()->create('logo.webp', 5)],
+        ], ['Accept' => 'application/json'])->assertCreated();
+        $this->assertSame(3, KnowledgeSource::query()->count());
     }
 
     public function test_html_z_archivu_je_stala_stranka_i_bez_prihlaseni(): void
