@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Http;
  * web) a vrátí jen cookies přihlášení. Agent si je vloží do svého prohlížeče,
  * heslo nikdy nevidí. Formulář se hledá obecně: první formulář s polem pro
  * heslo, skrytá pole zůstanou, jméno a heslo se doplní. Když web chce kód 2FA
- * a v trezoru je uložený, doplní ho taky.
+ * a v trezoru je uložený, doplní ho taky. Token CSRF, který web do formuláře
+ * vkládá až skriptem (Shoptet), se doplní ze stránky.
  *
  * Ověření „nejsem robot“ (Turnstile, reCAPTCHA, hCaptcha) projít neumí,
  * to je jeho smysl. Pak hlásí, co s tím (aplikační heslo, výjimka pro IP).
@@ -25,6 +26,9 @@ class LoginBroker
     private const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
     private const CAPTCHA = '~cf-turnstile|challenges\.cloudflare\.com/turnstile|g-recaptcha|grecaptcha|h-captcha|hcaptcha\.com~i';
+
+    /** Shoptet má token jen ve skriptu (`shoptet.csrf.token = "…"`) a pole `__csrf__` přidá až při odeslání. */
+    private const SHOPTET_CSRF = '~shoptet\.csrf\.token\s*=\s*["\']([^"\']+)["\']~';
 
     /** @return list<array{name: string, value: string, domain: string, path: string, expires: int, httpOnly: bool, secure: bool, sameSite: string}> */
     public function login(VaultEntry $entry): array
@@ -55,7 +59,7 @@ class LoginBroker
             );
         }
 
-        $fields = $form['fields'];
+        $fields = $this->withScriptToken($page, $form['fields']);
         $fields[$form['password']] = (string) $entry->secret;
 
         if ($form['username'] !== null) {
@@ -74,15 +78,17 @@ class LoginBroker
                 throw new VaultException('Web chce po přihlášení kód 2FA. Ulož v trezoru tajný klíč 2FA (při zapínání 2FA se ukáže pod QR kódem).');
             }
 
-            $response = $this->submit($jar, $codeForm, [...$codeForm['fields'], $codeForm['code'] => $code], $this->urlOf($response, $url));
+            $response = $this->submit($jar, $codeForm, [...$this->withScriptToken($response, $codeForm['fields']), $codeForm['code'] => $code], $this->urlOf($response, $url));
         }
 
         if ($response->status() >= 400 || $this->findForm($response, 'password') !== null) {
             // Neviditelné ověření (reCAPTCHA v3) ve formuláři pole nemá, poznat jde jen podle skriptu na stránce.
-            throw new VaultException(preg_match(self::CAPTCHA, $page->body())
-                ? 'Přihlášení se nepovedlo. Na stránce je ochrana „nejsem robot“, nejspíš přihlášení odmítla ona, jinak zkontroluj uživatele a heslo v trezoru. '
-                    .'U WordPressu ulož aplikační heslo (agent pak jde přes API), případně v nastavení ochrany povol IP serveru TAVEO.'
-                : 'Přihlášení se nepovedlo, web vrátil znovu přihlašovací formulář. Zkontroluj uživatele a heslo v trezoru.');
+            throw new VaultException(match (true) {
+                (bool) preg_match(self::CAPTCHA, $page->body()) => 'Přihlášení se nepovedlo. Na stránce je ochrana „nejsem robot“, nejspíš přihlášení odmítla ona, jinak zkontroluj uživatele a heslo v trezoru. '
+                    .'U WordPressu ulož aplikační heslo (agent pak jde přes API), případně v nastavení ochrany povol IP serveru TAVEO.',
+                $response->status() >= 400 => 'Web přihlášení odmítl (HTTP '.$response->status().'). Když jsou uživatel a heslo v trezoru správně, chce web nejspíš něco, co trezor neposílá.',
+                default => 'Přihlášení se nepovedlo, web vrátil znovu přihlašovací formulář. Zkontroluj uživatele a heslo v trezoru.',
+            });
         }
 
         return $this->cookies($jar);
@@ -176,6 +182,16 @@ class LoginBroker
         }
 
         return null;
+    }
+
+    /** @param array<string, string> $fields */
+    private function withScriptToken(Response $page, array $fields): array
+    {
+        if (! isset($fields['__csrf__']) && preg_match(self::SHOPTET_CSRF, $page->body(), $match)) {
+            $fields['__csrf__'] = $match[1];
+        }
+
+        return $fields;
     }
 
     /** Pasti na roboty (honeypot) se vyplnit nesmí. */

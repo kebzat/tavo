@@ -357,7 +357,8 @@ class VaultTest extends TestCase
     {
         Http::fake([
             'https://www.eshop.cz/admin/login/' => Http::sequence()
-                ->push('<form action="https://www.eshop.cz/admin/login/" method="post"><input type="hidden" name="action" value="login"><input type="email" name="email"><input type="password" name="password"></form>', 200, ['Set-Cookie' => 'PHPSESSID=pred; path=/; domain=www.eshop.cz'])
+                ->push('<form action="https://www.eshop.cz/admin/login/" method="post"><input type="hidden" name="action" value="login"><input type="email" name="email"><input type="password" name="password"></form>'
+                    .'<script>shoptet.csrf.token = "csrf_abc123";</script>', 200, ['Set-Cookie' => 'PHPSESSID=pred; path=/; domain=www.eshop.cz'])
                 ->push('<h1>Přehled</h1>', 200, ['Set-Cookie' => 'PHPSESSID=prihlasen; path=/; domain=www.eshop.cz; HttpOnly']),
         ]);
 
@@ -378,7 +379,8 @@ class VaultTest extends TestCase
 
         $this->assertStringNotContainsString('shoptet-heslo', $response->getContent());
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
-            && $request['email'] === 'agent@taveo.cz' && $request['password'] === 'shoptet-heslo' && $request['action'] === 'login');
+            && $request['email'] === 'agent@taveo.cz' && $request['password'] === 'shoptet-heslo' && $request['action'] === 'login'
+            && $request['__csrf__'] === 'csrf_abc123');
         $this->assertSame('login', $entry->logs()->value('action'));
     }
 
