@@ -135,6 +135,10 @@ web odmítne (413), soubor nad `upload_max_filesize` (výchozí 2 MB) PHP zahod�
 (archiv mozku, reklamní grafika, obrázky) si skutečný limit čtou z php.ini a větší soubor hned odmítnou,
 víc než 30 MB nepustí ani Livewire (`config/livewire.php`). V CyberPanelu: PHP → Edit PHP Configs →
 PHP 8.4 → `upload_max_filesize` 32M, `post_max_size` 40M, uložit (LiteSpeed se restartuje sám).
+Web to zkouší nastavit i sám (`public/.user.ini` a blok `<IfModule LiteSpeed>` v `public/.htaccess`). Jestli
+to server bere, ukáže text pod polem v archivu („každý do 30 MB“), nebo zvenku:
+`head -c 9M /dev/zero | curl -s -o /dev/null -w '%{http_code}' --data-binary @- https://taveo.cz/livewire/upload-file`
+(413 = pořád 8 MB, 419 = limit je výš).
 
 Před prvním nasazením stačí připravit složku a `.env` — kód a `vendor/` doveze
 sám workflow:
