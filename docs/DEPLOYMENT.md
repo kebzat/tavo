@@ -130,6 +130,12 @@ Platí ten nejnižší z limitů v řadě, takže s tím musí jít nahoru i
 `client_max_body_size` v nginx (níž v konfiguraci) — nastav ho na `40M`.
 Na CyberPanelu se totéž mění v php.ini vybrané verze lsphp.
 
+Na taveo.cz (CyberPanel, lsphp84) byly 29. 10. 2026 limity pořád výchozí: požadavek nad 8 MB
+web odmítne (413), soubor nad `upload_max_filesize` (výchozí 2 MB) PHP zahodí. Formuláře pro nahrání
+(archiv mozku, reklamní grafika, obrázky) si skutečný limit čtou z php.ini a větší soubor hned odmítnou,
+víc než 30 MB nepustí ani Livewire (`config/livewire.php`). V CyberPanelu: PHP → Edit PHP Configs →
+PHP 8.4 → `upload_max_filesize` 32M, `post_max_size` 40M, uložit (LiteSpeed se restartuje sám).
+
 Před prvním nasazením stačí připravit složku a `.env` — kód a `vendor/` doveze
 sám workflow:
 

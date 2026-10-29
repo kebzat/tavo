@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\KnowledgeSources;
 
+use App\Filament\Schemas\ImageUpload;
 use App\Filament\Tools\Resources\KnowledgeSources\Pages\CreateKnowledgeSource;
 use App\Filament\Tools\Resources\KnowledgeSources\Pages\ListKnowledgeSources;
 use App\Filament\Tools\Resources\KnowledgeSources\Pages\ViewKnowledgeSource;
@@ -57,6 +58,9 @@ class KnowledgeSourceResource extends Resource
 
     /** Vložený text nejvýš tolik znaků (zhruba 150 stran). Víc rozdělte do víc podkladů. */
     public const MAX_TEXT = 300000;
+
+    /** Strop jednoho souboru (30 MB), stejný jako u `taveo archiv-nahrat`. Na serveru ho může snížit php.ini. */
+    public const MAX_FILE_KILOBYTES = 30 * 1024;
 
     public static function getNavigationBadge(): ?string
     {
@@ -133,11 +137,11 @@ class KnowledgeSourceResource extends Resource
                     'text/plain', 'text/markdown', 'text/csv', 'text/html', 'application/pdf', 'application/json', 'message/rfc822',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'image/png', 'image/jpeg',
+                    'image/png', 'image/jpeg', 'image/webp', 'image/svg+xml',
                 ])
                 ->maxFiles(20)
-                ->maxSize(30 * 1024)
-                ->helperText('TXT, Markdown, PDF, Word, Excel, CSV, e-maily (EML), snímky obrazovky. Nejvýš 20 souborů po 30 MB.')
+                ->maxSize(fn (): int => ImageUpload::maxKilobytes(self::MAX_FILE_KILOBYTES))
+                ->helperText(fn (): string => 'TXT, Markdown, PDF, Word, Excel, CSV, e-maily (EML), obrázky a loga (PNG, JPG, WebP, SVG). Nejvýš 20 souborů, každý do '.ImageUpload::maxLabel(self::MAX_FILE_KILOBYTES).'.')
                 ->columnSpanFull(),
             Textarea::make('note')
                 ->label('Poznámka pro agenta')

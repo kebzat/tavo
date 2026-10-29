@@ -4,6 +4,7 @@ namespace App\Filament\Schemas;
 
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Illuminate\Support\Number;
 
 /**
  * Společné nastavení polí, do kterých se v administraci nahrává obrázek.
@@ -55,17 +56,24 @@ final class ImageUpload
 
     /**
      * Kolik smí mít nahrávaný soubor kilobajtů. Nejnižší ze tří stropů:
-     * `upload_max_filesize`, `post_max_size` a limit Livewire.
+     * `upload_max_filesize`, `post_max_size` a strop pole (u obrázků 12 MB,
+     * víc nepustí ani Livewire, viz config/livewire.php).
      */
-    public static function maxKilobytes(): int
+    public static function maxKilobytes(int $cap = self::LIVEWIRE_MAX_KILOBYTES): int
     {
         $limits = array_filter([
             self::iniKilobytes('upload_max_filesize'),
             self::iniKilobytes('post_max_size'),
-            self::LIVEWIRE_MAX_KILOBYTES,
+            $cap,
         ]);
 
-        return $limits === [] ? self::LIVEWIRE_MAX_KILOBYTES : (int) min($limits);
+        return (int) min($limits);
+    }
+
+    /** Strop pro text u pole: „30 MB“, „1,5 MB“. */
+    public static function maxLabel(int $cap = self::LIVEWIRE_MAX_KILOBYTES): string
+    {
+        return Number::format(self::maxKilobytes($cap) / 1024, maxPrecision: 1, locale: 'cs').' MB';
     }
 
     /**

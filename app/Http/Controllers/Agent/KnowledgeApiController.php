@@ -29,7 +29,7 @@ class KnowledgeApiController extends Controller
     private const MAX_BATCH = 20;
 
     /** Co agent smí uložit do archivu, stejné jako formulář v nástrojích. */
-    private const ARCHIVE_EXTENSIONS = ['txt', 'md', 'csv', 'html', 'pdf', 'json', 'eml', 'docx', 'xlsx', 'png', 'jpg', 'jpeg'];
+    private const ARCHIVE_EXTENSIONS = ['txt', 'md', 'csv', 'html', 'pdf', 'json', 'eml', 'docx', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'svg'];
 
     /** Čeština bez \u escapů: agent to čte (a platí za každý znak). */
     private const JSON = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
@@ -172,7 +172,7 @@ class KnowledgeApiController extends Controller
             'poznamka' => ['nullable', 'string', 'max:2000'],
             'text' => ['nullable', 'string', 'max:'.KnowledgeSourceResource::MAX_TEXT, 'required_without:soubory'],
             'soubory' => ['nullable', 'array', 'max:20'],
-            'soubory.*' => ['file', 'max:'.(30 * 1024), 'extensions:'.implode(',', self::ARCHIVE_EXTENSIONS)],
+            'soubory.*' => ['file', 'max:'.KnowledgeSourceResource::MAX_FILE_KILOBYTES, 'extensions:'.implode(',', self::ARCHIVE_EXTENSIONS)],
             'uceni' => ['nullable', 'boolean'],
         ]);
 

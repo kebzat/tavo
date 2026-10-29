@@ -2,6 +2,7 @@
 
 namespace App\Filament\Tools\Resources\AdGraphics;
 
+use App\Filament\Schemas\ImageUpload;
 use App\Filament\Tools\Pages\Ads\ManageAdGraphics;
 use App\Filament\Tools\Resources\AdGraphics\Pages\CreateAdGraphic;
 use App\Filament\Tools\Resources\AdGraphics\Pages\ListAdGraphics;
@@ -186,8 +187,8 @@ class AdGraphicResource extends Resource
                         ->storeFileNamesIn('asset_names')
                         ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'application/pdf'])
                         ->maxFiles(10)
-                        ->maxSize(20 * 1024)
-                        ->helperText('PNG, JPG, WebP, SVG nebo PDF, nejvýš 10 souborů po 20 MB. Logo nejlépe ve vektoru (SVG, PDF).'),
+                        ->maxSize(fn (): int => ImageUpload::maxKilobytes(20 * 1024))
+                        ->helperText(fn (): string => 'PNG, JPG, WebP, SVG nebo PDF, nejvýš 10 souborů, každý do '.ImageUpload::maxLabel(20 * 1024).'. Logo nejlépe ve vektoru (SVG, PDF).'),
                     Toggle::make('ai_images')
                         ->label('Smí si vygenerovat obrázky (Nano Banana)')
                         ->disabled(! $imagesEnabled)
