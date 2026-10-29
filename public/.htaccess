@@ -60,3 +60,10 @@
         Header set Cache-Control "no-cache, must-revalidate"
     </FilesMatch>
 </IfModule>
+
+# Limity nahrávání (stejné jako public/.user.ini). LiteSpeed je bere z .htaccess,
+# Apache bez modulu LiteSpeed blok přeskočí. Viz docs/DEPLOYMENT.md, Limity PHP.
+<IfModule LiteSpeed>
+    php_value upload_max_filesize 32M
+    php_value post_max_size 40M
+</IfModule>
