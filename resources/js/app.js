@@ -506,6 +506,57 @@ Alpine.data('tavoQuestionnaire', (stavZeServeru) => ({
 registerConsent(Alpine);
 
 window.Alpine = Alpine;
+/**
+ * Seznam úkolů na přehledu spolupráce po stránkách. Bez JS se ukáže celý,
+ * při tisku taky (print:block! na řádcích přebije x-show).
+ */
+Alpine.data('tavoTaskPages', (perPage, total) => ({
+    page: 1,
+    pages: Math.ceil(total / perPage),
+
+    shown(index) {
+        return Math.floor(index / perPage) + 1 === this.page;
+    },
+
+    range() {
+        const from = (this.page - 1) * perPage + 1;
+
+        return `${from}–${Math.min(this.page * perPage, total)} z ${total}`;
+    },
+
+    go(page) {
+        this.page = Math.min(Math.max(page, 1), this.pages);
+
+        // Po přepnutí ze spodku dlouhé stránky zpátky na začátek seznamu.
+        if (this.$root.getBoundingClientRect().top < 0) {
+            this.$root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    },
+}));
+
+/**
+ * Řádek úkolu: popis zkrácený na dva řádky, „Celý popis“ jen když se nevejde.
+ * Měří se i po přepnutí stránky (skrytý řádek má výšku 0), proto ResizeObserver.
+ */
+Alpine.data('tavoTaskRow', () => ({
+    open: false,
+    long: false,
+
+    init() {
+        const description = this.$refs.description;
+
+        if (!description) {
+            return;
+        }
+
+        new ResizeObserver(() => {
+            if (!this.open) {
+                this.long = description.scrollHeight > description.clientHeight + 1;
+            }
+        }).observe(description);
+    },
+}));
+
 Alpine.start();
 
 if (document.readyState === 'loading') {

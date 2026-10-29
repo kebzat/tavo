@@ -113,9 +113,14 @@
 
     <section class="section-x pt-12">
         <div class="container-tavo grid gap-6 loop:grid-cols-[230px_minmax(0,1fr)] loop:gap-16">
-            <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ text('client_dashboard.work', 'Co jsme udělali') }}</h2>
+            <div>
+                <h2 class="text-sm font-bold tracking-[.14em] text-brick uppercase">{{ text('client_dashboard.work', 'Co jsme udělali') }}</h2>
+                @if ($work)
+                    <p class="mt-2 text-sm text-muted">{{ trans_choice('{1} :count úkol|[2,4] :count úkoly|[5,*] :count úkolů', count($work), ['count' => count($work)]) }}</p>
+                @endif
+            </div>
             @if ($work)
-                <x-client-dashboard.task-list :rows="$work" />
+                <x-client-dashboard.task-list :rows="$work" :per-page="10" />
             @else
                 <p class="text-perex text-body">{{ text('client_dashboard.work_empty', 'V tomhle měsíci zatím nemáme zapsanou žádnou práci.') }}</p>
             @endif
@@ -159,7 +164,7 @@
                                 </div>
                                 <p class="shrink-0 pb-1 text-sm font-semibold text-muted">{{ $group['count'] }}</p>
                             </div>
-                            <x-client-dashboard.task-list :rows="$group['tasks']" class="border-t-2 border-t-ink" />
+                            <x-client-dashboard.task-list :rows="$group['tasks']" :per-page="10" class="border-t-2 border-t-ink" />
                         </div>
                     @endforeach
                 </div>
