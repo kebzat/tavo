@@ -392,6 +392,14 @@ class VaultTest extends TestCase
             ['cesta' => '/lists/../campaigns'],
             ['cesta' => 'https://utocnik.example/lists'],
             ['cesta' => '/'],
+            // Ecomail odesílá kampaň a obnovuje feedy přes GET.
+            ['cesta' => '/campaign/5/send'],
+            ['cesta' => '//Campaign/5/Send/'],
+            ['cesta' => '/%63ampaign/5/send'],
+            ['cesta' => '/campaigns/5/send'],
+            ['cesta' => '/feeds/3/refresh'],
+            ['cesta' => '/data-feeds/3/refresh'],
+            ['cesta' => '/subscribers/a@b.cz/delete'],
         ] as $payload) {
             $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/ecomail", $payload, $this->agent())->assertStatus(422);
         }

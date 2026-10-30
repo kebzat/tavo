@@ -69,7 +69,9 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 - **Ecomail** (API klíč s adresou `ecomail.cz`, `ecomailapp.cz` nebo jejich poddoménou): `taveo ecomail <id> GET /lists`
   (dál třeba `/lists/{id}`, `/campaigns`, `/campaigns/{id}/stats`, `/pipelines`, `/templates`, parametry v cestě).
   Web pošle klíč v hlavičce `key` vždy na `https://api2.ecomailapp.cz`, adresa u přístupu ho jinam neodvede.
-  Jen GET: mazat a měnit kontakty, seznamy ani posílat kampaně agent nemůže. Vyzkoušet zavolá `/lists`.
+  Jen GET a jen na čtecí části API (`EcomailApi::READ_PREFIXES`): Ecomail odesílá kampaň (`/campaign/{id}/send`)
+  a obnovuje feedy (`/feeds/{id}/refresh`) taky přes GET, takže samotné GET nestačí. Cesty končící `send`, `refresh`,
+  `delete` nebo `trigger` neprojdou nikdy. Mazat a měnit kontakty, seznamy ani posílat kampaně agent nemůže. Vyzkoušet zavolá `/lists`.
   Odpovědi s kontakty obsahují e-maily zákazníků: agent je nekopíruje do textů ani poznámek, do auditu stačí počty.
 - **Přihlášení** (`LoginBroker`): web otevře přihlašovací stránku, najde formulář s heslem,
   vyplní ho (i s kódem 2FA, když je uložený klíč) a agentovi vrátí jen cookies. Agent si je

@@ -17,6 +17,9 @@ class EcomailApi
 {
     private const BASE = 'https://api2.ecomailapp.cz';
 
+    // Čtecí části API (docs.ecomail.cz). Jiné cesty neprojdou, ani GET.
+    private const READ_PREFIXES = ['lists', 'subscribers', 'campaigns', 'pipelines', 'template', 'domains', 'transactional/stats', 'tracker/transaction', 'account/settings/webhook'];
+
     /** Je tohle klíč k Ecomailu? Pozná se podle adresy u přístupu (ecomail.cz, ecomailapp.cz a jejich poddomény). */
     public static function supports(VaultEntry $entry): bool
     {
@@ -49,10 +52,18 @@ class EcomailApi
         // Parametry v cestě (`/lists/1/subscribers?page=2`) platí, výslovný `dotaz` má přednost.
         parse_str((string) parse_url($path, PHP_URL_QUERY), $inPath);
         $query = [...$inPath, ...$query];
-        $path = '/'.ltrim(rawurldecode(parse_url($path, PHP_URL_PATH) ?: ''), '/');
+        $path = '/'.trim(preg_replace('~/+~', '/', rawurldecode(parse_url($path, PHP_URL_PATH) ?: '')), '/');
 
         if ($path === '/' || str_contains($path, '..')) {
             throw new VaultException('Cesta k API Ecomailu musí být jako /lists, bez .. a adresy.');
+        }
+
+        // Ecomail odesílá kampaň (/campaign/{id}/send) a obnovuje feedy (/feeds/{id}/refresh) přes GET.
+        $lower = strtolower($path);
+        $readable = collect(self::READ_PREFIXES)->contains(fn (string $prefix): bool => $lower === '/'.$prefix || str_starts_with($lower, '/'.$prefix.'/'));
+
+        if (! $readable || preg_match('~/(send|refresh|delete|trigger)$~', $lower)) {
+            throw new VaultException('Tohle v Ecomailu agent nesmí, jen číst: '.implode(', ', array_map(fn ($prefix) => '/'.$prefix, self::READ_PREFIXES)).'.');
         }
 
         return Http::withHeaders(['key' => (string) $entry->secret])
