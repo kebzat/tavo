@@ -14,6 +14,7 @@ use App\Models\VaultEntry;
 use App\Models\VaultUpload;
 use App\Support\Vault\FtpClient;
 use App\Support\Vault\FtpConnector;
+use App\Support\Vault\LoginBroker;
 use App\Support\Vault\VaultLock;
 use App\Support\Vault\VaultPath;
 use Filament\Facades\Filament;
@@ -382,6 +383,95 @@ class VaultTest extends TestCase
             && $request['email'] === 'agent@taveo.cz' && $request['password'] === 'shoptet-heslo' && $request['action'] === 'login'
             && $request['__csrf__'] === 'csrf_abc123');
         $this->assertSame('login', $entry->logs()->value('action'));
+    }
+
+    public function test_prihlaseni_do_shoptetu_si_pamatuje_zarizeni_a_relaci(): void
+    {
+        $form = '<form action="https://www.eshop.cz/admin/login/" method="post"><input type="email" name="email"><input type="password" name="password"></form>';
+        $device = 'fingerprint=zarizeni-1; expires='.gmdate('D, d M Y H:i:s', time() + 180 * 86400).' GMT; path=/; domain=www.eshop.cz; HttpOnly';
+        $logins = 0;
+
+        Http::fake(function (Request $request) use ($form, $device, &$logins) {
+            $cookie = $request->header('Cookie')[0] ?? '';
+
+            return match (true) {
+                $request->url() === 'https://www.eshop.cz/admin/' => str_contains($cookie, 'PHPSESSID=prihlasen-'.$logins) && $logins > 0
+                    ? Http::response('<h1>Přehled</h1>')
+                    : Http::response($form),
+                $request->method() === 'POST' => Http::response('<h1>Přehled</h1>', 200, ['Set-Cookie' => [
+                    'PHPSESSID=prihlasen-'.(++$logins).'; path=/; domain=www.eshop.cz; HttpOnly',
+                    ...str_contains($cookie, 'fingerprint=zarizeni-1') ? [] : [$device],
+                ]]),
+                default => Http::response($form, 200, ['Set-Cookie' => 'PHPSESSID=pred; path=/; domain=www.eshop.cz']),
+            };
+        });
+
+        $entry = VaultEntry::query()->create([
+            'client_id' => $this->client->getKey(),
+            'type' => VaultType::Shoptet,
+            'name' => 'Shoptet',
+            'url' => 'https://www.eshop.cz',
+            'username' => 'agent@taveo.cz',
+            'secret' => 'shoptet-heslo',
+            'agent_access' => 'read',
+        ]);
+
+        // Poprvé nové zařízení: web nastaví fingerprint a trezor si ho uloží (šifrovaně).
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/prihlasit", [], $this->agent())->assertOk();
+        $stored = DB::table('vault_entries')->where('id', $entry->id)->value('login_cookies');
+        $this->assertStringNotContainsString('zarizeni-1', $stored);
+        $this->assertContains('fingerprint', array_column($entry->refresh()->login_cookies, 'Name'));
+
+        // Relace platí: žádné nové přihlášení, agent dostane tutéž.
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/prihlasit", [], $this->agent())
+            ->assertOk()
+            ->assertJsonPath('adresa', 'https://www.eshop.cz/admin/');
+        $this->assertSame(1, $logins);
+        $this->assertSame('Platná relace z minula, bez nového přihlášení', $entry->logs()->latest('id')->value('detail'));
+
+        // Relace vypršela: přihlásí se znovu se známým zařízením, starou relaci neposílá.
+        $logins = 5;
+        $response = $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/prihlasit", [], $this->agent())->assertOk();
+        $this->assertSame(6, $logins);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_contains($request->header('Cookie')[0] ?? '', 'fingerprint=zarizeni-1')
+            && ! str_contains($request->header('Cookie')[0] ?? '', 'prihlasen-1'));
+        $this->assertEqualsCanonicalizing(['PHPSESSID', 'fingerprint'], array_column($response->json('cookies'), 'name'));
+
+        // Agent cookies jinde nevidí, ani v seznamu přístupů.
+        $this->getJson('/nastroje/api/agent/trezor', $this->agent())->assertOk()->assertDontSee('zarizeni-1');
+        $this->assertArrayNotHasKey('login_cookies', $entry->toArray());
+
+        // Jiný účet: uložená relace i zařízení patří starému.
+        $entry->update(['username' => 'jiny@taveo.cz']);
+        $this->assertNull($entry->refresh()->login_cookies);
+    }
+
+    public function test_vyzkouset_prihlaseni_vzdy_overi_heslo(): void
+    {
+        $form = '<form action="https://www.eshop.cz/admin/login/" method="post"><input type="email" name="email"><input type="password" name="password"></form>';
+
+        Http::fake([
+            'https://www.eshop.cz/admin/' => Http::response('<h1>Přehled</h1>'),
+            'https://www.eshop.cz/admin/login/' => Http::sequence()
+                ->push($form)
+                ->push('<h1>Přehled</h1>', 200, ['Set-Cookie' => 'PHPSESSID=nova; path=/; domain=www.eshop.cz']),
+        ]);
+
+        $entry = VaultEntry::query()->create([
+            'type' => VaultType::Shoptet,
+            'name' => 'Shoptet',
+            'url' => 'https://www.eshop.cz',
+            'username' => 'agent@taveo.cz',
+            'secret' => 'shoptet-heslo',
+            'agent_access' => 'read',
+            'login_cookies' => [['Name' => 'PHPSESSID', 'Value' => 'stara', 'Domain' => 'www.eshop.cz', 'Path' => '/']],
+        ]);
+
+        $cookies = app(LoginBroker::class)->login($entry, resume: false);
+
+        $this->assertSame('nova', $cookies[0]['value']);
+        Http::assertNotSent(fn (Request $request): bool => $request->url() === 'https://www.eshop.cz/admin/');
     }
 
     public function test_prihlaseni_s_overenim_nejsem_robot_srozumitelne_odmitne(): void

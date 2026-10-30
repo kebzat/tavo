@@ -61,6 +61,16 @@ enum VaultType: string implements HasIcon, HasLabel
         };
     }
 
+    /** Kam agent po přihlášení jde. U jiné administrace neznámé (adresa webu bývá veřejná stránka). */
+    public function adminPath(): ?string
+    {
+        return match ($this) {
+            self::WordPress => '/wp-admin/',
+            self::Shoptet, self::Upgates => '/admin/',
+            default => null,
+        };
+    }
+
     /** Popisky polí, ať formulář mluví jazykem služby. */
     public function urlLabel(): string
     {

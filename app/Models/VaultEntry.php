@@ -12,8 +12,8 @@ use PragmaRX\Google2FA\Google2FA;
 
 /**
  * Jeden přístup v trezoru (FTP, WordPress, Shoptet…). Heslo, aplikační heslo,
- * kód 2FA a poznámka jsou v databázi zašifrované klíčem aplikace, takže je
- * neprozradí ani záloha databáze. Agent je nikdy nedostane: `toAgent()` je
+ * kód 2FA, poznámka a cookies posledního přihlášení jsou v databázi zašifrované
+ * klíčem aplikace, takže je neprozradí ani záloha databáze. Agent je nikdy nedostane: `toAgent()` je
  * vynechává a práci s nimi dělá web (App\Support\Vault). Viz docs/TREZOR.md.
  */
 class VaultEntry extends Model
@@ -21,7 +21,7 @@ class VaultEntry extends Model
     protected $guarded = [];
 
     /** Pro jistotu ani v JSONu, kdyby model někde skončil celý. */
-    protected $hidden = ['secret', 'app_password', 'totp_secret', 'notes'];
+    protected $hidden = ['secret', 'app_password', 'totp_secret', 'notes', 'login_cookies'];
 
     /** Úrovně `agent_access` od nejmenší. */
     public const ACCESS_LEVELS = ['none', 'read', 'approve', 'write'];
@@ -34,9 +34,20 @@ class VaultEntry extends Model
             'app_password' => 'encrypted',
             'totp_secret' => 'encrypted',
             'notes' => 'encrypted',
+            'login_cookies' => 'encrypted:array',
             'settings' => 'array',
             'last_used_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Jiný účet nebo web: uložená relace patří starému, zařízení se pozná znovu.
+        static::saving(function (VaultEntry $entry): void {
+            if ($entry->exists && $entry->isDirty(['url', 'username', 'secret']) && ! $entry->isDirty('login_cookies')) {
+                $entry->login_cookies = null;
+            }
+        });
     }
 
     public function client(): BelongsTo
@@ -117,6 +128,14 @@ class VaultEntry extends Model
         $path = $this->type->loginPath();
 
         return $path && filled($this->url) ? rtrim($this->url, '/').$path : null;
+    }
+
+    /** Administrace po přihlášení. Podle ní trezor pozná, jestli uložená relace ještě platí. */
+    public function adminUrl(): ?string
+    {
+        $path = $this->type->adminPath();
+
+        return $path !== null && filled($this->url) ? rtrim($this->url, '/').$path : null;
     }
 
     /** Aktuální kód 2FA (6 číslic), pokud je uložený tajný klíč z aplikace. */

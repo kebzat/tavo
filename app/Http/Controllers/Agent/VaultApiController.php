@@ -206,15 +206,11 @@ class VaultApiController extends Controller
             return response()->json(['ok' => false, 'chyba' => $e->getMessage()], 422, options: self::JSON);
         }
 
-        $entry->record(self::ACTOR, 'login', $entry->loginUrl());
+        $entry->record(self::ACTOR, 'login', $broker->resumed ? 'Platná relace z minula, bez nového přihlášení' : $entry->loginUrl());
 
         return response()->json([
             'ok' => true,
-            'adresa' => rtrim((string) $entry->url, '/').match ($entry->type) {
-                VaultType::WordPress => '/wp-admin/',
-                VaultType::Shoptet, VaultType::Upgates => '/admin/',
-                default => '',
-            },
+            'adresa' => $entry->adminUrl() ?? rtrim((string) $entry->url, '/'),
             'cookies' => $cookies,
             'navod' => 'V prohlížeči: browser_run_code_unsafe s `await page.context().addCookies(cookies)` a pak browser_navigate na adresu.',
         ], options: self::JSON);

@@ -70,6 +70,13 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
   vyplní ho (i s kódem 2FA, když je uložený klíč) a agentovi vrátí jen cookies. Agent si je
   vloží do prohlížeče (`browser_run_code_unsafe`: `await page.context().addCookies(cookies)`).
   Ověření „nejsem robot“ (Turnstile, reCAPTCHA) projít neumí, to hlásí srozumitelně.
+  Cookies po přihlášení si trezor u přístupu pamatuje (`login_cookies`, šifrované jako heslo,
+  agent je dostane jen v odpovědi `prihlasit`). Když relace ještě platí (administrace `/admin/`
+  nebo `/wp-admin/` neukáže formulář s heslem), vrátí ji bez nového přihlášení. Jinak se přihlásí
+  znovu s trvalými cookies z minula, takže web pozná známé zařízení: Shoptet podle cookie
+  `fingerprint` (platí půl roku, zjištěno 30. 10. 2026) a pak neposílá e-mail „Byli jste to Vy?“.
+  User-Agent je pořád stejný. Vyzkoušet v Nástrojích se přihlásí vždy znovu (ověří heslo).
+  Změna adresy, uživatele nebo hesla uložené cookies smaže.
   Přihlášený agent smí v administraci, co smí ten účet: dávat mu vlastní účet s menšími právy.
 
 ## Mezery a co ověřit
