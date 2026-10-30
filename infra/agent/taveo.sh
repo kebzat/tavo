@@ -78,6 +78,8 @@ taveo wp <id> GET|POST… <cesta> ['{"json"}']
                                         REST API WordPressu s aplikačním heslem z trezoru
 taveo zaslat <id> GET|POST <cesta> ['{"json"}']
                                         API Zaslat.cz s klíčem z trezoru, jen čtení (zásilky, sledování)
+taveo ecomail <id> GET|POST|PUT|DELETE <cesta> ['{"json"}']
+                                        API Ecomailu s klíčem z trezoru: čtení, s právem i kontakty, seznamy a koncepty kampaní (nic neodešle)
 taveo prihlasit <id>                    přihlásí se do administrace a vrátí cookies pro prohlížeč
 TXT
 }
@@ -273,6 +275,11 @@ case "${1:-}" in
         jq -n --arg m "${3:?metoda, třeba GET}" --arg c "${4:?cesta, třeba /shipments/list?tracking}" --argjson d "${5:-null}" \
             '{metoda: $m, cesta: $c} + (if $d == null then {} else {data: $d} end)' \
             | volat POST "/trezor/${2:?id přístupu}/zaslat" --data-binary @-
+        ;;
+    ecomail)
+        jq -n --arg m "${3:?metoda, třeba GET}" --arg c "${4:?cesta, třeba /lists}" --argjson d "${5:-null}" \
+            '{metoda: $m, cesta: $c} + (if $d == null then {} else {data: $d} end)' \
+            | volat POST "/trezor/${2:?id přístupu}/ecomail" --data-binary @-
         ;;
     prihlasit)
         volat POST "/trezor/${2:?id přístupu}/prihlasit"

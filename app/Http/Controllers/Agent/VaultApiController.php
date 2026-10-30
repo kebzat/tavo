@@ -6,6 +6,7 @@ use App\Enums\VaultType;
 use App\Http\Controllers\Controller;
 use App\Models\VaultEntry;
 use App\Models\VaultUpload;
+use App\Support\Vault\EcomailApi;
 use App\Support\Vault\FtpConnector;
 use App\Support\Vault\FtpUploader;
 use App\Support\Vault\FtpZipper;
@@ -20,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Trezor pro agenta (token agenta, příkazy `taveo ftp…`, `taveo wp`,
- * `taveo zaslat`, `taveo prihlasit`). Agent vidí, jaké přístupy má, a práci s nimi za něj
+ * `taveo zaslat`, `taveo ecomail`, `taveo prihlasit`). Agent vidí, jaké přístupy má, a práci s nimi za něj
  * dělá web. Heslo, klíč ani poznámku žádná odpověď neobsahuje. Každé
  * použití jde do historie přístupu. Viz docs/TREZOR.md.
  */
@@ -186,6 +187,28 @@ class VaultApiController extends Controller
         $method = strtoupper($data['metoda'] ?? 'GET');
 
         return $this->attempt($entry, 'zaslat_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
+            $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? [], $data['data'] ?? []);
+
+            return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);
+        });
+    }
+
+    /** `{"metoda": "GET", "cesta": "/lists", "dotaz": {}, "data": {}}`. Změny jen s „write“ a bez odesílání (EcomailApi). */
+    public function ecomail(Request $request, VaultEntry $entry, EcomailApi $api): Response
+    {
+        $data = $request->validate([
+            'metoda' => ['nullable', 'string', 'max:10'],
+            'cesta' => ['required', 'string', 'max:500'],
+            'dotaz' => ['nullable', 'array'],
+            'data' => ['nullable', 'array'],
+        ]);
+        $method = strtoupper($data['metoda'] ?? 'GET');
+        $write = $method !== 'GET';
+
+        $this->allow($entry, $write ? 'write' : 'read', VaultType::ApiKey);
+        abort_unless(EcomailApi::supports($entry), 422, 'Tenhle klíč není k Ecomailu (adresa u přístupu musí být ecomail.cz).');
+
+        return $this->attempt($entry, $write ? 'ecomail_change' : 'ecomail_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
             $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? [], $data['data'] ?? []);
 
             return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);
