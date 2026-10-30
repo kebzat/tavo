@@ -126,7 +126,7 @@ enum VaultType: string implements HasIcon, HasLabel
             ],
             self::ApiKey => [
                 'none' => 'Nic, přístup je jen pro lidi',
-                'read' => 'Číst přes API (zatím jen Zaslat), klíč neuvidí',
+                'read' => 'Číst přes API (Zaslat, Ecomail), klíč neuvidí',
             ],
             self::Other => [
                 'none' => 'Nic, přístup je jen pro lidi',

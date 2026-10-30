@@ -6,6 +6,7 @@ use App\Enums\VaultType;
 use App\Http\Controllers\Controller;
 use App\Models\VaultEntry;
 use App\Models\VaultUpload;
+use App\Support\Vault\EcomailApi;
 use App\Support\Vault\FtpConnector;
 use App\Support\Vault\FtpUploader;
 use App\Support\Vault\FtpZipper;
@@ -20,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Trezor pro agenta (token agenta, příkazy `taveo ftp…`, `taveo wp`,
- * `taveo zaslat`, `taveo prihlasit`). Agent vidí, jaké přístupy má, a práci s nimi za něj
+ * `taveo zaslat`, `taveo ecomail`, `taveo prihlasit`). Agent vidí, jaké přístupy má, a práci s nimi za něj
  * dělá web. Heslo, klíč ani poznámku žádná odpověď neobsahuje. Každé
  * použití jde do historie přístupu. Viz docs/TREZOR.md.
  */
@@ -187,6 +188,26 @@ class VaultApiController extends Controller
 
         return $this->attempt($entry, 'zaslat_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
             $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? [], $data['data'] ?? []);
+
+            return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);
+        });
+    }
+
+    /** `{"cesta": "/lists", "dotaz": {}}`, jen čtení (GET). */
+    public function ecomail(Request $request, VaultEntry $entry, EcomailApi $api): Response
+    {
+        $this->allow($entry, 'read', VaultType::ApiKey);
+        abort_unless(EcomailApi::supports($entry), 422, 'Tenhle klíč není k Ecomailu (adresa u přístupu musí být ecomail.cz).');
+
+        $data = $request->validate([
+            'metoda' => ['nullable', 'string', 'max:10'],
+            'cesta' => ['required', 'string', 'max:500'],
+            'dotaz' => ['nullable', 'array'],
+        ]);
+        $method = strtoupper($data['metoda'] ?? 'GET');
+
+        return $this->attempt($entry, 'ecomail_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
+            $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? []);
 
             return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);
         });

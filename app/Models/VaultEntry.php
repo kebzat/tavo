@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\VaultType;
+use App\Support\Vault\EcomailApi;
 use App\Support\Vault\ZaslatApi;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -184,6 +185,10 @@ class VaultEntry extends Model
 
         if (ZaslatApi::supports($this) && $this->agentAllows('read') && filled($this->secret)) {
             $commands[] = 'taveo zaslat <id> GET "/shipments/list?tracking&status=ACTIVE"';
+        }
+
+        if (EcomailApi::supports($this) && $this->agentAllows('read') && filled($this->secret)) {
+            $commands[] = 'taveo ecomail <id> GET /lists';
         }
 
         if ($this->type->isLogin() && $this->agentAllows('read') && filled($this->secret)) {

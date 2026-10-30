@@ -18,9 +18,9 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 |---|---|
 | Data | `vault_entries` (heslo, aplikační heslo, klíč 2FA a poznámka šifrované klíčem aplikace, cast `encrypted`), `vault_uploads`, `vault_logs` |
 | Stránka | `App\Filament\Tools\Resources\VaultEntries` (seznam, přidání, úpravy, Nahrání od agenta, Historie) |
-| Práce za agenta | `App\Support\Vault`: `FtpConnector` → `NativeFtpClient` (FTP/FTPS, rozšíření PHP `ftp`) nebo `SftpClient` (SFTP přes SSH, knihovna phpseclib), `FtpZipper`, `FtpUploader`, `WordPressApi`, `ZaslatApi`, `LoginBroker` |
+| Práce za agenta | `App\Support\Vault`: `FtpConnector` → `NativeFtpClient` (FTP/FTPS, rozšíření PHP `ftp`) nebo `SftpClient` (SFTP přes SSH, knihovna phpseclib), `FtpZipper`, `FtpUploader`, `WordPressApi`, `ZaslatApi`, `EcomailApi`, `LoginBroker` |
 | Rozhraní pro agenta | `/nastroje/api/agent/trezor…` (token agenta), `App\Http\Controllers\Agent\VaultApiController` |
-| Příkazy | `taveo trezor`, `ftp`, `ftp-soubor`, `ftp-stahnout`, `ftp-nahrat`, `nahrani`, `wp`, `zaslat`, `prihlasit` (`infra/agent/taveo.sh`) |
+| Příkazy | `taveo trezor`, `ftp`, `ftp-soubor`, `ftp-stahnout`, `ftp-nahrat`, `nahrani`, `wp`, `zaslat`, `ecomail`, `prihlasit` (`infra/agent/taveo.sh`) |
 
 ## Pro lidi
 
@@ -46,7 +46,7 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
 | FTP | nic · číst (výpis, soubor, ZIP složky) · nahrávat po schválení · nahrávat hned |
 | WordPress | nic · číst přes aplikační heslo + přihlásit se · i měnit přes aplikační heslo |
 | Shoptet, Upgates, jiná administrace | nic · přihlásit se |
-| API klíč | nic · číst přes API (zatím jen Zaslat) |
+| API klíč | nic · číst přes API (Zaslat, Ecomail) |
 | Jiné heslo | jen pro lidi (zatím) |
 
 - **FTP:** cesty jsou vždy od složky webu, `..` neprojde. ZIP vynechá `wp-content/uploads`,
@@ -66,6 +66,11 @@ práce: výpis složky, soubor, odpověď WordPressu, cookies přihlášení.
   Zakládat a rušit zásilky agent nemůže, stálo by to klienta peníze. Vyzkoušet zavolá výpis aktivních zásilek.
   Proč: přihlášení do app.zaslat.cz je aplikace v JavaScriptu (server vrací 404) s reCAPTCHA, `prihlasit` tam neprojde.
   Týž klíč používá web pro automatizace klientů (připomínky vyzvednutí zásilek, docs/AUTOMATIZACE.md), nezávisle na „Co smí agent“.
+- **Ecomail** (API klíč s adresou `ecomail.cz`, `ecomailapp.cz` nebo jejich poddoménou): `taveo ecomail <id> GET /lists`
+  (dál třeba `/lists/{id}`, `/campaigns`, `/campaigns/{id}/stats`, `/pipelines`, `/templates`, parametry v cestě).
+  Web pošle klíč v hlavičce `key` vždy na `https://api2.ecomailapp.cz`, adresa u přístupu ho jinam neodvede.
+  Jen GET: mazat a měnit kontakty, seznamy ani posílat kampaně agent nemůže. Vyzkoušet zavolá `/lists`.
+  Odpovědi s kontakty obsahují e-maily zákazníků: agent je nekopíruje do textů ani poznámek, do auditu stačí počty.
 - **Přihlášení** (`LoginBroker`): web otevře přihlašovací stránku, najde formulář s heslem,
   vyplní ho (i s kódem 2FA, když je uložený klíč) a agentovi vrátí jen cookies. Agent si je
   vloží do prohlížeče (`browser_run_code_unsafe`: `await page.context().addCookies(cookies)`).

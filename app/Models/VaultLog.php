@@ -35,6 +35,7 @@ class VaultLog extends Model
             'upload_failed' => 'FTP: nahrání selhalo',
             'wp_api' => 'WordPress: dotaz',
             'zaslat_api' => 'Zaslat: dotaz',
+            'ecomail_api' => 'Ecomail: dotaz',
             'upgates_import' => 'Upgates: nahraný import',
             'login' => 'Přihlášení agenta',
             'login_failed' => 'Přihlášení se nepovedlo',

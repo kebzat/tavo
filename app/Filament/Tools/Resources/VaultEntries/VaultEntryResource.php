@@ -11,6 +11,7 @@ use App\Filament\Tools\Resources\VaultEntries\RelationManagers\UploadsRelationMa
 use App\Models\Client;
 use App\Models\VaultEntry;
 use App\Models\VaultUpload;
+use App\Support\Vault\EcomailApi;
 use App\Support\Vault\FtpConnector;
 use App\Support\Vault\LoginBroker;
 use App\Support\Vault\VaultException;
@@ -213,7 +214,7 @@ class VaultEntryResource extends Resource
                         ->helperText(fn (Get $get): string => match (true) {
                             $type($get)?->isLogin() => 'Heslo agent nikdy neuvidí, trezor ho přihlásí sám. Přihlášený ale smí v administraci, co smí ten účet: dej mu vlastní účet s menšími právy, když to jde.',
                             $type($get) === VaultType::Ftp => 'Heslo agent nikdy neuvidí. Soubory za něj stahuje a nahrává web, před nahráním je záloha a jde to vrátit.',
-                            $type($get) === VaultType::ApiKey => 'Klíč agent nikdy neuvidí. Číst přes API umí zatím jen u Zaslatu (adresa zaslat.cz): stav a sledování zásilek, zakládat ani rušit je nemůže. U jiných služeb nech „Nic“.',
+                            $type($get) === VaultType::ApiKey => 'Klíč agent nikdy neuvidí. Číst přes API umí u Zaslatu (adresa zaslat.cz: stav a sledování zásilek, zakládat ani rušit je nemůže) a Ecomailu (adresa ecomail.cz: jen čtení, kontakty nezmění a kampaně nepošle). U jiných služeb nech „Nic“.',
                             default => 'Jiná hesla jsou zatím jen pro lidi.',
                         })
                         ->columnSpanFull(),
@@ -359,12 +360,13 @@ class VaultEntryResource extends Resource
             ->label('Vyzkoušet')
             ->icon(Heroicon::OutlinedSignal)
             ->color('gray')
-            ->visible(fn (VaultEntry $record): bool => $record->type === VaultType::Ftp || $record->type->isLogin() || ZaslatApi::supports($record))
+            ->visible(fn (VaultEntry $record): bool => $record->type === VaultType::Ftp || $record->type->isLogin() || ZaslatApi::supports($record) || EcomailApi::supports($record))
             ->action(function (VaultEntry $record): void {
                 try {
                     $message = match (true) {
                         $record->type === VaultType::Ftp => self::testFtp($record),
                         ZaslatApi::supports($record) => self::testZaslat($record),
+                        EcomailApi::supports($record) => self::testEcomail($record),
                         $record->type === VaultType::WordPress && filled($record->app_password) => self::testWordPress($record),
                         default => self::testLogin($record),
                     };
@@ -418,6 +420,17 @@ class VaultEntryResource extends Resource
         }
 
         return 'Klíč k Zaslatu funguje, API odpovídá.';
+    }
+
+    private static function testEcomail(VaultEntry $record): string
+    {
+        $response = app(EcomailApi::class)->call($record, 'GET', '/lists');
+
+        if (! $response->successful()) {
+            throw new VaultException('Ecomail klíč nepřijal (HTTP '.$response->status().'). '.($response->json('message') ?? ''));
+        }
+
+        return 'Klíč k Ecomailu funguje, seznamů kontaktů: '.count((array) $response->json()).'.';
     }
 
     private static function testLogin(VaultEntry $record): string

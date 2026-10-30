@@ -105,6 +105,7 @@ Route::prefix('nastroje/api/agent')
             Route::get('/nahrani/{upload}', [VaultApiController::class, 'upload'])->name('agent.api.trezor.nahrani');
             Route::post('/wp', [VaultApiController::class, 'wordpress'])->name('agent.api.trezor.wp');
             Route::post('/zaslat', [VaultApiController::class, 'zaslat'])->name('agent.api.trezor.zaslat');
+            Route::post('/ecomail', [VaultApiController::class, 'ecomail'])->name('agent.api.trezor.ecomail');
             Route::post('/prihlasit', [VaultApiController::class, 'login'])->name('agent.api.trezor.prihlasit');
         });
     });

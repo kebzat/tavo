@@ -11,6 +11,7 @@ use App\Filament\Tools\Resources\VaultEntries\RelationManagers\UploadsRelationMa
 use App\Models\Client;
 use App\Models\User;
 use App\Models\VaultEntry;
+use App\Models\VaultLog;
 use App\Models\VaultUpload;
 use App\Support\Vault\FtpClient;
 use App\Support\Vault\FtpConnector;
@@ -350,6 +351,124 @@ class VaultTest extends TestCase
         $this->postJson("/nastroje/api/agent/trezor/{$evil->id}/zaslat", ['cesta' => '/shipments/list'], $this->agent())->assertStatus(422);
         $this->postJson("/nastroje/api/agent/trezor/{$hidden->id}/zaslat", ['cesta' => '/shipments/list'], $this->agent())->assertForbidden();
         $this->assertSame([], $other->agentCommands());
+
+        Http::assertNothingSent();
+    }
+
+    public function test_ecomail_jen_cte_s_klicem_z_trezoru(): void
+    {
+        Http::fake(['api2.ecomailapp.cz/*' => Http::response([['id' => 1, 'name' => 'Newsletter']])]);
+
+        $entry = VaultEntry::query()->create([
+            'client_id' => $this->client->getKey(),
+            'type' => VaultType::ApiKey,
+            'name' => 'API ecomail',
+            'url' => 'ecomail.cz',
+            'secret' => 'tajny-klic-ecomail',
+            'agent_access' => 'read',
+        ]);
+
+        $this->getJson('/nastroje/api/agent/trezor', $this->agent())
+            ->assertOk()
+            ->assertJsonPath('pristupy.0.umi.0', 'taveo ecomail <id> GET /lists')
+            ->assertDontSee('tajny-klic-ecomail');
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/ecomail", ['metoda' => 'GET', 'cesta' => '/lists'], $this->agent())
+            ->assertOk()
+            ->assertJsonPath('0.name', 'Newsletter');
+
+        $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/ecomail", ['cesta' => '/lists/1/subscribers?page=2', 'dotaz' => ['per_page' => 50]], $this->agent())
+            ->assertOk();
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
+            && $request->url() === 'https://api2.ecomailapp.cz/lists'
+            && $request->header('key')[0] === 'tajny-klic-ecomail');
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://api2.ecomailapp.cz/lists/1/subscribers?page=2&per_page=50');
+
+        foreach ([
+            ['metoda' => 'POST', 'cesta' => '/campaigns/1/send'],
+            ['metoda' => 'DELETE', 'cesta' => '/lists/1/unsubscribe'],
+            ['metoda' => 'PUT', 'cesta' => '/lists/1/update-subscriber'],
+            ['cesta' => '/lists/../campaigns'],
+            ['cesta' => 'https://utocnik.example/lists'],
+            ['cesta' => '/'],
+        ] as $payload) {
+            $this->postJson("/nastroje/api/agent/trezor/{$entry->id}/ecomail", $payload, $this->agent())->assertStatus(422);
+        }
+
+        Http::assertSentCount(2);
+        $this->assertSame(2, VaultLog::query()->where('vault_entry_id', $entry->id)->where('action', 'ecomail_api')->count());
+    }
+
+    public function test_vyzkouset_ecomail_zavola_seznamy(): void
+    {
+        Http::fake(['api2.ecomailapp.cz/lists' => Http::response([['id' => 1], ['id' => 2]])]);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Admin, 'name' => 'Tom']));
+        Filament::setCurrentPanel('tools');
+
+        $entry = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'API ecomail',
+            'url' => 'ecomail.cz',
+            'secret' => 'klic',
+            'agent_access' => 'read',
+        ]);
+
+        Livewire::test(EditVaultEntry::class, ['record' => $entry->getKey()])
+            ->callAction('test')
+            ->assertNotified('Funguje');
+
+        $this->assertDatabaseHas('vault_logs', ['vault_entry_id' => $entry->id, 'action' => 'tested', 'detail' => 'Klíč k Ecomailu funguje, seznamů kontaktů: 2.']);
+    }
+
+    public function test_ecomail_jen_s_adresou_ecomailu_a_s_pravem(): void
+    {
+        Http::fake();
+
+        $zaslat = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Zaslat API',
+            'url' => 'zaslat.cz',
+            'secret' => 'klic',
+            'agent_access' => 'read',
+        ]);
+        $evil = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Podvržená adresa',
+            'url' => 'https://ecomail.cz.utocnik.example',
+            'secret' => 'klic',
+            'agent_access' => 'read',
+        ]);
+        $hidden = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Ecomail jen pro lidi',
+            'url' => 'https://ecomail.cz/',
+            'secret' => 'klic',
+            'agent_access' => 'none',
+        ]);
+        $login = VaultEntry::query()->create([
+            'type' => VaultType::Web,
+            'name' => 'Ecomail administrace',
+            'url' => 'https://ecomail.cz/',
+            'username' => 'tym@taveo.cz',
+            'secret' => 'heslo',
+            'agent_access' => 'read',
+        ]);
+        $ecomail = VaultEntry::query()->create([
+            'type' => VaultType::ApiKey,
+            'name' => 'Ecomail API',
+            'url' => 'https://ucet.ecomailapp.cz',
+            'secret' => 'klic',
+            'agent_access' => 'read',
+        ]);
+
+        $this->postJson("/nastroje/api/agent/trezor/{$zaslat->id}/ecomail", ['cesta' => '/lists'], $this->agent())->assertStatus(422);
+        $this->postJson("/nastroje/api/agent/trezor/{$evil->id}/ecomail", ['cesta' => '/lists'], $this->agent())->assertStatus(422);
+        $this->postJson("/nastroje/api/agent/trezor/{$login->id}/ecomail", ['cesta' => '/lists'], $this->agent())->assertStatus(422);
+        $this->postJson("/nastroje/api/agent/trezor/{$hidden->id}/ecomail", ['cesta' => '/lists'], $this->agent())->assertForbidden();
+        $this->postJson("/nastroje/api/agent/trezor/{$ecomail->id}/zaslat", ['cesta' => '/shipments/list'], $this->agent())->assertStatus(422);
+        $this->assertSame(['taveo ecomail <id> GET /lists'], $ecomail->agentCommands());
+        $this->assertSame([], $evil->agentCommands());
 
         Http::assertNothingSent();
     }
