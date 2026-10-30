@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Http;
  * a v trezoru je uložený, doplní ho taky. Token CSRF, který web do formuláře
  * vkládá až skriptem (Shoptet), se doplní ze stránky.
  *
+ * Cookies po přihlášení si trezor u přístupu pamatuje (šifrovaně). Když
+ * relace ještě platí, vrátí ji bez nového přihlášení. Jinak se přihlásí
+ * znovu, ale s trvalými cookies z minula, takže web pozná známé zařízení
+ * (Shoptet: `fingerprint`, půl roku) a neposílá e-mail „Byli jste to Vy?“.
+ *
  * Ověření „nejsem robot“ (Turnstile, reCAPTCHA, hCaptcha) projít neumí,
  * to je jeho smysl. Pak hlásí, co s tím (aplikační heslo, výjimka pro IP).
  */
@@ -30,17 +35,42 @@ class LoginBroker
     /** Shoptet má token jen ve skriptu (`shoptet.csrf.token = "…"`) a pole `__csrf__` přidá až při odeslání. */
     private const SHOPTET_CSRF = '~shoptet\.csrf\.token\s*=\s*["\']([^"\']+)["\']~';
 
-    /** @return list<array{name: string, value: string, domain: string, path: string, expires: int, httpOnly: bool, secure: bool, sameSite: string}> */
-    public function login(VaultEntry $entry): array
+    /** Prošlo poslední `login()` uloženou relací, bez nového přihlášení? */
+    public bool $resumed = false;
+
+    /**
+     * `$resume = false` se přihlásí vždy znovu (Vyzkoušet má ověřit heslo).
+     *
+     * @return list<array{name: string, value: string, domain: string, path: string, expires: int, httpOnly: bool, secure: bool, sameSite: string}>
+     */
+    public function login(VaultEntry $entry, bool $resume = true): array
     {
+        $this->resumed = false;
         $url = $entry->loginUrl();
 
         if (! $url || blank($entry->secret)) {
             throw new VaultException('U přístupu chybí adresa přihlášení nebo heslo.');
         }
 
-        $jar = new CookieJar;
+        $remembered = $entry->login_cookies ?? [];
+
+        if ($resume && $remembered !== [] && $this->sessionValid($entry, $jar = new CookieJar(false, $remembered))) {
+            $this->resumed = true;
+
+            return $this->remember($entry, $jar);
+        }
+
+        // Z minula jen trvalé cookies (známé zařízení), stará relace k novému přihlášení nepatří.
+        $jar = new CookieJar(false, $remembered);
+        $jar->clearSessionCookies();
+        $known = count($jar) > 0;
         $page = $this->request($jar)->get($url);
+
+        // Trvalá cookie „zapamatovat přihlášení“ může formulář přeskočit, pak načisto.
+        if ($known && $this->findForm($page, 'password') === null) {
+            $jar = new CookieJar;
+            $page = $this->request($jar)->get($url);
+        }
 
         if ($page->status() >= 400 && $page->status() !== 401) {
             throw new VaultException('Adresa přihlášení '.$url.' vrací chybu (HTTP '.$page->status().'). Zkontroluj v trezoru adresu webu nebo přihlášení.');
@@ -90,6 +120,30 @@ class LoginBroker
                 default => 'Přihlášení se nepovedlo, web vrátil znovu přihlašovací formulář. Zkontroluj uživatele a heslo v trezoru.',
             });
         }
+
+        return $this->remember($entry, $jar);
+    }
+
+    /** Platí relace z minula? Administrace pak neukáže formulář s heslem ani nepřesměruje na přihlášení. */
+    private function sessionValid(VaultEntry $entry, CookieJar $jar): bool
+    {
+        $admin = $entry->adminUrl();
+
+        if ($admin === null) {
+            return false;
+        }
+
+        $page = $this->request($jar)->get($admin);
+
+        return $page->successful()
+            && ! str_contains(strtolower(parse_url($this->urlOf($page, $admin), PHP_URL_PATH) ?? ''), 'login')
+            && $this->findForm($page, 'password') === null;
+    }
+
+    /** Uloží cookies k přístupu (šifrovaně, jen pro příští přihlášení) a vrátí je pro prohlížeč. */
+    private function remember(VaultEntry $entry, CookieJar $jar): array
+    {
+        $entry->forceFill(['login_cookies' => $jar->toArray()])->saveQuietly();
 
         return $this->cookies($jar);
     }

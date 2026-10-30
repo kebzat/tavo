@@ -422,7 +422,7 @@ class VaultEntryResource extends Resource
 
     private static function testLogin(VaultEntry $record): string
     {
-        $cookies = app(LoginBroker::class)->login($record);
+        $cookies = app(LoginBroker::class)->login($record, resume: false);
 
         return 'Přihlášení do administrace prošlo ('.count($cookies).' cookies pro prohlížeč agenta).';
     }
