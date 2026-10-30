@@ -189,6 +189,10 @@ class VaultEntry extends Model
 
         if (EcomailApi::supports($this) && $this->agentAllows('read') && filled($this->secret)) {
             $commands[] = 'taveo ecomail <id> GET /lists';
+
+            if ($this->agentAllows('write')) {
+                $commands[] = 'taveo ecomail <id> POST|PUT|DELETE <cesta> \'{"json"}\'';
+            }
         }
 
         if ($this->type->isLogin() && $this->agentAllows('read') && filled($this->secret)) {

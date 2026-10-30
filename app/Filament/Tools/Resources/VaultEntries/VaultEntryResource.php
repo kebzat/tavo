@@ -214,7 +214,7 @@ class VaultEntryResource extends Resource
                         ->helperText(fn (Get $get): string => match (true) {
                             $type($get)?->isLogin() => 'Heslo agent nikdy neuvidí, trezor ho přihlásí sám. Přihlášený ale smí v administraci, co smí ten účet: dej mu vlastní účet s menšími právy, když to jde.',
                             $type($get) === VaultType::Ftp => 'Heslo agent nikdy neuvidí. Soubory za něj stahuje a nahrává web, před nahráním je záloha a jde to vrátit.',
-                            $type($get) === VaultType::ApiKey => 'Klíč agent nikdy neuvidí. Číst přes API umí u Zaslatu (adresa zaslat.cz: stav a sledování zásilek, zakládat ani rušit je nemůže) a Ecomailu (adresa ecomail.cz: jen čtení, kontakty nezmění a kampaně nepošle). U jiných služeb nech „Nic“.',
+                            $type($get) === VaultType::ApiKey => 'Klíč agent nikdy neuvidí. Číst přes API umí u Zaslatu (adresa zaslat.cz: stav a sledování zásilek, zakládat ani rušit je nemůže) a Ecomailu (adresa ecomail.cz). S „Číst i měnit“ upraví v Ecomailu kontakty, seznamy a koncepty kampaní, ale nic neodešle a z databáze nic nesmaže. U jiných služeb nech „Nic“.',
                             default => 'Jiná hesla jsou zatím jen pro lidi.',
                         })
                         ->columnSpanFull(),

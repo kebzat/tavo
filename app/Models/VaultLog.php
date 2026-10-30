@@ -36,6 +36,7 @@ class VaultLog extends Model
             'wp_api' => 'WordPress: dotaz',
             'zaslat_api' => 'Zaslat: dotaz',
             'ecomail_api' => 'Ecomail: dotaz',
+            'ecomail_change' => 'Ecomail: změna',
             'upgates_import' => 'Upgates: nahraný import',
             'login' => 'Přihlášení agenta',
             'login_failed' => 'Přihlášení se nepovedlo',

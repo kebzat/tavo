@@ -193,21 +193,23 @@ class VaultApiController extends Controller
         });
     }
 
-    /** `{"cesta": "/lists", "dotaz": {}}`, jen čtení (GET). */
+    /** `{"metoda": "GET", "cesta": "/lists", "dotaz": {}, "data": {}}`. Změny jen s „write“ a bez odesílání (EcomailApi). */
     public function ecomail(Request $request, VaultEntry $entry, EcomailApi $api): Response
     {
-        $this->allow($entry, 'read', VaultType::ApiKey);
-        abort_unless(EcomailApi::supports($entry), 422, 'Tenhle klíč není k Ecomailu (adresa u přístupu musí být ecomail.cz).');
-
         $data = $request->validate([
             'metoda' => ['nullable', 'string', 'max:10'],
             'cesta' => ['required', 'string', 'max:500'],
             'dotaz' => ['nullable', 'array'],
+            'data' => ['nullable', 'array'],
         ]);
         $method = strtoupper($data['metoda'] ?? 'GET');
+        $write = $method !== 'GET';
 
-        return $this->attempt($entry, 'ecomail_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
-            $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? []);
+        $this->allow($entry, $write ? 'write' : 'read', VaultType::ApiKey);
+        abort_unless(EcomailApi::supports($entry), 422, 'Tenhle klíč není k Ecomailu (adresa u přístupu musí být ecomail.cz).');
+
+        return $this->attempt($entry, $write ? 'ecomail_change' : 'ecomail_api', $method.' '.$data['cesta'], function () use ($api, $entry, $method, $data) {
+            $response = $api->call($entry, $method, $data['cesta'], $data['dotaz'] ?? [], $data['data'] ?? []);
 
             return response($response->body(), $response->status(), ['Content-Type' => $response->header('Content-Type') ?: 'application/json']);
         });
